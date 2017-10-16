@@ -135,7 +135,32 @@
 		gsl_vector **tstartgsl,
 		gsl_vector **flagTruncated,
 		gsl_vector **maxDERgsl,
-		gsl_vector **sammp1DERgsl);
+		gsl_vector **sammp1DERgsl,
+                gsl_vector **lagsgsl,
+        
+                int firstRecord);
+        
+        int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+        int smoothDerivative (gsl_vector **invector, int N);
+        
+        int FindSecondariesA1
+        (       
+                int maxPulsesPerRecord,
+
+                gsl_vector *der,
+                double adaptativethreshold,
+                int nSamplesUp,
+
+                ReconstructInitSIRENA *reconstruct_init,
+
+                int *numberPulses,
+                
+                gsl_vector **tstartgsl,
+                gsl_vector **flagTruncated,
+                gsl_vector **maxDERgsl,
+                gsl_vector **samp1DERgsl,
+                
+                int firstRecord);
 
 	using namespace std;
 

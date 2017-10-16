@@ -1,3 +1,4 @@
+
 /***********************************************************************
    This file is part of SIXTE/SIRENA software.
 
@@ -132,7 +133,7 @@ MAP OF SECTIONS IN THIS FILE:
 * - pulsesInRecord: Member of 'PulsesCollection' structure to store all the pulses found in the input record
 ******************************************************************************/
 void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection *pulsesAll, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord)
-{  
+{       
 	int inputPulseLength = (*reconstruct_init)->pulse_length;
 	if ((*reconstruct_init)->mode == 0)	(*reconstruct_init)->pulse_length = (*reconstruct_init)->largeFilter;
 	  
@@ -214,18 +215,19 @@ void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection 
 	}
 	
 	// Process each record
-	if (procRecord(reconstruct_init, tstartRecord, 1/record->delta_t, dtcObject, invector, invectorWithoutConvert2R, *pulsesInRecord))
+	if (procRecord(reconstruct_init, tstartRecord, 1/record->delta_t, dtcObject, invector, invectorWithoutConvert2R, *pulsesInRecord, nRecord))
 	{
 		message = "Cannot run routine procRecord for record processing";
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
+    
 	gsl_vector_free(invectorWithoutConvert2R);
 	if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RALL") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RNOL") == 0)
 		|| (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0))
 	{
 		strcpy((*reconstruct_init)->EnergyMethod,"OPTFILT"); // From this point forward, I2R, I2RALL, I2RNOL and I2RFITTED are completely equivalent to OPTFILT
 	}
-	
+
 	if (((*reconstruct_init)->intermediate == 1) && (lastRecord == 1))
 	{		
 		// Write output keywords (their values have been previously checked)
@@ -272,7 +274,7 @@ void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection 
 		gsl_matrix *covariance = gsl_matrix_alloc(inputPulseLength,inputPulseLength);
 		gsl_matrix_set_zero(weight);
 		gsl_matrix_set_zero(covariance);
-
+    
 		if (calculateTemplate (*reconstruct_init, pulsesAll, *pulsesInRecord, 1/record->delta_t, &pulsetemplate, &pulseheighttemplate, &covariance, &weight, inputPulseLength, &pulsetemplateMaxLengthFixedFilter))
 		{
 			message = "Cannot run routine calculateTemplate in CALIBRATION mode";
@@ -363,10 +365,12 @@ void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection 
 		gsl_matrix_free(eigenvectors);
 		
 		// It is not necessary to check the allocation because 'PulseLength'(input parameter) and '(pulsesAll->ndetpulses)+((*pulsesInRecord)->ndetpulsesc' have been checked previously 
-		gsl_matrix *RowDataAdjust = gsl_matrix_alloc((*reconstruct_init)->pulse_length,(pulsesAll->ndetpulses)+((*pulsesInRecord)->ndetpulses));	// So\B9-Mo So\B2-Mo...............So^(nonpileupPulses)-Mo 
-																				// S1\B9-M1 S1\B2-M1...............S1^(nonpileupPulses)-M1
-																				// ...................................................
-																				// S1023\B9-M1023 S1023\B2-M1023...S1023^(nonpileupPulses)-M1023
+                // S0^1-M0 S0^2-M0...............S0^(nonpileupPulses)-M0
+                // S1^1-M1 S1^2-M1...............S1^(nonpileupPulses)-M1
+                // ...................................................
+                // S1023^1-M1023 S1023^2-M1023...S1023^(nonpileupPulses)-M1023
+		gsl_matrix *RowDataAdjust = gsl_matrix_alloc((*reconstruct_init)->pulse_length,(pulsesAll->ndetpulses)+((*pulsesInRecord)->ndetpulses));	 
+																				
 		for (int m=0;m<(*reconstruct_init)->pulse_length;m++)
 		{
 			for (int p=0;p<pulsesAll->ndetpulses;p++)
@@ -693,6 +697,12 @@ void runDetect(TesRecord* record, int nRecord, int lastRecord, PulsesCollection 
 		  
 		gsl_matrix_free(pointsTranslatedRotated);
 	}
+	
+// 	if (lastRecord == 1)
+//         {   
+//                 cout<<"nrows "<<nRecord<<endl;
+//                 cout<<pulsesAll->ndetpulses+(*pulsesInRecord)->ndetpulses<<endl;
+//         }
 
 	// Close intermediate output FITS file if it is necessary
 	if ((*reconstruct_init)->intermediate == 1)
@@ -1514,10 +1524,62 @@ int filderLibrary(ReconstructInitSIRENA** reconstruct_init, double samprate)
 
 		        // Locate the 1st sample of the (low-pass filtered and) differentiated models ('samp1DERs')
 			gsl_vector_set((*reconstruct_init)->library_collection->samp1DERs,i,gsl_vector_get(model,0));
+			//cout<<i<<" "<<gsl_vector_get((*reconstruct_init)->library_collection->maxDERs,i)<<" "<<gsl_vector_get((*reconstruct_init)->library_collection->samp1DERs,i)<<" "<<gsl_vector_get((*reconstruct_init)->library_collection->energies,i)<<endl;
+			//cout<<gsl_vector_get(model,0)<<" "<<gsl_vector_get(model,1)<<" "<<gsl_vector_get(model,2)<<endl;
+                        //cout<<gsl_vector_get(model,0)<<" "<<gsl_vector_get(model,1)<<" "<<gsl_vector_get(model,2)<<" "<<gsl_vector_get(model,3)<<" "<<gsl_vector_get(model,4)<<" "<<gsl_vector_get(model,5)<<" "<<gsl_vector_get(model,6)<<" "<<gsl_vector_get(model,7)<<" "<<gsl_vector_get(model,8)<<" "<<gsl_vector_get(model,9)<<" "<<gsl_vector_get(model,10)<<" "<<endl;
 		}
 
 		gsl_vector_free(model);
 	}
+        
+        /*if ((*reconstruct_init)->library_collection->pulse_templates_filder[0].template_duration == -1)		// First record
+	{
+		// 'pulse_templates' are smooth differentiated
+		gsl_vector *model;
+                gsl_vector *modelAux;
+		if ((model = gsl_vector_alloc((*reconstruct_init)->library_collection->pulse_templates[0].template_duration)) == 0)
+		{
+			sprintf(valERROR,"%d",__LINE__-2);
+			string str(valERROR);
+			message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+		}
+		for (int i=0; i<(*reconstruct_init)->library_collection->ntemplates; i++)
+		{
+			gsl_vector_memcpy(model, (*reconstruct_init)->library_collection->pulse_templates[i].ptemplate);
+                        
+                        modelAux = gsl_vector_alloc(model->size+100);
+                        gsl_vector_set_all(modelAux,gsl_vector_get(model,model->size-1));
+                        for (int i=100;i<modelAux->size;i++)  gsl_vector_set(modelAux,i,gsl_vector_get(model,i-100));
+                                               
+        		// PULSE TEMPLATE: Smooth derivative
+			if (smoothDerivative (&modelAux,4))
+			{
+				message = "Cannot run routine smoothDerivative in filderLibrary";
+				EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+			}
+			
+                        for (int i=0;i<model->size-1;i++)       gsl_vector_set(model,i,gsl_vector_get(modelAux,i+100+1));
+                        gsl_vector_set(model,model->size-1,gsl_vector_get(modelAux,modelAux->size-1));
+                        
+                        gsl_vector_free(modelAux);
+                                                
+			// Store the smooth derivatives in 'pulse_templates_filder'
+			gsl_vector_memcpy((*reconstruct_init)->library_collection->pulse_templates_filder[i].ptemplate,model);
+
+			(*reconstruct_init)->library_collection->pulse_templates_filder[i].template_duration = (*reconstruct_init)->library_collection->pulse_templates[i].template_duration;
+
+			// Calculate the maximum of the smooth differentiated models
+			gsl_vector_set((*reconstruct_init)->library_collection->maxDERs,i,gsl_vector_max(model));
+
+		        // Locate the 1st sample of the smooth differentiated models ('samp1DERs')
+			gsl_vector_set((*reconstruct_init)->library_collection->samp1DERs,i,gsl_vector_get(model,0));
+                        //cout<<i<<" "<<gsl_vector_get((*reconstruct_init)->library_collection->maxDERs,i)<<" "<<gsl_vector_get((*reconstruct_init)->library_collection->samp1DERs,i)<<endl;
+                        //cout<<gsl_vector_get(model,0)<<" "<<gsl_vector_get(model,1)<<" "<<gsl_vector_get(model,2)<<endl;
+		}
+
+		gsl_vector_free(model);
+	}*/
 
 	return(EPOK);
 }
@@ -1613,12 +1675,12 @@ int loadRecord(TesRecord* record, double *time_record, gsl_vector **adc_double)
 * - record: GSL vector with signal values of input record
 * - foundPulses: Input/output structure where the found pulses info is stored 
 ****************************************************************************/
-int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, double samprate, fitsfile *dtcObject, gsl_vector *record, gsl_vector *recordWithoutConvert2R,PulsesCollection *foundPulses)
+int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, double samprate, fitsfile *dtcObject, gsl_vector *record, gsl_vector *recordWithoutConvert2R,PulsesCollection *foundPulses, int nRecord)
 {
 	int status = EPOK;
 	string message = "";
 	char valERROR[256];
-
+    
 	// Declare and initialize variables
 	int numPulses = 0;
 	double threshold = 0.0;
@@ -1651,6 +1713,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	gsl_vector *pulseHeightsgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
 	gsl_vector *maxDERgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
 	gsl_vector *samp1DERgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
+        gsl_vector *lagsgsl = gsl_vector_alloc((*reconstruct_init)->maxPulsesPerRecord);
 	gsl_vector_set_zero(qualitygsl);
 	gsl_vector_set_zero(pulseHeightsgsl);		// In order to choose the proper pulse model to calculate
 	                                                // the adjusted derivative and to fill in the ESTENRGY column
@@ -1721,7 +1784,20 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	gsl_vector_memcpy(recordDERIVATIVE,record);
-
+        
+        // Smooth derivative
+        //cout<<"Pulso"<<endl;
+        //for (int i=0;i<record->size;i++)  cout<<i<<" "<<gsl_vector_get(record,i)<<endl;
+	/*if (smoothDerivative (&record, 4))
+	{
+		message = "Cannot run routine smoothDerivative";
+		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+	}
+	for (int i=0;i<4-1;i++)    gsl_vector_set(record,i,0.0);
+	gsl_vector_memcpy(recordDERIVATIVE,record);*/
+        //cout<<"PulsoDERIVATIVE"<<endl;
+        //for (int i=0;i<recordDERIVATIVE->size;i++)  cout<<i<<" "<<gsl_vector_get(recordDERIVATIVE,i)<<endl;
+        
 	// // It is not necessary to check the allocation because the allocation of 'recordDERIVATIVE' has been checked previously
 	gsl_vector *recordDERIVATIVEOriginal = gsl_vector_alloc(recordDERIVATIVE->size);
 	gsl_vector_memcpy(recordDERIVATIVEOriginal,recordDERIVATIVE);
@@ -1744,16 +1820,31 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
 		
-		if (FindSecondaries ((*reconstruct_init)->maxPulsesPerRecord,
-			//recordDERIVATIVE, threshold,sigmaout,
-			recordDERIVATIVE, threshold,
-			(*reconstruct_init),
-			tstartFirstEvent,
-			&numPulses,&tstartgsl,&qualitygsl, &maxDERgsl,&samp1DERgsl))
-		{
-			message = "Cannot run routine FindSecondaries";
-			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-		}
+		int firstRecord = 0;
+                if (nRecord == 1) // First record
+                        firstRecord = 1;
+                
+                if (strcmp((*reconstruct_init)->detectionMode,"A1") == 0)
+                {
+                        if (FindSecondariesA1 ((*reconstruct_init)->maxPulsesPerRecord, recordDERIVATIVE, threshold, samplesUp, (*reconstruct_init), &numPulses, &tstartgsl, &qualitygsl, &maxDERgsl, &samp1DERgsl,firstRecord))
+                        {
+                                message = "Cannot run FindSecondariesA1";
+                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                        }
+                }
+                else if (strcmp((*reconstruct_init)->detectionMode,"AD") == 0)
+                {   
+                        if (FindSecondaries ((*reconstruct_init)->maxPulsesPerRecord,
+                                //recordDERIVATIVE, threshold,sigmaout,
+                                recordDERIVATIVE, threshold,
+                                (*reconstruct_init),
+                                tstartFirstEvent,
+                                &numPulses,&tstartgsl,&qualitygsl, &maxDERgsl,&samp1DERgsl,&lagsgsl,firstRecord))
+                        {
+                                message = "Cannot run routine FindSecondaries";
+                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                        }
+                }
 	}
 	else if ((*reconstruct_init)->mode == 0)	// In CALIBRATION mode
 	{
@@ -1772,6 +1863,8 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	}
 	(*reconstruct_init)->threshold = threshold;
 
+        //for (int i=0;i<numPulses;i++)   gsl_vector_set(tstartgsl,i,gsl_vector_get(tstartgsl,i)-1);
+            
 	// Write test info
 	if ((*reconstruct_init)->intermediate == 1)
 	{
@@ -1838,7 +1931,8 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		foundPulses->pulses_detected[i].grade1 = 0;
 		if (i!= 0)
 		{
-			foundPulses->pulses_detected[i].grade2 = (int)(gsl_vector_get(tstartgsl,i)-gsl_vector_get(tendgsl,i-1));
+			//foundPulses->pulses_detected[i].grade2 = (int)(gsl_vector_get(tstartgsl,i)-gsl_vector_get(tendgsl,i-1));
+                        foundPulses->pulses_detected[i].grade2 = (int)(gsl_vector_get(tstartgsl,i)-gsl_vector_get(tstartgsl,i-1));
 			foundPulses->pulses_detected[i].grade2_1 = (int)(gsl_vector_get(tstartgsl,i)-gsl_vector_get(tstartgsl,i-1));
 		}
 		else
@@ -1873,9 +1967,11 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		foundPulses->pulses_detected[i].samp1DER = gsl_vector_get(samp1DERgsl,i);
 		// 'energy' will be known after running 'runEnergy'
 		foundPulses->pulses_detected[i].quality = gsl_vector_get(qualitygsl,i);
-		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<", maxDER= "<<foundPulses->pulses_detected[i].maxDER<<", pulse_duration= "<<foundPulses->pulses_detected[i].pulse_duration<<",quality= "<<foundPulses->pulses_detected[i].quality<<endl;
+                foundPulses->pulses_detected[i].numLagsUsed = gsl_vector_get(lagsgsl,i);
+		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<", maxDER= "<<foundPulses->pulses_detected[i].maxDER<<" , samp1DER="<<gsl_vector_get(samp1DERgsl,i)<<", pulse_duration= "<<foundPulses->pulses_detected[i].pulse_duration<<",quality= "<<foundPulses->pulses_detected[i].quality<<" ,lags="<<gsl_vector_get(lagsgsl,i)<<endl;
+                //cout<<gsl_vector_get(tstartgsl,i)<<endl;
 		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<" quality="<<gsl_vector_get(qualitygsl,i)<<endl;
-		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<" samp1DER="<<gsl_vector_get(samp1DERgsl,i)<<endl;
+                //cout<<gsl_vector_get(samp1DERgsl,i)<<endl;
 	}
 
 	// Write pulses info in intermediate output FITS file
@@ -1898,6 +1994,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 	gsl_vector_free(pulseHeightsgsl);
 	gsl_vector_free(maxDERgsl);
 	gsl_vector_free(samp1DERgsl);
+        gsl_vector_free(lagsgsl);
 
 	gsl_vector_free(tauRisegsl);
 	gsl_vector_free(tauFallgsl);
@@ -2162,7 +2259,7 @@ int writeTestInfo(ReconstructInitSIRENA* reconstruct_init, gsl_vector *recordDER
 	gsl_vector_free(vectorToWrite);
 
 	delete [] obj.nameTable;
-	delete [] obj.nameCol;
+	delete [] obj.nameCol;//cout<<"tend1: "<<gsl_vector_get(tendgsl,i)<<endl;
 	delete [] obj.unit;
 
 	return (EPOK);
@@ -2347,21 +2444,24 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
 	}
 	
 	gsl_vector_scale(*pulseaverage,1.0/(nonpileupPulses));
-	
+ 	
 	gsl_vector_memcpy(*pulseaverageMaxLengthFixedFilter, *pulseaverage);
 	gsl_vector_free(*pulseaverage);
 	*pulseaverage = gsl_vector_alloc(inputPulseLength);
 	temp = gsl_vector_subvector(*pulseaverageMaxLengthFixedFilter,0,inputPulseLength);
 	gsl_vector_memcpy(*pulseaverage,&temp.vector);
 
-	// Calculate covariance and weight matrix
-	bool saturatedPulses = false;
-	if (pulsesInRecord->pulses_detected[0].quality >= 10)		saturatedPulses = true;
-	if (weightMatrix(reconstruct_init, saturatedPulses, pulsesAll, pulsesInRecord, nonpileupPulses, nonpileup, *pulseaverage, covariance, weight))
-	{
-		message = "Cannot run weightMatrix routine";
-		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-	}
+        if (reconstruct_init->hduPRECALWN == 1)
+        {
+                // Calculate covariance and weight matrix
+                bool saturatedPulses = false;
+                if (pulsesInRecord->pulses_detected[0].quality >= 10)		saturatedPulses = true;
+                if (weightMatrix(reconstruct_init, saturatedPulses, pulsesAll, pulsesInRecord, nonpileupPulses, nonpileup, *pulseaverage, covariance, weight))
+                {
+                        message = "Cannot run weightMatrix routine";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                }
+        }
 
 	*pulseaverageHeight = *pulseaverageHeight/nonpileupPulses;
 
@@ -2876,6 +2976,7 @@ int weightMatrix (ReconstructInitSIRENA *reconstruct_init, bool saturatedPulses,
 			message = "Singular matrix in line " + str + " (" + __FILE__ + ")";
 			EP_PRINT_ERROR(message,EPFAIL);	return(EPFAIL);
 		}
+
 		gsl_matrix_free(covarianceaux);
 		gsl_permutation_free(perm);
 	}
@@ -3172,27 +3273,16 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
 		if (eventcntLib1-1 > 1)
 		{
 			strcpy(extname,"PRECALWN");
-			//if (fits_movabs_hdu(*inLibObject, 4, NULL, &status))	// PRECALWN
 			if (fits_movnam_hdu(*inLibObject, ANY_HDU,extname, 0, &status))
 			{
-				//hduPRECALWN = 0;
 				(*reconstruct_init)->hduPRECALWN = 0;
 				status = EPOK;
 			}
 		}
 		
-		/*int calibrationAll = 1;
 		strcpy(extname,"PRCLOFWM");
-                if (fits_movabs_hdu(*inLibObject, 6, NULL, &status))	// PRCLOFWM
-                {
-                        calibrationAll = 0;
-			status = EPOK;
-                }*/
-		strcpy(extname,"PRCLOFWM");
-                //if (fits_movabs_hdu(*inLibObject, 6, NULL, &status))	// PRCLOFWM
 		if (fits_movnam_hdu(*inLibObject, ANY_HDU,extname, 0, &status))
                 {
-                        //hduPRCLOFWM = 0;
 			(*reconstruct_init)->hduPRCLOFWM = 0;
 			status = EPOK;
                 }		
@@ -3203,12 +3293,12 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
                         message = "Cannot move to HDU " + string(extname) + " in library file " + string(inLibName);
                         EP_PRINT_ERROR(message,status); return(EPFAIL);
                 }
-                
+
 		if (readAddSortParams(*reconstruct_init,inLibObject,samprate,eventcntLib,estenergy,pulsetemplate,covariance,weight,pulsetemplateMaxLengthFixedFilter))
 		{
 			message = "Cannot run routine readAddSortParams in writeLibrary";
 			EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-		}
+                }
 		
 		// Primary HDU
                 strcpy(extname,"Primary");
@@ -3416,7 +3506,6 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
 			EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
 		
-		//if (fits_write_key(*inLibObject,TINT,"EVENTSZ",&reconstruct_init->pulse_length,NULL,&status))
 		if (fits_write_key(*inLibObject,TINT,"EVENTSZ",&(*reconstruct_init)->pulse_length,NULL,&status))
 		{
 			message = "Cannot write keyword EVENTSZ in library";
@@ -3441,7 +3530,6 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
 		gsl_matrix_scale(matchedfilters_matrix,1./(*reconstruct_init)->monoenergy);
 		gsl_matrix_scale(matchedfiltersb0_matrix,1./(*reconstruct_init)->monoenergy);
 		
-		//if (addFirstRow(reconstruct_init, inLibObject, samprate, runF0orB0val, energyoutgsl, estenergyoutgsl, pulsetemplates_matrix, pulsetemplatesb0_matrix, matchedfilters_matrix, matchedfiltersb0_matrix, covariance, weight, pulsetemplatesMaxLengthFixedFilters_matrix))
 		if (addFirstRow(*reconstruct_init, inLibObject, samprate, runF0orB0val, energyoutgsl, estenergyoutgsl, pulsetemplates_matrix, pulsetemplatesb0_matrix, matchedfilters_matrix, matchedfiltersb0_matrix, covariance, weight, pulsetemplatesMaxLengthFixedFilters_matrix))
 		{
 			message = "Cannot run addFirstRow in writeLibrary";
@@ -3460,22 +3548,22 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
 	
 	if (((*reconstruct_init)->hduPRECALWN == 1) && ((*reconstruct_init)->hduPRCLOFWM == 1))
 	{
-		message = "Library created with the PRECALWN and PRCLOFWM HDUs";
+		message = "Library created with the PRECALWN and PRCLOFWM HDUs (and the COVARM...rE columns in the LIBRARY HDU)";
 		EP_PRINT_ERROR(message,-999);	// Only a warning
 	}
 	else if (((*reconstruct_init)->hduPRECALWN == 0) && ((*reconstruct_init)->hduPRCLOFWM == 0))
 	{
-		message = "Library created without the PRECALWN and PRCLOFWM HDUs";
+		message = "Library created without the PRECALWN and PRCLOFWM HDUs (and without the COVARM...rE columns in the LIBRARY HDU)";
 		EP_PRINT_ERROR(message,-999);	// Only a warning
 	} 
 	else if (((*reconstruct_init)->hduPRECALWN == 1) && ((*reconstruct_init)->hduPRCLOFWM == 0))
 	{
-		message = "Library created with the PRECALWN HDU but no the PRCLOFWM HDU";
+		message = "Library created with the PRECALWN HDU (and the COVARM...rE columns in the LIBRARY HDU) but no the PRCLOFWM HDU";
 		EP_PRINT_ERROR(message,-999);	// Only a warning
 	}
 	else if (((*reconstruct_init)->hduPRECALWN == 0) && ((*reconstruct_init)->hduPRCLOFWM == 1))
 	{
-		message = "Library created with the PRCLOFWM HDU but no the PRECALWN HDU";
+		message = "Library created with the PRCLOFWM HDU but no the PRECALWN HDU (and without the COVARM...rE columns in the LIBRARY HDU)";
 		EP_PRINT_ERROR(message,-999);	// Only a warning
 	}
 
@@ -3517,6 +3605,7 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 	// Declare variables
 	int status = EPOK;
 	string message = "";
+	char valERROR[256];
 	
 	gsl_vector *optimalfilter = NULL;
 	gsl_vector *optimalfilter_f = NULL;
@@ -3645,23 +3734,26 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	
-	// Creating COVARM Column
-	strcpy(obj.nameCol,"COVARM");
-	strcpy(obj.unit," ");
-	if (writeFitsComplex(obj, COVAR))
-	{
-		message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-	}
+	if (reconstruct_init->hduPRECALWN == 1)
+        {
+                // Creating COVARM Column
+                strcpy(obj.nameCol,"COVARM");
+                strcpy(obj.unit," ");
+                if (writeFitsComplex(obj, COVAR))
+                {
+                        message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                }
 
-	// Creating WEIGHTM Column
-	strcpy(obj.nameCol,"WEIGHTM");
-	strcpy(obj.unit," ");
-	if (writeFitsComplex(obj, WEIGHT))
-	{
-		message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-	}
+                // Creating WEIGHTM Column
+                strcpy(obj.nameCol,"WEIGHTM");
+                strcpy(obj.unit," ");
+                if (writeFitsComplex(obj, WEIGHT))
+                {
+                        message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                }
+        }
 
 	// Writing HDUs with fixed filters in time (FIXFILTT) and frequency (FIXFILTF)
 	char str_length[125];
@@ -3722,7 +3814,7 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	
-	// Creating Ts and Fs Columns
+	// Creating Ts and Fs Columns (in the FIXFILTT and FIXFILTF HDUs respectively)
 	gsl_vector *matchedfiltersSHORT;
 	gsl_vector_view(temp);
 	gsl_matrix *optimalfiltersT_matrix;
@@ -3731,7 +3823,14 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 	{
 		if (gsl_vector_get(fixedlengths,j) == optimalfilter_FFT_complex->size)
 		{
-			optimalfilter_x = gsl_vector_alloc(optimalfilter_FFT_complex->size);
+                        if ((optimalfilter_x = gsl_vector_alloc(optimalfilter_FFT_complex->size)) == 0)
+                        {
+                                sprintf(valERROR,"%d",__LINE__-2);
+                                string str(valERROR);
+                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
+			//optimalfilter_x = gsl_vector_alloc(optimalfilter_FFT_complex->size);
 			gsl_vector_memcpy(optimalfilter_x,optimalfilter);
 		  
 			optimalfilter_FFT_complex_x = gsl_vector_complex_alloc(optimalfilter_FFT_complex->size);
@@ -3740,19 +3839,53 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 		else
 		{
 			// It will enter this 'else' for fixedlengths_i=largeFilter and fixedlengths_i<optimalfilter_FFT_complex->size
-			matchedfiltersSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
+			//matchedfiltersSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
+                        if ((matchedfiltersSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j))) == 0)
+                        {
+                                sprintf(valERROR,"%d",__LINE__-2);
+                                string str(valERROR);
+                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
 			if (gsl_vector_get(fixedlengths,j) == reconstruct_init->largeFilter)
 			{
 				gsl_vector *matchedfiltersMaxLengthFixedFilter_row = gsl_vector_alloc(reconstruct_init->largeFilter);
 				gsl_matrix_get_row(matchedfiltersMaxLengthFixedFilter_row,PULSEMaxLengthFixedFilter,0);	//Matched filter
 				gsl_vector_scale(matchedfiltersMaxLengthFixedFilter_row,1.0/reconstruct_init->monoenergy);
+                                if ((gsl_vector_get(fixedlengths,j) < 0) || (gsl_vector_get(fixedlengths,j) > matchedfiltersMaxLengthFixedFilter_row->size))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }
 				temp = gsl_vector_subvector(matchedfiltersMaxLengthFixedFilter_row,0,gsl_vector_get(fixedlengths,j));
-				gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector);
+                                if (gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }
 				gsl_vector_free(matchedfiltersMaxLengthFixedFilter_row);
 			}
 			else
 			{
+                                if ((gsl_vector_get(fixedlengths,j) < 0) || (gsl_vector_get(fixedlengths,j) > matchedfilters_row->size))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }
 				temp = gsl_vector_subvector(matchedfilters_row,0,gsl_vector_get(fixedlengths,j));
+                                if (gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }
 				gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector);
 			}
 			  			
@@ -3773,10 +3906,24 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 		{
 			gsl_vector_complex_set(optimalfilter_FFT_complex_x,i,gsl_complex_conjugate(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
 		}
-		optimalfilter_FFT_RI = gsl_vector_alloc(optimalfilter_FFT_complex_x->size*2);
+		//optimalfilter_FFT_RI = gsl_vector_alloc(optimalfilter_FFT_complex_x->size*2);
+		if ((optimalfilter_FFT_RI = gsl_vector_alloc(optimalfilter_FFT_complex_x->size*2)) == 0)
+                {
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL);
+                }
 		for (int i=0;i<optimalfilter_FFT_complex_x->size;i++)
 		{
 			gsl_vector_set(optimalfilter_FFT_RI,i,GSL_REAL(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
+                        if ((i+optimalfilter_FFT_complex_x->size < 0) || (i+optimalfilter_FFT_complex_x->size > optimalfilter_FFT_RI->size-1))
+                        {
+                                sprintf(valERROR,"%d",__LINE__+5);
+                                string str(valERROR);
+                                message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
 			gsl_vector_set(optimalfilter_FFT_RI,i+optimalfilter_FFT_complex_x->size,GSL_IMAG(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
 		}
 		gsl_vector_complex_free(optimalfilter_FFT_complex_x);
@@ -3863,24 +4010,53 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 		
 		for (int j=0;j<fixedlengths->size;j++)
 		{
-			R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2);             	    //    | r0 1 | |  .   1|
-												    // R =| r1 1 |=|PULSE 1|          R=(PulseLengthx2)
-												    //    | .    | |  .   1|
-												    //    | rm 1 | |  .   1|			
+                        //    | r0 1 | |  .   1|
+                        // R =| r1 1 |=|PULSE 1|          R=(PulseLengthx2)
+			//    | .    | |  .   1|
+			//    | rm 1 | |  .   1|			
+			if ((R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2)) == 0)
+                        {
+                                sprintf(valERROR,"%d",__LINE__-2);
+                                string str(valERROR);
+                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
+                        //R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2);             	    
 			gsl_matrix_set_all(R,1.0);
 			PULSENORMshort = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
 			if (gsl_vector_get(fixedlengths,j) == reconstruct_init->largeFilter)
 			{
 				PULSENORM_row = gsl_vector_alloc(PULSEMaxLengthFixedFilter->size2);
 				gsl_matrix_get_row(PULSENORM_row,PULSEMaxLengthFixedFilter,0);
-				gsl_vector_memcpy(PULSENORMshort,PULSENORM_row);
+                                if (gsl_vector_memcpy(PULSENORMshort,PULSENORM_row) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }
+				//gsl_vector_memcpy(PULSENORMshort,PULSENORM_row);
 			}
 			else
 			{
 				PULSENORM_row = gsl_vector_alloc(PULSE->size2);
 				gsl_matrix_get_row(PULSENORM_row,PULSE,0);
+                                if ((gsl_vector_get(fixedlengths,j) < 0) || (gsl_vector_get(fixedlengths,j) > PULSENORM_row->size))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }
 				temp = gsl_vector_subvector(PULSENORM_row,0,gsl_vector_get(fixedlengths,j));
-				gsl_vector_memcpy(PULSENORMshort,&temp.vector);
+				if (gsl_vector_memcpy(PULSENORMshort,&temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }   
+                                //gsl_vector_memcpy(PULSENORMshort,&temp.vector);
 			} 
 			gsl_vector *baselinegsl = gsl_vector_alloc(PULSENORMshort->size);
 			gsl_vector_set_all(baselinegsl,-1.0*reconstruct_init->noise_spectrum->baseline);
@@ -3903,12 +4079,33 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 					Wi_vector = gsl_vector_alloc(gsl_vector_get(fixedlengthsOFWM,i)*gsl_vector_get(fixedlengthsOFWM,i));
 					Wi_matrix = gsl_matrix_alloc(gsl_vector_get(fixedlengthsOFWM,i),gsl_vector_get(fixedlengthsOFWM,i));
 					gsl_matrix_get_row(weightMatrixes_row,reconstruct_init->noise_spectrum->weightMatrixes,i);
+                                        if ((gsl_vector_get(fixedlengthsOFWM,i) < 0) || (gsl_vector_get(fixedlengthsOFWM,i)*gsl_vector_get(fixedlengthsOFWM,i) > weightMatrixes_row->size))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_EXIT_ERROR(message,EPFAIL);
+                                        }
 					temp = gsl_vector_subvector(weightMatrixes_row,0,gsl_vector_get(fixedlengthsOFWM,i)*gsl_vector_get(fixedlengthsOFWM,i));
+                                        if (gsl_vector_memcpy(Wi_vector,&temp.vector) != 0)
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                EP_EXIT_ERROR(message,EPFAIL);
+                                        }  
 					gsl_vector_memcpy(Wi_vector,&temp.vector);
 					vector2matrix(Wi_vector,&Wi_matrix);
-								
+							
 					R_transW = gsl_matrix_alloc(2,gsl_vector_get(fixedlengths,j));      		// R_transW = R'W               R_transW=(2xfixedlengths_j)
-					gsl_blas_dgemm(CblasTrans,CblasNoTrans,1.0,R,Wi_matrix,0.0,R_transW);
+					if (R->size1 != Wi_matrix->size1)
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "Wrong dimensions to compute matrix-matrix product in line " + str + " (" + __FILE__ + ")";
+                                                EP_EXIT_ERROR(message,EPFAIL);
+                                        }
+                                        gsl_blas_dgemm(CblasTrans,CblasNoTrans,1.0,R,Wi_matrix,0.0,R_transW);
 					R_transWR = gsl_matrix_alloc(2,2);                                  		// R_transWR = R'WR             R_transWR=(2x2)
 					gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,R_transW,R,0.0,R_transWR);
 					matrixaux1 = gsl_matrix_alloc(2,gsl_vector_get(fixedlengths,j));
@@ -3916,7 +4113,14 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 					s=0;                                        
 					gsl_matrix_memcpy(aux,R_transWR);
 					gsl_linalg_LU_decomp(aux, perm1, &s);
-					gsl_linalg_LU_invert(aux, perm1, inv);
+                                        if (gsl_linalg_LU_invert(aux, perm1, inv) != 0) 
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Singular matrix in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);	return(EPFAIL);
+                                        }
+					//gsl_linalg_LU_invert(aux, perm1, inv);
 					gsl_permutation_free(perm1);
 					gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,inv,R_transW,0.0,matrixaux1);      // matrixaux1 = [(R'WR)^(-1)]\B7R'W       matrixaux1=(2xfixedlengths_j)
 					vectoraux1_2 = gsl_vector_alloc(gsl_vector_get(fixedlengths,j)*2);
@@ -3924,11 +4128,29 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 					{
 						for (int k=0;k<gsl_vector_get(fixedlengths,j);k++)
 						{
+                                                        if ((k+ii*gsl_vector_get(fixedlengths,j) < 0) || (k+ii*gsl_vector_get(fixedlengths,j) > vectoraux1_2->size-1))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
 							gsl_vector_set(vectoraux1_2,k+ii*gsl_vector_get(fixedlengths,j),gsl_matrix_get(matrixaux1,ii,k));
 						}
 					}
 					PrecalOFWMaux = gsl_matrix_alloc(1,gsl_vector_get(fixedlengths,j)*2);
-					for (int ii=0;ii<vectoraux1_2->size;ii++){		gsl_matrix_set(PrecalOFWMaux,0,ii+indexPRCLOFWM,gsl_vector_get(vectoraux1_2,ii));}
+					for (int ii=0;ii<vectoraux1_2->size;ii++)
+                                        {		
+                                                if ((ii+indexPRCLOFWM < 0) || (ii+indexPRCLOFWM > PrecalOFWMaux->size2-1))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                gsl_matrix_set(PrecalOFWMaux,0,ii+indexPRCLOFWM,gsl_vector_get(vectoraux1_2,ii));
+                                            
+                                        }
 					snprintf(str_length,125,"%d",(int) (gsl_vector_get(fixedlengths,j)));
 					strcpy(objPRCLOFWM.nameCol,(string("OFW")+string(str_length)).c_str());
 					strcpy(objPRCLOFWM.unit," ");
@@ -4002,11 +4224,11 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 * - weight: GSL matrix with weight matrix of the energy which is going to be added to the library
 * - pulsetemplateMaxLengthFixedFilter: GSL vector with the largeFilter-length template whose energy is going to be added to the library
 ******************************************************************************/
-int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibObject,double samprate,int eventcntLib, double estenergy, gsl_vector *pulsetemplate,gsl_matrix *covariance, 
-	gsl_matrix *weight, gsl_vector *pulsetemplateMaxLengthFixedFilter)
+int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibObject,double samprate,int eventcntLib, double estenergy, gsl_vector *pulsetemplate,gsl_matrix *covariance, gsl_matrix *weight, gsl_vector *pulsetemplateMaxLengthFixedFilter)
 {	  
 	int status = EPOK;
 	string message = "";
+	char valERROR[256];
 	
 	IOData obj;
 	IOData objFREQ;
@@ -4058,8 +4280,24 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 	gsl_matrix *Dabaux = gsl_matrix_alloc(eventcntLib+1, reconstruct_init->pulse_length);
 	gsl_matrix_set_zero(Dabaux);
 	
-	gsl_matrix *optimalfiltersFREQaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->library_collection->optimal_filtersFREQ->ofilter_duration);
-	gsl_matrix *optimalfiltersTIMEaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->library_collection->optimal_filtersTIME->ofilter_duration);
+        gsl_matrix *optimalfiltersFREQaux;
+	if ((optimalfiltersFREQaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->library_collection->optimal_filtersFREQ->ofilter_duration)) == 0)
+        {
+                sprintf(valERROR,"%d",__LINE__-2);
+                string str(valERROR);
+                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                EP_PRINT_ERROR(message,EPFAIL);
+        }
+        gsl_matrix *optimalfiltersTIMEaux;
+        if ((optimalfiltersTIMEaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->library_collection->optimal_filtersTIME->ofilter_duration)) == 0)
+        {
+                sprintf(valERROR,"%d",__LINE__-2);
+                string str(valERROR);
+                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                EP_PRINT_ERROR(message,EPFAIL);
+        }
+        //gsl_matrix *optimalfiltersFREQaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->library_collection->optimal_filtersFREQ->ofilter_duration);
+	//gsl_matrix *optimalfiltersTIMEaux = gsl_matrix_alloc(eventcntLib+1,reconstruct_init->library_collection->optimal_filtersTIME->ofilter_duration);
 	
 	int lengthALL_F = 0;
 	int lengthALL_T = 0;
@@ -4073,13 +4311,37 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		lengthALL_F = lengthALL_F + reconstruct_init->largeFilter*2;
 		lengthALL_T = lengthALL_T + reconstruct_init->largeFilter;
 	}
-	gsl_matrix *optimalfiltersabFREQaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_F);
-	gsl_matrix *optimalfiltersabTIMEaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_T);
-	
+	//gsl_matrix *optimalfiltersabFREQaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_F);
+	gsl_matrix *optimalfiltersabFREQaux;
+	if ((optimalfiltersabFREQaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_F)) == 0)
+	{
+                sprintf(valERROR,"%d",__LINE__-2);
+                string str(valERROR);
+                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                EP_PRINT_ERROR(message,EPFAIL);
+        }
+	//gsl_matrix *optimalfiltersabTIMEaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_T);
+	gsl_matrix *optimalfiltersabTIMEaux;
+	if ((optimalfiltersabTIMEaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_T)) == 0)
+	{
+                sprintf(valERROR,"%d",__LINE__-2);
+                string str(valERROR);
+                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                EP_PRINT_ERROR(message,EPFAIL);
+        }
+		
 	int lengthALL_PRCLWN;
 	if (reconstruct_init->largeFilter != reconstruct_init->pulse_length)	lengthALL_PRCLWN = lengthALL_F-reconstruct_init->largeFilter*2;
 	else									lengthALL_PRCLWN = lengthALL_F;
-	gsl_matrix *PRCLWNaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_PRCLWN);
+	//gsl_matrix *PRCLWNaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_PRCLWN);
+        gsl_matrix *PRCLWNaux;
+        if ((PRCLWNaux = gsl_matrix_alloc(eventcntLib+1,lengthALL_PRCLWN)) == 0)
+        {
+                sprintf(valERROR,"%d",__LINE__-2);
+                string str(valERROR);
+                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                EP_PRINT_ERROR(message,EPFAIL);
+        }
 	gsl_matrix_set_zero(PRCLWNaux);
 	
 	int lengthALL_PRCLOFWM = lengthALL_F;
@@ -4109,31 +4371,25 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		gsl_matrix_set_row(modelsb0aux,i,reconstruct_init->library_collection->pulse_templates_B0[i].ptemplate);
 		gsl_matrix_set_row(matchedfiltersaux,i,reconstruct_init->library_collection->matched_filters[i].mfilter);
 		gsl_matrix_set_row(matchedfiltersb0aux,i,reconstruct_init->library_collection->matched_filters_B0[i].mfilter);
-		      
-		gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->W,i);
-		gsl_matrix_set_row(weightaux,i,vectoraux2);
+		 
+                if (reconstruct_init->hduPRECALWN == 1)
+                {
+                        gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->W,i);
+                        gsl_matrix_set_row(weightaux,i,vectoraux2);
 
-		gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->V,i);
-		gsl_matrix_set_row(covarianceaux,i,vectoraux2);
+                        gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->V,i);
+                        gsl_matrix_set_row(covarianceaux,i,vectoraux2);
+                }       
 		
 		if ((eventcntLib > 1) && (i < eventcntLib-1))
 		{
-			gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->WAB,i);
-			gsl_matrix_set_row(Wabaux,i,vectoraux2);
-			gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->T,i);
-			gsl_matrix_set_row(TVaux,i,vectoraux1);
-			gsl_vector_set(tEaux,i,gsl_vector_get(reconstruct_init->library_collection->t,i));  			
-			gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->X,i);
-			gsl_matrix_set_row(XMaux,i,vectoraux2);
-			gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->Y,i);
-			gsl_matrix_set_row(YVaux,i,vectoraux1);
-			gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->Z,i);
-			gsl_matrix_set_row(ZVaux,i,vectoraux1);
-			gsl_vector_set(rEaux,i,gsl_vector_get(reconstruct_init->library_collection->r,i));  
 			gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->PAB,i);
 			gsl_matrix_set_row(Pabaux,i,vectoraux1);
-			gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,reconstruct_init->library_collection->PABMXLFF,i);
-			gsl_matrix_set_row(PabMaxLengthFixedFilteraux,i,vectorMaxLengthFixedFilteraux1);
+                        if (reconstruct_init->largeFilter != reconstruct_init->pulse_length)
+                        {
+                                gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,reconstruct_init->library_collection->PABMXLFF,i);
+                                gsl_matrix_set_row(PabMaxLengthFixedFilteraux,i,vectorMaxLengthFixedFilteraux1);
+                        }
 			gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->DAB,i);
 			gsl_matrix_set_row(Dabaux,i,vectoraux1);
 			gsl_matrix_set_row(optimalfiltersabFREQaux,i,reconstruct_init->library_collection->optimal_filtersabFREQ[i].ofilter);
@@ -4141,6 +4397,19 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 			
 			if (reconstruct_init->hduPRECALWN == 1)
 			{
+                                gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->WAB,i);
+                                gsl_matrix_set_row(Wabaux,i,vectoraux2);
+                                gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->T,i);
+                                gsl_matrix_set_row(TVaux,i,vectoraux1);
+                                gsl_vector_set(tEaux,i,gsl_vector_get(reconstruct_init->library_collection->t,i));  			
+                                gsl_matrix_get_row(vectoraux2,reconstruct_init->library_collection->X,i);
+                                gsl_matrix_set_row(XMaux,i,vectoraux2);
+                                gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->Y,i);
+                                gsl_matrix_set_row(YVaux,i,vectoraux1);
+                                gsl_matrix_get_row(vectoraux1,reconstruct_init->library_collection->Z,i);
+                                gsl_matrix_set_row(ZVaux,i,vectoraux1);
+                                gsl_vector_set(rEaux,i,gsl_vector_get(reconstruct_init->library_collection->r,i));  
+                        
 				gsl_matrix_get_row(vectoraux3,reconstruct_init->library_collection->PRECALWN,i);
 				gsl_matrix_set_row(PRCLWNaux,i,vectoraux3);
 			}
@@ -4161,7 +4430,7 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 	// Add new values
 	gsl_vector_set(energycolumn,eventcntLib,reconstruct_init->monoenergy);	
 	gsl_vector_set(estenergycolumn,eventcntLib,estenergy);
-	gsl_matrix_set_row(modelsMaxLengthFixedFilteraux,eventcntLib,pulsetemplateMaxLengthFixedFilter);
+	if (reconstruct_init->largeFilter != reconstruct_init->pulse_length)   gsl_matrix_set_row(modelsMaxLengthFixedFilteraux,eventcntLib,pulsetemplateMaxLengthFixedFilter);
 	gsl_matrix_set_row(modelsaux,eventcntLib,pulsetemplate);
 	
 	gsl_vector_memcpy(vectoraux1,pulsetemplate);
@@ -4189,8 +4458,9 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		fixedlengths = gsl_vector_alloc(floor(log2(reconstruct_init->pulse_length))+1);
 		
 		gsl_vector_set(fixedlengths,0,reconstruct_init->largeFilter);
-		for (int i=0;i<fixedlengths->size;i++)
+		for (int i=0;i<fixedlengths->size-1;i++)
 		{
+                        //cout<<i+1<<" "<<pow(2,floor(log2(reconstruct_init->pulse_length))-i)<<endl;
 			gsl_vector_set(fixedlengths,i+1,pow(2,floor(log2(reconstruct_init->pulse_length))-i));
 		}
 	}
@@ -4214,7 +4484,14 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 	{
 		if (gsl_vector_get(fixedlengths,j) == optimalfilter_FFT_complex->size)
 		{
-			optimalfilter_x = gsl_vector_alloc(optimalfilter->size);
+			if ((optimalfilter_x = gsl_vector_alloc(optimalfilter->size)) == 0) 
+                        {
+                                sprintf(valERROR,"%d",__LINE__-2);
+                                string str(valERROR);
+                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
+                        //optimalfilter_x = gsl_vector_alloc(optimalfilter->size);
 			gsl_vector_memcpy(optimalfilter_x,optimalfilter);
 			
 			optimalfilter_FFT_complex_x = gsl_vector_complex_alloc(optimalfilter_FFT_complex->size);
@@ -4225,16 +4502,37 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		}
 		else
 		{
-			matchedfiltersSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
+			//matchedfiltersSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
+                        if ((matchedfiltersSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j))) == 0)
+                        {
+                                sprintf(valERROR,"%d",__LINE__-2);
+                                string str(valERROR);
+                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
 			if (gsl_vector_get(fixedlengths,j) == reconstruct_init->largeFilter)
 			{
 				gsl_vector_scale(pulsetemplateMaxLengthFixedFilter,1/reconstruct_init->monoenergy);
-				gsl_vector_memcpy(matchedfiltersSHORT,pulsetemplateMaxLengthFixedFilter);
+				//gsl_vector_memcpy(matchedfiltersSHORT,pulsetemplateMaxLengthFixedFilter);
+                                if (gsl_vector_memcpy(matchedfiltersSHORT,pulsetemplateMaxLengthFixedFilter) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }  
 			}
 			else
 			{
 				temp = gsl_vector_subvector(vectoraux1,0,gsl_vector_get(fixedlengths,j));
-				gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector);
+				//gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector);
+                                if (gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                }
 			}
 			  			
 			// Calculate the optimal filter
@@ -4257,18 +4555,39 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		for (int i=0;i<optimalfilter_FFT_complex_x->size;i++)
 		{
 			gsl_vector_set(optimalfilter_FFT_RI,i,GSL_REAL(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
+                        if ((i+optimalfilter_FFT_complex_x->size < 0) || (i+optimalfilter_FFT_complex_x->size > optimalfilter_FFT_RI->size-1))
+                        {
+                                sprintf(valERROR,"%d",__LINE__+5);
+                                string str(valERROR);
+                                message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
 			gsl_vector_set(optimalfilter_FFT_RI,i+optimalfilter_FFT_complex_x->size,GSL_IMAG(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
 		}
 		gsl_vector_complex_free(optimalfilter_FFT_complex_x);
 		
 		for (int i=0;i<optimalfilter_FFT_RI->size;i++)
 		{
+                        if ((i+indexF < 0) || (i+indexF > optimalfiltersFREQaux->size2-1))
+                        {
+                                sprintf(valERROR,"%d",__LINE__+5);
+                                string str(valERROR);
+                                message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
 			gsl_matrix_set(optimalfiltersFREQaux,eventcntLib,i+indexF,gsl_vector_get(optimalfilter_FFT_RI,i));
 		}
 		indexF = indexF + optimalfilter_FFT_RI->size;
 		
 		for (int i=0;i<optimalfilter_x->size;i++)
 		{
+                        if ((i+indexT < 0) || (i+indexT > optimalfiltersTIMEaux->size2-1))
+                        {
+                                sprintf(valERROR,"%d",__LINE__+5);
+                                string str(valERROR);
+                                message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
 			gsl_matrix_set(optimalfiltersTIMEaux,eventcntLib,i+indexT,gsl_vector_get(optimalfilter_x,i));
 		}
 		indexT = indexT + optimalfilter_x->size;
@@ -4277,21 +4596,25 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		gsl_vector_free(optimalfilter_FFT_RI);
 	}
 	gsl_vector_complex_free(optimalfilter_FFT_complex);
-	
+        
 	// It is not necessary to check the allocation because 'pulsetemplate' size must be > 0
 	gsl_vector *baselinegsl = gsl_vector_alloc(pulsetemplate->size);
 	gsl_vector_set_all(baselinegsl,-1.0*reconstruct_init->noise_spectrum->baseline);
 	gsl_vector_add(pulsetemplate,baselinegsl);
 	gsl_matrix_set_row(modelsb0aux,eventcntLib,pulsetemplate);
+        gsl_vector_free(baselinegsl);
 
 	gsl_vector_memcpy(vectoraux1,pulsetemplate);
 	gsl_vector_scale(vectoraux1,1/reconstruct_init->monoenergy);
 	gsl_matrix_set_row(matchedfiltersb0aux,eventcntLib,vectoraux1);
 
-	matrix2vector(weight,&vectoraux2);
-	gsl_matrix_set_row(weightaux,eventcntLib,vectoraux2);
-	matrix2vector(covariance,&vectoraux2);
-	gsl_matrix_set_row(covarianceaux,eventcntLib,vectoraux2);
+        if (reconstruct_init->hduPRECALWN == 1)
+        {
+                matrix2vector(weight,&vectoraux2);
+                gsl_matrix_set_row(weightaux,eventcntLib,vectoraux2);
+                matrix2vector(covariance,&vectoraux2);
+                gsl_matrix_set_row(covarianceaux,eventcntLib,vectoraux2);
+        }
 	
 	if (reconstruct_init->hduPRCLOFWM == 1)
 	{
@@ -4313,7 +4636,15 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		for (int j=0;j<fixedlengthsOFWM->size;j++)	gsl_vector_set(fixedlengthsOFWM,j,pow(2,reconstruct_init->noise_spectrum->weightMatrixes->size1-j));
 		for (int j=0;j<fixedlengths->size;j++)
 		{
-			R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2);             	    //    | r0 1 | | .    1|
+			//R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2); 
+                        if ((R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2)) == 0)
+                        {
+                                sprintf(valERROR,"%d",__LINE__-2);
+                                string str(valERROR);
+                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                EP_PRINT_ERROR(message,EPFAIL);
+                        }
+                                                                                                    //    | r0 1 | | .    1|
 												    // R =| r1 1 |=|PULSE 1|          R=(PulseLengthx2)
 												    //    | .    | | .    1|
 												    //    | rm 1 | | .    1|			
@@ -4323,16 +4654,40 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 			{
 				PULSENORM_row = gsl_vector_alloc(modelsMaxLengthFixedFilteraux->size2);
 				gsl_matrix_get_row(PULSENORM_row,modelsMaxLengthFixedFilteraux,eventcntLib);
-				gsl_vector_memcpy(PULSENORMshort,PULSENORM_row);
+                                if (gsl_vector_memcpy(PULSENORMshort,PULSENORM_row) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                } 
+				//gsl_vector_memcpy(PULSENORMshort,PULSENORM_row);
 			}
 			else
 			{
 				PULSENORM_row = gsl_vector_alloc(modelsaux->size2);
 				gsl_matrix_get_row(PULSENORM_row,modelsaux,eventcntLib);
+                                if ((gsl_vector_get(fixedlengths,j) < 0) || (gsl_vector_get(fixedlengths,j) > PULSENORM_row->size))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_EXIT_ERROR(message,EPFAIL);
+                                        }
 				temp = gsl_vector_subvector(PULSENORM_row,0,gsl_vector_get(fixedlengths,j));
-				gsl_vector_memcpy(PULSENORMshort,&temp.vector);
+                                if (gsl_vector_memcpy(PULSENORMshort,&temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_EXIT_ERROR(message,EPFAIL);
+                                } 
+				//gsl_vector_memcpy(PULSENORMshort,&temp.vector);
 			}  
+                        baselinegsl = gsl_vector_alloc(PULSENORMshort->size);
+                        gsl_vector_set_all(baselinegsl,-1.0*reconstruct_init->noise_spectrum->baseline);
 			gsl_vector_add(PULSENORMshort,baselinegsl);
+                        gsl_vector_free(baselinegsl);
 			gsl_vector_scale(PULSENORMshort,1.0/reconstruct_init->monoenergy);
 			gsl_matrix_set_col(R,0,PULSENORMshort);
 			gsl_vector_free(PULSENORMshort);
@@ -4350,6 +4705,13 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 					vector2matrix(Wi_vector,&Wi_matrix);
 					
 					R_transW = gsl_matrix_alloc(2,gsl_vector_get(fixedlengths,j));      		// R_transW = R'W               R_transW=(2xfixedlengths_j)
+					if (R->size1 != Wi_matrix->size1)
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "Wrong dimensions to compute matrix-matrix product in line " + str + " (" + __FILE__ + ")";
+                                                EP_EXIT_ERROR(message,EPFAIL);
+                                        }
 					gsl_blas_dgemm(CblasTrans,CblasNoTrans,1.0,R,Wi_matrix,0.0,R_transW);
 					R_transWR = gsl_matrix_alloc(2,2);                                  		// R_transWR = R'WR             R_transWR=(2x2)
 					gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,R_transW,R,0.0,R_transWR);
@@ -4390,8 +4752,8 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		gsl_matrix_free(inv);
 	}
 	
-	gsl_vector_free(baselinegsl);
-		
+	//gsl_vector_free(baselinegsl);
+	
 	// Realign
 	// It is not necessary to check the allocation because 'eventcntLib' is already >= 1 and 'reconstruct_init->pulse_length'=PulseLength(input parameter) 
 	// and 'reconstruct_init->library_collection->optimal_filters->ofilter_duration' have been checked previously
@@ -4473,30 +4835,6 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		gsl_matrix_get_row(matchedfiltersrowb0,matchedfiltersb0aux,gsl_permutation_get(perm,i));
 		gsl_matrix_set_row(matchedfiltersb0aux1,i,matchedfiltersrowb0);
 		
-		gsl_matrix_get_row(vectoraux2,weightaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(weightaux1,i,vectoraux2);
-		gsl_matrix_get_row(vectoraux2,covarianceaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(covarianceaux1,i,vectoraux2);
-		
-		gsl_matrix_get_row(Wabrow,Wabaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(Wabaux1,i,Wabrow);
-		
-		gsl_matrix_get_row(TVrow,TVaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(TVaux1,i,TVrow);
-				
-		gsl_vector_set(tEcolumnaux,i,gsl_vector_get(tEaux,gsl_permutation_get(perm,i)));
-		
-		gsl_matrix_get_row(XMrow,XMaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(XMaux1,i,XMrow);
-		
-		gsl_matrix_get_row(YVrow,YVaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(YVaux1,i,YVrow);
-		
-		gsl_matrix_get_row(ZVrow,ZVaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(ZVaux1,i,ZVrow);
-		
-		gsl_vector_set(rEcolumnaux,i,gsl_vector_get(rEaux,gsl_permutation_get(perm,i)));
-		
 		gsl_matrix_get_row(Pabrow,Pabaux,gsl_permutation_get(perm,i));
 		gsl_matrix_set_row(Pabaux1,i,Pabrow);
 
@@ -4518,8 +4856,35 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 		gsl_matrix_get_row(optimalfiltersabTIMErow,optimalfiltersabTIMEaux,gsl_permutation_get(perm,i));
 		gsl_matrix_set_row(optimalfiltersabTIMEaux1,i,optimalfiltersabTIMErow);
 		
-		gsl_matrix_get_row(PRCLWNrow,PRCLWNaux,gsl_permutation_get(perm,i));
-		gsl_matrix_set_row(PRCLWNaux1,i,PRCLWNrow);
+                if (reconstruct_init->hduPRECALWN == 1)
+		{
+                        gsl_matrix_get_row(vectoraux2,weightaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(weightaux1,i,vectoraux2);
+                        gsl_matrix_get_row(vectoraux2,covarianceaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(covarianceaux1,i,vectoraux2);
+                        
+                        gsl_matrix_get_row(Wabrow,Wabaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(Wabaux1,i,Wabrow);
+                        
+                        gsl_matrix_get_row(TVrow,TVaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(TVaux1,i,TVrow);
+                                        
+                        gsl_vector_set(tEcolumnaux,i,gsl_vector_get(tEaux,gsl_permutation_get(perm,i)));
+                        
+                        gsl_matrix_get_row(XMrow,XMaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(XMaux1,i,XMrow);
+                        
+                        gsl_matrix_get_row(YVrow,YVaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(YVaux1,i,YVrow);
+                        
+                        gsl_matrix_get_row(ZVrow,ZVaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(ZVaux1,i,ZVrow);
+                        
+                        gsl_vector_set(rEcolumnaux,i,gsl_vector_get(rEaux,gsl_permutation_get(perm,i)));
+                
+                        gsl_matrix_get_row(PRCLWNrow,PRCLWNaux,gsl_permutation_get(perm,i));
+                        gsl_matrix_set_row(PRCLWNaux1,i,PRCLWNrow);
+                }
 		
 		if (reconstruct_init->hduPRCLOFWM == 1)
 		{
@@ -4527,6 +4892,7 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 			gsl_matrix_set_row(PRCLOFWMaux1,i,PRCLOFWMrow);
 		}
 	}
+
 	gsl_vector_memcpy(energycolumn,energycolumnaux);
 	gsl_vector_memcpy(estenergycolumn,estenergycolumnaux);
 	gsl_matrix_memcpy(modelsMaxLengthFixedFilteraux,modelsMaxLengthFixedFilteraux1);
@@ -4747,95 +5113,101 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 		}
 
-		strcpy(obj.nameCol,"COVARM");
-		strcpy(obj.unit," ");
-		gsl_matrix_get_row(vectoraux2,covarianceaux,i);
-		gsl_matrix_set_row(matrixaux2,0,vectoraux2);
-		if (writeFitsComplex(obj, matrixaux2))
-		{
-			message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-		}
+		if (reconstruct_init->hduPRECALWN == 1)
+                {
+                        strcpy(obj.nameCol,"COVARM");
+                        strcpy(obj.unit," ");
+                        gsl_matrix_get_row(vectoraux2,covarianceaux,i);
+                        gsl_matrix_set_row(matrixaux2,0,vectoraux2);
+                        if (writeFitsComplex(obj, matrixaux2))
+                        {
+                                message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                        }
 
-		strcpy(obj.nameCol,"WEIGHTM");
-		strcpy(obj.unit," ");
-		gsl_matrix_get_row(vectoraux2,weightaux,i);
-		gsl_matrix_set_row(matrixaux2,0,vectoraux2);
-		if (writeFitsComplex(obj, matrixaux2))
-		{
-			message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-		}
+                        strcpy(obj.nameCol,"WEIGHTM");
+                        strcpy(obj.unit," ");
+                        gsl_matrix_get_row(vectoraux2,weightaux,i);
+                        gsl_matrix_set_row(matrixaux2,0,vectoraux2);
+                        if (writeFitsComplex(obj, matrixaux2))
+                        {
+                                message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                        }
+                }
 	
 		if (i < eventcntLib)
 		{
-			strcpy(obj.nameCol,"WAB");
-			strcpy(obj.unit," ");
-			gsl_matrix_get_row(vectoraux2,Wabaux,i);
-			gsl_matrix_set_row(matrixaux2,0,vectoraux2);
-			if (writeFitsComplex(obj, matrixaux2))
-			{
-				message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			
-			strcpy(obj.nameCol,"TV");
-			strcpy(obj.unit," ");
-			gsl_matrix_get_row(vectoraux1,TVaux,i);
-			gsl_matrix_set_row(matrixaux,0,vectoraux1);
-			if (writeFitsComplex(obj, matrixaux))
-			{
-				message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			
-			strcpy(obj.nameCol,"tE");
-			strcpy(obj.unit," ");
-			gsl_vector_set (vectoraux,0,gsl_vector_get(tEcolumn,i));
-			if (writeFitsSimple(obj, vectoraux))
-			{
-				message = "Cannot run writeFitsSimple routine for column " + string(obj.nameCol);
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			
-			strcpy(obj.nameCol,"XM");
-			strcpy(obj.unit," ");
-			gsl_matrix_get_row(vectoraux2,XMaux,i);
-			gsl_matrix_set_row(matrixaux2,0,vectoraux2);
-			if (writeFitsComplex(obj, matrixaux2))
-			{
-				message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			
-			strcpy(obj.nameCol,"YV");
-			strcpy(obj.unit," ");
-			gsl_matrix_get_row(vectoraux1,YVaux,i);
-			gsl_matrix_set_row(matrixaux,0,vectoraux1);
-			if (writeFitsComplex(obj, matrixaux))
-			{
-				message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			
-			strcpy(obj.nameCol,"ZV");
-			strcpy(obj.unit," ");
-			gsl_matrix_get_row(vectoraux1,ZVaux,i);
-			gsl_matrix_set_row(matrixaux,0,vectoraux1);
-			if (writeFitsComplex(obj, matrixaux))
-			{
-				message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			
-			strcpy(obj.nameCol,"rE");
-			strcpy(obj.unit," ");
-			gsl_vector_set (vectoraux,0,gsl_vector_get(rEcolumn,i));
-			if (writeFitsSimple(obj, vectoraux))
-			{
-				message = "Cannot run writeFitsSimple routine for column " + string(obj.nameCol);
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
+                        if (reconstruct_init->hduPRECALWN == 1)
+                        {
+                                strcpy(obj.nameCol,"WAB");
+                                strcpy(obj.unit," ");
+                                gsl_matrix_get_row(vectoraux2,Wabaux,i);
+                                gsl_matrix_set_row(matrixaux2,0,vectoraux2);
+                                if (writeFitsComplex(obj, matrixaux2))
+                                {
+                                        message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                
+                                strcpy(obj.nameCol,"TV");
+                                strcpy(obj.unit," ");
+                                gsl_matrix_get_row(vectoraux1,TVaux,i);
+                                gsl_matrix_set_row(matrixaux,0,vectoraux1);
+                                if (writeFitsComplex(obj, matrixaux))
+                                {
+                                        message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                
+                                strcpy(obj.nameCol,"tE");
+                                strcpy(obj.unit," ");
+                                gsl_vector_set (vectoraux,0,gsl_vector_get(tEcolumn,i));
+                                if (writeFitsSimple(obj, vectoraux))
+                                {
+                                        message = "Cannot run writeFitsSimple routine for column " + string(obj.nameCol);
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                
+                                strcpy(obj.nameCol,"XM");
+                                strcpy(obj.unit," ");
+                                gsl_matrix_get_row(vectoraux2,XMaux,i);
+                                gsl_matrix_set_row(matrixaux2,0,vectoraux2);
+                                if (writeFitsComplex(obj, matrixaux2))
+                                {
+                                        message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                
+                                strcpy(obj.nameCol,"YV");
+                                strcpy(obj.unit," ");
+                                gsl_matrix_get_row(vectoraux1,YVaux,i);
+                                gsl_matrix_set_row(matrixaux,0,vectoraux1);
+                                if (writeFitsComplex(obj, matrixaux))
+                                {
+                                        message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                
+                                strcpy(obj.nameCol,"ZV");
+                                strcpy(obj.unit," ");
+                                gsl_matrix_get_row(vectoraux1,ZVaux,i);
+                                gsl_matrix_set_row(matrixaux,0,vectoraux1);
+                                if (writeFitsComplex(obj, matrixaux))
+                                {
+                                        message = "Cannot run writeFitsComplex routine for column " + string(obj.nameCol);
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                
+                                strcpy(obj.nameCol,"rE");
+                                strcpy(obj.unit," ");
+                                gsl_vector_set (vectoraux,0,gsl_vector_get(rEcolumn,i));
+                                if (writeFitsSimple(obj, vectoraux))
+                                {
+                                        message = "Cannot run writeFitsSimple routine for column " + string(obj.nameCol);
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                        }
 			
 			strcpy(obj.nameCol,"PAB");
 			strcpy(obj.unit," ");
@@ -4859,7 +5231,7 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
 			}
-			gsl_matrix_free(matrixauxMaxLengthFixedFilter);
+			//gsl_matrix_free(matrixauxMaxLengthFixedFilter);
 			
 			strcpy(obj.nameCol,"DAB");
 			strcpy(obj.unit," ");
@@ -4871,6 +5243,7 @@ int readAddSortParams(ReconstructInitSIRENA *reconstruct_init,fitsfile **inLibOb
 				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 			}
 		}
+                gsl_matrix_free(matrixauxMaxLengthFixedFilter);
 	}
 	
 	objFREQ.inObject = *inLibObject;
@@ -5273,22 +5646,34 @@ int calculateIntParams(ReconstructInitSIRENA *reconstruct_init, int indexa, int 
 	
 	// Declare variables and allocate GSL vectors and matrices
 	// It is not necessary to check the allocation because 'reconstruct_init->pulse_length'=PulseLength(input parameter) has been checked previously
-	gsl_vector *T = gsl_vector_alloc(reconstruct_init->pulse_length);
+	gsl_vector *T;
+        gsl_vector *TMaxLengthFixedFilter;
+        double t;
+        gsl_vector *Y;
+        gsl_vector *Z;
+        double r;
+        /*gsl_vector *T = gsl_vector_alloc(reconstruct_init->pulse_length);
 	gsl_vector *TMaxLengthFixedFilter = gsl_vector_alloc(reconstruct_init->largeFilter);
 	double t;
 	gsl_vector *Y = gsl_vector_alloc(reconstruct_init->pulse_length);
 	gsl_vector *Z = gsl_vector_alloc(reconstruct_init->pulse_length);
-	double r;
+	double r;*/
 	gsl_vector *Pab = gsl_vector_alloc(reconstruct_init->pulse_length);
 	gsl_vector *PabMaxLengthFixedFilter = gsl_vector_alloc(reconstruct_init->largeFilter);
 	gsl_vector *Dab = gsl_vector_alloc(reconstruct_init->pulse_length);
 	gsl_vector *DabMaxLengthFixedFilter = gsl_vector_alloc(reconstruct_init->largeFilter);
-	gsl_vector *Wabvector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+        gsl_vector *Wabvector;
+        gsl_matrix *Walpha;
+        gsl_vector *Walphavector;
+        gsl_vector *Wbetavector;
+        gsl_vector *Xvector;
+        gsl_matrix *X;
+	/*gsl_vector *Wabvector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
 	gsl_matrix *Walpha = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
 	gsl_vector *Walphavector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
 	gsl_vector *Wbetavector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
 	gsl_vector *Xvector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
-	gsl_matrix *X = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
+	gsl_matrix *X = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);*/
 	double Ea,Eb;
 	
 	gsl_vector *vectoraux = gsl_vector_alloc(1);
@@ -5303,84 +5688,111 @@ int calculateIntParams(ReconstructInitSIRENA *reconstruct_init, int indexa, int 
 	gsl_vector *optimalfilter_f = NULL;
 	gsl_vector *optimalfilter_FFT = NULL;
 	gsl_vector_complex *optimalfilter_FFT_complex = NULL;
-	
+        
+        gsl_vector *vectorMaxLengthFixedFilteraux1 = gsl_vector_alloc(reconstruct_init->largeFilter);
+     
 	// Calculate
-	if ((indexa < 0) || (indexa > weightaux->size1-1))
-	{
-		sprintf(valERROR,"%d",__LINE__+5);
-		string str(valERROR);
-		message = "Getting i-th row of matrix out of range in line " + str + " (" + __FILE__ + ")";
-		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	}
-	gsl_matrix_get_row(Walphavector,weightaux,indexa);
-	gsl_vector_memcpy(Wabvector,Walphavector);
-	if ((indexb < 0) || (indexb > weightaux->size1-1))
-	{
-		sprintf(valERROR,"%d",__LINE__+5);
-		string str(valERROR);
-		message = "Getting i-th row of matrix out of range in line " + str + " (" + __FILE__ + ")";
-		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	}
-	gsl_matrix_get_row(Wbetavector,weightaux,indexb);
-	gsl_vector_add(Wabvector,Wbetavector);
-	gsl_vector_scale(Wabvector,1.0/2);
-	if ((indexa < 0) || (indexa > (*Wabaux)->size1-1))
-	{
-		sprintf(valERROR,"%d",__LINE__+5);
-		string str(valERROR);
-		message = "Setting i-th row of matrix out of range in line " + str + " (" + __FILE__ + ")";
-		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	}
-	gsl_matrix_set_row(*Wabaux,indexa,Wabvector);
+        if (reconstruct_init->hduPRECALWN == 1)
+        {
+                T = gsl_vector_alloc(reconstruct_init->pulse_length);
+                TMaxLengthFixedFilter = gsl_vector_alloc(reconstruct_init->largeFilter);
+                Y = gsl_vector_alloc(reconstruct_init->pulse_length);
+                Z = gsl_vector_alloc(reconstruct_init->pulse_length);
+                Wabvector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+                Walpha = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
+                Walphavector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+                Wbetavector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+                Xvector = gsl_vector_alloc(reconstruct_init->pulse_length*reconstruct_init->pulse_length);
+                X = gsl_matrix_alloc(reconstruct_init->pulse_length,reconstruct_init->pulse_length);
+                
+                if ((indexa < 0) || (indexa > weightaux->size1-1))
+                {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "Getting i-th row of matrix out of range in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                }
+                gsl_matrix_get_row(Walphavector,weightaux,indexa);
+                gsl_vector_memcpy(Wabvector,Walphavector);
+                if ((indexb < 0) || (indexb > weightaux->size1-1))
+                {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "Getting i-th row of matrix out of range in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                }
+                gsl_matrix_get_row(Wbetavector,weightaux,indexb);
+                gsl_vector_add(Wabvector,Wbetavector);
+                gsl_vector_scale(Wabvector,1.0/2);
+                if ((indexa < 0) || (indexa > (*Wabaux)->size1-1))
+                {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "Setting i-th row of matrix out of range in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                }
+                gsl_matrix_set_row(*Wabaux,indexa,Wabvector);
 	
-	gsl_matrix_get_row(vectoraux1,modelsaux,indexb);
-	gsl_vector_memcpy(T,vectoraux1);
-	gsl_matrix_get_row(vectoraux1,modelsaux,indexa);
-	gsl_vector_sub(T,vectoraux1);
-	gsl_matrix_set_row(*TVaux,indexa,T);
-	
-	gsl_vector *vectorMaxLengthFixedFilteraux1 = gsl_vector_alloc(reconstruct_init->largeFilter);
-	gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexb);
-	gsl_vector_memcpy(TMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
-	gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexa);
-	gsl_vector_sub(TMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
-	
-	vector2matrix(Walphavector,&Walpha);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, Walpha, T, 0.0, vectoraux1);
-	gsl_blas_ddot(T,vectoraux1,&t);
-	if ((indexa < 0) || (indexa > (*tEcolumn)->size-1))
-	{
-		sprintf(valERROR,"%d",__LINE__+5);
-		string str(valERROR);
-		message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	}
-	gsl_vector_set(*tEcolumn,indexa,t);
-	
-	gsl_vector_memcpy(Xvector,Wbetavector);
-	gsl_vector_sub(Xvector,Walphavector);
-	gsl_vector_scale(Xvector,1/t);
-	gsl_matrix_set_row(*XMaux,indexa,Xvector);
-	
-	gsl_blas_dgemv(CblasNoTrans, 1.0, Walpha, T, 0.0, Y);
-	gsl_vector_scale(Y,1/t);
-	gsl_matrix_set_row(*YVaux,indexa,Y);
-	
-	vector2matrix(Xvector,&X);
-	gsl_blas_dgemv(CblasNoTrans, 1.0, X, T, 0.0, Z);
-	gsl_matrix_set_row(*ZVaux,indexa,Z);
-	
-	gsl_blas_ddot(Z,T,&r);
-	r=1/r;
-	if ((indexa < 0) || (indexa > (*rEcolumn)->size-1))
-	{
-		sprintf(valERROR,"%d",__LINE__+5);
-		string str(valERROR);
-		message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	}
-	gsl_vector_set(*rEcolumn,indexa,r);
-	
+                gsl_matrix_get_row(vectoraux1,modelsaux,indexb);
+                gsl_vector_memcpy(T,vectoraux1);
+                gsl_matrix_get_row(vectoraux1,modelsaux,indexa);
+                gsl_vector_sub(T,vectoraux1);
+                gsl_matrix_set_row(*TVaux,indexa,T);
+        	
+                //gsl_vector *vectorMaxLengthFixedFilteraux1 = gsl_vector_alloc(reconstruct_init->largeFilter);
+                gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexb);
+                gsl_vector_memcpy(TMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
+                gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexa);
+                gsl_vector_sub(TMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
+                
+                vector2matrix(Walphavector,&Walpha);
+                gsl_blas_dgemv(CblasNoTrans, 1.0, Walpha, T, 0.0, vectoraux1);
+                gsl_blas_ddot(T,vectoraux1,&t);
+                if ((indexa < 0) || (indexa > (*tEcolumn)->size-1))
+                {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                }
+                gsl_vector_set(*tEcolumn,indexa,t);
+                
+                gsl_vector_memcpy(Xvector,Wbetavector);
+                gsl_vector_sub(Xvector,Walphavector);
+                gsl_vector_scale(Xvector,1/t);
+                gsl_matrix_set_row(*XMaux,indexa,Xvector);
+                
+                gsl_blas_dgemv(CblasNoTrans, 1.0, Walpha, T, 0.0, Y);
+                gsl_vector_scale(Y,1/t);
+                gsl_matrix_set_row(*YVaux,indexa,Y);
+                gsl_matrix_free(Walpha);
+                
+                vector2matrix(Xvector,&X);
+                gsl_blas_dgemv(CblasNoTrans, 1.0, X, T, 0.0, Z);
+                gsl_matrix_set_row(*ZVaux,indexa,Z);
+                gsl_matrix_free(X);
+                
+                gsl_blas_ddot(Z,T,&r);
+                r=1/r;
+                if ((indexa < 0) || (indexa > (*rEcolumn)->size-1))
+                {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                }
+                gsl_vector_set(*rEcolumn,indexa,r);
+                
+                gsl_vector_free(T);
+                gsl_vector_free(TMaxLengthFixedFilter);
+                gsl_vector_free(Y);
+                gsl_vector_free(Z);
+                //gsl_vector_free(Wabvector);
+                gsl_vector_free(Walphavector);
+                gsl_vector_free(Wbetavector);
+                gsl_vector_free(Xvector);
+        }
+        	
 	if ((indexa < 0) || (indexa > energycolumn->size-1))
 	{
 		sprintf(valERROR,"%d",__LINE__+5);
@@ -5397,268 +5809,283 @@ int calculateIntParams(ReconstructInitSIRENA *reconstruct_init, int indexa, int 
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 	Eb = gsl_vector_get(energycolumn,indexb);
-	gsl_vector_memcpy(Pab,T);
+        gsl_matrix_get_row(vectoraux1,modelsaux,indexb);
+        gsl_vector_memcpy(Pab,vectoraux1);
+        gsl_matrix_get_row(vectoraux1,modelsaux,indexa);
+        gsl_vector_sub(Pab,vectoraux1);
+	//gsl_vector_memcpy(Pab,T);
 	gsl_vector_scale(Pab,-Ea/(Eb-Ea));
 	gsl_matrix_get_row(vectoraux1,modelsaux,indexa);
 	gsl_vector_add(Pab,vectoraux1);
 	gsl_vector_add_constant(Pab,-1*reconstruct_init->noise_spectrum->baseline);
 	gsl_matrix_set_row(*Pabaux,indexa,Pab);
 	
-	gsl_vector_memcpy(PabMaxLengthFixedFilter,TMaxLengthFixedFilter);
+        gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexb);
+        gsl_vector_memcpy(PabMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
+        gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexa);
+        gsl_vector_sub(PabMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
+	//gsl_vector_memcpy(PabMaxLengthFixedFilter,TMaxLengthFixedFilter);
 	gsl_vector_scale(PabMaxLengthFixedFilter,-Ea/(Eb-Ea));
 	gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexa);
 	gsl_vector_add(PabMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
 	gsl_vector_add_constant(PabMaxLengthFixedFilter,-1*reconstruct_init->noise_spectrum->baseline);
 	gsl_matrix_set_row(*PabMaxLengthFixedFilteraux,indexa,PabMaxLengthFixedFilter);
-	gsl_vector_free(vectorMaxLengthFixedFilteraux1);
 	
-	gsl_vector_memcpy(DabMaxLengthFixedFilter,TMaxLengthFixedFilter);
+        gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexb);
+        gsl_vector_memcpy(DabMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
+        gsl_matrix_get_row(vectorMaxLengthFixedFilteraux1,modelsMaxLengthFixedFilteraux,indexa);
+        gsl_vector_sub(DabMaxLengthFixedFilter,vectorMaxLengthFixedFilteraux1);
+        gsl_vector_free(vectorMaxLengthFixedFilteraux1);
+	//gsl_vector_memcpy(DabMaxLengthFixedFilter,TMaxLengthFixedFilter);
 	gsl_vector_scale(DabMaxLengthFixedFilter,1/(Eb-Ea));
-	gsl_vector_memcpy(Dab,T);
+        gsl_matrix_get_row(vectoraux1,modelsaux,indexb);
+        gsl_vector_memcpy(Dab,vectoraux1);
+        gsl_matrix_get_row(vectoraux1,modelsaux,indexa);
+        gsl_vector_sub(Dab,vectoraux1);
+	//gsl_vector_memcpy(Dab,T);
 	gsl_vector_scale(Dab,1/(Eb-Ea));
 	gsl_matrix_set_row(*Dabaux,indexa,Dab);
 	
-	if (calculus_optimalFilter (0, 0, 0, Dab, Dab->size, samprate, runF0orB0val, reconstruct_init->noise_spectrum->noisefreqs, reconstruct_init->noise_spectrum->noisespec, &optimalfilter, &optimalfilter_f, &optimalfilter_FFT, &optimalfilter_FFT_complex))
-	{
-		message = "Cannot run routine calculus_optimalFilter in writeLibrary";
-		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-	}
+        if (reconstruct_init->hduPRECALWN == 1)
+        {
+                if (calculus_optimalFilter (0, 0, 0, Dab, Dab->size, samprate, runF0orB0val, reconstruct_init->noise_spectrum->noisefreqs, reconstruct_init->noise_spectrum->noisespec, &optimalfilter, &optimalfilter_f, &optimalfilter_FFT, &optimalfilter_FFT_complex))
+                {
+                        message = "Cannot run routine calculus_optimalFilter in writeLibrary";
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                }
+                
+                gsl_vector *optimalfilter_x = NULL;
+                gsl_vector *optimalfilter_f_x = NULL;
+                gsl_vector *optimalfilter_FFT_x = NULL;
+                gsl_vector_complex *optimalfilter_FFT_complex_x = NULL;
+                gsl_vector *fixedlengths;
+                if (reconstruct_init->largeFilter != reconstruct_init->pulse_length)
+                {
+                        fixedlengths = gsl_vector_alloc(floor(log2(reconstruct_init->pulse_length))+1);
+                        
+                        gsl_vector_set(fixedlengths,0,reconstruct_init->largeFilter);
+                        for (int i=0;i<fixedlengths->size-1;i++)
+                        {
+                                gsl_vector_set(fixedlengths,i+1,pow(2,floor(log2(reconstruct_init->pulse_length))-i));
+                        }
+                }
+                else
+                {
+                        fixedlengths = gsl_vector_alloc(floor(log2(reconstruct_init->pulse_length)));
+                        
+                        for (int i=0;i<fixedlengths->size;i++)
+                        {
+                                gsl_vector_set(fixedlengths,i,pow(2,floor(log2(reconstruct_init->pulse_length))-i));
+                        }
+                }
 	
-	gsl_vector *optimalfilter_x = NULL;
-	gsl_vector *optimalfilter_f_x = NULL;
-	gsl_vector *optimalfilter_FFT_x = NULL;
-	gsl_vector_complex *optimalfilter_FFT_complex_x = NULL;
-	gsl_vector *fixedlengths;
-	if (reconstruct_init->largeFilter != reconstruct_init->pulse_length)
-	{
-		fixedlengths = gsl_vector_alloc(floor(log2(reconstruct_init->pulse_length))+1);
-		
-		gsl_vector_set(fixedlengths,0,reconstruct_init->largeFilter);
-		for (int i=0;i<fixedlengths->size;i++)
-		{
-			gsl_vector_set(fixedlengths,i+1,pow(2,floor(log2(reconstruct_init->pulse_length))-i));
-		}
-	}
-	else
-	{
-		fixedlengths = gsl_vector_alloc(floor(log2(reconstruct_init->pulse_length)));
-		
-		for (int i=0;i<fixedlengths->size;i++)
-		{
-			gsl_vector_set(fixedlengths,i,pow(2,floor(log2(reconstruct_init->pulse_length))-i));
-		}
-	}
-	
-	int startSize = optimalfilter_FFT_complex->size;
-	gsl_vector *DabsSHORT;
-	gsl_vector_view(temp);
-	int indexT = 0;
-	int indexF = 0;
-	int indexPRCLWN = 0;
-	gsl_matrix *R = NULL;
-	gsl_matrix *R_transW = NULL;
-	gsl_matrix *R_transWR = 0;//gsl_matrix_alloc(2,2);
-	gsl_matrix *matrixaux1 = NULL;
-	gsl_matrix *aux = gsl_matrix_alloc(2,2);
-	gsl_matrix *inv = gsl_matrix_alloc(2,2);
-	gsl_vector *vectoraux1_2 = NULL;
-	gsl_matrix_view tempm;
-	for (int j=0;j<fixedlengths->size;j++)
-	{
-		if (gsl_vector_get(fixedlengths,j) == startSize)
-		{
-			optimalfilter_x = gsl_vector_alloc(optimalfilter->size);
-			gsl_vector_memcpy(optimalfilter_x,optimalfilter);
-			
-			optimalfilter_FFT_complex_x = gsl_vector_complex_alloc(optimalfilter_FFT_complex->size);
-			gsl_vector_complex_memcpy(optimalfilter_FFT_complex_x,optimalfilter_FFT_complex);
-			gsl_vector_complex_free(optimalfilter_FFT_complex);
-			
-			gsl_vector_free(optimalfilter_f);
-			gsl_vector_free(optimalfilter_FFT);
-		}
-		else
-		{
-			DabsSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
-			if (gsl_vector_get(fixedlengths,j) == reconstruct_init->largeFilter)
-			{
-				gsl_vector_memcpy(DabsSHORT,DabMaxLengthFixedFilter);
-			}
-			else
-			{
-				temp = gsl_vector_subvector(Dab,0,gsl_vector_get(fixedlengths,j));
-				gsl_vector_memcpy(DabsSHORT,&temp.vector);
-			}
+                int startSize = optimalfilter_FFT_complex->size;
+                gsl_vector *DabsSHORT;
+                gsl_vector_view(temp);
+                int indexT = 0;
+                int indexF = 0;
+                int indexPRCLWN = 0;
+                gsl_matrix *R = NULL;
+                gsl_matrix *R_transW = NULL;
+                gsl_matrix *R_transWR = 0;//gsl_matrix_alloc(2,2);
+                gsl_matrix *matrixaux1 = NULL;
+                gsl_matrix *aux = gsl_matrix_alloc(2,2);
+                gsl_matrix *inv = gsl_matrix_alloc(2,2);
+                gsl_vector *vectoraux1_2 = NULL;
+                gsl_matrix_view tempm;
+                for (int j=0;j<fixedlengths->size;j++)
+                {
+                        if (gsl_vector_get(fixedlengths,j) == startSize)
+                        {
+                                optimalfilter_x = gsl_vector_alloc(optimalfilter->size);
+                                gsl_vector_memcpy(optimalfilter_x,optimalfilter);
+                                
+                                optimalfilter_FFT_complex_x = gsl_vector_complex_alloc(optimalfilter_FFT_complex->size);
+                                gsl_vector_complex_memcpy(optimalfilter_FFT_complex_x,optimalfilter_FFT_complex);
+                                gsl_vector_complex_free(optimalfilter_FFT_complex);
+                                
+                                gsl_vector_free(optimalfilter_f);
+                                gsl_vector_free(optimalfilter_FFT);
+                        }
+                        else
+                        {
+                                DabsSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
+                                if (gsl_vector_get(fixedlengths,j) == reconstruct_init->largeFilter)
+                                {
+                                        gsl_vector_memcpy(DabsSHORT,DabMaxLengthFixedFilter);
+                                }
+                                else
+                                {
+                                        temp = gsl_vector_subvector(Dab,0,gsl_vector_get(fixedlengths,j));
+                                        gsl_vector_memcpy(DabsSHORT,&temp.vector);
+                                }
 
-			// Calculate the optimal filter
-			/*optimalfilter_x = gsl_vector_alloc(DabsSHORT->size);
-			optimalfilter_f_x = gsl_vector_alloc(DabsSHORT->size);
-			optimalfilter_FFT_x = gsl_vector_alloc(DabsSHORT->size);
-			optimalfilter_FFT_complex_x = gsl_vector_complex_alloc(DabsSHORT->size);*/
-			optimalfilter_x = 0;
-			optimalfilter_f_x = 0;
-			optimalfilter_FFT_x = 0;
-			optimalfilter_FFT_complex_x = 0;
-			if (calculus_optimalFilter (0, 0, reconstruct_init->mode, DabsSHORT, DabsSHORT->size, samprate, runF0orB0val, reconstruct_init->noise_spectrum->noisefreqs, reconstruct_init->noise_spectrum->noisespec, &optimalfilter_x, &optimalfilter_f_x, &optimalfilter_FFT_x, &optimalfilter_FFT_complex_x))
-			{
-				message = "Cannot run routine calculus_optimalFilter in writeLibrary";
-				EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-			}
-			gsl_vector_free(DabsSHORT);
-			gsl_vector_free(optimalfilter_f_x);
-			gsl_vector_free(optimalfilter_FFT_x);
-		}
-		
-		gsl_vector_complex_set(optimalfilter_FFT_complex_x,0,gsl_complex_rect(0.0,0.0));
-		for (int i=0;i<optimalfilter_FFT_complex_x->size;i++)
-		{
-			gsl_vector_complex_set(optimalfilter_FFT_complex_x,i,gsl_complex_conjugate(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
-		}
-		
-		for (int i=0;i<optimalfilter_FFT_complex_x->size;i++)
-		{
-			gsl_matrix_set(*optimalfiltersabFREQaux,indexa,i+indexF,GSL_REAL(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
-			
-			gsl_matrix_set(*optimalfiltersabFREQaux,indexa,i+indexF+optimalfilter_FFT_complex_x->size,GSL_IMAG(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
-		}
-	
-		gsl_vector_complex_free(optimalfilter_FFT_complex_x);
-		
-		indexF = indexF + gsl_vector_get(fixedlengths,j)*2;
-		
-		for (int i=0;i<optimalfilter_x->size;i++)
-		{
-			gsl_matrix_set(*optimalfiltersabTIMEaux,indexa,i+indexT,gsl_vector_get(optimalfilter_x,i));
-		}
-	
-		indexT = indexT + optimalfilter_x->size;
-		
-		gsl_vector_free(optimalfilter_x);
-		
-		if (((reconstruct_init->largeFilter != reconstruct_init->pulse_length) && (j != 0)) || (reconstruct_init->largeFilter == reconstruct_init->pulse_length))
-		{
-			R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2);             //    | r0 1 | | .  1|
-											    // R =| r1 1 |=|Dab 1|          R=(PulseLengthx2)
-											    //    | .    | | .  1|
-											    //    | rm 1 | | .  1|
-			gsl_matrix_set_all(R,1.0);
-			if (matrixaux) gsl_matrix_free(matrixaux);
-			if (gsl_vector_get(fixedlengths,j) == startSize)
-			{
-				DabsSHORT = gsl_vector_alloc(Dab->size);
-				gsl_vector_memcpy(DabsSHORT,Dab);
-				
-				matrixaux = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				vector2matrix(Wabvector,&matrixaux);
-			}
-			else
-			{
-				DabsSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
-				temp = gsl_vector_subvector(Dab,0,gsl_vector_get(fixedlengths,j));
-				gsl_vector_memcpy(DabsSHORT,&temp.vector);
-				
-				gsl_vector *covarianceAlphavector = gsl_vector_alloc(covarianceaux->size2);
-				gsl_vector *covarianceBetavector = gsl_vector_alloc(covarianceaux->size2);
-				gsl_matrix *covarianceAlphamatrix = gsl_matrix_alloc(sqrt(covarianceaux->size2),sqrt(covarianceaux->size2));
-				gsl_matrix *covarianceBetamatrix = gsl_matrix_alloc(sqrt(covarianceaux->size2),sqrt(covarianceaux->size2));
-				gsl_matrix *covarianceAlphamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				gsl_matrix *covarianceBetamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				gsl_matrix *weightAlphamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				gsl_matrix *weightBetamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				
-				gsl_matrix_get_row(covarianceAlphavector,covarianceaux,indexa);
-				vector2matrix(covarianceAlphavector,&covarianceAlphamatrix);
-				gsl_vector_free(covarianceAlphavector);
-				tempm = gsl_matrix_submatrix(covarianceAlphamatrix,0,0,gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				gsl_matrix_memcpy(covarianceAlphamatrixSHORT,&tempm.matrix);
-				gsl_matrix_free(covarianceAlphamatrix);
-				perm = gsl_permutation_alloc(gsl_vector_get(fixedlengths,j));
-				s = 0;
-				gsl_linalg_LU_decomp(covarianceAlphamatrixSHORT,perm, &s);
-				gsl_linalg_LU_invert(covarianceAlphamatrixSHORT,perm, weightAlphamatrixSHORT);
-				gsl_matrix_free(covarianceAlphamatrixSHORT);			
-				
-				gsl_matrix_get_row(covarianceBetavector,covarianceaux,indexb);
-				vector2matrix(covarianceBetavector,&covarianceBetamatrix);
-				gsl_vector_free(covarianceBetavector);
-				tempm = gsl_matrix_submatrix(covarianceBetamatrix,0,0,gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				gsl_matrix_memcpy(covarianceBetamatrixSHORT,&tempm.matrix);
-				gsl_matrix_free(covarianceBetamatrix);
-				perm = gsl_permutation_alloc(gsl_vector_get(fixedlengths,j));
-				s = 0;
-				gsl_linalg_LU_decomp(covarianceBetamatrixSHORT,perm, &s);
-				gsl_linalg_LU_invert(covarianceBetamatrixSHORT,perm, weightBetamatrixSHORT);
-				gsl_matrix_free(covarianceBetamatrixSHORT);
-				
-				matrixaux = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
-				gsl_matrix_memcpy(matrixaux,weightAlphamatrixSHORT);
-				gsl_matrix_add(matrixaux,weightBetamatrixSHORT);
-				gsl_matrix_scale(matrixaux,1.0/2.0);
-				gsl_matrix_free(weightAlphamatrixSHORT);
-				gsl_matrix_free(weightBetamatrixSHORT);
-			}
-			gsl_matrix_set_col(R,0,DabsSHORT);
-			
-			R_transW = gsl_matrix_alloc(2,gsl_vector_get(fixedlengths,j));      // R_transW = R'W               R_transW=(2xPL)
-			gsl_blas_dgemm(CblasTrans,CblasNoTrans,1.0,R,matrixaux,0.0,R_transW);
-			R_transWR = gsl_matrix_alloc(2,2);                                  // R_transWR = R'WR             R_transWR=(2x2)
-			gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,R_transW,R,0.0,R_transWR);
-			matrixaux1 = gsl_matrix_alloc(2,gsl_vector_get(fixedlengths,j));
-			gsl_permutation *perm = gsl_permutation_alloc(2);
-			s=0;                                        
-			gsl_matrix_memcpy(aux,R_transWR);
-			gsl_linalg_LU_decomp(aux, perm, &s);
-			gsl_linalg_LU_invert(aux, perm, inv);
-			gsl_permutation_free(perm);
-			gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,inv,R_transW,0.0,matrixaux1);      // matrixaux1 = [(R'WR)^(-1)]\B7R'W       matrixaux1=(2xPL)
-			vectoraux1_2 = gsl_vector_alloc(gsl_vector_get(fixedlengths,j)*2);
-			for (int i=0;i<2;i++)
-			{
-				for (int k=0;k<gsl_vector_get(fixedlengths,j);k++)
-				{
-					gsl_vector_set(vectoraux1_2,k+i*gsl_vector_get(fixedlengths,j),gsl_matrix_get(matrixaux1,i,k));
-				}
-			}
-			for (int i=0;i<vectoraux1_2->size;i++)		gsl_matrix_set(*PrecalWMaux,indexa,i+indexPRCLWN,gsl_vector_get(vectoraux1_2,i));
-			
-			indexPRCLWN = indexPRCLWN + gsl_vector_get(fixedlengths,j)*2;
-			
-			gsl_matrix_free(R);
-			gsl_matrix_free(R_transW);
-			gsl_matrix_free(R_transWR);
-			gsl_matrix_free(matrixaux1);
-			gsl_vector_free(vectoraux1_2);
-		}
-	}
+                                // Calculate the optimal filter
+                                /*optimalfilter_x = gsl_vector_alloc(DabsSHORT->size);
+                                optimalfilter_f_x = gsl_vector_alloc(DabsSHORT->size);
+                                optimalfilter_FFT_x = gsl_vector_alloc(DabsSHORT->size);
+                                optimalfilter_FFT_complex_x = gsl_vector_complex_alloc(DabsSHORT->size);*/
+                                optimalfilter_x = 0;
+                                optimalfilter_f_x = 0;
+                                optimalfilter_FFT_x = 0;
+                                optimalfilter_FFT_complex_x = 0;
+                                if (calculus_optimalFilter (0, 0, reconstruct_init->mode, DabsSHORT, DabsSHORT->size, samprate, runF0orB0val, reconstruct_init->noise_spectrum->noisefreqs, reconstruct_init->noise_spectrum->noisespec, &optimalfilter_x, &optimalfilter_f_x, &optimalfilter_FFT_x, &optimalfilter_FFT_complex_x))
+                                {
+                                        message = "Cannot run routine calculus_optimalFilter in writeLibrary";
+                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                                gsl_vector_free(DabsSHORT);
+                                gsl_vector_free(optimalfilter_f_x);
+                                gsl_vector_free(optimalfilter_FFT_x);
+                        }
+                        
+                        gsl_vector_complex_set(optimalfilter_FFT_complex_x,0,gsl_complex_rect(0.0,0.0));
+                        for (int i=0;i<optimalfilter_FFT_complex_x->size;i++)
+                        {
+                                gsl_vector_complex_set(optimalfilter_FFT_complex_x,i,gsl_complex_conjugate(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
+                        }
+                        
+                        for (int i=0;i<optimalfilter_FFT_complex_x->size;i++)
+                        {
+                                gsl_matrix_set(*optimalfiltersabFREQaux,indexa,i+indexF,GSL_REAL(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
+                                
+                                gsl_matrix_set(*optimalfiltersabFREQaux,indexa,i+indexF+optimalfilter_FFT_complex_x->size,GSL_IMAG(gsl_vector_complex_get(optimalfilter_FFT_complex_x,i)));
+                        }
+                
+                        gsl_vector_complex_free(optimalfilter_FFT_complex_x);
+                        
+                        indexF = indexF + gsl_vector_get(fixedlengths,j)*2;
+                        
+                        for (int i=0;i<optimalfilter_x->size;i++)
+                        {
+                                gsl_matrix_set(*optimalfiltersabTIMEaux,indexa,i+indexT,gsl_vector_get(optimalfilter_x,i));
+                        }
+                
+                        indexT = indexT + optimalfilter_x->size;
+                        
+                        gsl_vector_free(optimalfilter_x);
+                        
+                        if (((reconstruct_init->largeFilter != reconstruct_init->pulse_length) && (j != 0)) || (reconstruct_init->largeFilter == reconstruct_init->pulse_length))
+                        {
+                                R = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),2);             // R=(PulseLengthx2)
+                                                                                                    //    | r0 1 | | .  1|
+                                                                                                    // R =| r1 1 |=|Dab 1|          
+                                                                                                    //    | .    | | .  1|
+                                                                                                    //    | rm 1 | | .  1|
+            
+                                gsl_matrix_set_all(R,1.0);
+                                if (matrixaux) gsl_matrix_free(matrixaux);
+                                if (gsl_vector_get(fixedlengths,j) == startSize)
+                                {
+                                        DabsSHORT = gsl_vector_alloc(Dab->size);
+                                        gsl_vector_memcpy(DabsSHORT,Dab);
+                                        
+                                        matrixaux = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        vector2matrix(Wabvector,&matrixaux);
+                                        gsl_vector_free(Wabvector);
+                                }
+                                else
+                                {
+                                        DabsSHORT = gsl_vector_alloc(gsl_vector_get(fixedlengths,j));
+                                        temp = gsl_vector_subvector(Dab,0,gsl_vector_get(fixedlengths,j));
+                                        gsl_vector_memcpy(DabsSHORT,&temp.vector);
+                                        
+                                        gsl_vector *covarianceAlphavector = gsl_vector_alloc(covarianceaux->size2);
+                                        gsl_vector *covarianceBetavector = gsl_vector_alloc(covarianceaux->size2);
+                                        gsl_matrix *covarianceAlphamatrix = gsl_matrix_alloc(sqrt(covarianceaux->size2),sqrt(covarianceaux->size2));
+                                        gsl_matrix *covarianceBetamatrix = gsl_matrix_alloc(sqrt(covarianceaux->size2),sqrt(covarianceaux->size2));
+                                        gsl_matrix *covarianceAlphamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        gsl_matrix *covarianceBetamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        gsl_matrix *weightAlphamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        gsl_matrix *weightBetamatrixSHORT = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        
+                                        gsl_matrix_get_row(covarianceAlphavector,covarianceaux,indexa);
+                                        vector2matrix(covarianceAlphavector,&covarianceAlphamatrix);
+                                        gsl_vector_free(covarianceAlphavector);
+                                        tempm = gsl_matrix_submatrix(covarianceAlphamatrix,0,0,gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        gsl_matrix_memcpy(covarianceAlphamatrixSHORT,&tempm.matrix);
+                                        gsl_matrix_free(covarianceAlphamatrix);
+                                        perm = gsl_permutation_alloc(gsl_vector_get(fixedlengths,j));
+                                        s = 0;
+                                        gsl_linalg_LU_decomp(covarianceAlphamatrixSHORT,perm, &s);
+                                        gsl_linalg_LU_invert(covarianceAlphamatrixSHORT,perm, weightAlphamatrixSHORT);
+                                        gsl_matrix_free(covarianceAlphamatrixSHORT);	
+                                        
+                                        gsl_permutation_free(perm);
+                                        
+                                        gsl_matrix_get_row(covarianceBetavector,covarianceaux,indexb);
+                                        vector2matrix(covarianceBetavector,&covarianceBetamatrix);
+                                        gsl_vector_free(covarianceBetavector);
+                                        tempm = gsl_matrix_submatrix(covarianceBetamatrix,0,0,gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        gsl_matrix_memcpy(covarianceBetamatrixSHORT,&tempm.matrix);
+                                        gsl_matrix_free(covarianceBetamatrix);
+                                        perm = gsl_permutation_alloc(gsl_vector_get(fixedlengths,j));
+                                        s = 0;
+                                        gsl_linalg_LU_decomp(covarianceBetamatrixSHORT,perm, &s);
+                                        gsl_linalg_LU_invert(covarianceBetamatrixSHORT,perm, weightBetamatrixSHORT);
+                                        gsl_matrix_free(covarianceBetamatrixSHORT);
+                                        
+                                        matrixaux = gsl_matrix_alloc(gsl_vector_get(fixedlengths,j),gsl_vector_get(fixedlengths,j));
+                                        gsl_matrix_memcpy(matrixaux,weightAlphamatrixSHORT);
+                                        gsl_matrix_add(matrixaux,weightBetamatrixSHORT);
+                                        gsl_matrix_scale(matrixaux,1.0/2.0);
+                                        gsl_matrix_free(weightAlphamatrixSHORT);
+                                        gsl_matrix_free(weightBetamatrixSHORT);
+                                        gsl_permutation_free(perm);
+                                }
+                                gsl_matrix_set_col(R,0,DabsSHORT);
+                                
+                                R_transW = gsl_matrix_alloc(2,gsl_vector_get(fixedlengths,j));      // R_transW = R'W               R_transW=(2xPL)
+                                gsl_blas_dgemm(CblasTrans,CblasNoTrans,1.0,R,matrixaux,0.0,R_transW);
+                                R_transWR = gsl_matrix_alloc(2,2);                                  // R_transWR = R'WR             R_transWR=(2x2)
+                                gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,R_transW,R,0.0,R_transWR);
+                                matrixaux1 = gsl_matrix_alloc(2,gsl_vector_get(fixedlengths,j));
+                                gsl_permutation *perm = gsl_permutation_alloc(2);
+                                s=0;                                        
+                                gsl_matrix_memcpy(aux,R_transWR);
+                                gsl_linalg_LU_decomp(aux, perm, &s);
+                                gsl_linalg_LU_invert(aux, perm, inv);
+                                gsl_permutation_free(perm);
+                                gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,inv,R_transW,0.0,matrixaux1);      // matrixaux1 = [(R'WR)^(-1)]\B7R'W       matrixaux1=(2xPL)
+                                vectoraux1_2 = gsl_vector_alloc(gsl_vector_get(fixedlengths,j)*2);
+                                for (int i=0;i<2;i++)
+                                {
+                                        for (int k=0;k<gsl_vector_get(fixedlengths,j);k++)
+                                        {
+                                                gsl_vector_set(vectoraux1_2,k+i*gsl_vector_get(fixedlengths,j),gsl_matrix_get(matrixaux1,i,k));
+                                        }
+                                }
+                                for (int i=0;i<vectoraux1_2->size;i++)		gsl_matrix_set(*PrecalWMaux,indexa,i+indexPRCLWN,gsl_vector_get(vectoraux1_2,i));
+                                
+                                indexPRCLWN = indexPRCLWN + gsl_vector_get(fixedlengths,j)*2;
+                                
+                                gsl_matrix_free(R);
+                                gsl_matrix_free(R_transW);
+                                gsl_matrix_free(R_transWR);
+                                gsl_matrix_free(matrixaux1);
+                                gsl_vector_free(vectoraux1_2);
+                                gsl_vector_free(DabsSHORT);
+                        }
+                }
 
-	gsl_matrix_free(aux);
-	gsl_matrix_free(inv);
-	
-	// Free allocated GSL vectors and matrices
-	gsl_vector_free(T);
-	gsl_vector_free(TMaxLengthFixedFilter);
-	gsl_vector_free(Y);
-	gsl_vector_free(Z);
-	gsl_vector_free(Pab);
+                gsl_matrix_free(aux);
+                gsl_matrix_free(inv);
+                
+                gsl_vector_free(fixedlengths);
+        }
+       
+    	gsl_vector_free(Pab);
 	gsl_vector_free(Dab);
 	gsl_vector_free(DabMaxLengthFixedFilter);
-	gsl_vector_free(Wabvector);
-	gsl_matrix_free(Walpha);
-	gsl_vector_free(Walphavector);
-	gsl_vector_free(Wbetavector);
-	gsl_vector_free(Xvector);
-	gsl_matrix_free(X);
-	
+        
 	gsl_vector_free(vectoraux);
 	gsl_vector_free(vectoraux1);
 	gsl_vector_free(vectoraux2);
 	gsl_matrix_free(matrixaux);
-
+        
 	gsl_vector_free(PabMaxLengthFixedFilter);
-	
-	gsl_vector_free(optimalfilter);
-	
-	gsl_vector_free(fixedlengths);
+        
+	if (optimalfilter != NULL) gsl_vector_free(optimalfilter);
 		
 	return (EPOK);
 }
@@ -6221,7 +6648,7 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 
 	double energy;
 	double tstartNewDev = -999.0;    	// Deviation of the starting of the pulses (in samples) respect to the tstart calculated
-	int numlags = 5; 			// Must be odd
+	int numlags = 3; 			// Must be odd
 
 	double Ealpha, Ebeta;
 	gsl_vector *optimalfilter = NULL;	// Resized optimal filter expressed in the time domain (optimalfilter(t))
@@ -6292,7 +6719,7 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 	}
 
 	model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
-	  
+        	  
 	for (int i=0; i<(*pulsesInRecord)->ndetpulses ;i++)
 	{
 		//resize_mf = (*pulsesInRecord)->pulses_detected[i].pulse_duration; // Resize the matched filter by using the tstarts
@@ -6381,7 +6808,7 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 		gsl_matrix *resultsE = gsl_matrix_alloc(2,(*reconstruct_init)->library_collection->ntemplates);		// Row0 -> calculatedEnergy
 															// Row1 -> min[abs(calculatedEnergy-Ealpha),abs(calculatedEnergy-Ebeta)]
 		int numiteration = -1;
-
+                
 		do
 		{
 			numiteration++;
@@ -6460,7 +6887,6 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 					{
 						if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
 						{
-							//cout<<"find_optimalfilter"<<endl;
 							if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
 							{
 								message = "Cannot run routine find_optimalfilter for filter interpolation";
@@ -6469,7 +6895,6 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 						}
 						else //(*reconstruct_init)->OFInterp = DAB
 						{
-							//cout<<"find_optimalfilterDAB"<<endl;
 							if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab,&Ealpha, &Ebeta))
 							{
 								message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
@@ -6620,22 +7045,22 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 				}
 				else if ((*reconstruct_init)->OFLib == 1)
 				{
-					// It is not necessary to check the allocation because 'filtergsl' size has been checked previously
+                         		// It is not necessary to check the allocation because 'filtergsl' size has been checked previously
 					optimalfilter = gsl_vector_alloc(filtergsl->size);
 					gsl_vector_set_all(optimalfilter,0);
-					if (TorF == 0)		gsl_vector_memcpy(optimalfilter,filtergsl);
+					if (TorF == 0)     gsl_vector_memcpy(optimalfilter,filtergsl);
 					else if (TorF == 1)
 					{
 						// It is not necessary to check the allocation because 'filtergsl' size has been checked previously
 						optimalfilter_FFT_complex = gsl_vector_complex_alloc(filtergsl->size/2);
-						for (int k=0;k<filtergsl->size/2;k++)
+                                         	for (int k=0;k<filtergsl->size/2;k++)
 						{
-							gsl_vector_complex_set(optimalfilter_FFT_complex,k,gsl_complex_rect(gsl_vector_get(filtergsl,k),gsl_vector_get(filtergsl,k+filtergsl->size/2)));
+                                                    gsl_vector_complex_set(optimalfilter_FFT_complex,k,gsl_complex_rect(gsl_vector_get(filtergsl,k),gsl_vector_get(filtergsl,k+filtergsl->size/2)));
 						}
 						gsl_vector_complex_set(optimalfilter_FFT_complex,0,gsl_complex_rect(0.0,0.0));
-						for (int k=0;k<filtergsl->size;k++)
+						for (int k=0;k<filtergsl->size/2;k++)
 						{
-							gsl_vector_complex_set(optimalfilter_FFT_complex,k,gsl_complex_conjugate(gsl_vector_complex_get(optimalfilter_FFT_complex,k)));
+                                                    gsl_vector_complex_set(optimalfilter_FFT_complex,k,gsl_complex_conjugate(gsl_vector_complex_get(optimalfilter_FFT_complex,k)));
 						}
 					}
 				}
@@ -6648,7 +7073,7 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 				EP_EXIT_ERROR(message,EPFAIL);
 			}
 			gsl_vector_free(pulseToCalculateEnergy);
-			
+                        
 			// If using lags, it is necessary to modify the tstart of the pulse and the length of the filter used
 			if ((strcmp((*reconstruct_init)->EnergyMethod,"OPTFILT") == 0) && tstartNewDev != -999.0)
 			{
@@ -7195,9 +7620,33 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
 {
 	string message = "";
 	char valERROR[256];
-	
-	long nummodels = maxDERs->size;
-		
+        
+        gsl_vector *maxDERs_LIB1row;
+        long nummodels;
+        int index_E_LIB1row;
+        if (reconstruct_init->filtEev == 0)
+        {
+                nummodels = maxDERs->size;
+                maxDERs_LIB1row = gsl_vector_alloc(nummodels);
+                gsl_vector_memcpy(maxDERs_LIB1row,maxDERs);
+        }
+        else
+        {
+                nummodels = 1;
+                maxDERs_LIB1row = gsl_vector_alloc(1);
+                for (int i=0;i<maxDERs->size;i++)
+                {
+                        if (gsl_vector_get(reconstruct_init->library_collection->energies,i) == reconstruct_init->filtEev)
+                        {
+                                gsl_vector_set(maxDERs_LIB1row,0,gsl_vector_get(maxDERs,i));
+                                index_E_LIB1row = i;
+                                break;
+                        }
+                }
+        }
+        
+	//long nummodels = maxDERs->size;
+       		
 	gsl_vector *matchedfilterFound_aux;
 	if ((matchedfilterFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
 	{
@@ -7207,26 +7656,48 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
 		EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
 	}
 
-	if (maxDER < gsl_vector_get(maxDERs,0))
+	//if (maxDER < gsl_vector_get(maxDERs,0))
+	if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
 	{
-		if (runF0orB0val == 0)	gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters[0].mfilter);
-		else    		gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters_B0[0].mfilter);
+                if (reconstruct_init->filtEev == 0)
+                {
+                        if (runF0orB0val == 0)	gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters[0].mfilter);
+                        else    		gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters_B0[0].mfilter);
+                        *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
+                }
+                else
+                {
+                        if (runF0orB0val == 0)	gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters[index_E_LIB1row].mfilter);
+                        else    		gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters_B0[index_E_LIB1row].mfilter);
+                        *Ebeta = reconstruct_init->filtEev;
+                }
 		
 		*Ealpha = 0.0;
-		*Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
 	}
-	else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+	//else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+	else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
 	{
-		if (runF0orB0val == 0)		gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters[nummodels-1].mfilter);
+                if (reconstruct_init->filtEev == 0)
+                {
+                        if (runF0orB0val == 0)		gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection
+->matched_filters[nummodels-1].mfilter);
+                        *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1);
+                }
+                else
+                {
+                        if (runF0orB0val == 0)		gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection
+->matched_filters[index_E_LIB1row].mfilter);
+                        *Ealpha = reconstruct_init->filtEev;
+                }
 		
-		*Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1);
 		*Ebeta = 0.0;
 	}
 	else
 	{
 		for (int i=0;i<nummodels-1;i++)
 		{
-			if (maxDER == gsl_vector_get(maxDERs,i))
+			//if (maxDER == gsl_vector_get(maxDERs,i))
+                        if (maxDER == gsl_vector_get(maxDERs_LIB1row,i))
 			{
 				if (runF0orB0val == 0)	gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters[i].mfilter);
 				else			gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters_B0[i].mfilter);
@@ -7236,7 +7707,8 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
 
 				break;
 			}
-			else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+			//else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+			else if ((maxDER > gsl_vector_get(maxDERs_LIB1row,i)) && (maxDER < gsl_vector_get(maxDERs_LIB1row,i+1)))
 			{
 				*Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
 				*Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i+1);
@@ -7253,8 +7725,10 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
 				gsl_vector_set_zero(matchedfilterAux);
 				if (runF0orB0val == 0)
 				{
-					if (interpolate_model(&matchedfilterAux,maxDER,reconstruct_init->library_collection->matched_filters[i].mfilter,gsl_vector_get(maxDERs,i),
-						reconstruct_init->library_collection->matched_filters[i+1].mfilter,gsl_vector_get(maxDERs,i+1)))
+                                        /*if (interpolate_model(&matchedfilterAux,maxDER,reconstruct_init->library_collection->matched_filters[i].mfilter,gsl_vector_get(maxDERs,i),
+						reconstruct_init->library_collection->matched_filters[i+1].mfilter,gsl_vector_get(maxDERs,i+1)))*/
+					if (interpolate_model(&matchedfilterAux,maxDER,reconstruct_init->library_collection->matched_filters[i].mfilter,gsl_vector_get(maxDERs_LIB1row,i),
+						reconstruct_init->library_collection->matched_filters[i+1].mfilter,gsl_vector_get(maxDERs_LIB1row,i+1)))
 					{
 						message = "Cannot run interpolate_model routine for model interpolation";
 						EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
@@ -7262,8 +7736,10 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
 				}
 				else
 				{
-					if (interpolate_model(&matchedfilterAux,maxDER,reconstruct_init->library_collection->matched_filters_B0[i].mfilter,gsl_vector_get(maxDERs,i),
-						reconstruct_init->library_collection->matched_filters_B0[i+1].mfilter,gsl_vector_get(maxDERs,i+1)))
+					/*if (interpolate_model(&matchedfilterAux,maxDER,reconstruct_init->library_collection->matched_filters_B0[i].mfilter,gsl_vector_get(maxDERs,i),
+						reconstruct_init->library_collection->matched_filters_B0[i+1].mfilter,gsl_vector_get(maxDERs,i+1)))*/
+                                        if (interpolate_model(&matchedfilterAux,maxDER,reconstruct_init->library_collection->matched_filters_B0[i].mfilter,gsl_vector_get(maxDERs_LIB1row,i),
+						reconstruct_init->library_collection->matched_filters_B0[i+1].mfilter,gsl_vector_get(maxDERs_LIB1row,i+1)))
 					{
 						message = "Cannot run interpolate_model routine for model interpolation";
 						EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
@@ -7283,6 +7759,8 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
 	gsl_vector_memcpy(*matchedfilterFound,&temp.vector);
 
 	gsl_vector_free(matchedfilterFound_aux);
+        
+        gsl_vector_free(maxDERs_LIB1row);
 
 	return(EPOK);
 }
@@ -7416,7 +7894,31 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
 	string message = "";
 	char valERROR[256];
 	
-	long nummodels = maxDERs->size;
+        gsl_vector *maxDERs_LIB1row;
+        long nummodels;
+        int index_E_LIB1row;
+        if (reconstruct_init->filtEev == 0)
+        {
+                nummodels = maxDERs->size;
+                maxDERs_LIB1row = gsl_vector_alloc(nummodels);
+                gsl_vector_memcpy(maxDERs_LIB1row,maxDERs);
+        }
+        else
+        {
+                nummodels = 1;
+                maxDERs_LIB1row = gsl_vector_alloc(1);
+                for (int i=0;i<maxDERs->size;i++)
+                {
+                        if (gsl_vector_get(reconstruct_init->library_collection->energies,i) == reconstruct_init->filtEev)
+                        {
+                                gsl_vector_set(maxDERs_LIB1row,0,gsl_vector_get(maxDERs,i));
+                                index_E_LIB1row = i;
+                                break;
+                        }
+                }
+        }
+        
+	//long nummodels = maxDERs->size;
 	int sizeFilter;
 	if (strcmp(reconstruct_init->FilterDomain,"F") == 0)		sizeFilter = (*optimalfilterFound)->size/2.0;
 	else if (strcmp(reconstruct_init->FilterDomain,"T") == 0)	sizeFilter = (*optimalfilterFound)->size;
@@ -7430,25 +7932,40 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
                 EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
         }
 
-	if (maxDER < gsl_vector_get(maxDERs,0))
-	{
-		//cout<<"A"<<endl;
-		gsl_vector_memcpy(optimalfilterFound_Aux,reconstruct_init->library_collection->optimal_filters[0].ofilter);
+	//if (maxDER < gsl_vector_get(maxDERs,0))
+	if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
+	{  
+                if (reconstruct_init->filtEev == 0)
+                {
+                        gsl_vector_memcpy(optimalfilterFound_Aux,reconstruct_init->library_collection->optimal_filters[0].ofilter);
+                        *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
+                }
+                else
+                {
+                        gsl_vector_memcpy(optimalfilterFound_Aux,reconstruct_init->library_collection->optimal_filters[index_E_LIB1row].ofilter);
+                        *Ebeta = reconstruct_init->filtEev;
+                }
 
 		*Ealpha = 0.0;
-		*Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
 	}
-	else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+	//else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+	else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
 	{
-		gsl_vector_memcpy(optimalfilterFound_Aux,reconstruct_init->library_collection->optimal_filters[nummodels-1].ofilter);
-		//cout<<"B: "<<gsl_vector_get(optimalfilterFound_Aux,0)<<" "<<gsl_vector_get(optimalfilterFound_Aux,1)<<" "<<gsl_vector_get(optimalfilterFound_Aux,optimalfilterFound_Aux->size-1)<<endl;
+                if (reconstruct_init->filtEev == 0)
+                {
+                        gsl_vector_memcpy(optimalfilterFound_Aux,reconstruct_init->library_collection->optimal_filters[nummodels-1].ofilter);
+                        *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1);
+                }
+                else
+                {
+                        gsl_vector_memcpy(optimalfilterFound_Aux,reconstruct_init->library_collection->optimal_filters[index_E_LIB1row].ofilter);
+                        *Ealpha = reconstruct_init->filtEev;
+                }
 		
-		*Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1);
 		*Ebeta = 0.0;
 	}
 	else
 	{
-		//cout<<"C"<<endl;
 		for (int i=0;i<nummodels-1;i++)
 		{
 			if (maxDER == gsl_vector_get(maxDERs,i))
@@ -7491,17 +8008,12 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
 		}
 	}
 	
-	//cout<<"reconstruct_init->library_collection->nfixedfilters: "<<reconstruct_init->library_collection->nfixedfilters<<endl;
-	/*cout<<"sizeFilter: "<<sizeFilter<<endl;
-	cout<<"reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration: "<<reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration<<endl;
-	cout<<"reconstruct_init->library_collection->pulse_templates[0].template_duration: "<<reconstruct_init->library_collection->pulse_templates[0].template_duration<<endl;*/
 	gsl_vector *fixedlengths = gsl_vector_alloc(reconstruct_init->library_collection->nfixedfilters);
 	if ((reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration != reconstruct_init->library_collection->pulse_templates[0].template_duration) &&
 	   (reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration != -999)
 	   && (reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration != 999))
 	   
 	{
-		//cout<<"PasoMF0"<<endl;
 		for (int i=0;i<reconstruct_init->library_collection->nfixedfilters-1;i++)
 		{
 			gsl_vector_set(fixedlengths,reconstruct_init->library_collection->nfixedfilters-1-i,pow(2,1+i));
@@ -7510,13 +8022,11 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
 	}
 	else
 	{
-		//cout<<"PasoMF1"<<endl;
 		for (int i=0;i<reconstruct_init->library_collection->nfixedfilters;i++)
 		{
 			gsl_vector_set(fixedlengths,reconstruct_init->library_collection->nfixedfilters-1-i,pow(2,1+i));
 		}
 	}
-	//for (int i=0;i<fixedlengths->size;i++)	cout<<i<<" "<<gsl_vector_get(fixedlengths,i)<<endl;
 		
 	int index = 0;
 	gsl_vector_view temp;
@@ -7537,6 +8047,8 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
 	}
 	
 	gsl_vector_free(optimalfilterFound_Aux);
+        
+        gsl_vector_free(maxDERs_LIB1row);
 
 	return(EPOK);
 }
@@ -7566,8 +8078,8 @@ int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
 {
 	string message = "";
 	char valERROR[256];
-	
-	long nummodels = maxDERs->size;
+        
+        long nummodels = maxDERs->size;
 	int sizeFilter = (*optimalfilterFound)->size;
 	
 	gsl_vector *optimalfilterFound_Aux;
@@ -7705,7 +8217,7 @@ int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
 	gsl_vector_free(optimalfilterFound_Aux);
 	gsl_vector_free(PabFound_Aux);
 	gsl_vector_free(fixedlengths);
-
+        
 	return(EPOK);
 }
 /*xxxx end of SECTION B6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -7856,7 +8368,31 @@ int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *rec
 	string message = "";
 	char valERROR[256];
 	
-	long nummodels = maxDERs->size;
+        gsl_vector *maxDERs_LIB1row;
+        long nummodels;
+        int index_E_LIB1row;
+        if (reconstruct_init->filtEev == 0)
+        {
+                nummodels = maxDERs->size;
+                maxDERs_LIB1row = gsl_vector_alloc(nummodels);
+                gsl_vector_memcpy(maxDERs_LIB1row,maxDERs);
+        }
+        else
+        {
+                nummodels = 1;
+                maxDERs_LIB1row = gsl_vector_alloc(1);
+                for (int i=0;i<maxDERs->size;i++)
+                {
+                        if (gsl_vector_get(reconstruct_init->library_collection->energies,i) == reconstruct_init->filtEev)
+                        {
+                                gsl_vector_set(maxDERs_LIB1row,0,gsl_vector_get(maxDERs,i));
+                                index_E_LIB1row = i;
+                                break;
+                        }
+                }
+        }
+        
+	//long nummodels = maxDERs->size;
 	int sizePRCLOFWM = (*PRCLOFWMFound)->size2;
 	
 	gsl_vector *PRCLOFWMFound_Aux;
@@ -7868,32 +8404,50 @@ int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *rec
                 EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
         }
 
-	if (maxDER < gsl_vector_get(maxDERs,0))
+	//if (maxDER < gsl_vector_get(maxDERs,0))
+	if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
 	{
-		gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,0);
+                if (reconstruct_init->filtEev == 0)
+                {
+                        gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,0);
+                        *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
+                }
+                else
+                {
+                        gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,index_E_LIB1row);
+                        *Ebeta = reconstruct_init->filtEev;
+                }
 		
 		*Ealpha = 0.0;
-		*Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
 	}
-	else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+	//else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+	else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
 	{
-		gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,nummodels-1);
-		
-		*Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-2);
-		*Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1);
+                if (reconstruct_init->filtEev == 0)
+                {
+                        gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,nummodels-1);
+                        *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,0);
+                }
+                else
+                {
+                        gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,index_E_LIB1row);
+                        *Ealpha = reconstruct_init->filtEev;
+                }
+                
+                *Ebeta = 0.0;
 	}
 	else
 	{
 		for (int i=0;i<nummodels-1;i++)
 		{
-			if (maxDER == gsl_vector_get(maxDERs,i))
+			if (maxDER == gsl_vector_get(maxDERs_LIB1row,i))
 			{
 				gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,i);
 				
 				*Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
 				*Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i);
 			}
-			else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+			else if ((maxDER > gsl_vector_get(maxDERs_LIB1row,i)) && (maxDER < gsl_vector_get(maxDERs_LIB1row,i+1)))
 			{		
 				gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,i);
 				
@@ -7943,6 +8497,8 @@ int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *rec
 	
 	gsl_vector_free(PRCLOFWMFound_Aux);
 	gsl_vector_free(fixedlengths);
+        
+        gsl_vector_free(maxDERs_LIB1row);
 
 	return(EPOK);
 }
@@ -8242,22 +8798,32 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 	ReconstructInitSIRENA *reconstruct_init, int domain, double samprate, gsl_vector *Pab, gsl_matrix *PRCLWN, gsl_matrix *PRCLOFWM, double *calculatedEnergy, 
 	int numlags, double *tstartNewDev)
 {
-	string message = "";
+        string message = "";
 	char valERROR[256];
 
 	double LagsOrNot = reconstruct_init->LagsOrNot;
 	
 	//cout<<gsl_vector_get(vector,0)<<" "<<gsl_vector_get(vector,1)<<" "<<gsl_vector_get(vector,vector->size-1)<<endl;
 	//for (int i=0;i<vector->size;i++)	cout<<i<<" "<<gsl_vector_get(vector,i)<<" "<<gsl_vector_get(filter,i)<<endl;
-	//cout<<"vector->size: "<<vector->size<<endl;
+	/*cout<<"vector->size: "<<vector->size<<endl;
+        cout<<"filterFFT->size: "<<filterFFT->size<<endl;
+        cout<<"filter: "<<gsl_vector_get(filter,0)<<endl;
+        cout<<"numlags: "<<numlags<<endl;
+        cout<<"pulseGrade: "<<pulseGrade<<endl;*/
 	
 	// LowRes
+        if (vector->size == 1)
+        {
+                *calculatedEnergy = -1.0;
+        }
 	/*if (pulseGrade == 3)
 	{
 	    *calculatedEnergy = -1;
 	}
 	else
 	{*/
+        else
+        {
 		if ((runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"NSD") == 0))
 		// OPTFILT	I2R or I2RALL or I2RNOL or I2RFITTED => OPTFILT
 		{
@@ -8311,7 +8877,7 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 						}
 						//cout<<"E="<<gsl_vector_get(calculatedEnergy_vector,j)<<" STD="<<SelectedTimeDuration<<endl;
 						gsl_vector_set(calculatedEnergy_vector,j,gsl_vector_get(calculatedEnergy_vector,j)*2*SelectedTimeDuration);
-						//cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", E="<<gsl_vector_get(calculatedEnergy_vector,j)<<endl;
+						//cout<<"lagE="<<gsl_vector_get(lags_vector,j)<<", E="<<gsl_vector_get(calculatedEnergy_vector,j)<<endl;
 					}
 
 					if ((pulseGrade == 3) || (LagsOrNot == 0))	*calculatedEnergy = gsl_vector_get(calculatedEnergy_vector,0);
@@ -8403,10 +8969,13 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 							//cout<<i<<" "<<gsl_complex_abs(gsl_vector_complex_get(vectorFFT,i))<<" "<<gsl_complex_abs(gsl_vector_complex_get(filterFFT,i))<<" "<<GSL_REAL(gsl_vector_complex_get(calculatedEnergy_vectorcomplex,j))<<","<<GSL_IMAG(gsl_vector_complex_get(calculatedEnergy_vectorcomplex,j))<<endl;
 						}
 						gsl_vector_set(calculatedEnergy_vector,j,gsl_complex_abs(gsl_vector_complex_get(calculatedEnergy_vectorcomplex,j)));
-						//cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", E="<<gsl_vector_get(calculatedEnergy_vector,j)<<endl;
+						//cout<<j<<" lagE="<<gsl_vector_get(lags_vector,j)<<", E="<<gsl_vector_get(calculatedEnergy_vector,j)<<endl;
 					}
 										
-					if ((pulseGrade == 3) || (LagsOrNot == 0))	*calculatedEnergy = gsl_vector_get(calculatedEnergy_vector,0);
+					if ((pulseGrade == 3) || (LagsOrNot == 0))	
+                                        {
+                                                *calculatedEnergy = gsl_vector_get(calculatedEnergy_vector,0);
+                                        }
 					else
 					{
 						int indexmax = gsl_vector_max_index(calculatedEnergy_vector);
@@ -8622,7 +9191,8 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 				gsl_vector *P_Pab = gsl_vector_alloc(vector->size);
 				gsl_vector *Dab = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration);
 				gsl_matrix *Wm_short = gsl_matrix_alloc(vector->size,vector->size);
-				gsl_permutation *perm = gsl_permutation_alloc(vector->size);
+				//gsl_permutation *perm = 0;
+                                gsl_permutation *perm = gsl_permutation_alloc(vector->size);
 				int s = 0;
 			      
 				gsl_matrix_get_row(Dab,reconstruct_init->library_collection->DAB,indexEalpha);  // Dab
@@ -8663,6 +9233,8 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 					gsl_matrix *weightAlphamatrixSHORT = gsl_matrix_alloc(vector->size,vector->size);
 					gsl_matrix *weightBetamatrixSHORT = gsl_matrix_alloc(vector->size,vector->size);
 					gsl_matrix_view tempm;
+                                        
+                                        perm  = gsl_permutation_alloc(vector->size);
 					
 					gsl_matrix_get_row(covarianceAlphavector,reconstruct_init->library_collection->V,indexEalpha);
 					vector2matrix(covarianceAlphavector,&covarianceAlphamatrix);
@@ -8796,8 +9368,11 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 			}
 		}
 	//}
+        }
 	//cout<<"calculatedEnergy="<<*calculatedEnergy<<endl;
 	//std::cout << std::setprecision(9) << *calculatedEnergy << '\n';
+        
+        //if ((pulseGrade != 3)&&(*calculatedEnergy<6000.0))    cout<<*calculatedEnergy<<endl;
 
 	return EPOK;
 }

@@ -41,7 +41,7 @@ The objective of this package is to support general utilities.
 MAP OF SECTIONS IN THIS FILE::
 
  - 1. polyFit
- - 2. polyFitLineal
+ - 2. polyFitLinear
  - 3. FFT
  - 4. FFTinverse
  - 5. gsl_vector_sqrtIFCA
@@ -107,7 +107,7 @@ int polyFit (gsl_vector *x_fit, gsl_vector *y_fit, double *a, double *b, double 
 
 
 /***** SECTION 2 ************************************************************
-* polyFitLineal: This function makes a linear fitting: ax + b using the regression linear analysis
+* polyFitLinear: This function makes a linear fitting: ax + b using the regression linear analysis
 *                To measure how well the model agrees with the data, the chi-square merit function is used
 * 
 * Parameters:
@@ -133,10 +133,10 @@ int polyFitLinear (gsl_vector *x_fit, gsl_vector *y_fit, double *a, double *b)
 		
 		xy = xy + ( gsl_vector_get(x_fit,i)* gsl_vector_get(y_fit,i));
 	}
-
+	
 	*a = (n*xy-x*y) / (n*x2-pow(x,2));
-	*b = y/n - (*a)*x/n;
-	 	
+        *b = y/n - (*a)*x/n;
+        	 	
 	return EPOK;
 }
 /*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

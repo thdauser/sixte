@@ -107,12 +107,21 @@ struct Parameters {
 	
 	//Number of samples for threshold trespassing
 	double samplesUp;
+        
+        //Number of samples below the threshold to look for other pulse
+	double samplesDown;
 	
 	//Number of standard deviations in the kappa-clipping process for threshold estimation
 	double nSgms;
+        
+        //Detect secondary pulses or not
+        int detectSP;
 
 	//Calibration run (0) or energy reconstruction run (1)?
 	int mode;
+        
+        //DetectionMode: Adjusted Derivative(AD) or Alternative1(A1)
+	char detectionMode[2];
 
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
@@ -149,6 +158,9 @@ struct Parameters {
 	
 	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA **/
 	char EnergyMethod[10];
+        
+        //Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RALL, I2RNOL and I2RFITTED)
+        double filtEev;
 	
 	//Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
 	char OFNoise[8];

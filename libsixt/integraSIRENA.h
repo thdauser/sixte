@@ -314,6 +314,9 @@ typedef struct PulseDetected
 
 	/** Quality of the Pulse */
 	double quality;
+        
+        /**Number of lags used in detection*/
+        int numLagsUsed;
 #ifdef __cplusplus
 	PulseDetected();
 	//~PulseDetected(){gsl_vector_free(pulse_adc);};
@@ -325,11 +328,14 @@ typedef struct PulsesCollection
 {
 	/** Number of detected pulses in the structure. **/
 	int ndetpulses;
+        
+        /** Current size of the array **/
+	int size;
 
 	/** Array containing all the pulses detetected in record**/
 	PulseDetected* pulses_detected;
 #ifdef __cplusplus
-	PulsesCollection():ndetpulses(0), pulses_detected(0){}
+	PulsesCollection():ndetpulses(0), pulses_detected(0), size(0){}
 	//~PulsesCollection(){delete [] pulses_detected;}
 #endif
 
@@ -370,9 +376,15 @@ typedef struct ReconstructInitSIRENA
 	
 	/** Detection samplesUp (samples to confirm threshold overcoming) **/
 	double samplesUp;
+        
+        /** A1 Detection samplesDown (samples below the threshold to look for other pulse) **/
+	double samplesDown;
 
 	/** Detection nSgms (sigmas to establish a threshold for detection) **/
 	double nSgms;
+        
+        // Detect secondary pulses or not
+        int detectSP;
 
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
@@ -397,6 +409,9 @@ typedef struct ReconstructInitSIRENA
 
 	/** Run mode (0: calibration/lib creation  1:energy reconstruction) **/
 	int mode;
+        
+        /** Detection Mode: AD (Adjusted Derivative) or A1 (Alternative1) **/
+	char detectionMode[2];
 
 	/** Noise spectrum **/
 	NoiseSpec* noise_spectrum;
@@ -409,6 +424,8 @@ typedef struct ReconstructInitSIRENA
 
 	/** Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA **/
 	char EnergyMethod[10];
+        
+        double filtEev;
 	
 	//Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
 	char OFNoise[8];
@@ -485,9 +502,9 @@ extern "C"
 #endif
 
 void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, fitsfile *fptr, char* const library_file,
-	char* const event_file,	int pulse_length, double scaleFactor, double samplesUp, double nSgms,
-	int mode, double LrsT, double LbT, char* const noise_file, char* filter_domain,
-	char* filter_method, char* energy_method, char* ofnoise,int lagsornot, int ofiter, char oflib, char *ofinterp, char* oflength_strategy, int oflength,
+	char* const event_file,	int pulse_length, double scaleFactor, double samplesUp, double samplesDown, double nSgms, int detectSP,
+	int mode, char* detectionMode,double LrsT, double LbT, char* const noise_file, char* filter_domain,
+	char* filter_method, char* energy_method, double filtEev, char* ofnoise, int lagsornot, int ofiter, char oflib, char *ofinterp, char* oflength_strategy, int oflength,
 	double monoenergy, char hduPRECALWN, char hduPRCLOFWM, int largeFilter, int interm, char* detectFile, char* filterFile, char clobber, int maxPulsesPerRecord, double SaturationValue,
 	int tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status);
 
@@ -517,7 +534,7 @@ extern "C"
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 
-LibraryCollection* getLibraryCollection(const char* const filename, int mode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, int* const status);
+LibraryCollection* getLibraryCollection(const char* const filename, int mode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int* const status);
 
 NoiseSpec* getNoiseSpec(const char* const filename,int mode,int hduPRCLOFWM,char *energy_method,char *ofnoise,char *filter_method,int* const status);
 

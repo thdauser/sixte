@@ -1,3 +1,4 @@
+
 /***********************************************************************
    This file is part of SIXTE/SIRENA software.
 
@@ -54,6 +55,8 @@ MAP OF SECTIONS IN THIS FILE:
  - 12. findTstartCAL
  - 13. InitialTriggering
  - 14. FindSecondaries
+ - 15. find_model_samp1DERsNoReSCLD
+ - 16. smoothDerivative
 
 *******************************************************************************/
 
@@ -355,6 +358,89 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 
 	// Establish the threshold as mean+nSigmas*sigma
 	*threshold = mean2+nSigmas*sg2;	// HARDPOINT!!!!!!!!!!!!!!!!!!! (nSigmas)
+	//cout<<*threshold<<endl;
+	//cout<<"threshold="<<*threshold<<endl;
+        //cout<<"mean2="<<mean2<<" sigma="<<sg2<<endl;
+        	
+	////////////////////////////////////////////////////////////////
+	/*size = 2000;
+        double dataNew[size];
+        double sg2New;
+	// Median
+	for (int i=0;i<size;i++)
+	{
+		dataNew[i] = gsl_vector_get(invector,i);
+	}
+	gsl_sort(dataNew,1,size);
+	median = gsl_stats_median_from_sorted_data (dataNew,1,size);
+
+	gsl_vector_memcpy(invectorNew,invector);
+
+	// Iterate until no points out of the maximum excursion (kappa*sigma)
+	do
+	{
+		if ((size-boxLPF-1 < 1) || (size-boxLPF-1 >invectorNew->size))
+		{
+			sprintf(valERROR,"%d",__LINE__+5);
+			string str(valERROR);
+			message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+			EP_PRINT_ERROR(message,EPFAIL);
+		}
+		temp = gsl_vector_subvector(invectorNew,0,size);
+		if (findMeanSigma (&temp.vector, &mean1, &sg1))
+		{
+			message = "Cannot run findMeanSigma routine for kappa-sigma iteration";
+			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
+		i = 0;
+		cnt = 0;
+
+		while (i<invectorNew->size)
+		{
+			if ((gsl_vector_get(invectorNew,i) >= mean1 + kappa*sg1) || (gsl_vector_get(invectorNew,i) <= mean1 - kappa*sg1))
+			// HARDPOINT!!!!!!!!!!!!!!!!!!! (kappa)
+			{
+				if ((i < 0) || (i >(invectorNew)->size-1))
+				{
+					sprintf(valERROR,"%d",__LINE__+5);
+					string str(valERROR);
+					message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+					EP_PRINT_ERROR(message,EPFAIL);
+				}
+				gsl_vector_set(invectorNew,i,median);
+				cnt++;
+			}
+			i++;
+		}
+
+		if (cnt != 0)
+		// Some points of the invector have been replaced with the median
+		{
+			temp = gsl_vector_subvector(invectorNew,0,size);
+			if (findMeanSigma (&temp.vector, &mean2, &sg2New))
+			{
+				message = "Cannot run findMeanSigma routine for kappa-sigma iteration after replacement with the median";
+				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+			}
+		}
+		else
+		// No points of the invector have been replaced with the median
+		{
+			mean2 =mean1;
+			sg2New = sg1;
+		}
+
+	} while (fabs((mean2-mean1)/mean1)>(stopCriteria/100.0));	// HARDPOINT!!!!!!!!!!!!!!!!!!! (stopCriteria)
+
+	// Establish the threshold as mean+nSigmas*sigma
+	double thresholdNew = mean2+nSigmas*sg2New;	// HARDPOINT!!!!!!!!!!!!!!!!!!! (nSigmas)
+	cout<<thresholdNew<<endl;
+	//cout<<"thresholdNew="<<thresholdNew<<endl;
+        //cout<<"sigmaNew="<<sg2New<<endl;
+        
+        //cout<<"theshold-thesholdNew="<<(*threshold-thresholdNew)/sg2<<"sgs"<<endl;
+        //cout<<"theshold-thesholdNew="<<(*threshold-thresholdNew)/sg2New<<"sgsNew"<<endl;*/
+	////////////////////////////////////////////////////////////////
 
 	gsl_vector_free(invectorNew);
 
@@ -419,668 +505,668 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 	{
 		gsl_vector_set(tstart,i,(int)(gsl_vector_get(tstart,i)));	
 	}
-
-		// First pulse into a record
-	//  Current pulse
-	//      //\\          /\     /\       /\
-	// (1) //  \\  (2)   /  \(3)/  \ (4) /  \    (5)
-	// ----      --------    ---    -----    ----------
-	{
-		if (gsl_vector_get(tstart,0)>=gsl_vector_get(*lb,0))
-		// tstart>=lb => Sum lb samples
-		// length_(1)>=lb
-		{
-			if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-			{
-				sprintf(valERROR,"%d",__LINE__-2);
-				string str(valERROR);
-				message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-				EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-			}
-
-			if ((gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) > vectorin->size-2)
-				|| (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0))))
-			{
-				sprintf(valERROR,"%d",__LINE__+5);
-				string str(valERROR);
-				message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-				EP_PRINT_ERROR(message,EPFAIL);
-			}
-			temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
-			if (gsl_vector_memcpy(input, &temp.vector) != 0)
-			{
-				sprintf(valERROR,"%d",__LINE__-2);
-				string str(valERROR);
-				message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-				EP_PRINT_ERROR(message,EPFAIL);
-			}
-
-			// Sum all the elements of 'input'
-			if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-			{
-				message = "Cannot run gsl_vector_Sumsubvector routine when tstart>=lb";
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			gsl_vector_free(input);
-		}
-		else if ((gsl_vector_get(tstart,0)<gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,0)>1))
-		// 0<tstart<lb => Sum the available number of samples (although the available number of samples was lower than lb)
-		// 0<length_(1)<lb
-		{
-			if ((input = gsl_vector_alloc(gsl_vector_get(tstart,0))) == 0)
-			{
-				sprintf(valERROR,"%d",__LINE__-2);
-				string str(valERROR);
-				message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-				EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-			}
-
-			if ((gsl_vector_get(tstart,0) < 1) || (gsl_vector_get(tstart,0) >vectorin->size))
-			{
-				sprintf(valERROR,"%d",__LINE__+5);
-				string str(valERROR);
-				message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-				EP_PRINT_ERROR(message,EPFAIL);
-			}
-			temp = gsl_vector_subvector(vectorin,0,gsl_vector_get(tstart,0));
-			if (gsl_vector_memcpy(input, &temp.vector) != 0)
-			{
-				sprintf(valERROR,"%d",__LINE__-2);
-				string str(valERROR);
-				message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-				EP_PRINT_ERROR(message,EPFAIL);
-			}
-
-			// Sum all the elements of 'input'
-			if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-			{
-				message = "Cannot run gsl_vector_Sumsubvector routine when tstart<lb";
-				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-			}
-			gsl_vector_set(*lb,0, gsl_vector_get(tstart,0));
-			gsl_vector_free(input);
-		}
-		else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
-		{
-			for (int j=1;j<nPulses;j++)
-			// (2),(3),(4) and (5) are analyzed
-			// When 0<length_(j)<lb => 'break' => Out of the 'for' loop
-			{
-				tendprev = gsl_vector_get(tstart,j-1)+sizepulse-1;
-				if (tendprev >= vectorin->size)
-				{
-					tendprev = vectorin->size-1;
-				}
-
-				if (gsl_vector_get(tstart,j)-tendprev > 0)
-				{
-					if (gsl_vector_get(tstart,j)-tendprev >= gsl_vector_get(*lb,0))
-					// length_(j)>=lb (j/=nPulses)
-					{
-						if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-						{
-							sprintf(valERROR,"%d",__LINE__-2);
-							string str(valERROR);
-							message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-							EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-						}
-
-						if ((gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) > vectorin->size-2)
-							|| (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0))))
-						{
-							sprintf(valERROR,"%d",__LINE__+5);
-							string str(valERROR);
-							message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-							EP_PRINT_ERROR(message,EPFAIL);
-						}
-						temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
-						if (gsl_vector_memcpy(input, &temp.vector) != 0)
-						{
-							sprintf(valERROR,"%d",__LINE__-2);
-							string str(valERROR);
-							message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-							EP_PRINT_ERROR(message,EPFAIL);
-						}
-
-						// Sum all the elements of input
-						if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-						{
-							message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
-							EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-						}
-						gsl_vector_free(input);
-
-						break;
-					}
-					else if ((gsl_vector_get(tstart,j)-tendprev < gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,j)-tendprev > 1))
-					// 0<length_(j)<lb (j/=nPulses)
-					{
-						if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j)-tendprev-1)) == 0)
-						{
-							sprintf(valERROR,"%d",__LINE__-2);
-							string str(valERROR);
-							message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-							EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-						}
-
-						if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-							|| (gsl_vector_get(tstart,j)-tendprev-1 < 1) || (gsl_vector_get(tstart,j)-tendprev-1 >vectorin->size-(tendprev+1)))
-						{
-							sprintf(valERROR,"%d",__LINE__+5);
-							string str(valERROR);
-							message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-							EP_PRINT_ERROR(message,EPFAIL);
-						}
-						temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j)-tendprev-1);
-						if (gsl_vector_memcpy(input, &temp.vector) != 0)
-						{
-							sprintf(valERROR,"%d",__LINE__-2);
-							string str(valERROR);
-							message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-							EP_PRINT_ERROR(message,EPFAIL);
-						}
-						gsl_vector_set(*lb,0,gsl_vector_get(tstart,j)-tendprev-1);
-
-						// Sum all the elements of input
-						if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-						{
-							message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
-							EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-						}
-						gsl_vector_free(input);
-
-						break;
-					}
-					else
-					{
-						for (int j=0;j<nPulses;j++)	// From the current pulse
-						// (2),(3),(4) and (5) are analyzed
-						// When 0<length_(j)<lb => 'break' => Out of the 'for' loop
-						{
-							tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
-							if (tendprev >= vectorin->size)
-							{
-								tendprev = vectorin->size-1;
-							}
-							if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
-							{
-								if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,0))
-								{
-									if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-									}
-
-									if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) > vectorin->size-2)
-										|| (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0))))
-									{
-										sprintf(valERROR,"%d",__LINE__+5);
-										string str(valERROR);
-										message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-									temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
-									if (gsl_vector_memcpy(input, &temp.vector) != 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-
-									// Sum all the elements of input
-									if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-									{
-										message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
-										EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-									}
-									gsl_vector_free(input);
-
-									break;
-								}
-								else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,0)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
-								{
-									if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-									}
-
-									if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-										|| (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
-									{
-										sprintf(valERROR,"%d",__LINE__+5);
-										string str(valERROR);
-										message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-									temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
-									if (gsl_vector_memcpy(input, &temp.vector) != 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-
-									// Sum all the elements of input
-									if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-									{
-										message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
-										EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-									}
-									if (/*(0 < 0) || */(0 >(*lb)->size-1))
-									{
-										sprintf(valERROR,"%d",__LINE__+5);
-										string str(valERROR);
-										message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-									gsl_vector_set(*lb,0,gsl_vector_get(tstart,j+1)-tendprev-1);
-									gsl_vector_free(input);
-
-									break;
-								}
-							}
-
-							if (j == nPulses-1)	// Last pulse into the record
-							// (5) is analyzed
-							{
-								if (vectorin->size-tendprev >= gsl_vector_get(*lb,0))
-								{
-									if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-									}
-
-									if ((tendprev < 0) || (tendprev > vectorin->size-2)
-										|| (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-tendprev))
-									{
-										sprintf(valERROR,"%d",__LINE__+5);
-										string str(valERROR);
-										message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-									temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,0));
-									if (gsl_vector_memcpy(input, &temp.vector) != 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-
-									// Sum all the elements of input
-									if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-									{
-										message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-										EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-									}
-									gsl_vector_free(input);
-
-									break;
-								}
-								else if ((vectorin->size-tendprev < gsl_vector_get(*lb,0)) && (vectorin->size-tendprev > 1))
-								{
-									if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-									}
-
-									if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-										|| (vectorin->size-tendprev-1 < 1))
-									{
-										sprintf(valERROR,"%d",__LINE__+5);
-										string str(valERROR);
-										message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-									temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
-									if (gsl_vector_memcpy(input, &temp.vector) != 0)
-									{
-										sprintf(valERROR,"%d",__LINE__-2);
-										string str(valERROR);
-										message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-									if (/*(i < 0) || */(0 >(*lb)->size-1))
-									{
-										sprintf(valERROR,"%d",__LINE__+5);
-										string str(valERROR);
-										message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-										EP_PRINT_ERROR(message,EPFAIL);
-									}
-									gsl_vector_set(*lb,0,vectorin->size-tendprev-1);
-
-									// Sum all the elements of input
-									if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-									{
-										message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-										EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-									}
-									gsl_vector_free(input);
-
-									break;
-								}
-							}
-						}//for 0 to N
-					}
-				}
-			}
-		}
-	}// end of the first pulse scope
 	
-		for (int i=1;i<nPulses;++i)//Starting in the second pulse
+        for (int i=0;i<nPulses;i++)
+        {
+                if (i == 0)     // First pulse into a record		
+                //  Current pulse
+                //      //\\          /\     /\       /\
+                // (1) //  \\  (2)   /  \(3)/  \ (4) /  \    (5)
+                // ----      --------    ---    -----    ----------
+                {
+                        if (gsl_vector_get(tstart,0)>=gsl_vector_get(*lb,0))
+                        // tstart>=lb => Sum lb samples
+                        // length_(1)>=lb
+                        {
+                                if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+
+                                if ((gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) > vectorin->size-2)
+                                        || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0))))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
+
+                                // Sum all the elements of 'input'
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                        message = "Cannot run gsl_vector_Sumsubvector routine when tstart>=lb";
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input);
+                        }
+                        else if ((gsl_vector_get(tstart,0)<gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,0)>1))
+                        // 0<tstart<lb => Sum the available number of samples (although the available number of samples was lower than lb)
+                        // 0<length_(1)<lb
+                        {
+                                if ((input = gsl_vector_alloc(gsl_vector_get(tstart,0))) == 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+
+                                if ((gsl_vector_get(tstart,0) < 1) || (gsl_vector_get(tstart,0) >vectorin->size))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,0,gsl_vector_get(tstart,0));
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
+
+                                // Sum all the elements of 'input'
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                        message = "Cannot run gsl_vector_Sumsubvector routine when tstart<lb";
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_set(*lb,0, gsl_vector_get(tstart,0));
+                                gsl_vector_free(input);
+                        }
+                        else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
+                        {
+                                for (int j=1;j<nPulses;j++)
+                                // (2),(3),(4) and (5) are analyzed
+                                // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
+                                {
+                                        tendprev = gsl_vector_get(tstart,j-1)+sizepulse-1;
+                                        if (tendprev >= vectorin->size)
+                                        {
+                                                tendprev = vectorin->size-1;
+                                        }
+
+                                        if (gsl_vector_get(tstart,j)-tendprev > 0)
+                                        {
+                                                if (gsl_vector_get(tstart,j)-tendprev >= gsl_vector_get(*lb,0))
+                                                // length_(j)>=lb (j/=nPulses)
+                                                {
+                                                        if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                        }
+
+                                                        if ((gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) > vectorin->size-2)
+                                                                || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0))))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
+                                                        if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+
+                                                        // Sum all the elements of input
+                                                        if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                        {
+                                                                message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
+                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                        }
+                                                        gsl_vector_free(input);
+
+                                                        break;
+                                                }
+                                                else if ((gsl_vector_get(tstart,j)-tendprev < gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,j)-tendprev > 1))
+                                                // 0<length_(j)<lb (j/=nPulses)
+                                                {
+                                                        if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j)-tendprev-1)) == 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                        }
+
+                                                        if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                                                || (gsl_vector_get(tstart,j)-tendprev-1 < 1) || (gsl_vector_get(tstart,j)-tendprev-1 >vectorin->size-(tendprev+1)))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j)-tendprev-1);
+                                                        if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        gsl_vector_set(*lb,0,gsl_vector_get(tstart,j)-tendprev-1);
+
+                                                        // Sum all the elements of input
+                                                        if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                        {
+                                                                message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
+                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                        }
+                                                        gsl_vector_free(input);
+
+                                                        break;
+                                                }
+                                                else
+                                                {
+                                                        for (int j=0;j<nPulses;j++)	// From the current pulse
+                                                        // (2),(3),(4) and (5) are analyzed
+                                                        // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
+                                                        {
+                                                                tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
+                                                                if (tendprev >= vectorin->size)
+                                                                {
+                                                                        tendprev = vectorin->size-1;
+                                                                }
+                                                                if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
+                                                                {
+                                                                        if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,0))
+                                                                        {
+                                                                                if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                                                }
+
+                                                                                if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) > vectorin->size-2)
+                                                                                        || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0))))
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                                                        string str(valERROR);
+                                                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+                                                                                temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
+                                                                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+
+                                                                                // Sum all the elements of input
+                                                                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                                                {
+                                                                                        message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                                                }
+                                                                                gsl_vector_free(input);
+
+                                                                                break;
+                                                                        }
+                                                                        else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,0)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
+                                                                        {
+                                                                                if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                                                }
+
+                                                                                if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                                                                        || (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                                                        string str(valERROR);
+                                                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+                                                                                temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                                                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+
+                                                                                // Sum all the elements of input
+                                                                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                                                {
+                                                                                        message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                                                }
+                                                                                if (/*(0 < 0) || */(0 >(*lb)->size-1))
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                                                        string str(valERROR);
+                                                                                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+                                                                                gsl_vector_set(*lb,0,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                                                                gsl_vector_free(input);
+
+                                                                                break;
+                                                                        }
+                                                                }
+
+                                                                if (j == nPulses-1)	// Last pulse into the record
+                                                                // (5) is analyzed
+                                                                {
+                                                                        if (vectorin->size-tendprev >= gsl_vector_get(*lb,0))
+                                                                        {
+                                                                                if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                                                }
+
+                                                                                if ((tendprev < 0) || (tendprev > vectorin->size-2)
+                                                                                        || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-tendprev))
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                                                        string str(valERROR);
+                                                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+                                                                                temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,0));
+                                                                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+
+                                                                                // Sum all the elements of input
+                                                                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                                                {
+                                                                                        message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                                                }
+                                                                                gsl_vector_free(input);
+
+                                                                                break;
+                                                                        }
+                                                                        else if ((vectorin->size-tendprev < gsl_vector_get(*lb,0)) && (vectorin->size-tendprev > 1))
+                                                                        {
+                                                                                if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                                                }
+
+                                                                                if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                                                                        || (vectorin->size-tendprev-1 < 1))
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                                                        string str(valERROR);
+                                                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+                                                                                temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
+                                                                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__-2);
+                                                                                        string str(valERROR);
+                                                                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+                                                                                if (/*(i < 0) || */(0 >(*lb)->size-1))
+                                                                                {
+                                                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                                                        string str(valERROR);
+                                                                                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                                }
+                                                                                gsl_vector_set(*lb,0,vectorin->size-tendprev-1);
+
+                                                                                // Sum all the elements of input
+                                                                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                                                {
+                                                                                        message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                                                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                                                }
+                                                                                gsl_vector_free(input);
+
+                                                                                break;
+                                                                        }
+                                                                }
+                                                        }//for 0 to N
+                                                }
+                                        }
+                                }
+                        }
+                }// end of the first pulse scope
+                else    // Not first pulse into a record
+                //             Current pulse
+		//      /\          //\\     /\       /\
+		// (1) /  \  (2)   //  \\(3)/  \ (4) /  \    (5)
+		// ----    --------      ---    -----    ----------
 		{	
-			// Not first pulse into a record
-			//             Current pulse
-			//      /\          //\\     /\       /\
-			// (1) /  \  (2)   //  \\(3)/  \ (4) /  \    (5)
-			// ----    --------      ---    -----    ----------
-			{
-				tendprev = gsl_vector_get(tstart,i-1)+sizepulse-1;
-				if (gsl_vector_get(tstart,i)-tendprev >= gsl_vector_get(*lb,i))
-				// tstart_(i)-tend_(i-1)>=lb => Sum lb samples
-				// length_(2)>=lb
-				{
-					if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
-					{
-						sprintf(valERROR,"%d",__LINE__-2);
-						string str(valERROR);
-						message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-					}
-			  
-					if ((gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) > vectorin->size-2)
-					|| (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i))))
-					{
-						sprintf(valERROR,"%d",__LINE__+5);
-						string str(valERROR);
-						message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL);
-					}
-					temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
-					if (gsl_vector_memcpy(input, &temp.vector) != 0)
-					{
-						sprintf(valERROR,"%d",__LINE__-2);
-						string str(valERROR);
-						message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL);
-					}
+			
+                        tendprev = gsl_vector_get(tstart,i-1)+sizepulse-1;
+                        if (gsl_vector_get(tstart,i)-tendprev >= gsl_vector_get(*lb,i))
+                        // tstart_(i)-tend_(i-1)>=lb => Sum lb samples
+                        // length_(2)>=lb
+                        {
+                                if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                    
+                                if ((gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) > vectorin->size-2)
+                                || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i))))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
 
-					// Sum all the elements of input
-					if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-					{
-						message = "Cannot run gsl_vector_Sumsubvector routine length_(2)>=lb";
-						EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-					}
-					gsl_vector_free(input);
-				}
-				else if ((gsl_vector_get(tstart,i)-tendprev<gsl_vector_get(*lb,i)) && (gsl_vector_get(tstart,i)-tendprev>1))
-				// 0<tstart_(i)-tend_(i-1)<lb => Sum the available number of samples (although the available number of samples was lower than lb)
-				// 0<length_(2)<lb
-				{
-					if ((input = gsl_vector_alloc(gsl_vector_get(tstart,i)-tendprev-1)) == 0)
-					{
-						sprintf(valERROR,"%d",__LINE__-2);
-						string str(valERROR);
-						message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-					}
-				
-					if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-						|| (gsl_vector_get(tstart,i)-tendprev-1 < 1) || (gsl_vector_get(tstart,i)-tendprev-1 > vectorin->size-(tendprev+1)))
-					{
-						sprintf(valERROR,"%d",__LINE__+5);
-						string str(valERROR);
-						message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL);
-					}
-					temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,i)-tendprev-1);
-					if (gsl_vector_memcpy(input, &temp.vector) != 0)
-					{
-						sprintf(valERROR,"%d",__LINE__-2);
-						string str(valERROR);
-						message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL);
-					}
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                        message = "Cannot run gsl_vector_Sumsubvector routine length_(2)>=lb";
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input);
+                        }
+                        else if ((gsl_vector_get(tstart,i)-tendprev<gsl_vector_get(*lb,i)) && (gsl_vector_get(tstart,i)-tendprev>1))
+                        // 0<tstart_(i)-tend_(i-1)<lb => Sum the available number of samples (although the available number of samples was lower than lb)
+                        // 0<length_(2)<lb
+                        {
+                                if ((input = gsl_vector_alloc(gsl_vector_get(tstart,i)-tendprev-1)) == 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                        
+                                if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                        || (gsl_vector_get(tstart,i)-tendprev-1 < 1) || (gsl_vector_get(tstart,i)-tendprev-1 > vectorin->size-(tendprev+1)))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,i)-tendprev-1);
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                        sprintf(valERROR,"%d",__LINE__-2);
+                                        string str(valERROR);
+                                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
 
-					// Sum all the elements of input
-					if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-					{
-						message = "Cannot run gsl_vector_Sumsubvector routine when 0<length_(2)<lb";
-						EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-					}
-					if ((i < 0) || (i >(*lb)->size-1))
-					{
-						sprintf(valERROR,"%d",__LINE__+5);
-						string str(valERROR);
-						message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL);
-					}
-					gsl_vector_set(*lb,i,gsl_vector_get(tstart,i)-tendprev-1);
-					gsl_vector_free(input);
-				}
-				else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
-				{
-					for (int j=i;j<nPulses;j++)	// From the current pulse
-					// (3),(4) and (5) are analyzed
-					// When 0<length_(j)<lb => 'break' => Out of the 'for' loop
-					{
-						tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
-						if (tendprev >= vectorin->size)
-						{
-							tendprev = vectorin->size-1;
-						}
-						if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
-						{
-							if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,i))
-							{
-								if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-								}
-						  
-								if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) > vectorin->size-2)
-									|| (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i))))
-								{
-									sprintf(valERROR,"%d",__LINE__+5);
-									string str(valERROR);
-									message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
-								if (gsl_vector_memcpy(input, &temp.vector) != 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                        message = "Cannot run gsl_vector_Sumsubvector routine when 0<length_(2)<lb";
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                if ((i < 0) || (i >(*lb)->size-1))
+                                {
+                                        sprintf(valERROR,"%d",__LINE__+5);
+                                        string str(valERROR);
+                                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                        EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                gsl_vector_set(*lb,i,gsl_vector_get(tstart,i)-tendprev-1);
+                                gsl_vector_free(input);
+                        }
+                        else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
+                        {
+                                for (int j=i;j<nPulses;j++)	// From the current pulse
+                                // (3),(4) and (5) are analyzed
+                                // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
+                                {
+                                        tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
+                                        if (tendprev >= vectorin->size)
+                                        {
+                                                tendprev = vectorin->size-1;
+                                        }
+                                        if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
+                                        {
+                                                if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,i))
+                                                {
+                                                        if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                        }
+                                            
+                                                        if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) > vectorin->size-2)
+                                                                || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i))))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
+                                                        if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
 
-								// Sum all the elements of input
-								if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-								{
-									message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
-									EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-								}
-								gsl_vector_free(input);
+                                                        // Sum all the elements of input
+                                                        if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                        {
+                                                                message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
+                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                        }
+                                                        gsl_vector_free(input);
 
-								break;
-							}
-							else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,i)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
-							{
-								if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-								}
-							
-								if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-									|| (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
-								{
-									sprintf(valERROR,"%d",__LINE__+5);
-									string str(valERROR);
-									message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
-								if (gsl_vector_memcpy(input, &temp.vector) != 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
+                                                        break;
+                                                }
+                                                else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,i)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
+                                                {
+                                                        if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                        }
+                                                
+                                                        if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                                                || (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                                        if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
 
-								// Sum all the elements of input
-								if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-								{
-									message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
-									EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-								}
-								if ((i < 0) || (i >(*lb)->size-1))
-								{
-									sprintf(valERROR,"%d",__LINE__+5);
-									string str(valERROR);
-									message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								gsl_vector_set(*lb,i,gsl_vector_get(tstart,j+1)-tendprev-1);
-								gsl_vector_free(input);
+                                                        // Sum all the elements of input
+                                                        if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                        {
+                                                                message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
+                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                        }
+                                                        if ((i < 0) || (i >(*lb)->size-1))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        gsl_vector_set(*lb,i,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                                        gsl_vector_free(input);
 
-								break;
-							}
-						}
+                                                        break;
+                                                }
+                                        }
 
-						if (j == nPulses-1)	// Last pulse into the record
-						// (5) is analyzed
-						{
-							if (vectorin->size-tendprev >= gsl_vector_get(*lb,i))
-							{
-								if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-								}
-							
-								if ((tendprev < 0) || (tendprev > vectorin->size-2)
-									|| (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-tendprev))
-								{
-									sprintf(valERROR,"%d",__LINE__+5);
-									string str(valERROR);
-									message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,i));
-								if (gsl_vector_memcpy(input, &temp.vector) != 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
+                                        if (j == nPulses-1)	// Last pulse into the record
+                                        // (5) is analyzed
+                                        {
+                                                if (vectorin->size-tendprev >= gsl_vector_get(*lb,i))
+                                                {
+                                                        if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                        }
+                                                
+                                                        if ((tendprev < 0) || (tendprev > vectorin->size-2)
+                                                                || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-tendprev))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,i));
+                                                        if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
 
-								// Sum all the elements of input
-								if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-								{
-									message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-									EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-								}
-								gsl_vector_free(input);
+                                                        // Sum all the elements of input
+                                                        if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                        {
+                                                                message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                        }
+                                                        gsl_vector_free(input);
 
-								break;
-							}
-							else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev > 1))
-							{
-								if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-								}
-							
-								if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-									|| (vectorin->size-tendprev-1 < 1))
-								{
-									sprintf(valERROR,"%d",__LINE__+5);
-									string str(valERROR);
-									message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
-								if (gsl_vector_memcpy(input, &temp.vector) != 0)
-								{
-									sprintf(valERROR,"%d",__LINE__-2);
-									string str(valERROR);
-									message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								if ((i < 0) || (i >(*lb)->size-1))
-								{
-									sprintf(valERROR,"%d",__LINE__+5);
-									string str(valERROR);
-									message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								gsl_vector_set(*lb,i,vectorin->size-tendprev-1);
+                                                        break;
+                                                }
+                                                else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev > 1))
+                                                {
+                                                        if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                        }
+                                                
+                                                        if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                                                || (vectorin->size-tendprev-1 < 1))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
+                                                        if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                                string str(valERROR);
+                                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        if ((i < 0) || (i >(*lb)->size-1))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        gsl_vector_set(*lb,i,vectorin->size-tendprev-1);
 
-								// Sum all the elements of input
-								if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-								{
-									message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-									EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-								}
-								gsl_vector_free(input);
+                                                        // Sum all the elements of input
+                                                        if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                                        {
+                                                                message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                        }
+                                                        gsl_vector_free(input);
 
-								break;
-							}
-							else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev <= 1))
-							{
-								if ((i < 0) || (i >(*lb)->size-1))
-								{
-									sprintf(valERROR,"%d",__LINE__+5);
-									string str(valERROR);
-									message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-									EP_PRINT_ERROR(message,EPFAIL);
-								}
-								gsl_vector_set(*lb,i,gsl_vector_get(*lb,i-1));
+                                                        break;
+                                                }
+                                                else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev <= 1))
+                                                {
+                                                        if ((i < 0) || (i >(*lb)->size-1))
+                                                        {
+                                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                                string str(valERROR);
+                                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                EP_PRINT_ERROR(message,EPFAIL);
+                                                        }
+                                                        gsl_vector_set(*lb,i,gsl_vector_get(*lb,i-1));
 
-								break;
-							}
-						}
-					}
-				}
-			}
+                                                        break;
+                                                }
+                                        }
+                                }
+                        }
+                }
 
-			if ((i < 0) || (i >(*B)->size-1))
-			{
-				sprintf(valERROR,"%d",__LINE__+5);
-				string str(valERROR);
-				message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-				EP_PRINT_ERROR(message,EPFAIL);
-			}
-			gsl_vector_set(*B,i,Baux);
-		}//for
+                if ((i < 0) || (i >(*B)->size-1))
+                {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL);
+                }
+                gsl_vector_set(*B,i,Baux);
+        }//for
 
 	return(EPOK);
 }
@@ -1335,26 +1421,40 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 	string message = "";
 	char valERROR[256];
 
-	gsl_vector *modelFound_aux;
+	/*gsl_vector *modelFound_aux;
 	if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
 	{
 		sprintf(valERROR,"%d",__LINE__-2);
 		string str(valERROR);
 	        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
 		EP_PRINT_ERROR(message,EPFAIL);
-	}
+	}*/
 
 	long nummodels = reconstruct_init->library_collection->ntemplates;
+        
+        gsl_vector_view temp;
 
 	if (maxDER < gsl_vector_get(reconstruct_init->library_collection->maxDERs,0))
 	{
-		gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate);
-		gsl_vector_scale(modelFound_aux,maxDER/gsl_vector_max(modelFound_aux));
+		//gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate);
+		//gsl_vector_scale(modelFound_aux,maxDER/gsl_vector_max(modelFound_aux));
+                
+                /*gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate);
+                temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
+                gsl_vector_memcpy(*modelFound,&temp.vector);
+		gsl_vector_scale(*modelFound,maxDER/gsl_vector_max(*modelFound));*/
+                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate,0,(*modelFound)->size);
+                gsl_vector_memcpy(*modelFound,&temp.vector);
+		gsl_vector_scale(*modelFound,maxDER/gsl_vector_max(*modelFound));
 	}
 	else if (maxDER > gsl_vector_get(reconstruct_init->library_collection->maxDERs,nummodels-1))
 	{
-		gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate);
-		gsl_vector_scale(modelFound_aux,maxDER/gsl_vector_max(modelFound_aux));
+		//gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate);
+		//gsl_vector_scale(modelFound_aux,maxDER/gsl_vector_max(modelFound_aux));
+                
+                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate,0,(*modelFound)->size);
+                gsl_vector_memcpy(*modelFound,&temp.vector);
+		gsl_vector_scale(*modelFound,maxDER/gsl_vector_max(*modelFound));
 	}
 	else
 	{
@@ -1362,33 +1462,48 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 		{
 			if (fabs(maxDER-gsl_vector_get(reconstruct_init->library_collection->maxDERs,i))<1e-6)
 			{
-				gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate);
-				gsl_vector_scale(modelFound_aux,maxDER/gsl_vector_max(modelFound_aux));
+				//gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate);
+				//gsl_vector_scale(modelFound_aux,maxDER/gsl_vector_max(modelFound_aux));
+                            
+                                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,0,(*modelFound)->size);
+                                gsl_vector_memcpy(*modelFound,&temp.vector);
+                                gsl_vector_scale(*modelFound,maxDER/gsl_vector_max(*modelFound));
 
 				break;
 			}
 			else if ((maxDER > gsl_vector_get(reconstruct_init->library_collection->maxDERs,i)) && (maxDER < gsl_vector_get(reconstruct_init->library_collection->maxDERs,i+1)))
 			{
 				// Interpolate between the two corresponding rows in "models"
-				gsl_vector_set_zero(modelFound_aux);
+				//gsl_vector_set_zero(modelFound_aux);
+                                
+                                gsl_vector *modelA = gsl_vector_alloc((*modelFound)->size);
+                                gsl_vector *modelB = gsl_vector_alloc((*modelFound)->size);
+                                gsl_vector_set_zero(*modelFound);
+                                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,0,(*modelFound)->size);
+                                gsl_vector_memcpy(modelA,&temp.vector);
+                                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,0,(*modelFound)->size);
+                                gsl_vector_memcpy(modelB,&temp.vector);
 
-				if (interpolate_model(&modelFound_aux,maxDER,reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,gsl_vector_get(reconstruct_init->library_collection->maxDERs,i),
-						reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,gsl_vector_get(reconstruct_init->library_collection->maxDERs,i+1)))
+				//if (interpolate_model(&modelFound_aux,maxDER,reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,gsl_vector_get(reconstruct_init->library_collection->maxDERs,i),reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,gsl_vector_get(reconstruct_init->library_collection->maxDERs,i+1)))
+                                if (interpolate_model(modelFound,maxDER,modelA,gsl_vector_get(reconstruct_init->library_collection->maxDERs,i),modelB,gsl_vector_get(reconstruct_init->library_collection->maxDERs,i+1)))
 				{
 					message = "Cannot run interpolate_model with two rows in models";
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
+				
+				gsl_vector_free(modelA);
+                                gsl_vector_free(modelB);
 
 				break;
 			}
 		}
 	}
 
-	gsl_vector_view temp;
+	/*gsl_vector_view temp;
 	temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
-	gsl_vector_memcpy(*modelFound,&temp.vector);
+	gsl_vector_memcpy(*modelFound,&temp.vector);*/
 
-	gsl_vector_free(modelFound_aux);
+	//gsl_vector_free(modelFound_aux);
 
     return(EPOK);
 }
@@ -1417,26 +1532,36 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 	string message = "";
 	char valERROR[256];
 	
-	gsl_vector *modelFound_aux;
+	/*gsl_vector *modelFound_aux;
 	if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
 	{
 		sprintf(valERROR,"%d",__LINE__-2);
 		string str(valERROR);
 	        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
 		EP_PRINT_ERROR(message,EPFAIL);
-	}
-
+	}*/
+	
 	long nummodels = reconstruct_init->library_collection->ntemplates;
+        
+        gsl_vector_view temp;
 
 	if (samp1DER < gsl_vector_get(reconstruct_init->library_collection->samp1DERs,0))
 	{
-		gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate);
-		gsl_vector_scale(modelFound_aux,samp1DER/gsl_vector_get(modelFound_aux,0));
+		//gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate);
+		//gsl_vector_scale(modelFound_aux,samp1DER/gsl_vector_get(modelFound_aux,0));
+                
+                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate,0,(*modelFound)->size);
+                gsl_vector_memcpy(*modelFound,&temp.vector);
+                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));
 	}
 	else if (samp1DER > gsl_vector_get(reconstruct_init->library_collection->samp1DERs,nummodels-1))
 	{
-		gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate);
-		gsl_vector_scale(modelFound_aux,samp1DER/gsl_vector_get(modelFound_aux,nummodels-1));
+		//gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate);
+		//gsl_vector_scale(modelFound_aux,samp1DER/gsl_vector_get(modelFound_aux,nummodels-1));
+            
+                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate,0,(*modelFound)->size);
+                gsl_vector_memcpy(*modelFound,&temp.vector);
+                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que había un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
 	}
 	else
 	{
@@ -1445,25 +1570,36 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 			if ((samp1DER >= gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i)) && (samp1DER < gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)))
 			{
 				// Interpolate between the two corresponding rows in "models"
-				gsl_vector_set_zero(modelFound_aux);
+				//gsl_vector_set_zero(modelFound_aux);
+                            
+                                gsl_vector *modelA = gsl_vector_alloc((*modelFound)->size);
+                                gsl_vector *modelB = gsl_vector_alloc((*modelFound)->size);
+                                gsl_vector_set_zero(*modelFound);
+                                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,0,(*modelFound)->size);
+                                gsl_vector_memcpy(modelA,&temp.vector);
+                                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,0,(*modelFound)->size);
+                                gsl_vector_memcpy(modelB,&temp.vector);
 
-				if (interpolate_model(&modelFound_aux,samp1DER,reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i),
-					reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)))
+				//if (interpolate_model(&modelFound_aux,samp1DER,reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i),reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)))
+                                if (interpolate_model(modelFound,samp1DER,modelA,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i),modelB,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)))
 				{
 					message = "Cannot run interpolate_model with two rows in models";
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
+				
+				gsl_vector_free(modelA);
+                                gsl_vector_free(modelB);
 
 				break;
 			}
 		}
 	}
-
-	gsl_vector_view temp;
+        
+	/*gsl_vector_view temp;
 	temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
 	gsl_vector_memcpy(*modelFound,&temp.vector);
 
-	gsl_vector_free(modelFound_aux);
+	gsl_vector_free(modelFound_aux);*/
 
     return(EPOK);
 }
@@ -1481,7 +1617,7 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 * 	                    2
 * 	           E2-E           E-E1
 * 	2. p(t,E)=-------p(t,E1)+-------p(t,E2)
-*              E2-E1          E2-E1
+*                  E2-E1          E2-E1
 *
 * The more intelligent averaging (2) is used instead the simplest method (1).
 *
@@ -1497,7 +1633,7 @@ int interpolate_model(gsl_vector **modelFound, double p_model, gsl_vector *model
 {
 	// Declare variables
 	double factor1, factor2;
-	gsl_vector_set_zero(*modelFound);
+	//gsl_vector_set_zero(*modelFound);
 	
 	// It is not necessary to check the allocation because 'modelIn1' and 'modelIn2' sizes must already be > 0
 	gsl_vector *modelIn1Aux = gsl_vector_alloc(modelIn1->size);
@@ -1515,7 +1651,8 @@ int interpolate_model(gsl_vector **modelFound, double p_model, gsl_vector *model
 	factor2 = (p_model-p_modelIn1)/(p_modelIn2-p_modelIn1);
 	gsl_vector_scale(modelIn1Aux,factor1);
 	gsl_vector_scale(modelIn2Aux,factor2);
-	gsl_vector_add(*modelFound,modelIn1Aux);
+	//gsl_vector_add(*modelFound,modelIn1Aux);
+        gsl_vector_memcpy(*modelFound,modelIn1Aux);
 	gsl_vector_add(*modelFound,modelIn2Aux);
 	
 	gsl_vector_free(modelIn1Aux);
@@ -1916,6 +2053,8 @@ int InitialTriggering
 		message = "Cannot run medianKappaClipping doing the initial triggering";
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
+	//*threshold = 30; // samprate = 156.250 kHz
+	//*threshold = 55; // samprate/2 = 78.125 kHz
 	
 	if (tstartProvided == 0)
 	{
@@ -1978,7 +2117,7 @@ int InitialTriggering
 *              It is going to be used by 'find_matchfilter', 'find_matchfilterDAB', 'find_optimalfilter', 'find_optimalfilterDAB' and 'find_Esboundary'
 * - samp1DERgsl: First sample of the first derivative of the (low-pass filtered) record inside each found event 
 ****************************************/
-int FindSecondaries
+/*int FindSecondaries
 (
 	int maxPulsesPerRecord,
 
@@ -2012,7 +2151,7 @@ int FindSecondaries
 	bool findTstarts = true;
 	if (reconstruct_init->tstartPulse1 != 0)	findTstarts = false;
 	
-	//for (int i=990; i<(990+25);i++) cout<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
+	for (int i=990; i<(990+50);i++) cout<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 	//for (int i=20990; i<(20990+25);i++) cout<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 	//adaptativethreshold = 40.0;
 	//cout<<"Threshold: "<<adaptativethreshold<<endl;
@@ -2020,6 +2159,18 @@ int FindSecondaries
 	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
 	gsl_vector *index_maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Index where the maximum of the first derivative of the (low-pass filtered) event is
 	
+	int numlags = 17;	// Or 1 if NO lags 
+	gsl_vector *lags_vector = gsl_vector_alloc(numlags);
+	for (int i=0;i<numlags;i++)	gsl_vector_set(lags_vector,i,-numlags/2+i);
+	gsl_vector *convolutionLags = gsl_vector_alloc(numlags);
+	gsl_vector_set_zero(convolutionLags);
+	int indexmax;
+	gsl_vector *sublags_vector = gsl_vector_alloc(3);
+	gsl_vector *subconvolutionLags_vector = gsl_vector_alloc(3);
+	gsl_vector_view temp;
+	double a,b,c;
+	double xmax;
+		
 	if (findTstarts == true)
 	{
 		// It looks for a pulse
@@ -2050,7 +2201,7 @@ int FindSecondaries
 						if (i == 0)	gsl_vector_set(*flagTruncated,*numberPulses,1);
 						*numberPulses = *numberPulses +1;
 						foundPulse = true;
-						//cout<<"Supera el umbral en "<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<" "<<adaptativethreshold<<endl;
+						cout<<"Supera el umbral en "<<i<<" "<<gsl_vector_get(adjustedDerivative,i-1)<<" "<<gsl_vector_get(adjustedDerivative,i)<<" "<<adaptativethreshold<<endl;
 					}
 					i++;
 				}
@@ -2060,7 +2211,7 @@ int FindSecondaries
 					{
 						gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,i));
 						gsl_vector_set(index_maxDERgsl,*numberPulses-1,i);
-						//cout<<"Nuevo maxDER "<<gsl_vector_get(adjustedDerivative,i)<<endl;
+						cout<<"Nuevo maxDER "<<gsl_vector_get(adjustedDerivative,i)<<endl;
 						
 						i++;
 					}
@@ -2069,30 +2220,101 @@ int FindSecondaries
 						if (((strcmp(reconstruct_init->EnergyMethod,"I2RALL") == 0) && (gsl_vector_get(index_maxDERgsl,*numberPulses-1)-gsl_vector_get(*tstartgsl,*numberPulses-1) >= 0)) ||
 							((strcmp(reconstruct_init->EnergyMethod,"I2RALL") != 0) && (gsl_vector_get(index_maxDERgsl,*numberPulses-1)-gsl_vector_get(*tstartgsl,*numberPulses-1) > 0)))
 						{
+                                                         //cout<<"samp1DERBEFORELags: "<<gsl_vector_get(*samp1DERgsl,*numberPulses-1)<<endl;
 							// Select the model of the found pulse from the libary by using the 1st sample of the derivative (samp1DER)
 							if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,*numberPulses-1), reconstruct_init, &model))
 							{
 								message = "Cannot run find_model_samp1DERs routine";
 								EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 							}
-
-							if ((gsl_vector_get(*tstartgsl,*numberPulses-1) < 0) || (min(gsl_vector_get(*tstartgsl,*numberPulses-1)+reconstruct_init->pulse_length,(double) sizeRecord)-1 > adjustedDerivative->size-1))
-							{
-								sprintf(valERROR,"%d",__LINE__+9);
-								string str(valERROR);
-								message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-								EP_PRINT_ERROR(message,EPFAIL);
-							}
-							for (int j=gsl_vector_get(*tstartgsl,*numberPulses-1);j<min(gsl_vector_get(*tstartgsl,*numberPulses-1)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
-							{
-								//if (j < gsl_vector_get(*tstartgsl,*numberPulses-1)+10)
-								//cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<" "<<gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,*numberPulses-1))<<endl;
-								gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,*numberPulses-1)));
-							}
 							
-							if (gsl_vector_get(*flagTruncated,*numberPulses-1) == 1)	i = 0;
-							else								i = gsl_vector_get(*tstartgsl,*numberPulses-1) + 1;
-							foundPulse = false; 
+							if (numlags != 1)
+                                                        {
+                                                                for (int j=0;j<numlags;j++)
+                                                                {
+                                                                        for (int k=0;k<reconstruct_init->pulse_length;k++)
+                                                                        {
+                                                                                if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j) < 0) 
+                                                                                        gsl_vector_set(convolutionLags,j,-999.0);
+                                                                                else 	gsl_vector_set(convolutionLags,j,gsl_vector_get(convolutionLags,j)+gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)*gsl_vector_get(model,k));
+                                                                                //cout<<k<<" "<<gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)<<" "<<gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)<<" "<<gsl_vector_get(model,k)<<" "<<gsl_vector_get(convolutionLags,j)<<endl;
+                                                                        }
+                                                                        cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", convolution="<<gsl_vector_get(convolutionLags,j)<<endl;
+                                                                }
+                                                                
+                                                                indexmax = gsl_vector_max_index(convolutionLags);
+                                                                if (indexmax == 0)
+                                                                {
+                                                                        temp = gsl_vector_subvector(lags_vector,indexmax,3);
+                                                                        gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                                        temp = gsl_vector_subvector(convolutionLags,indexmax,3);
+                                                                        gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                                                }
+                                                                else if (indexmax == numlags-1)
+                                                                {
+                                                                        temp = gsl_vector_subvector(lags_vector,numlags-3,3);
+                                                                        gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                                        temp = gsl_vector_subvector(convolutionLags,numlags-3,3);
+                                                                        gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                                                }
+                                                                else 
+                                                                {
+                                                                        temp = gsl_vector_subvector(lags_vector,indexmax-1,3);
+                                                                        gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                                        temp = gsl_vector_subvector(convolutionLags,indexmax-1,3);
+                                                                        gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                                                }
+                                                                
+                                                                if (parabola3Pts (sublags_vector, subconvolutionLags_vector, &a, &b, &c))
+                                                                {
+                                                                        message = "Cannot run routine parabola3Pts";
+                                                                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                                                }
+                                                
+                                                                xmax = -b/(2*a);
+                                                                //gsl_vector_set(*tstartgsl,*numberPulses-1,gsl_vector_get(*tstartgsl,*numberPulses-1)+(int)(xmax+0.5));
+                                                                gsl_vector_set(*tstartgsl,*numberPulses-1,gsl_vector_get(*tstartgsl,*numberPulses-1)+round(xmax));
+                                                                cout<<"tstartAFTERLags: "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<endl;
+                                                                //cout<<"xmax: "<<xmax<<endl;
+                                                                //cout<<"a: "<<a<<endl;
+                                                                //cout<<"b: "<<b<<endl;
+                                                                //cout<<"c: "<<c<<endl;
+                                                                
+                                                                gsl_vector_set(*samp1DERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                                //cout<<"samp1DERAFTERLags: "<<gsl_vector_get(*samp1DERgsl,*numberPulses-1)<<endl;
+                                                                if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,*numberPulses-1), reconstruct_init, &model))
+                                                                {
+                                                                        message = "Cannot run find_model_samp1DERs routine";
+                                                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                                }
+                                                        }
+                                                        
+                                                        if ((*numberPulses > 1) && (gsl_vector_get(*tstartgsl,*numberPulses-1) <= gsl_vector_get(*tstartgsl,*numberPulses-2)))
+                                                        {
+                                                                *numberPulses = *numberPulses-1;
+								gsl_vector_set(*flagTruncated,*numberPulses,0);
+								foundPulse = false;
+                                                        }
+							else if ((*numberPulses == 1) || ((*numberPulses > 1 ) && (gsl_vector_get(*tstartgsl,*numberPulses-1) > gsl_vector_get(*tstartgsl,*numberPulses-2)))) 
+                                                        {
+                                                                if ((gsl_vector_get(*tstartgsl,*numberPulses-1) < 0) || (min(gsl_vector_get(*tstartgsl,*numberPulses-1)+reconstruct_init->pulse_length,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                                                {
+                                                                        sprintf(valERROR,"%d",__LINE__+9);
+                                                                        string str(valERROR);
+                                                                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                }
+                                                                for (int j=gsl_vector_get(*tstartgsl,*numberPulses-1);j<min(gsl_vector_get(*tstartgsl,*numberPulses-1)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
+                                                                {
+                                                                        //if (j < gsl_vector_get(*tstartgsl,*numberPulses-1)+10)
+                                                                        //cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<" "<<gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,*numberPulses-1))<<endl;
+                                                                        gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                                }
+                                                                
+                                                                if (gsl_vector_get(*flagTruncated,*numberPulses-1) == 1)	i = 0;
+                                                                else								i = gsl_vector_get(*tstartgsl,*numberPulses-1) + 1;
+                                                                foundPulse = false; 
+                                                        }
 						}
 						else 
 						{
@@ -2102,7 +2324,6 @@ int FindSecondaries
 								gsl_vector_set(*flagTruncated,*numberPulses,0);
 								foundPulse = false;
 							}
-							//i++;
 						}
 					}
 				}
@@ -2122,84 +2343,337 @@ int FindSecondaries
 		else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
 		else						*numberPulses = 3;
 
-		for (int i=0;i<*numberPulses;i++)
-		{
-			gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
+                if (numlags == 1)
+                {
+                        for (int i=0;i<*numberPulses;i++)
+                        {
+                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
 
-			if (i != *numberPulses-1) 	
-			{
-				if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-					|| (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-				{
-					sprintf(valERROR,"%d",__LINE__+5);
-					string str(valERROR);
-					message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-					EP_PRINT_ERROR(message,EPFAIL);
-				}
-				temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-			}
-			else	
-			{
-				if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-					|| (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-				{
-					sprintf(valERROR,"%d",__LINE__+5);
-					string str(valERROR);
-					message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-					EP_PRINT_ERROR(message,EPFAIL);
-				}
-				temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
-			}
+                                if (i != *numberPulses-1) 	
+                                {
+                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+                                }
+                                else	
+                                {
+                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+                                }
 
-			if (i == 0)	gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
-			else
-			{
-				if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init, &model))
-				{
-					message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
-					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-				}
+                                if (i == 0)
+                                {	
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                }
+                                else
+                                {
+                                        if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init, &model))
+                                        {
+                                                message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                        }
+                                        
+                                        if ((gsl_vector_get(*tstartgsl,i-1) < 0) || (min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+7);
+                                                string str(valERROR);
+                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        for (int j=gsl_vector_get(*tstartgsl,i-1);j<min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
+                                        {
+                                                gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,i-1)));
+                                        }
 
-				if ((gsl_vector_get(*tstartgsl,i-1) < 0) || (min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord)-1 > adjustedDerivative->size-1))
-				{
-					sprintf(valERROR,"%d",__LINE__+7);
-					string str(valERROR);
-					message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-					EP_PRINT_ERROR(message,EPFAIL);
-				}
-				for (int j=gsl_vector_get(*tstartgsl,i-1);j<min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
-				{
-					gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,i-1)));
-				}
+                                        if (i != *numberPulses-1)	
+                                        {
+                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                        || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+                                        }
+                                        else
+                                        {
+                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                        || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+                                        }
+                                        
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                        //cout<<gsl_vector_max_index(&temp.vector)<<endl;
+                                        //cout<<gsl_vector_get(&temp.vector,0)<<endl;
+                                }
+                                //cout<<"gsl_vector_get(*maxDERgsl,i): "<<gsl_vector_get(*maxDERgsl,i)<<endl;
+                        }
+                }
+                else 
+                {
+                        for (int i=0;i<*numberPulses;i++)
+                        {
+                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
 
-				if (i != *numberPulses-1)	
-				{
-					if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-						|| (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-					{
-						sprintf(valERROR,"%d",__LINE__+5);
-						string str(valERROR);
-						message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL);
-					}
-					temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-				}
-				else
-				{
-					if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-						|| (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-					{
-						sprintf(valERROR,"%d",__LINE__+5);
-						string str(valERROR);
-						message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-						EP_PRINT_ERROR(message,EPFAIL);
-					}
-					temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
-				}
-				
-				gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
-			}
-		}
+                                if (i != *numberPulses-1) 	
+                                {
+                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+                                }
+                                else	
+                                {
+                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+                                }
+
+                                if (i == 0)
+                                {
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                        if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i), reconstruct_init, &model))
+                                        {
+                                                message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                        }
+                                        
+                                        for (int j=0;j<numlags;j++)
+                                        {
+                                                for (int k=0;k<reconstruct_init->pulse_length;k++)
+                                                {
+                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j) < 0) 
+                                                                gsl_vector_set(convolutionLags,j,-999.0);
+                                                        else 	gsl_vector_set(convolutionLags,j,gsl_vector_get(convolutionLags,j)+gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)*gsl_vector_get(model,k));
+                                                        //cout<<k<<" "<<gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)<<" "<<gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)<<" "<<gsl_vector_get(model,k)<<" "<<gsl_vector_get(convolutionLags,j)<<endl;
+                                                }
+                                                //cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", convolution="<<gsl_vector_get(convolutionLags,j)<<endl;
+                                        }
+                                        
+                                        indexmax = gsl_vector_max_index(convolutionLags);
+                                        if (indexmax == 0)
+                                        {
+                                                temp = gsl_vector_subvector(lags_vector,indexmax,3);
+                                                gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                temp = gsl_vector_subvector(convolutionLags,indexmax,3);
+                                                gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                        }
+                                        else if (indexmax == numlags-1)
+                                        {
+                                                temp = gsl_vector_subvector(lags_vector,numlags-3,3);
+                                                gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                temp = gsl_vector_subvector(convolutionLags,numlags-3,3);
+                                                gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                        }
+                                        else 
+                                        {
+                                                temp = gsl_vector_subvector(lags_vector,indexmax-1,3);
+                                                gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                temp = gsl_vector_subvector(convolutionLags,indexmax-1,3);
+                                                gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                        }
+                                        
+                                        if (parabola3Pts (sublags_vector, subconvolutionLags_vector, &a, &b, &c))
+                                        {
+                                                message = "Cannot run routine parabola3Pts";
+                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                        }
+                                        
+                                        xmax = -b/(2*a);
+                                        //cout<<"tstartBEFORELags: "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<endl;
+                                        //cout<<"xmax: "<<xmax<<endl;
+                                        //cout<<"round(xmax): "<<round(xmax)<<endl;
+                                        //cout<<"gsl_vector_get(*tstartgsl,*numberPulses-1)+(int)(xmax+0.5): "<<gsl_vector_get(*tstartgsl,*numberPulses-1)+(int)(xmax+0.5)<<endl;
+                                        //gsl_vector_set(*tstartgsl,*numberPulses-1,gsl_vector_get(*tstartgsl,*numberPulses-1)+(int)(xmax+0.5));
+                                        gsl_vector_set(*tstartgsl,*numberPulses-1,gsl_vector_get(*tstartgsl,*numberPulses-1)+round(xmax));
+                                        //cout<<"tstartAFTERLags: "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<endl;
+                                        
+                                        if (i != *numberPulses-1) 	
+                                        {
+                                                if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-2)
+                                                        || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) < 1) || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-gsl_vector_get(*tstartgsl,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i));
+                                        }
+                                        else	
+                                        {
+                                                if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-2)
+                                                        || (sizeRecord-gsl_vector_get(*tstartgsl,i) < 1) || (sizeRecord-gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-gsl_vector_get(*tstartgsl,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),sizeRecord-gsl_vector_get(*tstartgsl,i));
+                                        }
+                                    
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                }
+                                else
+                                {
+                                        if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init, &model))
+                                        {
+                                                message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                        }
+                                                                                                
+                                        if ((gsl_vector_get(*tstartgsl,i-1) < 0) || (min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+7);
+                                                string str(valERROR);
+                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        for (int j=gsl_vector_get(*tstartgsl,i-1);j<min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
+                                        {
+                                                gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,i-1)));
+                                        }
+
+                                        if (i != *numberPulses-1)	
+                                        {
+                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                        || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+                                        }
+                                        else
+                                        {
+                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                        || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+                                        }
+                                        
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                        if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i), reconstruct_init, &model))
+                                        {
+                                                message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                        }
+                                        
+                                        for (int j=0;j<numlags;j++)
+                                        {
+                                                for (int k=0;k<reconstruct_init->pulse_length;k++)
+                                                {
+                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j) < 0) 
+                                                                gsl_vector_set(convolutionLags,j,-999.0);
+                                                        else 	gsl_vector_set(convolutionLags,j,gsl_vector_get(convolutionLags,j)+gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)*gsl_vector_get(model,k));
+                                                        //cout<<k<<" "<<gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)<<" "<<gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)<<" "<<gsl_vector_get(model,k)<<" "<<gsl_vector_get(convolutionLags,j)<<endl;
+                                                }
+                                                //cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", convolution="<<gsl_vector_get(convolutionLags,j)<<endl;
+                                        }
+                                        
+                                        indexmax = gsl_vector_max_index(convolutionLags);
+                                        if (indexmax == 0)
+                                        {
+                                                temp = gsl_vector_subvector(lags_vector,indexmax,3);
+                                                gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                temp = gsl_vector_subvector(convolutionLags,indexmax,3);
+                                                gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                        }
+                                        else if (indexmax == numlags-1)
+                                        {
+                                                temp = gsl_vector_subvector(lags_vector,numlags-3,3);
+                                                gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                temp = gsl_vector_subvector(convolutionLags,numlags-3,3);
+                                                gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                        }
+                                        else 
+                                        {
+                                                temp = gsl_vector_subvector(lags_vector,indexmax-1,3);
+                                                gsl_vector_memcpy(sublags_vector,&temp.vector);
+                                                temp = gsl_vector_subvector(convolutionLags,indexmax-1,3);
+                                                gsl_vector_memcpy(subconvolutionLags_vector,&temp.vector);
+                                        }
+                                        
+                                        if (parabola3Pts (sublags_vector, subconvolutionLags_vector, &a, &b, &c))
+                                        {
+                                                message = "Cannot run routine parabola3Pts";
+                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                        }
+                                        
+                                        xmax = -b/(2*a);
+                                        //gsl_vector_set(*tstartgsl,*numberPulses-1,gsl_vector_get(*tstartgsl,*numberPulses-1)+(int)(xmax+0.5));
+                                        gsl_vector_set(*tstartgsl,*numberPulses-1,gsl_vector_get(*tstartgsl,*numberPulses-1)+round(xmax));
+                                       //cout<<"tstartAFTERLags: "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<endl;
+                                        
+                                        if (i != *numberPulses-1)	
+                                        {
+                                                if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-2)
+                                                        || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) < 1) || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-gsl_vector_get(*tstartgsl,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i));
+                                        }
+                                        else
+                                        {
+                                                if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-2)
+                                                        || (sizeRecord-gsl_vector_get(*tstartgsl,i) < 1) || (sizeRecord-gsl_vector_get(*tstartgsl,i) > adjustedDerivative->size-gsl_vector_get(*tstartgsl,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),sizeRecord-gsl_vector_get(*tstartgsl,i));
+                                        }
+                                        
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                }
+                        }
+                }
 
 		gsl_vector_free(tstartPulsei);
 	}
@@ -2207,7 +2681,1038 @@ int FindSecondaries
 	// Free allocated GSL vectors
 	gsl_vector_free(model);
 	gsl_vector_free(index_maxDERgsl);
+	
+	gsl_vector_free(lags_vector);
+	gsl_vector_free(convolutionLags);
+        gsl_vector_free(sublags_vector);
+        gsl_vector_free(subconvolutionLags_vector);
+
+	return(EPOK);
+}*/
+int 
+FindSecondaries
+(
+	int maxPulsesPerRecord,
+
+	gsl_vector *adjustedDerivative,
+	double adaptativethreshold,
+
+	ReconstructInitSIRENA *reconstruct_init,
+
+	int tstartFirstEvent,
+
+	int *numberPulses,
+	gsl_vector **tstartgsl,
+	gsl_vector **flagTruncated,
+	gsl_vector **maxDERgsl,
+	gsl_vector **samp1DERgsl,
+        gsl_vector **lagsgsl,
+
+        int firstRecord)
+{
+	string message = "";
+	char valERROR[256];
+
+	// Declare variables
+	bool foundPulse = false;
+	int sizeRecord = adjustedDerivative->size;		// Size of segment to process
+	*numberPulses = 0;
+	gsl_vector_set_all(*maxDERgsl,-1E3);
+	gsl_vector_set_all(*tstartgsl,-1E3);
+        gsl_vector_set_all(*lagsgsl,-1E3);
+	int i = tstartFirstEvent;
+	// It is not necessary to check the allocation because 'reconstruct_init->pulse_length'='PulseLength'(input parameter) has been checked previously
+        int pulse_length_ToUse = 1000; // Instead of using pulse_length, because the results are equal
+        gsl_vector *model = gsl_vector_alloc(pulse_length_ToUse);
+	
+	// To provide the tstarts (or not)
+	bool findTstarts = true;
+	if (reconstruct_init->tstartPulse1 != 0)	findTstarts = false;
+        
+        /*if (firstRecord == 1)
+        {
+                for (int i=990;i<2500;i++) cout<<gsl_vector_get(adjustedDerivative,i)<<endl;
+                cout<<adaptativethreshold<<endl;
+        }*/        
+	
+	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
+	gsl_vector *index_maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Index where the maximum of the first derivative of the (low-pass filtered) event is
+        int ider;
+	
+	int numlags;	// Or 1 if NO lags 
+	gsl_vector *lags_vector;
+	gsl_vector *convolutionLags;
+	int indexmax;
+	
+	gsl_vector_view temp;
+	double a,b,c;
+	double xmax;
+        bool exitLags = false;
+        int newLag;
+        double newconvolutionLags;
+        int indexLags;
+        gsl_vector *sublags_vector = gsl_vector_alloc(3);
+        gsl_vector *subconvolutionLags_vector = gsl_vector_alloc(3);
+        
+        gsl_vector *ThreePoints_x = gsl_vector_alloc(3);
+        gsl_vector_set(ThreePoints_x,0,1);
+        gsl_vector_set(ThreePoints_x,1,2);
+        gsl_vector_set(ThreePoints_x,2,3);
+        gsl_vector *ThreePoints_y = gsl_vector_alloc(3);
+        double a3Points,b3Points;
+        double angleStart0 = -999.0, angleStart1 = -999.0;
+        
+        int previouslyFalsePulse = -1;
+        
+        double criteriaDER_value = 86.7; // In degrees,  samprate = 156250 Hz
+        //double criteriaDER_value = 87.5; // In degrees, samprate/2 = 78125 Hz      
+        
+        double sum_samp1DER;
+        int limitMin, limitMax;
+      
+	if (findTstarts == true)
+	{
+                gsl_vector_view temp;
+                
+                numlags = 3;
+                lags_vector = gsl_vector_alloc(numlags);
+                convolutionLags = gsl_vector_alloc(numlags);
+                
+                int tstartWITHOUTLags;
+                
+		// It looks for a pulse
+		// If a pulse is found (foundPulse==true) => It looks for another pulse
+		do
+		{	
+			foundPulse = false;
+			
+			// It looks for a pulse since the beginning (or the previous pulse) to the end of the record
+			while (i < sizeRecord-1)
+			{
+				if (foundPulse == false)
+				{	
+                                        // The first condition to detect a pulse is that the adjustedDerivative was over the threshold
+					if (gsl_vector_get(adjustedDerivative,i) > adaptativethreshold)
+					{
+                                                
+                                                if (*numberPulses == (*maxDERgsl)->size)
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(adjustedDerivative,i));
+                                                gsl_vector_set(index_maxDERgsl,*numberPulses,i);
+                                                gsl_vector_set(*samp1DERgsl,*numberPulses,gsl_vector_get(adjustedDerivative,i));
+                                                gsl_vector_set(*tstartgsl,*numberPulses,i);
+                                                tstartWITHOUTLags = i;
+                                                if (i == 0)	gsl_vector_set(*flagTruncated,*numberPulses,1);
+                                                *numberPulses = *numberPulses +1;
+                                                foundPulse = true;
+                                                //cout<<"Supera el umbral en "<<i<<" "<<gsl_vector_get(adjustedDerivative,i-1)<<" "<<gsl_vector_get(adjustedDerivative,i)<<" "<<adaptativethreshold<<endl;
+					}
+					i++;
+				}
+				else
+				{
+                                        gsl_vector_set_zero(convolutionLags);
+                                        exitLags = false;
+                                        if (((strcmp(reconstruct_init->EnergyMethod,"I2RALL") == 0) && (gsl_vector_get(index_maxDERgsl,*numberPulses-1)-gsl_vector_get(*tstartgsl,*numberPulses-1) >= 0)) || ((strcmp(reconstruct_init->EnergyMethod,"I2RALL") != 0) && (gsl_vector_get(index_maxDERgsl,*numberPulses-1)-gsl_vector_get(*tstartgsl,*numberPulses-1) >= 0)))
+                                        {
+                                                ider = gsl_vector_get(index_maxDERgsl,*numberPulses-1)+1;
+                                                while (gsl_vector_get(adjustedDerivative,ider) > gsl_vector_get(*maxDERgsl,*numberPulses-1))
+                                                {
+                                                        gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,ider));
+                                                        ider++;
+                                                        if (ider == adjustedDerivative->size)       break;
+                                                        
+                                                }
+                                                                                                    
+                                                // Select the model of the found pulse from the libary by using the 1st sample of the derivative (samp1DER)
+                                                if (find_model_samp1DERsNoReSCLD(gsl_vector_get(*samp1DERgsl,*numberPulses-1), reconstruct_init, &model))
+                                                {
+                                                        message = "Cannot run find_model_samp1DERs routine";
+                                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                }
+                                                
+                                                if (numlags != 1)
+                                                {
+                                                        for (int i=0;i<numlags;i++)	gsl_vector_set(lags_vector,i,-numlags/2+i);
+                                                        
+                                                        indexLags = 0;
+                                                        
+                                                        for (int j=0;j<numlags;j++)
+                                                        {
+                                                                //for (int k=0;k<reconstruct_init->pulse_length;k++)
+                                                                for (int k=0;k<pulse_length_ToUse;k++)
+                                                                {
+                                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j) < 0) 
+                                                                                gsl_vector_set(convolutionLags,j,-999.0);
+                                                                        else if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j) > sizeRecord) 
+                                                                                gsl_vector_set(convolutionLags,j,-999.0);
+                                                                        else 	
+                                                                        {
+                                                                                if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k < sizeRecord)
+                                                                                {                                                                                    
+                                                                                        gsl_vector_set(convolutionLags,j,gsl_vector_get(convolutionLags,j)+gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)*gsl_vector_get(model,k));
+                                                                                        //cout<<k<<" "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<" "<<gsl_vector_get(lags_vector,j)<<" "<<gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)<<" "<<gsl_vector_get(model,k)<<endl;
+                                                                                }
+                                                                                else
+                                                                                        break;
+                                                                        }
+                                                                }
+                                                                
+                                                                //cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", convolution="<<gsl_vector_get(convolutionLags,j)<<endl;
+                                                        }
+                                                        
+                                                        indexmax = gsl_vector_max_index(convolutionLags);
+                                                        
+                                                        if (indexmax == 1)
+                                                        {
+                                                                gsl_vector_set(*lagsgsl,*numberPulses-1,numlags);
+                                                        }
+                                                        else
+                                                        {
+                                                                do 
+                                                                {   
+                                                                        indexLags = indexLags + 1;
+                                                                        if (indexmax == 0)  
+                                                                        {       
+                                                                                newLag = gsl_vector_get(lags_vector,0)-indexLags;
+                                                                                gsl_vector_set(convolutionLags,2,gsl_vector_get(convolutionLags,1));
+                                                                                gsl_vector_set(convolutionLags,1,gsl_vector_get(convolutionLags,0));
+                                                                        }
+                                                                        else    
+                                                                        {
+                                                                                newLag = gsl_vector_get(lags_vector,2)+indexLags;
+                                                                                gsl_vector_set(convolutionLags,0,gsl_vector_get(convolutionLags,1));
+                                                                                gsl_vector_set(convolutionLags,1,gsl_vector_get(convolutionLags,2));
+                                                                        }
+                                                                        
+                                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+newLag < 0)  break;
+                                                                        
+                                                                        newconvolutionLags = 0.0;
+                                                                        //for (int k=0;k<reconstruct_init->pulse_length;k++)
+                                                                        for (int k=0;k<pulse_length_ToUse;k++)
+                                                                        {
+                                                                                if (gsl_vector_get(*tstartgsl,*numberPulses-1)+newLag < 0) 
+                                                                                        newconvolutionLags = -999.0;
+                                                                                else if (gsl_vector_get(*tstartgsl,*numberPulses-1)+newLag > sizeRecord) 
+                                                                                        newconvolutionLags = -999.0;
+                                                                                else
+                                                                                {
+                                                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+newLag+k < sizeRecord)
+                                                                                        {
+                                                                                                newconvolutionLags = newconvolutionLags +                                                                                       +gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+newLag+k)*gsl_vector_get(model,k);
+                                                                                                //cout<<k<<" "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<" "<<newLag<<" "<<gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+newLag+k)<<" "<<gsl_vector_get(model,k)<<endl;
+                                                                                        }
+                                                                                        else
+                                                                                                break;
+                                                                                }
+                                                                        }
+                                                                        //cout<<"lag="<<newLag<<", convolution="<<newconvolutionLags<<endl;
+                                                                                                                                                        
+                                                                        if (indexmax == 0) 
+                                                                        {
+                                                                                if (newconvolutionLags < gsl_vector_get(convolutionLags,1))
+                                                                                {
+                                                                                        exitLags = true;
+                                                                                        gsl_vector_set(lags_vector,0,newLag);
+                                                                                        gsl_vector_set(lags_vector,1,newLag+1);
+                                                                                        gsl_vector_set(lags_vector,2,newLag+2);
+                                                                                }
+                                                                                gsl_vector_set(convolutionLags,0,newconvolutionLags);
+                                                                                gsl_vector_set(*lagsgsl,*numberPulses-1,fabs(newLag)+2);
+                                                                        }
+                                                                        else    
+                                                                        {       
+                                                                                if (newconvolutionLags < gsl_vector_get(convolutionLags,1))
+                                                                                {
+                                                                                        exitLags = true;
+                                                                                        gsl_vector_set(lags_vector,2,newLag);
+                                                                                        gsl_vector_set(lags_vector,1,newLag-1);
+                                                                                        gsl_vector_set(lags_vector,0,newLag-2);
+                                                                                }
+                                                                                gsl_vector_set(convolutionLags,2,newconvolutionLags);
+                                                                                gsl_vector_set(*lagsgsl,*numberPulses-1,fabs(newLag)+2);
+                                                                        }
+                                                                } while (exitLags == false);
+                                                        }  
+                                        
+                                                        gsl_vector_set(*tstartgsl,*numberPulses-1,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,1));
+                                                        
+                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1) != previouslyFalsePulse)
+                                                        {
+                                                                gsl_vector_set(*samp1DERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                                if (reconstruct_init->detectSP == 1)
+                                                                {
+                                                                        if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,*numberPulses-1), reconstruct_init, &model))
+                                                                        {
+                                                                                message = "Cannot run find_model_samp1DERs routine";
+                                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                                        }
+                                                                }
+                                                                else
+                                                                        gsl_vector_set_all(model,1e6);
+
+                                                                // Average of the first 4 samples of the derivative
+                                                                sum_samp1DER = 0.0;
+                                                                limitMin = 0;
+                                                                limitMax = 3;
+                                                                for (int index_samp1DER=limitMin;index_samp1DER<=limitMax;index_samp1DER++)
+                                                                {
+                                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+index_samp1DER > sizeRecord-1)
+                                                                        {
+                                                                                limitMax = index_samp1DER-1;
+                                                                                limitMin = limitMax-3;
+                                                                        }
+                                                                }
+                                                                
+                                                                for (int index_samp1DER=limitMin;index_samp1DER<=limitMax;index_samp1DER++)
+                                                                {
+                                                                        sum_samp1DER = sum_samp1DER + gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+index_samp1DER);
+                                                                }
+                                                                gsl_vector_set(*samp1DERgsl,*numberPulses-1,sum_samp1DER/4.0);
+                                                        }
+                                                }
+                                                
+                                                if (gsl_vector_get(*tstartgsl,*numberPulses-1) != previouslyFalsePulse)
+                                                {
+                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1) == 0)
+                                                        {
+                                                                gsl_vector_set(ThreePoints_y,0,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                                gsl_vector_set(ThreePoints_y,1,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+1));
+                                                                gsl_vector_set(ThreePoints_y,2,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+2));
+                                                        }
+                                                        else if (gsl_vector_get(*tstartgsl,*numberPulses-1) == sizeRecord-1)
+                                                        {
+                                                                gsl_vector_set(ThreePoints_y,0,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)-2));
+                                                                gsl_vector_set(ThreePoints_y,1,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)-1));
+                                                                gsl_vector_set(ThreePoints_y,2,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                        }
+                                                        else
+                                                        {
+                                                                gsl_vector_set(ThreePoints_y,0,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)-1));
+                                                                gsl_vector_set(ThreePoints_y,1,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                                gsl_vector_set(ThreePoints_y,2,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+1));
+                                                        }
+                                                        
+                                                        //ax+b
+                                                        if (polyFitLinear(ThreePoints_x,ThreePoints_y,&a3Points,&b3Points))
+                                                        {
+                                                                message = "Cannot run polyFitLinear routine";
+                                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                                        }
+                                                        angleStart1 = atan(a3Points)*180/pi; // In degrees
+                                                }
+                                                else
+                                                        angleStart1 = -999;
+                                                
+                                                //cout<<*numberPulses<<" angleS: "<<angleStart1<<endl;
+                                                
+                                                if ((*numberPulses > 1) && (gsl_vector_get(*tstartgsl,*numberPulses-1) <= gsl_vector_get(*tstartgsl,*numberPulses-2)) ||
+                                                (angleStart1<criteriaDER_value))
+                                                {
+                                                        previouslyFalsePulse = gsl_vector_get(*tstartgsl,*numberPulses-1);
+                                                        *numberPulses = *numberPulses-1;
+                                                        gsl_vector_set(*flagTruncated,*numberPulses,0);
+                                                        foundPulse = false;
+                                                }
+                                                else
+                                                {
+                                                        if ((*numberPulses == 1) || ((*numberPulses > 1 ) && (gsl_vector_get(*tstartgsl,*numberPulses-1) > gsl_vector_get(*tstartgsl,*numberPulses-2)))) 
+                                                        {
+                                                                if ((gsl_vector_get(*tstartgsl,*numberPulses-1) < 0) || (min(gsl_vector_get(*tstartgsl,*numberPulses-1)+pulse_length_ToUse,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                                                {
+                                                                        sprintf(valERROR,"%d",__LINE__+9);
+                                                                        string str(valERROR);
+                                                                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                                }
+                                    
+                                                                for (int j=gsl_vector_get(*tstartgsl,*numberPulses-1);j<min(gsl_vector_get(*tstartgsl,*numberPulses-1)+pulse_length_ToUse,(double) sizeRecord);j++)
+                                                                {
+                                                                        gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                                }
+                                                                //cout<<"aD-model: "<<endl;
+                                                                //for (int j=gsl_vector_get(*tstartgsl,*numberPulses-1)-5;j<gsl_vector_get(*tstartgsl,*numberPulses-1)+30;j++)
+                                                                //        cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<endl;
+                                                                
+                                                                if (gsl_vector_get(*flagTruncated,*numberPulses-1) == 1)	i = 0;
+                                                                else
+                                                                    i = tstartWITHOUTLags + 1;
+                                                                foundPulse = false; 
+                                                        }
+                                                }
+                                        }
+                                        else 
+                                        {
+                                                if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") != 0)
+                                                {
+                                                        previouslyFalsePulse = gsl_vector_get(*tstartgsl,*numberPulses-1);
+                                                        *numberPulses = *numberPulses-1;
+                                                        gsl_vector_set(*flagTruncated,*numberPulses,0);
+                                                        foundPulse = false;
+                                                }
+                                        }
+                                }
+			}
+		} while (foundPulse == true);
+                
+                gsl_vector_free(lags_vector);
+                gsl_vector_free(convolutionLags);
+	}
+	else // Use the tstartPulsei provided as input parameters
+	{
+                numlags = 1;
+                lags_vector = gsl_vector_alloc(numlags);
+                for (int i=0;i<numlags;i++)	gsl_vector_set(lags_vector,i,-numlags/2+i);
+                convolutionLags = gsl_vector_alloc(numlags);
+                gsl_vector_set_zero(convolutionLags);
+                
+		gsl_vector_view temp;
+
+		gsl_vector *tstartPulsei = gsl_vector_alloc(3);
+		gsl_vector_set(tstartPulsei,0,reconstruct_init->tstartPulse1);
+		gsl_vector_set(tstartPulsei,1,reconstruct_init->tstartPulse2);
+		gsl_vector_set(tstartPulsei,2,reconstruct_init->tstartPulse3);
+
+		if (reconstruct_init->tstartPulse2 == 0) 	*numberPulses = 1;
+		else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
+		else						*numberPulses = 3;
+
+                if (numlags == 1)
+                {
+                        for (int i=0;i<*numberPulses;i++)
+                        {
+                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
+                                gsl_vector_set(*lagsgsl,i,numlags);
+
+                                if (i != *numberPulses-1) 	
+                                {
+                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+                                }
+                                else	
+                                {
+                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+                                }
+
+                                if (i == 0)
+                                {	
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                        gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)));
+                                        // Average of the first 4 samples of the derivative
+                                        sum_samp1DER = 0.0;
+                                        for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
+                                        {
+                                                sum_samp1DER = sum_samp1DER + gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
+
+                                        }                                                                                   
+                                        gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
+                                }
+                                else
+                                {
+                                        if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init, &model))
+                                        //if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init,pulse_length_ToUse, &model))
+                                        {
+                                                message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                        }
+                                        
+                                        //if ((gsl_vector_get(*tstartgsl,i-1) < 0) || (min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                        if ((gsl_vector_get(*tstartgsl,i-1) < 0) || (min(gsl_vector_get(*tstartgsl,i-1)+pulse_length_ToUse,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+7);
+                                                string str(valERROR);
+                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        //for (int j=gsl_vector_get(*tstartgsl,i-1);j<min(gsl_vector_get(*tstartgsl,i-1)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
+                                        for (int j=gsl_vector_get(*tstartgsl,i-1);j<min(gsl_vector_get(*tstartgsl,i-1)+pulse_length_ToUse,(double) sizeRecord);j++)
+                                        {
+                                                gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,i-1)));
+                                        }
+
+                                        if (i != *numberPulses-1)	
+                                        {
+                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                        || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+                                        }
+                                        else
+                                        {
+                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
+                                                        || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
+                                                {
+                                                        sprintf(valERROR,"%d",__LINE__+5);
+                                                        string str(valERROR);
+                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                        EP_PRINT_ERROR(message,EPFAIL);
+                                                }
+                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+                                        }
+                                        
+                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                        // Average of the first 4 samples of the derivative
+                                        sum_samp1DER = 0.0;
+                                        for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
+                                        {
+                                                sum_samp1DER = sum_samp1DER + gsl_vector_get(&temp.vector,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
+
+                                        }                                                                                   
+                                        gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
+                                }
+                        }
+                }
+                else 
+                {
+                        for (int i=0;i<*numberPulses;i++)
+                        {
+                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
+                                gsl_vector_set(*lagsgsl,i,numlags);
+                                
+                                while (gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)) < 0)
+                                {
+                                        if (i != *numberPulses-1)
+                                                if (gsl_vector_get(tstartPulsei,i)+1 > gsl_vector_get(tstartPulsei,i+1))        break;
+                                        else
+                                                if (gsl_vector_get(tstartPulsei,i)+1 > sizeRecord-1)                            break;
+                                    
+                                        gsl_vector_set(tstartPulsei,i,gsl_vector_get(tstartPulsei,i)+1);
+                                }
+                                    
+                                gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)));
+                                //cout<<"samp1DERBEFORELags: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
+                                if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,i), reconstruct_init, &model))
+                                {
+                                        message = "Cannot run find_model_samp1DERs routine";
+                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                //cout<<"model:"<<endl;
+                                //for (int k=0;k<3;k++)     cout<<k<<" "<<gsl_vector_get(model,k)<<endl;
+                                
+                                for (int j=0;j<numlags;j++)
+                                {
+                                        //for (int k=0;k<reconstruct_init->pulse_length;k++)
+                                        for (int k=0;k<pulse_length_ToUse;k++)
+                                        {
+                                                if (gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,j) < 0) 
+                                                        gsl_vector_set(convolutionLags,j,-999.0);
+                                                else if (gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,j) > sizeRecord) 
+                                                         gsl_vector_set(convolutionLags,j,-999.0);
+                                                else 	
+                                                {
+                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k < sizeRecord)
+                                                        {
+                                                                gsl_vector_set(convolutionLags,j,gsl_vector_get(convolutionLags,j)+gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,j)+k)*gsl_vector_get(model,k));
+                                                        }
+                                                        else
+                                                                break;
+                                                }
+                                        }
+                                        //cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", convolution="<<gsl_vector_get(convolutionLags,j)<<endl;
+                                }
+                                
+                                indexmax = gsl_vector_max_index(convolutionLags);
+                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,indexmax));
+                                gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,i)));
+                                
+                                if (i != *numberPulses-1)
+                                {
+                                        if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,i), reconstruct_init, &model))
+                                        {
+                                                message = "Cannot run find_model_samp1DERs routine";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                        }
+                                        //if ((gsl_vector_get(*tstartgsl,i) < 0) || (min(gsl_vector_get(*tstartgsl,i)+reconstruct_init->pulse_length,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                        if ((gsl_vector_get(*tstartgsl,i) < 0) || (min(gsl_vector_get(*tstartgsl,i)+pulse_length_ToUse,(double) sizeRecord)-1 > adjustedDerivative->size-1))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+7);
+                                                string str(valERROR);
+                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        //for (int j=gsl_vector_get(*tstartgsl,i);j<min(gsl_vector_get(*tstartgsl,i)+reconstruct_init->pulse_length,(double) sizeRecord);j++)
+                                        for (int j=gsl_vector_get(*tstartgsl,i);j<min(gsl_vector_get(*tstartgsl,i)+pulse_length_ToUse,(double) sizeRecord);j++)
+                                        {
+                                                gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(model,j-gsl_vector_get(*tstartgsl,i)));
+                                        }
+                                }
+                        }        
+                        
+                        for (int i=0;i<*numberPulses-1;i++)
+                        {
+                                if (i != *numberPulses-1)
+                                {
+                                        if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > sizeRecord-2)
+                                        || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) < 1) || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) > sizeRecord-gsl_vector_get(*tstartgsl,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i));
+                                }
+                                else
+                                {
+                                        if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > sizeRecord-2)
+                                        || (sizeRecord-gsl_vector_get(*tstartgsl,i) < 1) || (sizeRecord-gsl_vector_get(*tstartgsl,i) > sizeRecord-gsl_vector_get(*tstartgsl,i)))
+                                        {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                        }
+                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),sizeRecord-gsl_vector_get(*tstartgsl,i));
+                                }
+                                
+                                gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                                // Average of the first 4 samples of the derivative
+                                sum_samp1DER = 0.0;
+                                for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
+                                {
+                                        sum_samp1DER = sum_samp1DER + gsl_vector_get(&temp.vector,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
+
+                                }                                                                                   
+                                gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
+                        }
+                }
+
+		gsl_vector_free(tstartPulsei);
+                
+                gsl_vector_free(lags_vector);
+                gsl_vector_free(convolutionLags);
+	}
+
+	// Free allocated GSL vectors
+	gsl_vector_free(model);
+	gsl_vector_free(index_maxDERgsl);
+	
+	//gsl_vector_free(lags_vector);
+	//gsl_vector_free(convolutionLags);
+        gsl_vector_free(sublags_vector);
+        gsl_vector_free(subconvolutionLags_vector);
+        
+        gsl_vector_free(ThreePoints_x);
+        gsl_vector_free(ThreePoints_y);
 
 	return(EPOK);
 }
 /*xxxx end of SECTION 14 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 15 ************************************************************
+* find_model_samp1DERsNoReSCLD function: This function 
+* 
+******************************************************************************/
+int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound)
+{
+	string message = "";
+	char valERROR[256];
+	
+	/*gsl_vector *modelFound_aux;
+	if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
+	{
+		sprintf(valERROR,"%d",__LINE__-2);
+		string str(valERROR);
+	        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+		EP_PRINT_ERROR(message,EPFAIL);
+	}*/
+
+	long nummodels = reconstruct_init->library_collection->ntemplates;
+        
+        gsl_vector_view temp;
+
+	if (samp1DER < gsl_vector_get(reconstruct_init->library_collection->samp1DERs,0))
+	{
+		//gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate);
+		//gsl_vector_scale(modelFound_aux,samp1DER/gsl_vector_get(modelFound_aux,0));
+                
+                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[0].ptemplate,0,(*modelFound)->size);
+                gsl_vector_memcpy(*modelFound,&temp.vector);
+	}
+	else if (samp1DER > gsl_vector_get(reconstruct_init->library_collection->samp1DERs,nummodels-1))
+	{
+		//gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate);
+		//gsl_vector_scale(modelFound_aux,samp1DER/gsl_vector_get(modelFound_aux,nummodels-1));
+                
+                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate,0,(*modelFound)->size);
+                gsl_vector_memcpy(*modelFound,&temp.vector);
+	}
+	else
+	{
+		for (int i=0;i<nummodels-1;i++)
+		{
+			if ((samp1DER >= gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i)) && (samp1DER < gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)))
+			{
+				// Interpolate between the two corresponding rows in "models"
+				//gsl_vector_set_zero(modelFound_aux);
+                                
+                                gsl_vector *modelA = gsl_vector_alloc((*modelFound)->size);
+                                gsl_vector *modelB = gsl_vector_alloc((*modelFound)->size);
+                                gsl_vector_set_zero(*modelFound);
+                                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,0,(*modelFound)->size);
+                                gsl_vector_memcpy(modelA,&temp.vector);
+                                temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,0,(*modelFound)->size);
+                                gsl_vector_memcpy(modelB,&temp.vector);
+
+				//if (interpolate_model(&modelFound_aux,samp1DER,reconstruct_init->library_collection->pulse_templates_filder[i].ptemplate,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i),reconstruct_init->library_collection->pulse_templates_filder[i+1].ptemplate,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)))
+                                if (interpolate_model(modelFound,samp1DER,modelA,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i),modelB,gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)))
+				{
+					message = "Cannot run interpolate_model with two rows in models";
+					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+				}
+				
+				gsl_vector_free(modelA);
+                                gsl_vector_free(modelB);
+
+				break;
+			}
+		}
+	}
+
+	/*gsl_vector_view temp;
+	temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
+	gsl_vector_memcpy(*modelFound,&temp.vector);
+
+	gsl_vector_free(modelFound_aux);*/
+
+    return(EPOK);
+}
+/*xxxx end of SECTION 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 16 ************************************************************
+* smoothDerivative function: This function applies the smooth derivative to the input vector
+*
+* Parameters:
+* - invector: Input/Ouput GSL vector (input vector/smooth differentiated input vector)
+* - N: box-car length (it must be an even number)
+******************************************************************************/
+int smoothDerivative (gsl_vector **invector, int N)
+{
+        if (N%2 != 0)   // Odd number
+        {
+                string message = "";
+                message = "In the smoothDerivative function, N must be an even number)";
+		EP_PRINT_ERROR(message,EPFAIL);
+        }
+        else            // Even number
+        {
+                //gsl_vector *invectorAux = gsl_vector_alloc((*invector)->size+N);
+                int szVct = (*invector)->size+N;
+                //int szVct = invectorAux->size;
+                //for (int i=0;i<N;i++)       gsl_vector_set(invectorAux,i,0.0);
+                //for (int i=N;i<szVct;i++)   gsl_vector_set(invectorAux,i,gsl_vector_get(*invector,i-N));
+
+                //cout<<"smoothDerivative0:"<<endl;
+                //for (int i=0;i<szVct-N;i++)   cout<<i<<" "<<gsl_vector_get(*invector,i)<<endl;
+                
+                gsl_vector *window = gsl_vector_alloc(N);
+                gsl_vector_set_all(window,1.0);
+                for (int i=0;i<N/2;i++)     gsl_vector_set(window,i,-1.0);
+                
+                gsl_vector *conv = gsl_vector_alloc(szVct);
+                gsl_vector_set_zero(conv);
+                
+            
+                
+                int index;
+                for (int i=0;i<szVct;i++)
+                {
+                        //cout<<"i: "<<i<<endl;
+                        index = N-1;
+                        for (int j=i;j>=i-N+1;j--)
+                        {
+                                //cout<<"j: "<<j<<endl;
+                                //if ((j>=0) && (j<szVct))
+                                if ((j>=0) && (j<(*invector)->size))
+                                {
+                                        //cout<<i<<" "<<j<<" "<<index<<endl;
+                                        gsl_vector_set(conv,i,gsl_vector_get(conv,i)+gsl_vector_get(*invector,j)*gsl_vector_get(window,index));
+                                        //gsl_vector_set(conv,i,gsl_vector_get(conv,i)+gsl_vector_get(invectorAux,j)*gsl_vector_get(window,index));
+                                        index = index - 1;
+                                        //cout<<"if "<<i<<" "<<j<<" "<<index<<" conv="<<gsl_vector_get(conv,i)<<endl;
+                                }
+                        }
+                }
+                
+                gsl_vector_free(window);
+                //cout<<"smoothDerivative1:"<<endl;
+                //for (int i=0;i<szVct;i++)   cout<<i<<" "<<gsl_vector_get(conv,i)<<endl;
+                
+                //cout<<"(*invector)->size: "<<(*invector)->size<<endl;
+                //cout<<"conv->size: "<<conv->size<<endl;
+                gsl_vector_view temp;
+                temp = gsl_vector_subvector(conv,0,szVct-N);
+		gsl_vector_memcpy(*invector,&temp.vector);
+                //for (int i=0;i<N-1;i++)     
+                //        gsl_vector_set(*invector,i,0.0);
+                //cout<<"sm0: "<<gsl_vector_get(*invector,(*invector)->size-3)<<" "<<gsl_vector_get(*invector,(*invector)->size-2)<<" "<<gsl_vector_get(*invector,(*invector)->size-1)<<endl;
+                
+                //gsl_vector_set(*invector,(*invector)->size-1,gsl_vector_get(*invector,(*invector)->size-2));
+                
+                //cout<<"sm1: "<<gsl_vector_get(*invector,(*invector)->size-3)<<" "<<gsl_vector_get(*invector,(*invector)->size-2)<<" "<<gsl_vector_get(*invector,(*invector)->size-1)<<endl;
+                
+                //cout<<"smoothDerivative2:"<<endl;
+                //for (int i=0;i<(*invector)->size;i++)   cout<<i<<" "<<gsl_vector_get(*invector,i)<<endl;
+                
+                //gsl_vector_memcpy(invectorAux,conv);
+                
+                /*gsl_vector_view temp;
+                temp = gsl_vector_subvector(conv,N,szVct-N);
+		gsl_vector_memcpy(*invector,&temp.vector);*/
+                
+                gsl_vector_free(conv);
+        }
+
+	return (EPOK);
+}
+/*xxxx end of SECTION 16 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 17 ************************************************************
+* FindSecondariesA1 function: This function finds the pulses tstarts in the input vector (first derivative of the filtered record)
+*
+* This function scans all values the derivative of the (low-pass filtered) record until it finds nSamplesUp consecutive values (due to the noise more than 1 value is
+* required) over the threshold. To look for more pulses, it finds nSamplesUp consecutive values
+* (due to the noise) under the threshold and then, it starts to scan again.
+*
+* - Declare variables
+* - Allocate GSL vectors
+* - It is possible to find the tstarts...
+* 	- Obtain tstart of each pulse in the derivative:
+* 		- If der_i>threshold and foundPulse=false, it looks for nSamplesUp consecutive samples over the threshold
+*   			- If not, it looks again for a pulse crossing over the threshold
+*	        	- If yes, a pulse is found (truncated if it is at the beginning)
+*	   	- If der_i>threshold and foundPulse=true, it looks for a sample under the threshold
+*   	  		- If not, it looks again for a sample under the threshold
+*       		- If yes, it looks for nSamplesUp consecutive samples under the threshold and again it starts to look for a pulse
+* - ...or to use the tstart provided as input parameters
+* 	- Obtain the maxDERs of the pulses whose tstarts have been provided
+*
+* Parameters:
+* - maxPulsesPerRecord: Expected maximum number of pulses per record in order to not allocate the GSL variables with the size of the input vector
+* - der: First derivative of the (low-pass filtered) record
+* - adaptativethreshold: Threshold
+* - nSamplesUp: Number of consecutive samples over the threshold to 'find' a pulse
+* - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
+*                     This function uses 'pulse_length', 'tstartPulse1', 'tstartPulse2' and 'tstartPulse3'
+* - numberPulses: Number of found pulses
+* - tstartgsl: Pulses tstart (in samples)
+* - flagTruncated: Flag indicating if the pulse is truncated (inside this function only initial truncated pulses are classified)
+* - maxDERgsl: Maximum of the first derivative of the (low-pass filtered) record inside each found pulse
+******************************************************************************/
+int FindSecondariesA1
+(
+	int maxPulsesPerRecord,
+
+	gsl_vector *der,
+	double adaptativethreshold,
+	int nSamplesUp,
+
+	ReconstructInitSIRENA *reconstruct_init,
+
+	int *numberPulses,
+	
+	gsl_vector **tstartgsl,
+	gsl_vector **flagTruncated,
+	gsl_vector **maxDERgsl,
+        gsl_vector **samp1DERgsl,
+ 
+        int firstRecord
+)
+{
+	string message="";
+	char valERROR[256];
+
+	// Declare variables
+	int szRw = der->size;	 // Size of segment to process
+	*numberPulses = 0;
+	bool foundPulse = false;
+	int i = 0;		// To go through the elements of a vector
+	
+	int nSamplesDown = reconstruct_init->samplesDown;
+	
+	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
+	
+	// Allocate GSL vectors
+	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
+	if (*tstartgsl)		gsl_vector_free(*tstartgsl);	
+	*tstartgsl = gsl_vector_alloc(maxPulsesPerRecord);	
+	if (*flagTruncated)	gsl_vector_free(*flagTruncated);	
+	*flagTruncated = gsl_vector_alloc(maxPulsesPerRecord);
+	gsl_vector_set_zero(*flagTruncated);
+	if (*maxDERgsl)	gsl_vector_free(*maxDERgsl);	
+	*maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Maximum of the first derivative
+	gsl_vector_set_all(*maxDERgsl,-1E3);
+
+	int cntUp = 0;
+	int cntDown = 0;
+	double possibleTstart;
+	double possiblemaxDER;
+        double possiblesamp1DER;
+	
+	// To provide the tstarts (or not)
+	bool findTstarts = true;
+	if (reconstruct_init->tstartPulse1 != 0)	findTstarts = false;
+	
+        /*if (firstRecord == 1)
+        {
+                for (int i=990;i<2500;i++) cout<<gsl_vector_get(der,i)<<endl;
+                cout<<adaptativethreshold<<endl;
+        } */   
+	
+	if (findTstarts == true)
+	{
+		// It looks for a pulse
+		// If a pulse is found (foundPulse==true) => It looks for another pulse
+		do
+		{
+			foundPulse = false;
+			
+			// It looks for a pulse since the beginning (or the previous pulse) to the end of the record
+			while (i < szRw-1)
+			{
+				if (foundPulse == false)
+				{
+					// The first condition to detect a pulse is that the adjustedDerivative was over the threshold
+					if (gsl_vector_get(der,i) > adaptativethreshold)
+					{
+					        cntUp++;
+						if (cntUp == 1)
+						{
+							possibleTstart = i;
+                                                        //cout<<"cntUp: "<<cntUp<<" "<<i<<endl;
+							possiblemaxDER = gsl_vector_get(der,i);
+                                                        possiblesamp1DER = gsl_vector_get(der,i);
+						}
+						//else if (cntUp == nSamplesUp)
+						if (cntUp == nSamplesUp)
+						{
+							if (*numberPulses == maxPulsesPerRecord)
+							{
+								sprintf(valERROR,"%d",__LINE__+5);
+								string str(valERROR);
+								message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+								EP_PRINT_ERROR(message,EPFAIL);
+							}
+							gsl_vector_set(*maxDERgsl,*numberPulses,possiblemaxDER);
+							gsl_vector_set(*tstartgsl,*numberPulses,possibleTstart);
+                                                        gsl_vector_set(*samp1DERgsl,*numberPulses,possiblesamp1DER);
+							//if (possibleTstart == 0)	gsl_vector_set(*flagTruncated,*numberPulses,1);
+							*numberPulses = *numberPulses +1;
+							foundPulse = true;
+							cntUp = 0;
+						}
+						cntDown = 0;
+					}
+					else cntUp = 0;
+				}
+				else
+				{
+					if (gsl_vector_get(der,i) > gsl_vector_get(*maxDERgsl,*numberPulses-1))
+					{
+						gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(der,i));
+					}
+					else if (gsl_vector_get(der,i) < adaptativethreshold)
+					{
+						cntUp = 0;
+                                                //cout<<"cntDown: "<<cntDown<<" "<<i<<endl;
+						cntDown++;
+						//if (cntDown == nSamplesUp) // nSamplesUp samples under the threshold in order to look for another pulse
+                                                if (cntDown == nSamplesDown) // 1 sample under the threshold in order to look for another pulse
+						{
+							foundPulse = false; 
+							cntDown = 0;
+						}
+					}
+					else if (gsl_vector_get(der,i) > adaptativethreshold)
+					{
+						cntDown = 0;
+					}
+				}
+				i++;
+			}
+		} while (foundPulse == true);
+	}
+	else
+	{
+		gsl_vector_view temp;
+		// It is not necessary to check the allocation because 'reconstruct_init->pulse_length'='PulseLength'(input parameter) has been checked previously
+		gsl_vector *model = gsl_vector_alloc(reconstruct_init->pulse_length);
+
+		gsl_vector *tstartPulsei = gsl_vector_alloc(3);
+		gsl_vector_set(tstartPulsei,0,reconstruct_init->tstartPulse1);
+		gsl_vector_set(tstartPulsei,1,reconstruct_init->tstartPulse2);
+		gsl_vector_set(tstartPulsei,2,reconstruct_init->tstartPulse3);
+
+		if (reconstruct_init->tstartPulse2 == 0) 	*numberPulses = 1;
+		else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
+		else						*numberPulses = 3;
+
+		double maxPulse;
+		int cnt;
+		for (int i=0;i<*numberPulses;i++)
+		{
+			gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
+
+			if (i != *numberPulses-1)	
+			{
+				if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > der->size-2)
+					|| (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > der->size-gsl_vector_get(tstartPulsei,i)))
+				{
+					sprintf(valERROR,"%d",__LINE__+5);
+					string str(valERROR);
+					message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+					EP_PRINT_ERROR(message,EPFAIL);
+				}
+				temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+			}
+			else
+			{
+				if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > der->size-2)
+					|| (szRw-gsl_vector_get(tstartPulsei,i) < 1) || (szRw-gsl_vector_get(tstartPulsei,i) > der->size-gsl_vector_get(tstartPulsei,i)))
+				{
+					sprintf(valERROR,"%d",__LINE__+5);
+					string str(valERROR);
+					message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+					EP_PRINT_ERROR(message,EPFAIL);
+				}
+				temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),szRw-gsl_vector_get(tstartPulsei,i));
+			}
+			
+			gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+		}
+
+		gsl_vector_free(tstartPulsei);
+		gsl_vector_free(model);
+	}
+
+	return (EPOK);
+}
+/*xxxx end of SECTION 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

@@ -73,8 +73,8 @@ int tesreconstruction_main() {
     		par.DerivateExclusion,par.SaturationValue,&status);
     }else{
 	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile, 
-		par.PulseLength, par.scaleFactor, par.samplesUp, par.nSgms, par.mode, par.LrsT, par.LbT, par.NoiseFile, 
-		par.FilterDomain, par.FilterMethod, par.EnergyMethod, par.OFNoise, par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
+		par.PulseLength, par.scaleFactor, par.samplesUp, par.samplesDown, par.nSgms, par.detectSP, par.mode, par.detectionMode, par.LrsT, par.LbT, par.NoiseFile, 
+		par.FilterDomain, par.FilterMethod, par.EnergyMethod, par.filtEev, par.OFNoise, par.LagsOrNot, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
 		par.monoenergy, par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
 		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
 	  
@@ -135,13 +135,16 @@ int tesreconstruction_main() {
       {
 	    nrecord = nrecord + 1;
 	    if(nrecord == record_file->nrows) lastRecord=1;
-	    /*if(nrecord < 147) {
+	    /*if(nrecord < 349) 
+            {
 	      continue;
-	    }else if(nrecord > 147){
+	    }
+            else if(nrecord > 349)
+            {
 	      status=1;
 	      CHECK_STATUS_BREAK(status);
 	    }*/
-	   /*if(nrecord > 1)
+	    /*if(nrecord > 1)
 	    {
 	    	status=1;
 	        CHECK_STATUS_BREAK(status);
@@ -324,10 +327,18 @@ int getpar(struct Parameters* const par)
 	status=ape_trad_query_double("scaleFactor", &par->scaleFactor);
     
 	status=ape_trad_query_double("samplesUp", &par->samplesUp);
+        
+        status=ape_trad_query_double("samplesDown", &par->samplesDown);
   
 	status=ape_trad_query_double("nSgms", &par->nSgms);
+        
+        status=ape_trad_query_int("detectSP", &par->detectSP);
   
 	status=ape_trad_query_int("mode", &par->mode);
+        
+        status=ape_trad_query_string("detectionMode", &sbuffer);
+	strcpy(par->detectionMode, sbuffer);
+	free(sbuffer);
   
 	status=ape_trad_query_double("LrsT", &par->LrsT);
 
@@ -365,6 +376,8 @@ int getpar(struct Parameters* const par)
 	status=ape_trad_query_string("EnergyMethod", &sbuffer);
 	strcpy(par->EnergyMethod, sbuffer);
 	free(sbuffer);
+        
+        status=ape_trad_query_double("filtEev", &par->filtEev);
 
 	status=ape_trad_query_string("OFNoise", &sbuffer);
 	strcpy(par->OFNoise, sbuffer);
