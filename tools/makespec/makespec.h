@@ -40,7 +40,9 @@ struct Parameters {
   char EvtFile[MAXFILENAME];
   char Spectrum[MAXFILENAME];
   char RSPPath[MAXFILENAME];
-  char EventFilter[MAXFILENAME];
+  char EventFilter[MAXFILENAME];  
+  char ARFfile[MAXFILENAME];
+  char RMFfile[MAXFILENAME];
 
   int Seed;
   

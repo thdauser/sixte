@@ -51,7 +51,7 @@ int makespec_main() {
   set_toolname("makespec");
   set_toolversion("0.09");
 
-
+  
   do {  // Beginning of the ERROR handling loop.
 
     // --- Initialization ---
@@ -78,6 +78,7 @@ int makespec_main() {
     // Open the input event file.
     fits_open_table(&ef, evtlistfiltered, READONLY, &status);
     CHECK_STATUS_BREAK(status);
+
 
     // Read required keywords.
     char comment[MAXMSG];
@@ -106,6 +107,7 @@ int makespec_main() {
       SIXT_ERROR("could not find keyword 'ANCRFILE' in event file");
       break;
     }
+    
     char respfile[MAXMSG];
     fits_read_key(ef, TSTRING, "RESPFILE", respfile, comment, &status);
     if (EXIT_SUCCESS!=status) {
@@ -163,20 +165,111 @@ int makespec_main() {
       seed=(int)time(NULL);
     }
 
-    // Load the EBOUNDS of the RMF.
-    char filepathname[MAXFILENAME];
+    // we first check whether the user demands a different rmf or/and arf:
+    // Check the rmf:
+    char spcrespfile[MAXFILENAME];
+    if (strcmp("NONE",par.RMFfile)){ // User demands a different rmf 
+      strcpy(spcrespfile,par.RMFfile);
+    } else {                         // We use the same rmf as in the simulation
+      strcpy(spcrespfile,respfile);
+    }
+    // Check the arf:
+    char spcancrfile[MAXFILENAME];
+    if (strcmp("NONE",par.ARFfile)){ // User demands a different arf    
+      strcpy(spcancrfile,par.ARFfile);
+    } else {                         // We use the same arf as in the simulation
+      strcpy(spcancrfile,ancrfile);
+    }
+
+    // We put the path to the rmf into resppathname:
+    char resppathname[MAXFILENAME];
     if (strlen(par.RSPPath)>0) {
-      strcpy(filepathname, par.RSPPath);
-      strcat(filepathname, "/");
-      strcat(filepathname, respfile);
+      strcpy(resppathname, par.RSPPath);
+      strcat(resppathname, "/");
+      strcat(resppathname, spcrespfile);
     } else {
       // The file should be located in the working directory.
-      strcpy(filepathname, respfile);
-    }
+      strcpy(resppathname, spcrespfile);
+    }    
+
+    // Load the EBOUNDS of the RMF that will be used in the spectrum extraction.
     struct RMF* rmf=getRMF(&status);
     CHECK_STATUS_BREAK(status);
-    loadEbounds(rmf, filepathname, &status);
+    loadEbounds(rmf, resppathname, &status);
     CHECK_STATUS_BREAK(status);
+
+    
+    // If diferent rmf and/or arf are required, we need to check that the binning
+    // is compatible with the ones used for the simulation:
+    // Check the RMF:
+    if (strcmp("NONE",par.RMFfile)){
+
+      // Take the path to the rmf used in the simulation
+      // we load the rmf used in the simulation:
+      char simresppathname[MAXFILENAME];
+      if (strlen(par.RSPPath)>0) {
+	strcpy(simresppathname, par.RSPPath);
+	strcat(simresppathname, "/");
+	strcat(simresppathname, respfile);
+      } else {
+	// The file should be located in the working directory.
+	strcpy(simresppathname, respfile);
+      }
+
+      // Load the EBOUNDS of the RMF.
+      struct RMF* simrmf=getRMF(&status);
+      CHECK_STATUS_BREAK(status);
+      loadEbounds(simrmf, simresppathname, &status);
+      CHECK_STATUS_BREAK(status);
+      
+      // We check the number of bins and the low and high energy:
+      if((rmf->NumberChannels != simrmf->NumberChannels) ||
+      	 (rmf->ChannelLowEnergy[0]   != simrmf->ChannelLowEnergy[0]) ||
+      	 (rmf->ChannelHighEnergy[rmf->NumberChannels-2] != simrmf->ChannelHighEnergy[simrmf->NumberChannels-2])){
+	status=EXIT_FAILURE;
+	SIXT_ERROR("Required RMF has not the same binning as the original one");
+	break;
+      }
+    }
+    // Check the ARF:
+    if (strcmp("NONE",par.ARFfile)){
+      
+      // Take the path to the arf used in the simulation
+      // we load the rmf used in the simulation:
+      char simancrpathname[MAXFILENAME];
+      char ancrpathname[MAXFILENAME];
+      
+      if (strlen(par.RSPPath)>0) {
+	//
+	strcpy(simancrpathname, par.RSPPath);
+	strcat(simancrpathname, "/");
+	strcat(simancrpathname, ancrfile);
+	//
+	strcpy(ancrpathname, par.RSPPath);
+	strcat(ancrpathname, "/");
+	strcat(ancrpathname, spcancrfile);
+      } else {
+	// The file should be located in the working directory.
+	strcpy(simancrpathname, ancrfile);
+	strcpy(ancrpathname, spcancrfile);
+      }
+      
+      // Load the ARFs.
+      struct ARF* arf=loadARF(ancrpathname,&status);
+      CHECK_STATUS_BREAK(status);
+      struct ARF* simarf=loadARF(simancrpathname,&status);
+      CHECK_STATUS_BREAK(status);
+      
+      // We check the number of bins and the low and high energy:
+      if((arf->NumberEnergyBins != simarf->NumberEnergyBins) ||
+      	 (arf->LowEnergy[0]     != simarf->LowEnergy[0]) ||
+      	 (arf->HighEnergy[arf->NumberEnergyBins-2] != simarf->HighEnergy[simarf->NumberEnergyBins-2])){
+      	status=EXIT_FAILURE;
+      	SIXT_ERROR("Required ARF has not the same binning as the original one");
+      	break;
+      }
+    }
+
 
     // Initialize the random number generator.
     sixt_init_rng(seed, &status);
@@ -188,8 +281,8 @@ int makespec_main() {
     spec=(long*)malloc(rmf->NumberChannels*sizeof(long));
     CHECK_NULL_BREAK(spec, status, "memory allocation for spectrum failed");
 
-    // Initialize the spectrum with 0.
-    long ii; 
+    // Initialize the spectrum with 0. 
+    long ii;
     for (ii=0; ii<rmf->NumberChannels; ii++) {
       spec[ii]=0;
     }
@@ -254,10 +347,10 @@ int makespec_main() {
     fits_update_key(sf, TSTRING, "TIME-OBS", time_obs, "", &status);
     fits_update_key(sf, TSTRING, "DATE-END", date_end, "", &status);
     fits_update_key(sf, TSTRING, "TIME-END", time_end, "", &status);
-    fits_update_key(sf, TSTRING, "ANCRFILE", ancrfile, 
+    fits_update_key(sf, TSTRING, "ANCRFILE", spcancrfile,
 		    "ancillary response file", &status);
-    fits_update_key(sf, TSTRING, "RESPFILE", respfile, 
-		    "response file", &status);
+    fits_update_key(sf, TSTRING, "RESPFILE", spcrespfile,
+		    "response file", &status);  
     fits_update_key(sf, TSTRING, "BACKFILE", "", 
 		    "background file", &status);
     fits_update_key(sf, TLONG, "DETCHANS", &rmf->NumberChannels,
@@ -347,6 +440,24 @@ int makespec_getpar(struct Parameters* par)
   } 
   strcpy(par->RSPPath, sbuffer);
   free(sbuffer);
+
+  //
+  status=ape_trad_query_string("ANCRfile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the ancilliary file");
+    return(status);
+  }
+  strcpy(par->ARFfile, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("RESPfile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the response file");
+    return(status);
+  }
+  strcpy(par->RMFfile, sbuffer);
+  free(sbuffer);
+  //
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
