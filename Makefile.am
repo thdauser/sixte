@@ -18,3 +18,11 @@ include_HEADERS=sixteconfig.h
 .PHONY: test
 test:
 	cd test && make test
+
+crit_mac_version=10
+install-exec-hook:
+	@if [ 0$(OSX_VERSION_MINOR) -gt $(crit_mac_version)  ]; then\
+		echo "\n  ***  Mac Version $(OSX_VERSION_MAJOR).$(OSX_VERSION_MINOR) detected *** ";\
+		echo "\n   ... trying to solve known problems with this installation with this script:\n\n ";\
+		./mac_solve_sixte_dependencies.sh @simput_dir@ @prefix@;\
+	fi

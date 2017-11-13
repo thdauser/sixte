@@ -25,6 +25,8 @@ AC_ARG_WITH(simput,
 	simput_dir=${prefix}
 )  
 
+AC_SUBST(simput_dir)
+
 AC_ARG_WITH(gsl,
 	[AC_HELP_STRING([--with-gsl=<GSL path>],
 	[Provide an alternative path to the GSL software (requires lib to be in <path>/lib and includes in <path>/includes])],
@@ -51,6 +53,17 @@ if test "x$gsl_dir" != xno; then
 CPPFLAGS="$CPPFLAGS -I$gsl_dir/include"
 LDFLAGS="$LDFLAGS -L$gsl_dir/lib"
 fi
+
+OSX_VERSION_MAJOR=""
+OSX_VERSION_MINOR=""
+case $build_os in
+  darwin*)
+  OSX_VERSION_MAJOR=`sw_vers -productVersion | awk -F '.' '{print $1}'`
+  OSX_VERSION_MINOR=`sw_vers -productVersion | awk -F '.' '{print $2}'`
+  ;;
+esac
+AC_SUBST(OSX_VERSION_MAJOR)
+AC_SUBST(OSX_VERSION_MINOR)
 
 
 ####################################
