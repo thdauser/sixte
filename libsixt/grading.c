@@ -365,12 +365,6 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
     crosstalk_impact.pixposition.x = 0.;
     crosstalk_impact.pixposition.y = 0.;
 
-    PixImpact crosstalk_impact_ind;
-    crosstalk_impact_ind.detposition.x = 0.;
-    crosstalk_impact_ind.detposition.y = 0.;
-    crosstalk_impact_ind.pixposition.x = 0.;
-    crosstalk_impact_ind.pixposition.y = 0.;
-
 	// find out the channel of pixel the photon hit
 	Channel* active_chan = det->pix[impact->pixID].channel;
 
@@ -394,7 +388,6 @@ void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* 
 		CHECK_STATUS_VOID(*status);
 	}
 	//}
-
 }
 
 

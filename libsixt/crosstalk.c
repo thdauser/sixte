@@ -288,12 +288,12 @@ static void erasectk(CrosstalkProxy* xtalk_proxy, int* toerase, int erased_cross
 	assert(erased_crosstalks>0); //Actually some to erase
 
 	if (erased_crosstalks<xtalk_proxy->n_active_crosstalk){
-		int c=0;
-		int d=0;
+		long int c=0;
+		long int d=0;
 
 		//Erasing amongst the actives
 		for(int k=0;k<xtalk_proxy->n_active_crosstalk;k++){
-			if(k==toerase[c] && c<erased_crosstalks){ //Useless to access indices higher than c itself
+			if(c<erased_crosstalks && k==toerase[c]){ //Useless to access indices higher than c itself
 				c+=1;
 			} else{
 				copyPixImpact(xtalk_proxy->xtalk_impacts[d],xtalk_proxy->xtalk_impacts[k]); //Just shift the index
@@ -675,7 +675,9 @@ void load_elec_table(AdvDet* det, int k ,int* status){
 			printf(" *** error: reading electrical crosstalk table %s  failed\n", fullfilename);
 			break;
 		}
-
+		free(freq_s);
+		free(freq_p);
+		free(ener_p);
 	} while(0); // END of Error handling loop
 
 	free(EXTNAME_FDM_CROSSTALK_GRAD);
@@ -853,8 +855,10 @@ void load_electrical_cross_talk(AdvDet* det,int pixid,int* const status){
 
 	// Load for each grade, every different table only once (on first iteration)
 	if (det->crosstalk_elec == NULL){
-		det->crosstalk_elec_timedep=realloc(det->crosstalk_elec_timedep,2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
-		det->crosstalk_elec=realloc(det->crosstalk_elec, det->pix[0].ngrades*sizeof(ElecTab));
+		det->crosstalk_elec_timedep=(CrosstalkTimedep*)malloc(2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
+		CHECK_MALLOC_VOID_STATUS(det->crosstalk_elec_timedep,*status);
+		det->crosstalk_elec=(ElecTab*)malloc(det->pix[0].ngrades*sizeof(ElecTab));
+		CHECK_MALLOC_VOID_STATUS(det->crosstalk_elec,*status);
 		// load the tables for the electrical crosstalk
 		for (int k=0; k<det->pix[pixid].ngrades; k++){
 			load_elec_table(det, k, status);
@@ -1179,8 +1183,10 @@ void load_intermod_cross_talk(AdvDet* det, int* status){
 	CHECK_NULL_VOID(det->crosstalk_intermod_file,*status,"no file for the intermodulation table specified");
 	/** Looping through all the grades*/
 	if (det->crosstalk_imod_table==NULL){
-		det->crosstalk_imod_timedep=realloc(det->crosstalk_imod_timedep,2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
-		det->crosstalk_imod_table=realloc(det->crosstalk_imod_table, det->pix[0].ngrades*sizeof(ImodTab));
+		det->crosstalk_imod_timedep=(CrosstalkTimedep*)malloc(2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
+		CHECK_MALLOC_VOID_STATUS(det->crosstalk_imod_timedep,*status);
+		det->crosstalk_imod_table=(ImodTab*)malloc(det->pix[0].ngrades*sizeof(ImodTab));
+		CHECK_MALLOC_VOID_STATUS(det->crosstalk_imod_table,*status);
 		for(int k=0; k<det->pix->ngrades; k++){
 			load_imod_timedep(det,k,status);
 			load_intermod_freq_table(det,k,status);
@@ -1282,7 +1288,8 @@ void load_imod_timedep(AdvDet* det, int k, int* const status){
 
 
 static int doCrosstalk(int id, AdvDet* det){
-	if ( (id == det->crosstalk_id) || det->crosstalk_id == CROSSTALK_ID_ALL){
+	/** crosstalk "ALL" now exculdes the IMOD crosstalk (does not show a large effect) **/
+	if ( (id == det->crosstalk_id) || (det->crosstalk_id == CROSSTALK_ID_ALL )){
 		return 1;
 	} else {
 		return 0;
@@ -1307,7 +1314,8 @@ void init_crosstalk(AdvDet* det, int* const status){
 	// load thermal cross talk and associated time dependency
 	if (det->xt_num_thermal>0 && doCrosstalk(CROSSTALK_ID_THERM,det)){
 		headas_chat(5," - thermal crosstalk\n");
-		det->crosstalk_ther_timedep=(CrosstalkTimedep**)realloc(det->crosstalk_ther_timedep,det->xt_num_thermal*sizeof(CrosstalkTimedep*));
+		det->crosstalk_ther_timedep=(CrosstalkTimedep**)malloc(det->xt_num_thermal*sizeof(CrosstalkTimedep*));
+		CHECK_MALLOC_VOID_STATUS(det->crosstalk_ther_timedep,*status);
 		for (int i=0; i<det->xt_num_thermal;i++){
 			det->crosstalk_ther_timedep[i]=(CrosstalkTimedep*)malloc(2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
 			CHECK_MALLOC_VOID_STATUS(det->crosstalk_ther_timedep[i],*status);
@@ -1332,8 +1340,8 @@ void init_crosstalk(AdvDet* det, int* const status){
 		}
 	}
 
-	// load intermodulation cross talk and associated time dependency
-	if (det->crosstalk_intermod_file!=NULL && doCrosstalk(CROSSTALK_ID_IMOD,det)){
+	// load intermodulation cross talk and associated time dependency (NOT DONE FOR CROSSTALK==ALL)
+	if (det->crosstalk_intermod_file!=NULL && det->crosstalk_id==CROSSTALK_ID_IMOD){
 		headas_chat(5," - intermodulation crosstalk\n");
 		// loop through all pixels
 		load_intermod_cross_talk(det,status);
@@ -1359,10 +1367,8 @@ static void add_pixel_to_readout(ReadoutChannels* read_chan, AdvPix* pix, int ic
 
 	// add another pixel to the channel (ID starts at 1)
 	// (note that we use here that realloc behaves like malloc for a NULL pointer)
-	read_chan->channels[ic-1].pixels = (AdvPix**)
-			realloc( read_chan->channels[ic-1].pixels,
-					(read_chan->channels[ic-1].num_pixels+1) * sizeof(AdvPix*)
-					);
+	read_chan->channels[ic-1].pixels = (AdvPix**) realloc( read_chan->channels[ic-1].pixels,
+					(read_chan->channels[ic-1].num_pixels+1) * sizeof(AdvPix*));
 	CHECK_MALLOC_VOID_STATUS(read_chan->channels[ic-1].pixels,*status);
 
 	read_chan->channels[ic-1].pixels[read_chan->channels[ic-1].num_pixels] = pix;
@@ -1456,9 +1462,9 @@ ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 
 		// set frequency of the pixel
 		pix->freq = chans->freq[ii];
-                pix->resfreq = pix->freq; // initialization, just to be safe
+		pix->resfreq = pix->freq; // initialization, just to be safe
 		if (pix->freq <= 0.0){
-			printf("*** warning: assiging unrealistic frequency (%.3e) to pixel %i\n",pix->freq,pix->pindex);
+			printf("*** warning: assigning unrealistic frequency (%.3e) to pixel %i\n",pix->freq,pix->pindex);
 		}
 
 		// assign pixel to readout channel
@@ -1530,7 +1536,7 @@ channel_list* load_channel_list(char* fname, int* status){
 	    	 chans->freq  = freq;
 	     }
 	     // check that always all three numbers are matched
-	     if ( (fscanf(file, "%i %i %lf\n",&(chans->pixid[n]),&(chans->chan[n]),&(chans->freq[n]))) != 3){
+	     if ((fscanf(file, "%i %i %lf\n",&(chans->pixid[n]),&(chans->chan[n]),&(chans->freq[n]))) != 3){
 	    	 printf("*** formatting error in line %i of the channel file %s: check your input file\n",n+1,fname);
 	    	 *status=EXIT_FAILURE;
 	    	 return NULL;
@@ -1627,7 +1633,7 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpa
 		float dt_next=0.;
 		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
 
-			//This is the difference between the last impact time (!=current time) and the cross-talk impact
+			//This is the difference between the last impact time (!=simulation current time) and the cross-talk impact
 			//If this is larger than DTMIN, can be erased
 			dt_current=current_time-xtalk_proxy->xtalk_impacts[ii]->time;
 			//This is the difference between the current time and the crosstalk impact
@@ -1803,7 +1809,6 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 	int has_influenced= 0;
 	int erased_crosstalks=0;
 	int* toerase=NULL;
-	float dt=0;
 	CrosstalkTimedep* buffer=NULL;
 	PixImpact* crosstalk=NULL;
 	PixImpact* to_save=(PixImpact*)malloc(sizeof(PixImpact));
@@ -1811,7 +1816,6 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 	for (int ii=0;ii<xtalk_proxy->n_active_crosstalk;ii++){
 		//Getting the time dependency file
 		crosstalk = xtalk_proxy->xtalk_impacts[ii];
-		dt=impact->time-crosstalk->time;
 		//If needed, we save first occurrence (to respect causality), modify the saving index (to avoid multiple saves)
 		//and do it only if energy is non 0 (should never happen but failsafe)...
 		if (save_crosstalk==1 && xtalk_proxy->is_saved[ii]==0 && energies[ii]!=0){

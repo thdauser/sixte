@@ -156,16 +156,20 @@ void freeFDMSystem(FDMSystem* fdmsys){
 
 void freeReadoutChannels(ReadoutChannels* rc){
 	if ( rc != NULL ){
-                // Free the FDM systems
-                for (int ii=0; ii<rc->num_channels; ii++){
-                        if (rc->channels[ii].fdmsys != NULL){
-                                freeFDMSystem(rc->channels[ii].fdmsys);
-                        }
-                }
-		free(rc->channels);
-		free(rc->df_information_band);
+		// Free the FDM systems
+       for (int ii=0; ii<rc->num_channels; ii++){
+    	   if (rc->channels[ii].fdmsys != NULL){
+    		   freeFDMSystem(rc->channels[ii].fdmsys);
+           }
+    	   if (rc->channels[ii].pixels!=NULL){
+    		   //Only release first pointer, the was released via destroyAdvDet (<-- Dangerous game here! Edoardo's comment)
+    		   free(rc->channels[ii].pixels);
+    	   }
+       }
+       free(rc->channels);
+       free(rc->df_information_band);
 	}
-	free( rc );
+	free(rc);
 }
 
 void freeImodTab(ImodTab* tab, int gr){
@@ -228,18 +232,27 @@ void freeCrosstalk(AdvDet* det, int gr){
 		free(det->crosstalk_elec_timedep_file);
 		freeElecTab(det->crosstalk_elec,gr);
 		freeCrosstalkTimedep(det->crosstalk_elec_timedep,gr);
+		free(det->crosstalk_elec_timedep);
+		det->crosstalk_elec_timedep=NULL;
 
 		free(det->crosstalk_intermod_timedep_file);
 		freeImodTab(det->crosstalk_imod_table,gr);
 		freeCrosstalkTimedep(det->crosstalk_imod_timedep,gr);
+		free(det->crosstalk_imod_timedep);
+		det->crosstalk_elec_timedep=NULL;
 
 		if(det->crosstalk_ther_timedep!=NULL){
 			for(int i=0; i<len; i++){
 				freeCrosstalkTimedep(det->crosstalk_ther_timedep[i],gr);
+				free(det->crosstalk_ther_timedep[i]);
+				det->crosstalk_ther_timedep[i]=NULL;
 				free(det->crosstalk_thermal_timedep_file[i]);
+				det->crosstalk_thermal_timedep_file[i]=NULL;
 			}
 			free(det->crosstalk_thermal_timedep_file);
+			det->crosstalk_thermal_timedep_file=NULL;
 			free(det->crosstalk_ther_timedep);
+			det->crosstalk_ther_timedep=NULL;
 		}
 	}
 }
@@ -1370,7 +1383,5 @@ void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr){
 			free(timedep[2*k+1].weight);
 		}
 	}
-	free(timedep);
-	timedep=NULL;
 }
 

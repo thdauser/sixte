@@ -26,7 +26,9 @@
 #define READOUT_ICHANNEL 1
 #define READOUT_QCHANNEL 2
 
-
+//TES RTI models
+#define TES_Linear_Model 1
+#define TES_2_Fluid_Model 2
 
 // parameters for the initializer
 typedef struct {
@@ -58,6 +60,7 @@ typedef struct {
   double I0;     // current at I0 [A]
   double V0;     // voltage bias [V] (computed for initial equilibrium if negative)
   int thermal_bias; // compute I0 and V0 from thermal power balance
+  double bias;   // bias within the transition in term of Rn (<1)
 
   double sample_rate; // sample rate (Hz)
   double imin;    // minimum current to encode [A]
@@ -69,6 +72,13 @@ typedef struct {
 
   int clobber;  // overwrite output files?
   int simnoise; // simulator noise 
+  int twofluid; // option to use the two fluid model transition
+  //TODO Change this keyword once more models become available
+  int stochastic_integrator; // option to use the stochastic integrator
+
+  int frame_hit; //Option to use frame hits"
+  double frame_hit_time; //Time of frame event (s)
+  char* frame_hit_file; //File name of frame hit model
 
   double m_excess; // magnitude of excess noise
 
@@ -201,6 +211,9 @@ void tes_append_trigger(tesparams *tes,double time,double pulse,int *status);
 #define TRIGGER_NOISE 3
 #define TRIGGER_IMPACT 4
 
+// maximal time of influence for frame hits
+#define MAX_TIME 1
+
 // append a photon to the data stream
 // NOT YET IMPLEMENTED!
 // void tes_append_photon_trigger(tesparams *tes, double time, long phid, int *status);
@@ -211,9 +224,6 @@ void tes_close_trigger(tesparams *tes, int *status);
 // cleanup the TES data stream
 void tes_free_trigger(tes_trigger_info **data, int *status);
 
-
-
-
 // general functions
 tesparams *tes_init(tespxlparams *par,int *status);
 int tes_propagate(AdvDet *det, double tstop, int *status);
@@ -221,6 +231,15 @@ void tes_free(tesparams *tes);
 void tes_print_params(tesparams *tes);
 void tes_fits_write_params(fitsfile *fptr,tesparams *tes, int *status);
 void tes_fits_read_params(char *file,tespxlparams *tes, int *status);
+
+// stochastic_integrator
+int sde_step(double a(double X[], int k, void *params), double b(double X[], int k, int j, void *params), int dim, int m, double Y[], const double delta_t, const gsl_rng *r, void *params);
+
+// frame hit integrator
+double frameImpactEffects(double time_hit, tesparams* tes, int* shift);
+
+// frame hit file reader
+void read_frame_hit_file(tesparams *tes, int *status);
 
 #define PROGRESSBAR_FACTOR 10
 

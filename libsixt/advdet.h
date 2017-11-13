@@ -428,7 +428,7 @@ struct Channel{
 	AdvPix** pixels;
 	int num_pixels;
 	int channel_id;
-        FDMSystem* fdmsys; 
+    FDMSystem* fdmsys;
 };
 
 /** Structure containing a certain amount of Impacts, which are not written

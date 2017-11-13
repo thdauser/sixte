@@ -17,6 +17,7 @@
 // must return 1 if successful, 0 if no further photon to process
 typedef int (*tes_photon_provider) (PixImpact *photon, void *providerinfo, int *status);
 
+
 // photon provider functions and their associated data
 
 //get photon from impact file
@@ -56,6 +57,44 @@ typedef void (*tes_stream_writer) (tesparams *tes,double time, double pulse, int
 // this function is called whenever photon data are written. Data is the streaminfo of tesparams
 typedef void (*tes_photon_writer) (tesparams *tes, double time, long phid, int *status);
 
+// dRdI provider
+// a call to this function returns the current value of dR/dI
+typedef double (*dRdI_provider) (tesparams *tes, const double Y[]);
+
+double get_dRdI(tesparams *tes, const double Y[]);
+
+// dRdT provider
+// a call to this function returns the current value of dR/dT
+typedef double (*dRdT_provider) (tesparams *tes, const double Y[]);
+
+double get_dRdT(tesparams *tes, const double Y[]);
+
+typedef double (*RTI_provider) (tesparams *tes, const double Y[]);
+
+double get_RTI(tesparams *tes, const double Y[]);
+
+//Frame hits structure
+struct structLinkedFrameImpacts{
+	double time; //Time of the impact
+	double energy; //Deposited energy in the frame
+	struct structLinkedFrameImpacts* next;
+};
+
+typedef struct structLinkedFrameImpacts LinkedFrameImpacts;
+
+//Frame hits initialiser
+LinkedFrameImpacts* newLinkedFrameImpacts(int* const status);
+
+//Frame hits destroyers
+void freeLinkedFrameImpacts(LinkedFrameImpacts** const list);
+
+// Frame hit generator
+LinkedFrameImpacts* frameHitsList(tesparams *tes, int* const status);
+
+typedef double (*DeltaTb_provider) (tesparams *tes);
+
+double get_DeltaTb(tesparams *tes);
+
 // 
 // meta struct containing all physical parameters of the TES pixel
 //
@@ -80,7 +119,9 @@ struct tesparams {
 
 
   double T_start; // initial operating temperature of the TES [K]
-  double Tb;     // Heat sink/bath temperature [K]
+  double Tb_start;     // Heat sink/bath temperature at [K]
+  DeltaTb_provider Tb; // Delta Heat sink/bath temperature due to frame hits at time t[K]
+  LinkedFrameImpacts* frame_hits; //tes frame hits
   double R0;     // Operating point resistance [Ohm]
   double RL;     // Shunt/load resistor value [Ohm]
   double Rpara;  // Parasitic resistor value [Ohm]
@@ -99,10 +140,10 @@ struct tesparams {
   double beta;   // TES current dependence (I/R*dR/dI)
   double n;      // Temperature dependence of the power flow to the heat sink
 
-  double dRdT;   // dR/dT at Tc
-  double dRdI;   // dR/dI at Tc
+  dRdT_provider dRdT;   // dR/dT at current timestep
+  dRdI_provider dRdI;   // dR/dI at current timestep
 
-  int mech;     // 1 for XXXX (MCCAMMON or IRWIN/HINTON CHAPTER) 
+  int mech;     // 1 for XXXX (MCCAMMON or IRWIN/HILTON CHAPTER)
   double therm; // thermalization timescale in units of step size
 
   double Ce1;    // absorber+TES heat capacity at Tc [J/K]
@@ -117,10 +158,13 @@ struct tesparams {
   double T1;     // temperature
 
   double RT;     // resistance(T)
+  RTI_provider RTI; //
+  double bias;   // bias percentage (%)
 
   unsigned long seed; // rng seed at start of simulation
 
   int simnoise;  // simulate noise?
+  int stochastic_integrator; //use stochastic integrator?
 
   double Pnb1;   // thermal noise
 
@@ -131,6 +175,17 @@ struct tesparams {
   double m_excess; // magnitude of excess noise relative to Johnson (bath) noise
 
   double squid_noise; // SQUID readout and electronics noise 
+
+  int twofluid; //Do we use the twofluid model?
+  //TODO Change once more models become available
+
+  int frame_hit; //Option to use frame hits
+  double frame_hit_time; //Time of frame event (s)
+  char* frame_hit_file; //File name of frame hit model
+  int frame_hit_file_length; //File length
+
+  double* frame_hit_time_dep; //Pulse time dependence
+  double* frame_hit_shape; //Pulse shape
 
   PixImpact *impact;   // next photon impact
   double En1;   // energy absorbed by photons during this step [J]

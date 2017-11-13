@@ -575,6 +575,11 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     }
     assert(par->R0>0);
     
+    query_simput_parameter_double("bias", &(par->bias), status);
+    par->bias*=1e-2; // %->decimal
+    assert(par->bias>0.); //Not 0
+    assert(par->bias<=1.); //Below Rn
+
     if (cmd_query_simput_parameter_double(fromcmd,"I0", &(par->I0), status) ) {
       // if this is set simultaneously to the thermal balance, this throws an error
       if (par->thermal_bias){
@@ -596,7 +601,6 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
       }
       par->V0*=1e-6; // muV->V
     }
-
     
     if (par->acdc) {
       if (cmd_query_simput_parameter_double(fromcmd,"Rparasitic", &(par->Rpara), status)) {
@@ -657,7 +661,28 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
   }
   assert(par->m_excess>=0);
 
+  cmd_query_simput_parameter_bool(fromcmd,"twofluid", &par->twofluid, status);
+  //TODO Change keyword name when new models become available
   // readout mode is only not 'total' for crosstalk
+  cmd_query_simput_parameter_bool(fromcmd,"stochastic_integrator", &par->stochastic_integrator, status);
+
+  //Handling the frame impacts
+  cmd_query_simput_parameter_bool(fromcmd,"frame_hit", &par->frame_hit, status);
+  query_simput_parameter_file_name("frame_hit_file", &(par->frame_hit_file), status);
+  query_simput_parameter_double("frame_hit_time", &(par->frame_hit_time), status);
+
+  if (par->frame_hit!=0){
+      if (NULL==par->frame_hit_file){
+          SIXT_ERROR("An input file is needed for the frame hit!");
+          *status=EXIT_FAILURE;
+          return;
+      }
+  }
+
+  if (par->frame_hit!=0){
+	  printf("Reading frame hit template from %s, impact time %f s \n", par->frame_hit_file, par->frame_hit_time);
+  }
+
   if (!par->doCrosstalk){
     par->readoutMode=READOUT_TOTAL;
   } else {

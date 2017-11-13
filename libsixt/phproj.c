@@ -180,5 +180,8 @@ void phproj_advdet(GenInst* const inst,
 		event_file->row++;
 	}
 	CHECK_STATUS_VOID(*status);
+	freeObj2D_instance(general_geometry);
+	free(general_geometry);
+	general_geometry=NULL;
 	// END of LOOP over all events.
 }

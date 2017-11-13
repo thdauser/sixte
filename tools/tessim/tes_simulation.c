@@ -4,7 +4,7 @@
 // of the data stream are written to an array. The code uses a 4th
 // order Runge Kutta method to numerically integrate the system on
 // differential equations which describes the TES electro-thermal
-// response. Tn this code we use a simple linear transition shape with
+// response. In this code we use a simple linear transition shape with
 // alpha (TES temperature sensitivity) and beta (TES current
 // sensitivity) dependence. The non-linearity in the TES response due
 // to the dissproportionality between resistance and current is
@@ -59,7 +59,6 @@ const double kBoltz=1.3806488e-23; // Boltzmann constant [m^2 kg/s^2]
 const double eV=1.602176565e-19 ;  // 1eV [J]
 const double keV=1.602176565e-16 ;  // 1keV [J]
 
-
 // Differential equations for the TES to solve. This is the simplest
 // calorimeter model assuming a single heat capacity for the 
 // TES and absorber
@@ -74,12 +73,11 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
   // index 1: thermal equation    T1=Y[1]
 
   double II=Y[0];
-  double TT=Y[1];
 
   tesparams *tes=(tesparams *) params;
 
   // RT(I0,T1)
-  double RT=tes->R0+tes->dRdT*(TT-tes->T_start)+tes->dRdI*(II-tes->I0_start);
+  double RT=tes->RTI(tes, Y);
 
   // Electrical circuit equation: dI/dt -- dy_0/dt=f_0(t,y_0(t),y_1(t))
   // note: Vdn, Vexc, Vcn are the Johnson noise terms, Vunk is the unknown noise
@@ -97,20 +95,62 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
   return GSL_SUCCESS;
 }
 
+// Deterministic part of the differential equations for stochastic integrator
+double TES_sde_deterministic(double X[], int k, void *params) {
+	double val = 0;
+	double II=X[0];
+	tesparams *tes=(tesparams *) params;
+	double RT=tes->RTI(tes,X);
+	
+	if (k == 0) {
+		val = (tes->V0-II*(tes->Reff+RT))/tes->Leff;
+		if (tes->acdc) {
+			val=val/2.;
+		}
+	}
+	if (k == 1) {
+		val = (II*II*RT-tes->Pb1+tes->En1)/tes->Ce1;
+	}
+	
+	return val;
+}
+
+// Noise terms for stochastic integrator
+double TES_sde_noise(double X[], int k, int j, void *params) {
+	double val = 0;
+	double II=X[0];
+	double TT=X[1];
+	tesparams *tes=(tesparams *) params;
+	double RT=tes->RTI(tes,X);
+	
+	if (k == 0) {
+		if (j == 1) val = sqrt(2.*kBoltz*tes->Tb(tes)*tes->Reff)/tes->Leff; 
+		if (j == 2) val = sqrt(2.*kBoltz*TT*RT)/tes->Leff; 
+		if (j == 3) val = 0;
+	}
+	if (k == 1) {
+		if (j == 1) val = 0;
+		if (j == 2) val = II*sqrt(2.*kBoltz*TT*RT)/tes->Ce1;
+		if (j == 3) val = sqrt(2.*kBoltz*TT*TT*tes->Gb1)/tes->Ce1;
+	}
+	return val;
+}
+
 int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *params) {
+
+  double II=Y[0];
 
   tesparams *tes=(tesparams *) params;
 
-  const double II=Y[0];
-  const double TT=Y[1];
-
-  double RT=tes->R0+tes->dRdT*(TT-tes->T_start)+tes->dRdI*(II-tes->I0_start);
+  double RT=tes->RTI(tes, Y);
+  double dRdT=tes->dRdT(tes, Y);
+  double dRdI=tes->dRdI(tes,Y);
 
   // J_00 = df_0(t,y)/dy0
-  double J00=(tes->Reff+RT+II*tes->dRdI)/tes->Leff;
+  double J00=(tes->Reff+RT+II*dRdI)/tes->Leff;
 
   // J_01 = df_0(t,y)/dy1
-  double J01=-tes->dRdT*II/tes->Leff;
+  double J01=-dRdT*II/tes->Leff;
 
   if (tes->acdc) {
     J00*=0.5;
@@ -119,10 +159,10 @@ int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *p
 
 
   // J_10 = df_1(t,y)/dy0
-  double J10=(2.0*II*RT-II*II*tes->dRdT-(tes->Vdn+tes->Vexc))/tes->Ce1;
+  double J10=(2.0*II*RT-II*II*dRdT-(tes->Vdn+tes->Vexc))/tes->Ce1;
 
   // J_11 = dt_1(t,y)/dy1
-  double J11=II*II*tes->dRdT/tes->Ce1;
+  double J11=II*II*dRdT/tes->Ce1;
 
   // setup Jacobian matrix per example at 
   // https://www.gnu.org/software/gsl/manual/html_node/ODE-Example-programs.html#ODE-Example-programs
@@ -152,7 +192,7 @@ double tnoi(tesparams *tes) {
 
   // Irwin, eq. 93
   if (tes->mech==0) {
-    gamma=(pow(tes->Tb/tes->T1,n1+2.0)+1.0)/2.0;
+    gamma=(pow(tes->Tb(tes)/tes->T1,n1+2.0)+1.0)/2.0;
   } else {
     gamma=1.;
   }
@@ -167,10 +207,9 @@ double tpow(tesparams *tes) {
 
   double G1=tes->Gb1*pow(tes->T1/tes->T_start,beta_th);
 
-  return G1*(pow(tes->T1,tes->n)-pow(tes->Tb,tes->n))/(tes->n*pow(tes->T1,beta_th));
+  return G1*(pow(tes->T1,tes->n)-pow(tes->Tb(tes),tes->n))/(tes->n*pow(tes->T1,beta_th));
 }
 
-//
 // Add properties of tes to the header of fptr. 
 // 
 // Note: we write all information using SI units (so no conversion to mA etc.!)
@@ -203,7 +242,7 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   fits_update_key(fptr,TDOUBLE,"ALPHA",&tes->alpha,"TES sensitivity T/R*dR/dT (alpha)",status);
   fits_update_key(fptr,TDOUBLE,"BETA",&tes->beta,"TES current dependence I/R*dR/dI (beta)",status);
   fits_update_key(fptr,TDOUBLE,"T_START",&tes->T_start,"[K] Initial operating temperature",status);
-  fits_update_key(fptr,TDOUBLE,"TB",&tes->Tb,"[K] Heat sink temperature",status);
+  fits_update_key(fptr,TDOUBLE,"TB_START",&tes->Tb_start,"[K] Equilibrium heat sink temperature",status);
   fits_update_key(fptr,TDOUBLE,"N",&tes->n,"Heat sink coupling parameter n",status);
   fits_update_key(fptr,TDOUBLE,"CE1",&tes->Ce1,"[J/K] Absorber+TES heat capacity at Tc",status);
   fits_update_key(fptr,TDOUBLE,"PB1",&tes->Pb1,"[W/K] Thermal power flow",status);
@@ -346,7 +385,7 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"\n");
 
   headas_chat(0,"Initial operating temperature [mK]      : %10.3f\n",1000.*tes->T_start);
-  headas_chat(0,"Heat sink temperature [mK]              : %10.3f\n",1000.*tes->Tb);
+  headas_chat(0,"Equilibrium heat sink temperature [mK]  : %10.3f\n",1000.*tes->Tb_start);
   headas_chat(0,"\n");
 
   headas_chat(0,"Seed of random number generator         : %10lu\n",tes->seed);
@@ -547,7 +586,6 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"Predicted energy resolution (FWHM, eV): %10.3f\n",FWHM/eV);
 }
 
-
 tesparams *tes_init(tespxlparams *par,int *status) {
   //
   // Initialize a TES pixel
@@ -621,11 +659,14 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->acdc=par->acdc;
 
   tes->T_start=par->T_start;// initial operating temperature of the TES [K]
-  tes->Tb=par->Tb;      // Heat sink/bath temperature [K]
+  tes->Tb_start=par->Tb;      // Initial heat sink/bath temperature [K]
+  tes->Tb=&get_DeltaTb;		//Additional bath temperature due to frame hits
+
   tes->R0=par->R0;        // Operating point resistance [Ohm]
   tes->RL=par->RL;     // Shunt / load resistor value
   tes->Rpara=par->Rpara; // Parasitic 
-  tes->TTR=par->TTR;
+  tes->TTR=par->TTR;	// Transformer turn ratio
+  tes->bias=par->bias;  //Rn percentage bias (<1)
 
   tes->alpha=par->alpha;      // TES sensitivity (T/R*dR/dT)
   tes->beta=par->beta;       // TES current dependence (I/R*dR/dI)
@@ -634,6 +675,23 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->n=par->n;          // Temperature dependence of the power flow to the heat sink
   // use this to turn the noise on or off
   tes->simnoise=par->simnoise;
+  tes->twofluid=par->twofluid; //Option to use the twofluid model
+  tes->stochastic_integrator=par->stochastic_integrator; //Option to use the stochastic integrator
+  //TODO Change if more models become available
+
+  //Handle the frame hit
+  tes->frame_hit=par->frame_hit; //Option to use the frame hits
+
+  tes->frame_hit_time=par->frame_hit_time; //Time of frame event (s)
+  tes->frame_hit_file=par->frame_hit_file; //File name of frame hit model
+  tes->frame_hits=frameHitsList(tes, status); //Frame hits linked list
+  tes->frame_hit_file_length=0; //Initialise length of the file
+  tes->frame_hit_time_dep=NULL;
+  tes->frame_hit_shape=NULL;
+
+  if (tes->frame_hit!=0){
+	  read_frame_hit_file(tes, status);
+  }
 
   if (tes->acdc) {
     tes->Reff=tes->Rpara/(tes->TTR*tes->TTR);
@@ -658,7 +716,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // bias current from thermal power balance
   if (par->thermal_bias) {
     tes->I0_start=sqrt(tes->Gb1/(tes->n*pow(tes->T_start,tes->n-1.))*
-                      (pow(tes->T_start,tes->n)-pow(tes->Tb,tes->n))/tes->R0);
+                      (pow(tes->T_start,tes->n)-pow(tes->Tb(tes),tes->n))/tes->R0);
   } else {
     tes->I0_start=par->I0;
 }
@@ -668,8 +726,8 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   // tes->Ce1=0.86e-12*(tes->T_start/0.1); //Absorber+TES heat capacity at Tc
   tes->Ce1=par->Ce1;
 
-  tes->dRdT=tes->alpha*tes->R0/tes->T_start;
-  tes->dRdI=tes->beta*tes->R0/tes->I0_start;
+  tes->dRdT=&get_dRdT;
+  tes->dRdI=&get_dRdI;
  
   // level of SQUID readout and electronics noise
   //JW WE STILL NEED TO MAKE THIS MORE CONSISTENT AS
@@ -692,6 +750,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
     tes->V0 = par->V0;
   }
   tes->RT=tes->R0;
+  tes->RTI=&get_RTI;
   tes->T1=tes->T_start;
 
   // power flow
@@ -741,6 +800,14 @@ void tes_free(tesparams *tes) {
   gsl_odeiv2_driver_free(tes->odedriver);
   tes->odedriver=NULL;
 
+  freeLinkedFrameImpacts(&tes->frame_hits);
+  tes->frame_hits=NULL;
+  
+  if (tes->frame_hit!=0) {
+	  free(tes->frame_hit_shape);
+	  free(tes->frame_hit_time_dep);
+  }
+
   free(tes->odesys);
   tes->odesys=NULL;
 
@@ -789,7 +856,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
     // NB we will need logic in tes->write_to_stream that
     // disallows duplicate writes of the same element
     if (tes->write_to_stream != NULL) {
-      double pulse;
+      double pulse = 0.0;
       if (det->npix>1 && det->readout_channels != NULL) {
         // include Crosstalk
         tes->Iout_start = gsl_complex_mul(gsl_complex_add_real(tes->Ioverlap , tes->I0_start),gsl_complex_polar(1.,-tes->theta_Vb));
@@ -830,6 +897,11 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         samplestep[ii]++;
       }
 
+      double Y[2];
+      Y[0]=tes->I0; // current
+      Y[1]=tes->T1; // temperature
+      double dRdI=tes->dRdI(tes, Y); //To reduce computational time!
+
       if (tes->simnoise) {
         // thermal noise
         tes->Pnb1=tnoi(tes);
@@ -838,9 +910,9 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         // (this should now be ok for the excess noise, but needs somebody
         // else to check this again to be 100% sure)
         tes->Vdn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth));
-        tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*tes->dRdI*tes->I0/tes->RT));
-        tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb*tes->Reff*tes->bandwidth));
-        tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*tes->dRdI*tes->I0/tes->RT)*tes->m_excess*tes->m_excess) );
+        tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*dRdI*tes->I0/tes->RT));
+        tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb(tes)*tes->Reff*tes->bandwidth));
+        tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*dRdI*tes->I0/tes->RT)*tes->m_excess*tes->m_excess) );
       }
 
       // absorb next photon?
@@ -869,11 +941,19 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
           tes->impact->time=tstop+100.;
         }
       }
-      double Y[2];
-      Y[0]=tes->I0; // current
-      Y[1]=tes->T1; // temperature
 
-      int s=gsl_odeiv2_driver_apply_fixed_step(tes->odedriver,&(tes->time),tes->delta_t,1,Y);
+      int s = GSL_SUCCESS;
+      if (tes->stochastic_integrator) {
+		  // number of noise terms included in the stochastic differential equation system
+		  int noise_terms = 0; 
+		  if (tes->simnoise) {
+			  noise_terms = 3;
+		  }
+		  s=sde_step(TES_sde_deterministic,TES_sde_noise,2,noise_terms,Y,tes->delta_t,rng,tes);
+	  } else {
+		  s=gsl_odeiv2_driver_apply_fixed_step(tes->odedriver,&(tes->time),tes->delta_t,1,Y);
+	  }
+	  
       tes->time=tes->tstart+step_nb[ii]*tes->delta_t;
       if (s!=GSL_SUCCESS) {
         fprintf(stderr,"Driver error: %d\n",s);
@@ -891,7 +971,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
 
       // New resistance value assuming a simple 
       // linear transition with alpha and beta dependence
-      tes->RT=tes->R0+tes->dRdT*(tes->T1-tes->T_start)+tes->dRdI*(tes->I0-tes->I0_start);
+      tes->RT=tes->RTI(tes, Y);//tes->R0+tes->dRdT(tes)*(tes->T1-tes->T_start)+tes->dRdI(tes)*(tes->I0-tes->I0_start);
 
       // thermal power flow
       tes->Pb1=tpow(tes); 
@@ -916,7 +996,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         // we also add the SQUID/readout noise and subtract the
         // baseline (the equilibrium bias current) and invert the
         // pulses so they are all +ve
-        double pulse;
+        double pulse = 0.0;
         if (det->npix>1 && det->readout_channels != NULL) {
           // Include crosstalk
           // Calculate output current including phase shift
@@ -935,6 +1015,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
 
         } else {
           pulse=tes->I0_start-tes->I0;
+          //pulse=tes->T1;
         }
         if (tes->simnoise) {
           pulse += gsl_ran_gaussian(rng,tes->squid_noise);
@@ -955,3 +1036,5 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
   }
   return(0);
 }
+
+

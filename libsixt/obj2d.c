@@ -107,9 +107,10 @@ void freeObj2D_instance(Obj2D_instance *obj){
   if(obj!=NULL){
     if(obj->subobj!=NULL && obj->n_subobj>0){
       for(ii=0; ii<(obj->n_subobj); ii++){
-	if(obj->subobj[ii]!=NULL){
-	  freeObj2D_instance(obj->subobj[ii]);
-	}
+    	  if(obj->subobj[ii]!=NULL){
+    		  freeObj2D_instance(obj->subobj[ii]);
+    		  free(obj->subobj[ii]);
+    	  }
       }
       free(obj->subobj);
       obj->subobj=NULL;
