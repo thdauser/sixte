@@ -407,8 +407,12 @@ void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 void load_thermal_timedep(AdvDet* det, int i, int k, int* const status){
 	CHECK_NULL_VOID(det->crosstalk_thermal_timedep_file[i],*status,"no file for the thermal time dependence specified");
 
-	det->crosstalk_ther_timedep[i][2*k]=*newCrossTalkTimedep(status);
-	det->crosstalk_ther_timedep[i][2*k+1]=*newCrossTalkTimedep(status);
+	CrosstalkTimedep* tmp_lo=newCrossTalkTimedep(status);
+	det->crosstalk_ther_timedep[i][2*k]=*tmp_lo;
+	free(tmp_lo);
+	CrosstalkTimedep* tmp_hi=newCrossTalkTimedep(status);
+	det->crosstalk_ther_timedep[i][2*k+1]=*tmp_hi;
+	free(tmp_hi);
 
 	char* COLNAME_TIME_DELAY = "TIME_DELAY";
 	char* COLNAME_WEIGHT = "WEIGHT";
@@ -689,8 +693,13 @@ void load_elec_table(AdvDet* det, int k ,int* status){
 void load_elec_timedep(AdvDet* det, int k, int* const status){
 	CHECK_NULL_VOID(det->crosstalk_elec_timedep_file,*status,"no file for the elec time dependence specified");
 
-	det->crosstalk_elec_timedep[2*k]=*newCrossTalkTimedep(status);
-	det->crosstalk_elec_timedep[2*k+1]=*newCrossTalkTimedep(status);
+
+	CrosstalkTimedep* tmp_lo=newCrossTalkTimedep(status);
+	det->crosstalk_elec_timedep[2*k]=*tmp_lo;
+	free(tmp_lo);
+	CrosstalkTimedep* tmp_hi=newCrossTalkTimedep(status);
+	det->crosstalk_elec_timedep[2*k+1]=*tmp_hi;
+	free(tmp_hi);
 
 	char* COLNAME_TIME_DELAY = "TIME_DELAY";
 	char* COLNAME_WEIGHT = "WEIGHT";
@@ -1198,8 +1207,12 @@ void load_intermod_cross_talk(AdvDet* det, int* status){
 void load_imod_timedep(AdvDet* det, int k, int* const status){
 	CHECK_NULL_VOID(det->crosstalk_intermod_timedep_file,*status,"no file for the intermodulation time dependence specified");
 
-	det->crosstalk_imod_timedep[2*k]=*newCrossTalkTimedep(status);
-	det->crosstalk_imod_timedep[2*k+1]=*newCrossTalkTimedep(status);
+	CrosstalkTimedep* tmp_lo=newCrossTalkTimedep(status);
+	det->crosstalk_imod_timedep[2*k]=*tmp_lo;
+	free(tmp_lo);
+	CrosstalkTimedep* tmp_hi=newCrossTalkTimedep(status);
+	det->crosstalk_imod_timedep[2*k+1]=*tmp_hi;
+	free(tmp_hi);
 
 	char* COLNAME_TIME_DELAY = "TIME_DELAY";
 	char* COLNAME_WEIGHT = "WEIGHT";

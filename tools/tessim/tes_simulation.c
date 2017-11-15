@@ -109,7 +109,7 @@ double TES_sde_deterministic(double X[], int k, void *params) {
 		}
 	}
 	if (k == 1) {
-		val = (II*II*RT-tes->Pb1+tes->En1)/tes->Ce1;
+		val = (II*II*RT-tes->Pb1+tes->En1+tes->Pcommon)/tes->Ce1;
 	}
 	
 	return val;
@@ -309,6 +309,8 @@ void tes_fits_read_params(char *file, tespxlparams *par, int *status) {
     fits_read_key(fptr,TDOUBLE,"RPARA",&par->Rpara,comment,status);
     par->RL=0.;
     fits_read_key(fptr,TDOUBLE,"TTR",&par->TTR,comment,status);
+    fits_read_key(fptr,TDOUBLE,"BIAS",&par->bias,comment,status);
+    par->bias*=1e-2;
   } else {
     fits_read_key(fptr,TDOUBLE,"RL",&par->RL,comment,status);
     par->Rpara=0.;

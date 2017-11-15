@@ -162,7 +162,7 @@ void freeReadoutChannels(ReadoutChannels* rc){
     		   freeFDMSystem(rc->channels[ii].fdmsys);
            }
     	   if (rc->channels[ii].pixels!=NULL){
-    		   //Only release first pointer, the was released via destroyAdvDet (<-- Dangerous game here! Edoardo's comment)
+    		   //Only release first pointer, the rest was released via destroyAdvDet (<-- Dangerous game here! Edoardo's comment)
     		   free(rc->channels[ii].pixels);
     	   }
        }
@@ -225,22 +225,45 @@ void freeElecTab(ElecTab* tab,int gr){
 
 void freeCrosstalk(AdvDet* det, int gr){
 
+	if (NULL!=det->channel_file){
+		free(det->channel_file);
+		det->channel_file=NULL;
+	}
+	if (NULL!=det->channel_resfreq_file){
+		free(det->channel_resfreq_file);
+		det->channel_resfreq_file=NULL;
+	}
+
 	freeReadoutChannels(det->readout_channels);
 	//Freeing tables for every grade
 	if(gr!=0){
 		int len=det->xt_num_thermal;
+
+		//Freeing electrical cross-talk
 		free(det->crosstalk_elec_timedep_file);
+		det->crosstalk_elec_timedep_file=NULL;
+		free(det->crosstalk_elec_file);
+		det->crosstalk_elec_file=NULL;
+
 		freeElecTab(det->crosstalk_elec,gr);
+		det->crosstalk_elec=NULL;
 		freeCrosstalkTimedep(det->crosstalk_elec_timedep,gr);
 		free(det->crosstalk_elec_timedep);
 		det->crosstalk_elec_timedep=NULL;
 
-		free(det->crosstalk_intermod_timedep_file);
+		// Freeing intermodulation cross-talk
+		free(det->crosstalk_intermod_timedep_file); //
+		det->crosstalk_intermod_timedep_file=NULL;
+		free(det->crosstalk_intermod_file);
+		det->crosstalk_intermod_file=NULL;
+
 		freeImodTab(det->crosstalk_imod_table,gr);
+		det->crosstalk_imod_table=NULL;
 		freeCrosstalkTimedep(det->crosstalk_imod_timedep,gr);
 		free(det->crosstalk_imod_timedep);
-		det->crosstalk_elec_timedep=NULL;
+		det->crosstalk_imod_timedep=NULL;
 
+		//Freeing thermal cross-talk
 		if(det->crosstalk_ther_timedep!=NULL){
 			for(int i=0; i<len; i++){
 				freeCrosstalkTimedep(det->crosstalk_ther_timedep[i],gr);
@@ -254,6 +277,10 @@ void freeCrosstalk(AdvDet* det, int gr){
 			free(det->crosstalk_ther_timedep);
 			det->crosstalk_ther_timedep=NULL;
 		}
+		free(det->xt_dist_thermal);
+		det->xt_dist_thermal=NULL;
+		free(det->xt_weight_thermal);
+		det->xt_weight_thermal=NULL;
 	}
 }
 
@@ -329,6 +356,9 @@ void destroyAdvDet(AdvDet **det){
 		}
 		if(NULL!=(*det)->filepath){
 			free((*det)->filepath);
+		}
+		if(NULL!=(*det)->tes_type_file){
+			free((*det)->tes_type_file);
 		}
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
@@ -1374,13 +1404,12 @@ CrosstalkTimedep* newCrossTalkTimedep(int* const status){
 /** Destructor for CrosstalkTimdep structure */
 void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr){
 	if(timedep!=NULL){
-		for(int k=0; k<gr;k++){
-			free(timedep[2*k].name_type);
-			free(timedep[2*k].time);
-			free(timedep[2*k].weight);
-			free(timedep[2*k+1].name_type);
-			free(timedep[2*k+1].time);
-			free(timedep[2*k+1].weight);
+		for(int k=0; k<2*gr;k++){
+			timedep[k].length=0;
+			free(timedep[k].name_type);
+			free(timedep[k].time);
+			free(timedep[k].weight);
+			timedep[k].weight_t0=0;
 		}
 	}
 }

@@ -83,6 +83,9 @@ int tessim_main() {
         loop_par.m_excess = par.m_excess;
         loop_par.thermal_bias = par.thermal_bias;
         loop_par.readoutMode = par.readoutMode;
+        loop_par.twofluid = par.twofluid;
+        loop_par.stochastic_integrator = par.stochastic_integrator;
+        loop_par.frame_hit=0; //Setting to default false //TODO add to multi-tessim
  
         // assign the actual pixid, input and output filename
         loop_par.id = det->pix[ii].pindex + 1; // id's start with 0 in advdet, but not in tessim...
@@ -575,8 +578,9 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     }
     assert(par->R0>0);
     
-    query_simput_parameter_double("bias", &(par->bias), status);
-    par->bias*=1e-2; // %->decimal
+    if (cmd_query_simput_parameter_double(fromcmd, "bias", &(par->bias), status)){
+        par->bias*=1e-2; // %->decimal
+    }
     assert(par->bias>0.); //Not 0
     assert(par->bias<=1.); //Below Rn
 
