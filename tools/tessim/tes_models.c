@@ -83,8 +83,8 @@ double get_RTI(tesparams *tes, const double Y[]){
 
 double get_dRdI(tesparams *tes, const double Y[]){
 	
-	double TT=Y[0];
-	double II=Y[1];
+	double II=Y[0];
+	double TT=Y[1];
 	//Computes the value of dR/dI as a function of the current TES values
 	if (tes->twofluid==0){
 		return (tes->beta*tes->R0/tes->I0_start);
