@@ -656,7 +656,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     }
 
   }
-  cmd_query_simput_parameter_bool(fromcmd,"simnoise", &par->simnoise, status);
+  query_simput_parameter_bool("simnoise", &par->simnoise, status);
 
   if (&par->simnoise) {
     cmd_query_simput_parameter_double(fromcmd,"m_excess",&par->m_excess,status);
@@ -665,13 +665,13 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
   }
   assert(par->m_excess>=0);
 
-  cmd_query_simput_parameter_bool(fromcmd,"twofluid", &par->twofluid, status);
+  query_simput_parameter_bool("twofluid", &par->twofluid, status);
   //TODO Change keyword name when new models become available
   // readout mode is only not 'total' for crosstalk
-  cmd_query_simput_parameter_bool(fromcmd,"stochastic_integrator", &par->stochastic_integrator, status);
+  query_simput_parameter_bool("stochastic_integrator", &par->stochastic_integrator, status);
 
   //Handling the frame impacts
-  cmd_query_simput_parameter_bool(fromcmd,"frame_hit", &par->frame_hit, status);
+  query_simput_parameter_bool("frame_hit", &par->frame_hit, status);
   query_simput_parameter_file_name("frame_hit_file", &(par->frame_hit_file), status);
   query_simput_parameter_double("frame_hit_time", &(par->frame_hit_time), status);
 
