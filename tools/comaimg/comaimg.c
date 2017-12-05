@@ -189,6 +189,10 @@ int comaimg_main() {
     wcs.crval[1]=dec;
     wcs.cdelt[0]=atan(det_pixelwidth/distance)*180./M_PI;
     wcs.cdelt[1]=atan(det_pixelwidth/distance)*180./M_PI;
+    strcpy(wcs.cunit[0], "deg");
+    strcpy(wcs.cunit[1], "deg");
+    strcpy(wcs.ctype[0], "RA---TAN");
+    strcpy(wcs.ctype[1], "DEC--TAN");
 
     // --- END of Initialization ---
 
