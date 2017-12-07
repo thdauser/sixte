@@ -190,10 +190,8 @@ int xifupipeline_main()
 		// the respective program parameter.
 		setGenDetIgnoreBkg(inst->det, !par.Background);
 
-		// Set up the Attitude.
-		strcpy(ucase_buffer, par.Attitude);
-		strtoupper(ucase_buffer);
-		if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
+	    // Set up the Attitude.
+	    if (par.Attitude=='\0' ||(strlen(par.Attitude)==0)||(0==strcmp(par.Attitude, "NONE"))) {
 			// Set up a pointing attitude.
 			ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
 					par.RA*M_PI/180., par.Dec*M_PI/180., &status);
@@ -866,26 +864,17 @@ int xifupipeline_getpar(struct Parameters* const par)
 		return(status);
 	}
 
-	status=ape_trad_query_string("Attitude", &sbuffer);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the name of the attitude");
-		return(status);
-	}
-	strcpy(par->Attitude, sbuffer);
-	free(sbuffer);
+	query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 
-	status=ape_trad_query_float("RA", &par->RA);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the right ascension of the telescope "
-				"pointing");
-		return(status);
-	}
-
-	status=ape_trad_query_float("Dec", &par->Dec);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the declination of the telescope "
-				"pointing");
-		return(status);
+	// only load RA,Dec if Attitude is not given
+	if (par->Attitude=='\0'){
+		query_simput_parameter_float("RA",&(par->RA),&status);
+		query_simput_parameter_float("Dec",&(par->Dec),&status);
+	} else {
+		// set to default values
+		par->RA=0.0;
+		par->Dec=0.0;
+		headas_chat(3, "using Attiude File: %s \n",par->Attitude);
 	}
 
 	status=ape_trad_query_file_name("Simput", &sbuffer);

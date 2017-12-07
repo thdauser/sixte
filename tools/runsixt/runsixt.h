@@ -52,7 +52,7 @@ struct Parameters {
   char EvtFile[MAXFILENAME];
   char RawData[MAXFILENAME];
   char XMLFile[MAXFILENAME];
-  char Attitude[MAXFILENAME];
+  char* Attitude;
   char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
 

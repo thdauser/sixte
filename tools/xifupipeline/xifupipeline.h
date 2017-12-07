@@ -62,7 +62,7 @@ struct Parameters {
   char EvtFile[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char AdvXml[MAXFILENAME];
-  char Attitude[MAXFILENAME];
+  char* Attitude;
   char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
   char PulseTemplateFile[MAXFILENAME];

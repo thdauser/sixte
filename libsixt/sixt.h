@@ -46,6 +46,7 @@
 #include "wcshdr.h"
 
 #include "rmf.h"
+#include "parinput.h"
 
 /////////////////////////////////////////////////////////////////
 // Constants.
