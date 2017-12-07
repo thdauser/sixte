@@ -237,7 +237,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       data->streamind=0;
       data->stream->pixid=tes->id;
       // copy prebuffer into the new stream
-      data->stream->time=time - data->preBufferSize*tes->delta_t;
+      data->stream->time=time-data->preBufferSize*tes->delta_t*tes->decimate_factor;
 
       // find new starting index. In principle this is
       // just ii=fifoind-1 -preBufferSize but we have to
