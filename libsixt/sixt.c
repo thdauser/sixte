@@ -130,7 +130,6 @@ void strtoupper(char* const string)
   }
 }
 
-
 void sixt_error(const char* const func, const char* const msg)
 {
   // Use the HEADAS error output routine.
@@ -138,7 +137,6 @@ void sixt_error(const char* const func, const char* const msg)
   sprintf(output, "Error in %s: %s!\n", func, msg);
   HD_ERROR_THROW(output, EXIT_FAILURE);
 }
-
 
 void sixt_warning(const char* const msg)
 {
@@ -167,101 +165,110 @@ void sixt_get_XMLFile(char* const filename,
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
-  strcpy(Mission, mission);
-  strcpy(Instrument, instrument);
-  strcpy(Mode, mode);
+  strncpy(Mission, mission,MAXMSG-1);
+  Mission[MAXMSG-1]='\0';
+  strncpy(Instrument, instrument,MAXMSG-1);
+  Instrument[MAXMSG-1]='\0';
+  strncpy(Mode, mode,MAXMSG-1);
+  Mode[MAXMSG-1]='\0';
   strtoupper(Mission);
   strtoupper(Instrument);
   strtoupper(Mode);
 
   // Check the available missions, instruments, and modes.
   char XMLFile[MAXFILENAME];
-  strcpy(XMLFile, xmlfile);
+  strncpy(XMLFile, xmlfile,MAXFILENAME-1);
+  XMLFile[MAXFILENAME-1]='\0';
   strtoupper(XMLFile);
-  if (0==strcmp(XMLFile, "NONE")) {
-    // Determine the base directory containing the XML
-    // definition files.
-    strcpy(filename, SIXT_DATA_PATH);
-    strcat(filename, "/instruments");
 
-    // Determine the XML filename according to the selected
-    // mission, instrument, and mode.
-    if (0==strcmp(Mission, "SRG")) {
-      strcat(filename, "/srg");
-      if (0==strcmp(Instrument, "EROSITA")) {
-	strcat(filename, "/erosita_dummy.xml");
-      } else {
-	*status=EXIT_FAILURE;
-	SIXT_ERROR("selected instrument is not supported");
-	return;
-      }
+  // check whether XML filename has been given explicitly
+  if (0!=strcmp(XMLFile,"NONE")) {
+    // ... yes: just copy it and be happy
+    strcpy(filename,xmlfile);
+    return;
+  }
+    
 
-    } else if (0==strcmp(Mission, "IXO")) {
-      strcat(filename, "/ixo");
-      if (0==strcmp(Instrument, "WFI")) {
-	strcat(filename, "/wfi");
-	if (0==strcmp(Mode, "FULLFRAME")) {
-	  strcat(filename, "/fullframe.xml");
-	} else {
-	  *status=EXIT_FAILURE;
-	  SIXT_ERROR("selected mode is not supported");
-	  return;
-	}
-      } else {
-	*status=EXIT_FAILURE;
-	SIXT_ERROR("selected instrument is not supported");
-	return;
-      }
+  // Determine the base directory containing the XML
+  // definition files.
+  strcpy(filename, SIXT_DATA_PATH);
+  strcat(filename, "/instruments");
 
-    } else if (0==strcmp(Mission, "ATHENA")) {
-      strcat(filename, "/athena");
-      if (0==strcmp(Instrument, "WFI")) {
-	strcat(filename, "/wfi");
-	if (0==strcmp(Mode, "FULLFRAME")) {
-	  strcat(filename, "/fullframe.xml");
-	} else {
-	  *status=EXIT_FAILURE;
-	  SIXT_ERROR("selected mode is not supported");
-	  return;
-	}
-      } else {
-	*status=EXIT_FAILURE;
-	SIXT_ERROR("selected instrument is not supported");
-	return;
-      }
-
-    } else if (0==strcmp(Mission, "GRAVITAS")) {
-      strcat(filename, "/gravitas");
-      if (0==strcmp(Instrument, "HIFI")) {
-	strcat(filename, "/hifi.xml");
-      } else {
-	*status=EXIT_FAILURE;
-	SIXT_ERROR("selected instrument is not supported");
-	return;
-      }
-      
-    } else if (0==strcmp(Mission, "NUSTAR")) {
-      strcat(filename, "/nustar");
-      if (0==strcmp(Instrument, "NUSTAR")) {
-	strcat(filename, "/nustar.xml");
-      } else {
-	*status=EXIT_FAILURE;
-	SIXT_ERROR("selected instrument is not supported");
-	return;
-      }
-
+  // Determine the XML filename according to the selected
+  // mission, instrument, and mode.
+  if (0==strcmp(Mission, "SRG")) {
+    strcat(filename, "/srg");
+    if (0==strcmp(Instrument, "EROSITA")) {
+      strcat(filename, "/erosita_dummy.xml");
     } else {
       *status=EXIT_FAILURE;
-      char msg[MAXMSG];
-      sprintf(msg, "selected mission ('%s') is not supported", Mission);
-      SIXT_ERROR(msg);
-      return;
+      SIXT_ERROR("selected instrument is not supported");
     }
-    
-  } else {
-    // The XML filename has been given explicitly.
-    strcpy(filename, xmlfile);
+    return;
   }
+ 
+  if (0==strcmp(Mission, "IXO")) {
+    strcat(filename, "/ixo");
+    if (0==strcmp(Instrument, "WFI")) {
+      strcat(filename, "/wfi");
+      if (0==strcmp(Mode, "FULLFRAME")) {
+	strcat(filename, "/fullframe.xml");
+      } else {
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("selected mode is not supported");
+      }
+    } else {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("selected instrument is not supported");
+    }
+    return;
+  }
+
+  
+  if (0==strcmp(Mission, "ATHENA")) {
+    strcat(filename, "/athena");
+    if (0==strcmp(Instrument, "WFI")) {
+      strcat(filename, "/wfi");
+      if (0==strcmp(Mode, "FULLFRAME")) {
+	strcat(filename, "/fullframe.xml");
+      } else {
+	*status=EXIT_FAILURE;
+	SIXT_ERROR("selected mode is not supported");
+      }
+    } else {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("selected instrument is not supported");
+    }
+    return;
+  }
+
+  if (0==strcmp(Mission, "GRAVITAS")) {
+    strcat(filename, "/gravitas");
+    if (0==strcmp(Instrument, "HIFI")) {
+      strcat(filename, "/hifi.xml");
+    } else {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("selected instrument is not supported");
+    }
+    return;
+  }
+    
+  if (0==strcmp(Mission, "NUSTAR")) {
+    strcat(filename, "/nustar");
+    if (0==strcmp(Instrument, "NUSTAR")) {
+      strcat(filename, "/nustar.xml");
+    } else {
+      *status=EXIT_FAILURE;
+      SIXT_ERROR("selected instrument is not supported");
+    }
+    return;
+  }
+  
+  *status=EXIT_FAILURE;
+  char msg[MAXMSG];
+  sprintf(msg, "selected mission ('%s') is not supported", Mission);
+  SIXT_ERROR(msg);
+  return;
 }
 
 
