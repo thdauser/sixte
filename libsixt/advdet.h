@@ -51,6 +51,8 @@
 
 typedef struct MatrixCrossTalk MatrixCrossTalk;
 typedef struct MatrixEnerdepCrossTalk MatrixEnerdepCrossTalk;
+typedef struct MatrixPropCrossTalk MatrixPropCrossTalk;
+typedef struct MatrixDerCrossTalk MatrixDerCrossTalk;
 typedef struct Channel Channel;
 typedef struct IntermodulationCrossTalk IntermodulationCrossTalk;
 typedef struct ReadoutChannels ReadoutChannels;
@@ -170,13 +172,22 @@ struct AdvPix{
   /** Cross-talk structures */
   MatrixCrossTalk* thermal_cross_talk;
 
-  //Electrical cross_talk;
+  /**Electrical cross_talk */
   MatrixEnerdepCrossTalk* electrical_cross_talk;
+
+  /** Proportional cross talk */
+  MatrixPropCrossTalk* prop_cross_talk;
+
+  /** Derivative cross talk */
+  MatrixDerCrossTalk* der_cross_talk;
 
   /** tessim struct */
   char* tes_type;
   tesparams *tes;
 
+  /** TDM parameters */
+  int row;
+  int column;
 
 }; typedef struct AdvPix AdvPix;
 
@@ -214,7 +225,6 @@ typedef struct{
 	struct ARF** arf_array;
 
 }ARFLibrary;
-
 
 /** structure defining the time dependent weights for the crosstalk*/
 typedef struct{
@@ -258,6 +268,21 @@ typedef struct{
 	int n_ener_p;
 
 }ElecTab;
+
+/** structure containing the TDM cross-talk */
+typedef struct{
+
+	double*** matrix; // 3d table containing the weights
+
+	double* ener_p;
+	double* ener_v;
+	double* samples;
+
+	int n_samples;
+	int n_ener_p;
+	int n_ener_v;
+
+}TDMTab;
 
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
@@ -306,6 +331,10 @@ typedef struct{
   /** ARF library */
   ARFLibrary* arf_library;
 
+  /** TDM or not TDM */
+  int tdm;
+  int max_rows;
+
   /** File listing for each pixel the channel and frequency */
   char* channel_file;
 
@@ -319,9 +348,7 @@ typedef struct{
   /** Structure containing the intermodulation crosstalk table and the time dependence crosstalk table */
 
   char* crosstalk_intermod_file;
-  char* crosstalk_intermod_timedep_file;
   ImodTab* crosstalk_imod_table;
-  CrosstalkTimedep* crosstalk_imod_timedep;
 
   /** Structure containing the thermal crosstalk informations */
 
@@ -338,6 +365,17 @@ typedef struct{
   CrosstalkTimedep* crosstalk_elec_timedep;
   float elec_ctk_scaling;
 
+  /** Structure containing the proportional TDM cross-talk tables */
+  char* TDM_prop_file;
+  TDMTab* crosstalk_TDM_prop;
+  float prop_TDM_scaling_1;
+  float prop_TDM_scaling_2;
+
+  /** Structure containing the derivative TDM cross-talk tables */
+  char* TDM_der_file;
+  TDMTab* crosstalk_TDM_der;
+  float der_TDM_scaling;
+
   /** Trigger threshold */
   double threshold_event_lo_keV;
 
@@ -350,7 +388,6 @@ typedef struct{
   /** Common impedance and capacitance for FDM Crosstalk */
   double L_Common;
   double C_Common;
-
 
 }AdvDet;
 
@@ -392,6 +429,33 @@ struct MatrixEnerdepCrossTalk{
 
 };
 
+/** Structure defining the proporitonal cross talk between pixels, which can be approximated
+    by a simple matrix containing weights */
+struct MatrixPropCrossTalk{
+
+	/** Number of cross-talk pixel for type 1 cross-talk */
+	int type_1_pix;
+
+	/** Number of cross-talk pixel for type 2 cross-talk */
+	int type_2_pix;
+
+	/** Array containing the cross talk pixels */
+	int* cross_talk_pixels_1;
+	int* cross_talk_pixels_2;
+
+};
+
+/** Structure defining the proporitonal cross talk between pixels, which can be approximated
+    by a simple matrix containing weights */
+struct MatrixDerCrossTalk{
+
+	/** Number of cross-talk pixel for type 3 cross-talk */
+	int num_cross_talk_pixels;
+
+	/** Array containing the cross talk pixels */
+	int* cross_talk_pixels;
+};
+
 
 /** Structure defining the cross talk between pixels, which can be approximated
     by a simple matrix containing weights */
@@ -400,7 +464,7 @@ struct IntermodulationCrossTalk{
 	int num_cross_talk_pixels;
 
 	/** numbrer of combiniations for each pixel */
-//	int* num_pixel_combinations;
+	//	int* num_pixel_combinations;
 
 	/** Array containing cross-talk pixels */
 	AdvPix*** cross_talk_pixels;
@@ -445,10 +509,8 @@ typedef struct channelImpacts{
 struct ReadoutChannels{
 	Channel* channels;
 	double* df_information_band; //in [Hz];
-	int num_channels;} ;
-
-
-
+	int num_channels;
+};
 
 /////////////////////////////////////////////////////////////////////
 // Function Declarations.
@@ -539,11 +601,23 @@ MatrixCrossTalk* newMatrixCrossTalk(int* const status);
 /** Constructor for MatrixEnerdepCrossTalk structure */
 MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int grade, int* const status);
 
+/** Constructor for MatrixPropCrossTalk structure */
+MatrixPropCrossTalk* newMatrixPropCrossTalk(int* const status);
+
+/** Constructor for MatrixDerCrossTalk structure */
+MatrixDerCrossTalk* newMatrixDerCrossTalk(int* const status);
+
 /** Destructor for MatrixCrossTalk structure */
 void freeMatrixCrossTalk(MatrixCrossTalk* matrix);
 
 /** Destructor for MatrixEnerdepCrossTalk structure */
 void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* matrix, int gr);
+
+/** Destructor for MatrixPropCrossTalk structure */
+void freeMatrixPropCrossTalk(MatrixPropCrossTalk* matrix);
+
+/** Destructor for MatrixDerCrossTalk structure */
+void freeMatrixDerCrossTalk(MatrixDerCrossTalk* matrix);
 
 /** Constructor for IntermodulationCrossTalk structure */
 IntermodulationCrossTalk* newImodCrossTalk(int* const status);
@@ -559,6 +633,9 @@ void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr);
 
 /** free Intermod Table and Strcture */
 void freeImodTab(ImodTab* tab, int gr);
+
+/** free TDM Table and Structures */
+void freeTDMTab(TDMTab* tab, int gr);
 
 /** free the crosstalk structures */
 void freeCrosstalk(AdvDet* det, int gr);

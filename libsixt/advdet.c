@@ -113,8 +113,12 @@ AdvPix* newAdvPix(int* const status){
   pix->electrical_cross_talk=NULL;
   pix->thermal_cross_talk=NULL;
   //pix->intermodulation_cross_talk=NULL;
+  pix->prop_cross_talk=NULL;
+  pix->der_cross_talk=NULL;
   pix->tes_type=NULL;
   pix->tes=NULL;
+  pix->row=0;
+  pix->column=0;
 
   return(pix);
 }
@@ -127,6 +131,8 @@ void freeAdvPix(AdvPix* pix){
     freeGrading(pix);
     freeMatrixCrossTalk(pix->thermal_cross_talk);
     freeMatrixEnerdepCrossTalk(pix->electrical_cross_talk, g);
+    freeMatrixPropCrossTalk(pix->prop_cross_talk);
+    freeMatrixDerCrossTalk(pix->der_cross_talk);
   }
 }
 
@@ -213,11 +219,39 @@ void freeElecTab(ElecTab* tab,int gr){
 						free(tab[g].matrix[kk]);
 					}
 				}   //  --- END freq_p --- //
-				free(tab[g].matrix);
+
 			}
 			free(tab[g].freq_s);
 			free(tab[g].freq_p);
 			free(tab[g].ener_p);
+		}
+		free(tab);
+	}
+}
+
+//TODO Check if this is good
+void freeTDMTab(TDMTab* tab, int gr){
+	if (tab!=NULL){
+		for(int g=0; g<gr;g++){
+			if (tab[g].matrix!=NULL){
+				for(int kk=0; kk < tab[g].n_samples ; kk++){ //  --- samples --- //
+					if (tab[g].matrix[kk]!=NULL){
+						for(int ii=0; ii < tab[g].n_ener_p ; ii++){ // --- ener_p --- //
+							if (tab[g].matrix[kk][ii]!=NULL){
+								free(tab[g].matrix[kk][ii]);
+							}
+						}   // --- END ener_p --- //
+						free(tab[g].matrix[kk]);
+					}
+				}   //  --- END samples --- //
+			}
+			free(tab[g].matrix);
+			free(tab[g].samples);
+			free(tab[g].ener_p);
+			free(tab[g].ener_v);
+			tab[g].n_ener_p=0;
+			tab[g].n_ener_v=0;
+			tab[g].n_samples=0;
 		}
 		free(tab);
 	}
@@ -252,16 +286,11 @@ void freeCrosstalk(AdvDet* det, int gr){
 		det->crosstalk_elec_timedep=NULL;
 
 		// Freeing intermodulation cross-talk
-		free(det->crosstalk_intermod_timedep_file); //
-		det->crosstalk_intermod_timedep_file=NULL;
 		free(det->crosstalk_intermod_file);
 		det->crosstalk_intermod_file=NULL;
 
 		freeImodTab(det->crosstalk_imod_table,gr);
 		det->crosstalk_imod_table=NULL;
-		freeCrosstalkTimedep(det->crosstalk_imod_timedep,gr);
-		free(det->crosstalk_imod_timedep);
-		det->crosstalk_imod_timedep=NULL;
 
 		//Freeing thermal cross-talk
 		if(det->crosstalk_ther_timedep!=NULL){
@@ -281,6 +310,14 @@ void freeCrosstalk(AdvDet* det, int gr){
 		det->xt_dist_thermal=NULL;
 		free(det->xt_weight_thermal);
 		det->xt_weight_thermal=NULL;
+
+		//Freeing Proportional Cross-talk
+		freeTDMTab(det->crosstalk_TDM_prop, gr);
+		det->crosstalk_TDM_prop=NULL;
+
+		//Freeing Derivative Cross-talk
+		freeTDMTab(det->crosstalk_TDM_der, gr);
+		det->crosstalk_TDM_der=NULL;
 	}
 }
 
@@ -308,6 +345,8 @@ AdvDet* newAdvDet(int* const status){
   det->oof_activated=0;
   det->rmf_library=NULL;
   det->arf_library=NULL;
+  det->tdm=0;
+  det->max_rows=0;
 
   det->xt_dist_thermal=NULL;
   det->xt_weight_thermal=NULL;
@@ -318,8 +357,6 @@ AdvDet* newAdvDet(int* const status){
   det->channel_resfreq_file=NULL;
 
   det->crosstalk_intermod_file=NULL;
-  det->crosstalk_intermod_timedep_file=NULL;
-  det->crosstalk_imod_timedep=NULL;
   det->crosstalk_imod_table=NULL;
 
   det->crosstalk_thermal_timedep_file=NULL;
@@ -330,6 +367,15 @@ AdvDet* newAdvDet(int* const status){
   det->crosstalk_elec_timedep=NULL;
   det->crosstalk_elec=NULL;
   det->elec_ctk_scaling=1;
+
+  det->TDM_prop_file=NULL;
+  det->crosstalk_TDM_prop=NULL;
+  det->prop_TDM_scaling_1=1;
+  det->prop_TDM_scaling_2=1;
+
+  det->TDM_der_file=NULL;
+  det->crosstalk_TDM_der=NULL;
+  det->der_TDM_scaling=1;
 
   det->threshold_event_lo_keV=0.;
   det->crosstalk_id=0;
@@ -570,6 +616,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 	if (!strcmp(Uelement, "PIXDETECTOR")) {
 		// Determine npix
 		char npix[MAXMSG];
+		char readout[MAXMSG];
 		getXMLAttributeString(attr, "NPIX", npix);
 		xmlparsedata->det->npix=atoi(npix);
 		if(xmlparsedata->det->npix<1){
@@ -583,6 +630,20 @@ static void AdvDetXMLElementStart(void* parsedata,
 		}
 		xmlparsedata->det->sx=getXMLAttributeDouble(attr, "XOFF");
 		xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");
+		getXMLAttributeString(attr, "READOUT", readout);
+
+		if (!strcmp(readout,"fdm") || !strcmp(readout,"")){
+			xmlparsedata->det->tdm=0;
+			printf("Readout type is FDM\n");
+		} else if (!strcmp(readout,"tdm")){
+			xmlparsedata->det->tdm=1;
+			printf("Readout type is TDM\n");
+		} else {
+			SIXT_ERROR("Readout type is not understood");
+			return;
+		}
+
+
 		for (int ii=0;ii<xmlparsedata->det->npix;ii++){
 			xmlparsedata->det->pix[ii].TESNoise=NULL;
 			xmlparsedata->det->pix[ii].grades=NULL;
@@ -591,7 +652,8 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].channel=NULL;
 			xmlparsedata->det->pix[ii].thermal_cross_talk=NULL;
 			xmlparsedata->det->pix[ii].electrical_cross_talk=NULL;
-
+			xmlparsedata->det->pix[ii].prop_cross_talk=NULL;
+			xmlparsedata->det->pix[ii].der_cross_talk=NULL;
 		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
 		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
@@ -935,10 +997,10 @@ static void AdvDetXMLElementStart(void* parsedata,
 		tmp_path_2=strcat(tmp_path_2, xmlparsedata->det->crosstalk_elec_timedep_file);
 		if (strlen(xmlparsedata->det->crosstalk_elec_timedep_file) == 0 || access(tmp_path_2, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Electrical crosstalk time dependence file %s is not given or does not exist\n", tmp_path_2);
+			printf("Warning: Electrical cross-talk time dependence file %s is not given or does not exist\n", tmp_path_2);
 			free(xmlparsedata->det->crosstalk_elec_timedep_file);
 			xmlparsedata->det->crosstalk_elec_timedep_file=NULL;
-			SIXT_ERROR("Electrical crosstalk time dependence file not found");
+			SIXT_ERROR("Electrical cross-talk time dependence file not found");
 		}
 		free(tmp_path_2);
 
@@ -953,32 +1015,57 @@ static void AdvDetXMLElementStart(void* parsedata,
 		tmp_path=strcat(tmp_path,xmlparsedata->det->crosstalk_intermod_file);
 		if (strlen(xmlparsedata->det->crosstalk_intermod_file) == 0 || access(tmp_path, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Intermodulation crosstalk file %s is not given or does not exist\n", tmp_path);
+			printf("Warning: Intermodulation cross-talk file %s is not given or does not exist\n", tmp_path);
 			free(xmlparsedata->det->crosstalk_intermod_file);
 			xmlparsedata->det->crosstalk_intermod_file=NULL;
-			SIXT_ERROR("Intermodulation crosstalk file not found");
+			SIXT_ERROR("Intermodulation cross-talk file not found");
 		}
 		free(tmp_path);
 
-		xmlparsedata->det->crosstalk_intermod_timedep_file=(char*)malloc(MAXFILENAME*sizeof(char));
-		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_timedep_file);
-		char* tmp_path_2=(char*)malloc(2*MAXFILENAME*sizeof(char));
-		CHECK_MALLOC_VOID(tmp_path_2);
-		tmp_path_2=strcpy(tmp_path_2, xmlparsedata->det->filepath);
-		getXMLAttributeString(attr, "TIMEDEPFILE", xmlparsedata->det->crosstalk_intermod_timedep_file);
-		tmp_path_2=strcat(tmp_path_2,xmlparsedata->det->crosstalk_intermod_timedep_file);
-		if (strlen(xmlparsedata->det->crosstalk_intermod_timedep_file) == 0|| access(tmp_path_2, F_OK)==-1){
+	} else if(!strcmp(Uelement, "PROPCROSSTALK")){
+
+		xmlparsedata->det->TDM_prop_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->TDM_prop_file);
+		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp_path);
+		tmp_path=strcpy(tmp_path, xmlparsedata->det->filepath);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->TDM_prop_file);
+		tmp_path=strcat(tmp_path, xmlparsedata->det->TDM_prop_file);
+		if (strlen(xmlparsedata->det->TDM_prop_file) == 0 || access(tmp_path, F_OK)==-1){
 			xmlparsedata->status=EXIT_FAILURE;
-			printf("Warning: Intermodulation crosstalk time dependence file %s is not given or does not exist\n", tmp_path_2);
-			free(xmlparsedata->det->crosstalk_intermod_timedep_file);
-			xmlparsedata->det->crosstalk_intermod_timedep_file=NULL;
-			SIXT_ERROR("Intermodulation crosstalk time dependence file is not given");
+			printf("Warning: Proportional cross-talk file %s is not given or does not exist\n", tmp_path);
+			free(xmlparsedata->det->TDM_prop_file);
+			xmlparsedata->det->TDM_prop_file=NULL;
+			SIXT_ERROR("Proportional cross-talk file not found");
 		}
-		free(tmp_path_2);
+		free(tmp_path);
+
+		xmlparsedata->det->prop_TDM_scaling_1=getXMLAttributeDouble(attr,"SCALING1");
+		xmlparsedata->det->prop_TDM_scaling_2=getXMLAttributeDouble(attr,"SCALING2");
+
+	} else if(!strcmp(Uelement, "DERCROSSTALK")){
+
+		xmlparsedata->det->TDM_der_file=(char*)malloc(MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(xmlparsedata->det->TDM_der_file);
+		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
+		CHECK_MALLOC_VOID(tmp_path);
+		tmp_path=strcpy(tmp_path, xmlparsedata->det->filepath);
+		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->TDM_der_file);
+		tmp_path=strcat(tmp_path, xmlparsedata->det->TDM_der_file);
+		if (strlen(xmlparsedata->det->TDM_der_file) == 0 || access(tmp_path, F_OK)==-1){
+			xmlparsedata->status=EXIT_FAILURE;
+			printf("Warning: Derivative cross-talk file %s is not given or does not exist\n", tmp_path);
+			free(xmlparsedata->det->TDM_der_file);
+			xmlparsedata->det->TDM_der_file=NULL;
+			SIXT_ERROR("Derivative cross-talk file not found");
+		}
+		free(tmp_path);
+
+		xmlparsedata->det->der_TDM_scaling=getXMLAttributeDouble(attr,"SCALING");
 
 	} else if (!strcmp(Uelement,"THRESHOLD_EVENT_LO_KEV")){
 		xmlparsedata->det->threshold_event_lo_keV = getXMLAttributeDouble(attr,"VALUE");
-        	} else {
+    } else {
 		// Unknown tag, display warning.
 		char msg[MAXMSG];
 		sprintf(msg, "unknown XML tag: <%s>", el);
@@ -1300,7 +1387,7 @@ void removeOverlapping(AdvDet* det,int* const status){
 	det->pix = new_pix_array;
 	det->npix=number_active_pixels;
 	free(active_pixels);
-	headas_chat(0,"Number of pixels after removing overlaps: %d\n",number_active_pixels);
+	headas_chat(0,"Number of pixels after removing overlaps: %d\n \n",number_active_pixels);
 }
 
 /** Constructor for MatrixCrossTalk structure */
@@ -1344,6 +1431,27 @@ void freeMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* matrix, int gr){
 	matrix=NULL;
 }
 
+/** Destructor for MatrixPropCrossTalk structure */
+void freeMatrixPropCrossTalk(MatrixPropCrossTalk* matrix){
+	if (matrix!=NULL){
+		free(matrix->cross_talk_pixels_1);
+		free(matrix->cross_talk_pixels_2);
+		matrix->type_1_pix=0;
+		matrix->type_2_pix=0;
+	}
+	free(matrix);
+	matrix=NULL;
+}
+
+/** Destructor for MatrixDerCrossTalk structure */
+void freeMatrixDerCrossTalk(MatrixDerCrossTalk* matrix){
+	if (matrix!=NULL){
+		free(matrix->cross_talk_pixels);
+		matrix->num_cross_talk_pixels=0;
+	}
+	free(matrix);
+	matrix=NULL;
+}
 
 /** Destructor for MatrixCrossTalk structure */
 void freeImodCrossTalk(IntermodulationCrossTalk** matrix){
@@ -1386,6 +1494,30 @@ MatrixEnerdepCrossTalk* newMatrixEnerdepCrossTalk(int grade, int* const status){
 		matrix[l].cross_talk_weights = NULL;
 		matrix[l].n_ener=0;
 	}
+	return matrix;
+}
+
+/** Constructor for MatrixPropCrossTalk structure */
+MatrixPropCrossTalk* newMatrixPropCrossTalk(int* const status){
+	MatrixPropCrossTalk* matrix = (MatrixPropCrossTalk*) malloc(sizeof(MatrixPropCrossTalk));
+	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
+
+	matrix->type_1_pix=0;
+	matrix->type_2_pix=0;
+	matrix->cross_talk_pixels_1 = NULL;
+	matrix->cross_talk_pixels_2 = NULL;
+
+	return matrix;
+}
+
+/** Constructor for MatrixPropCrossTalk structure */
+MatrixDerCrossTalk* newMatrixDerCrossTalk(int* const status){
+	MatrixDerCrossTalk* matrix = (MatrixDerCrossTalk*) malloc(sizeof(MatrixPropCrossTalk));
+	CHECK_MALLOC_RET_NULL_STATUS(matrix,*status);
+
+	matrix->num_cross_talk_pixels=0;
+	matrix->cross_talk_pixels = NULL;
+
 	return matrix;
 }
 

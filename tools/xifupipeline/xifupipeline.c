@@ -89,7 +89,7 @@ int xifupipeline_main()
 		status=xifupipeline_getpar(&par);
 		CHECK_STATUS_BREAK(status);
 
-		headas_chat(3, "initialize ...\n");
+		headas_chat(3, "\ninitialize ...\n \n");
 
 		// Determine the prefix for the output files.
 		char ucase_buffer[MAXFILENAME]={""};
@@ -998,9 +998,13 @@ int xifupipeline_getpar(struct Parameters* const par)
 		par->doCrosstalk=CROSSTALK_ID_NONE;
 	} else if ((strncmp(buf,"no",4)==0) || (strlen(buf)==0)){
 		par->doCrosstalk=CROSSTALK_ID_NONE;
+	} else if (strncmp(buf,"tdm_prop",5)==0){
+		par->doCrosstalk=CROSSTALK_ID_TDM_PROP;
+	} else if (strncmp(buf,"tdm_der",6)==0){
+		par->doCrosstalk=CROSSTALK_ID_TDM_DER;
 	} else {
 		status=-1;
-		printf("%s crosstalk parameter not known, only 'all', 'elec', 'therm', 'nlin' and 'no'/'none'/'' avaialable \n", buf);
+		printf("%s crosstalk parameter not known, only 'all', 'elec', 'therm', 'nlin', 'tdm_prop', 'tdm_der', and 'no'/'none'/'' available \n", buf);
 		SIXT_ERROR("failed reading doCrosstalk parameter");
 		return(status);
 	}

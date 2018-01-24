@@ -258,6 +258,95 @@ void calc_imod_xt_influence(AdvDet* det,PixImpact* signal, PixImpact* perturber,
     *enweight=energy_weight; //  plus time-dep!!!
 }
 
+void calc_prop_xt_influence(AdvDet* det,double signal_energy, double perturber_energy, double* enweight, double dt_in_frames, int grading){
+	//Check if within the sample range for ener_p and ener_v
+	if ((perturber_energy < det->crosstalk_TDM_prop[grading].ener_p[0]) ||
+			(perturber_energy >= det->crosstalk_TDM_prop[grading].ener_p[det->crosstalk_TDM_prop[grading].n_ener_p-1])||
+			(signal_energy < det->crosstalk_TDM_prop[grading].ener_v[0]) ||
+			(signal_energy >= det->crosstalk_TDM_prop[grading].ener_p[det->crosstalk_TDM_prop[grading].n_ener_v-1])) {
+		headas_chat(7, " *** warning : impact event energy %g or perturber energy %g is outside the tabulated values for proportional cross-talk [%g,%g]}n",
+				signal_energy, perturber_energy, det->crosstalk_TDM_prop[grading].ener_p[0],det->crosstalk_TDM_prop[grading].ener_p[det->crosstalk_TDM_prop[grading].n_ener_p-1]);
+		headas_chat(7, "     ---> skipping this event!\n");
+	//Check if within the sample range in time
+	} else if ((dt_in_frames<= det->crosstalk_TDM_prop[grading].samples[0]) ||
+			(dt_in_frames >= det->crosstalk_TDM_prop[grading].samples[det->crosstalk_TDM_prop[grading].n_samples-1])){
+		//The impact is not affected
+		headas_chat(7, "  Event outside time frames\n");
+		headas_chat(7, "     ---> skipping this event!\n");
+	} else {
+		//Finding the corresponding index for 0
+		int ind_dt = binary_search(dt_in_frames,det->crosstalk_TDM_prop[grading].samples,det->crosstalk_TDM_prop[grading].n_samples);
+		//printf("dt is %f and index is %i\n", dt_in_frames, ind_dt);
+		assert ((ind_dt)>= 0 && (ind_dt < det->crosstalk_TDM_prop[grading].n_samples));
+		float d_dt = (dt_in_frames-det->crosstalk_TDM_prop[grading].samples[ind_dt])/(det->crosstalk_TDM_prop[grading].samples[ind_dt+1]-det->crosstalk_TDM_prop[grading].samples[ind_dt]);
+
+		//Perturber energy
+		int ind_dep = binary_search(perturber_energy,det->crosstalk_TDM_prop[grading].ener_p,det->crosstalk_TDM_prop[grading].n_ener_p);
+		assert ((ind_dep)>= 0 && (ind_dep < det->crosstalk_TDM_prop[grading].n_ener_p));
+		//printf("energy is %f and index is %i\n", perturber_energy, ind_dep);
+		float d_dep=(perturber_energy-det->crosstalk_TDM_prop[grading].ener_p[ind_dep])/(det->crosstalk_TDM_prop[grading].ener_p[ind_dep+1]-det->crosstalk_TDM_prop[grading].ener_p[ind_dep]);
+
+		//Victim energy
+		int ind_dev = binary_search(signal_energy,det->crosstalk_TDM_prop[grading].ener_v,det->crosstalk_TDM_prop[grading].n_ener_v);
+		//printf("energy is %f and index is %i\n", signal_energy, ind_dev);
+		assert ((ind_dev)>= 0 && (ind_dev < det->crosstalk_TDM_prop[grading].n_ener_v));
+		float d_dev=(signal_energy-det->crosstalk_TDM_prop[grading].ener_v[ind_dev])/(det->crosstalk_TDM_prop[grading].ener_v[ind_dev+1]-det->crosstalk_TDM_prop[grading].ener_v[ind_dev]);
+
+		int iarr[] = {ind_dt, ind_dep,ind_dev};
+		double fac[] = {d_dt, d_dep, d_dev};
+
+		// get the perturber energy (in keV) and rescale it
+		*enweight = interp_lin_ndim(det->crosstalk_TDM_prop[grading].matrix,iarr,fac,3);
+		//printf("In routine %f\n", *enweight);
+	}
+}
+
+void calc_der_xt_influence(AdvDet* det,double signal_energy, double perturber_energy, double* enweight, double dt_in_frames, int grading){
+	//Check if within the sample range for ener_p and ener_v (same)
+	if ((perturber_energy < det->crosstalk_TDM_der[grading].ener_p[0]) ||
+			(perturber_energy >= det->crosstalk_TDM_der[grading].ener_p[det->crosstalk_TDM_der[grading].n_ener_p-1]) ||
+			(signal_energy < det->crosstalk_TDM_der[grading].ener_v[0]) ||
+			(signal_energy >= det->crosstalk_TDM_der[grading].ener_p[det->crosstalk_TDM_der[grading].n_ener_v-1])) {
+		headas_chat(7, " *** warning : energy outside the tabulated values for proportional crosstalk [%g,%g]}n",
+				det->crosstalk_TDM_der[grading].ener_p[0],det->crosstalk_TDM_der[grading].ener_p[det->crosstalk_TDM_der[grading].n_ener_p-1]);
+		headas_chat(7, "     ---> skipping this event!\n");
+		//printf("Outside energy cross %f and impact %f\n", perturber_energy, signal_energy);
+		//printf("Boundaries %f and %f\n", det->crosstalk_TDM_der[grading].ener_v[0],  det->crosstalk_TDM_der[grading].ener_p[det->crosstalk_TDM_der[grading].n_ener_v-1]);
+	//Check if within the sample range in time
+	} else if ((dt_in_frames<=det->crosstalk_TDM_der[grading].samples[0]) ||
+			(dt_in_frames >= det->crosstalk_TDM_der[grading].samples[det->crosstalk_TDM_der[grading].n_samples-1])){
+		//The impact is not affected
+		headas_chat(7, "  Not influencing!\n");
+		headas_chat(7, "     ---> skipping this event!\n");
+		//printf("Outside time\n");
+		//printf("Boundaries %f and %f\n", det->crosstalk_TDM_der[grading].samples[0],  det->crosstalk_TDM_der[grading].samples[det->crosstalk_TDM_der[grading].n_samples-1]);
+	} else{
+		//Finding the corresponding indices
+		int ind_dt = binary_search(dt_in_frames,det->crosstalk_TDM_der[grading].samples,det->crosstalk_TDM_der[grading].n_samples);
+		assert ((ind_dt)>= 0 && (ind_dt < det->crosstalk_TDM_der[grading].n_samples));
+		//printf("dt is %f and index is %i\n", dt_in_frames, ind_dt);
+		float d_dt = (dt_in_frames-det->crosstalk_TDM_der[grading].samples[ind_dt])/(det->crosstalk_TDM_der[grading].samples[ind_dt+1]-det->crosstalk_TDM_der[grading].samples[ind_dt]);
+
+		int ind_dep = binary_search(perturber_energy,det->crosstalk_TDM_der[grading].ener_p,det->crosstalk_TDM_der[grading].n_ener_p);
+		assert ((ind_dep)>= 0 && (ind_dep < det->crosstalk_TDM_der[grading].n_ener_p));
+		//printf("energy is %f and index is %i\n", perturber_energy, ind_dep);
+		float d_dep=(perturber_energy-det->crosstalk_TDM_der[grading].ener_p[ind_dep])/(det->crosstalk_TDM_der[grading].ener_p[ind_dep+1]-det->crosstalk_TDM_der[grading].ener_p[ind_dep]);
+
+		int ind_dev = binary_search(signal_energy,det->crosstalk_TDM_der[grading].ener_v,det->crosstalk_TDM_der[grading].n_ener_v);
+		assert ((ind_dev)>= 0 && (ind_dev < det->crosstalk_TDM_der[grading].n_ener_v));
+		//printf("energy is %f and index is %i\n", signal_energy, ind_dev);
+		float d_dev=(signal_energy-det->crosstalk_TDM_der[grading].ener_v[ind_dev])/(det->crosstalk_TDM_der[grading].ener_v[ind_dev+1]-det->crosstalk_TDM_der[grading].ener_v[ind_dev]);
+
+		int iarr[] = {ind_dt, ind_dep,ind_dev};
+		double fac[] = {d_dt, d_dep, d_dev};
+
+		// get the crosstalk energy (in keV) and rescale it
+		*enweight = interp_lin_ndim(det->crosstalk_TDM_der[grading].matrix,iarr,fac,3);
+		//printf("In routine %f\n", *enweight);
+	}
+}
+
+
 //Find which file we need to use for time dependency
 CrosstalkTimedep* getTimeDep(AdvDet* det, CrosstalkProxy* xtalk_proxy, int ii, int grade, int* status){
 	CrosstalkTimedep* buffer=NULL;
@@ -270,12 +359,8 @@ CrosstalkTimedep* getTimeDep(AdvDet* det, CrosstalkProxy* xtalk_proxy, int ii, i
 		buffer=&(det->crosstalk_ther_timedep[det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_index[crosstalk->weight_index]][2*grade]); //In case the timedep is different beteween grades
 	} else if(xtalk_proxy->type[ii]==THERCTK){
 		buffer=&(det->crosstalk_ther_timedep[det->pix[crosstalk->pixID].thermal_cross_talk->cross_talk_index[crosstalk->weight_index]][2*grade+1]);
-	} else if(xtalk_proxy->type[ii]==-IMODCTK){;
-		buffer=&(det->crosstalk_imod_timedep[2*grade]);
-	} else if(xtalk_proxy->type[ii]==IMODCTK){
-		buffer=&(det->crosstalk_imod_timedep[2*grade+1]);
 	} else{
-		printf("It seems as though there is an event of cross-talk with unknown type %i \n", xtalk_proxy->type[ii]);
+		printf("It seems as though there is an event of cross-talk type %i which has no timedependency given in XML file \n", xtalk_proxy->type[ii]);
 		SIXT_ERROR("Wrong type");
 		*status=EXIT_FAILURE;
 	}
@@ -563,14 +648,14 @@ void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p, f
 	// get number of rows
 	int naxis;
 	if (fits_get_img_dim(fptr, &naxis, status) && (naxis!=4)){
-		printf(" error: getting dimensions of intermodulation data array failed \n");
+		printf(" error: getting dimensions of electrical data array failed \n");
 		return;
 	}
 	long naxes[naxis];
 
 
 	if (fits_get_img_size(fptr, naxis, naxes, status) ){
-		printf(" error: getting dimensions of intermodulation data array failed \n");
+		printf(" error: getting dimensions of electrical data array failed \n");
 		return;
 	}
 	// check dimensions
@@ -1101,7 +1186,8 @@ void storeEventtype(CrosstalkProxy* xtalk_proxy, int type, double df, int* statu
 	xtalk_proxy->type[xtalk_proxy->n_active_crosstalk]=type*sgn;
 	xtalk_proxy->is_saved[xtalk_proxy->n_active_crosstalk]=0;
 
-	if (abs(type)!=-IMODCTK && abs(type)!=-THERCTK && abs(type)!=-ELECCTK){
+	if (abs(type)!=-IMODCTK && abs(type)!=-THERCTK && abs(type)!=-ELECCTK && abs(type)!=-PROPCTK1
+			&& abs(type)!=-PROPCTK2 && abs(type)!=-DERCTK){
 		printf("Found an incorrect cross-talk type %i \n", type);
 		SIXT_ERROR("Wrong crosstalk type");
 		*status=EXIT_FAILURE;
@@ -1163,12 +1249,6 @@ static void load_intermod_freq_table(AdvDet* det, int k, int* status){
 
 		// set the minimal and maximal dt value (dt_min<0 and dt_max>0 required in the current implementation). NB: Hi and Low timedep files have the same dt (only wights differ).
 		assert(det->crosstalk_imod_table[k].dt_min<0.0 && det->crosstalk_imod_table[k].dt_max>0.0);
-		if (det->crosstalk_imod_table[k].dt_min < det->crosstalk_imod_timedep[2*k].time[0]){
-			det->crosstalk_imod_table[k].dt_min = det->crosstalk_imod_timedep[2*k].time[0];
-		}
-		if (det->crosstalk_imod_table[k].dt_max > det->crosstalk_imod_timedep[2*k].time[det->crosstalk_imod_timedep[2*k].length-1]){
-			det->crosstalk_imod_table[k].dt_max = det->crosstalk_imod_timedep[2*k].time[det->crosstalk_imod_timedep[2*k].length-1];
-		}
 
 		read_intermod_matrix(fptr,n_ampl,n_dt, n_freq, &(det->crosstalk_imod_table[k]),
 				EXTNAME_CROSSTALK_GRAD,status);
@@ -1192,42 +1272,218 @@ void load_intermod_cross_talk(AdvDet* det, int* status){
 	CHECK_NULL_VOID(det->crosstalk_intermod_file,*status,"no file for the intermodulation table specified");
 	/** Looping through all the grades*/
 	if (det->crosstalk_imod_table==NULL){
-		det->crosstalk_imod_timedep=(CrosstalkTimedep*)malloc(2*det->pix[0].ngrades*sizeof(CrosstalkTimedep));
-		CHECK_MALLOC_VOID_STATUS(det->crosstalk_imod_timedep,*status);
 		det->crosstalk_imod_table=(ImodTab*)malloc(det->pix[0].ngrades*sizeof(ImodTab));
 		CHECK_MALLOC_VOID_STATUS(det->crosstalk_imod_table,*status);
 		for(int k=0; k<det->pix->ngrades; k++){
-			load_imod_timedep(det,k,status);
 			load_intermod_freq_table(det,k,status);
 			CHECK_STATUS_VOID(*status);
 		}
 	}
 }
 
-void load_imod_timedep(AdvDet* det, int k, int* const status){
-	CHECK_NULL_VOID(det->crosstalk_intermod_timedep_file,*status,"no file for the intermodulation time dependence specified");
+static void initTDMTab(TDMTab** tab, int n_samples, int n_ener_p, int n_ener_v,
+		double* samples, double* ener_p, double* ener_v, int* status){
+	// make a short pointer
+	TDMTab* t = (*tab);
 
-	CrosstalkTimedep* tmp_lo=newCrossTalkTimedep(status);
-	det->crosstalk_imod_timedep[2*k]=*tmp_lo;
-	free(tmp_lo);
-	CrosstalkTimedep* tmp_hi=newCrossTalkTimedep(status);
-	det->crosstalk_imod_timedep[2*k+1]=*tmp_hi;
-	free(tmp_hi);
+	t->n_samples = n_samples;
+	t->n_ener_p  = n_ener_p;
+	t->n_ener_v = n_ener_v;
 
-	char* COLNAME_TIME_DELAY = "TIME_DELAY";
-	char* COLNAME_WEIGHT = "WEIGHT";
-	char* EXTNAME_LOW_GRAD;
-	char* EXTNAME_HI_GRAD;
-
-	// Concatenating the grade
-
-	if (asprintf(&EXTNAME_LOW_GRAD,"PERTLO%05ld",det->pix[0].grades[k].gradelim_post)== -1){
-	  *status=EXIT_FAILURE;
-	  printf(" *** error: allocating memory failed ");
-	  return;
+	t->samples = (double*) malloc(n_samples * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->samples,*status);
+	for (int ii=0; ii<n_samples; ii++){
+		t->samples[ii] = samples[ii];
 	}
 
-	if (asprintf(&EXTNAME_HI_GRAD,"PERTHI%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	t->ener_p = (double*) malloc(n_ener_p * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->ener_p,*status);
+	for (int ii=0; ii<n_ener_p; ii++){
+		t->ener_p[ii] = ener_p[ii];
+	}
+
+	t->ener_v = (double*) malloc(n_ener_v * sizeof(double));
+	CHECK_MALLOC_VOID_STATUS(t->ener_v,*status);
+	for (int ii=0; ii<n_ener_v; ii++){
+		t->ener_v[ii] = ener_v[ii];
+	}
+
+	// allocate the 3d matrix (n_samples x n_ener_p x n_ener_v)
+	t->matrix = (double***) malloc (n_samples*sizeof(double**));
+	CHECK_MALLOC_VOID_STATUS(t->matrix,*status);
+
+	for (int ll=0; ll<n_samples; ll++){               // SAMPLE-LOOP
+		t->matrix[ll] = (double**) malloc (n_ener_p*sizeof(double*));
+		CHECK_MALLOC_VOID_STATUS(t->matrix[ll],*status);
+
+		for (int ii=0; ii<n_ener_p; ii++){             // ENER_P-LOOP
+			t->matrix[ll][ii] = (double*) malloc (n_ener_v*sizeof(double));
+			CHECK_MALLOC_VOID_STATUS(t->matrix[ll][ii],*status);
+
+			for (int jj=0; jj<n_ener_v; jj++){      // ENER_V-LOOP
+				t->matrix[ll][ii][jj] = 0.0;
+			}
+		}
+	}
+	return;
+}
+
+/** read one electrical crosstalk matrix from a fits file and store it in the structure (units given in keV) */
+void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v,
+		TDMTab* tab, char* extname, int* status){
+
+	// ampl and dt arrays should be initialized before
+	assert(tab->samples!=NULL);
+	assert(tab->ener_v!=NULL);
+	assert(tab->ener_p!=NULL);
+
+	// move to the extension containing the data
+	int extver = 0;
+	if (fits_movnam_hdu(fptr, IMAGE_HDU, extname, extver ,status)){
+		printf(" error: moving to extension %s failed \n",extname);
+		return;
+	}
+
+	// get number of rows
+	int naxis;
+	if (fits_get_img_dim(fptr, &naxis, status) && (naxis!=4)){
+		printf(" error: getting dimensions of proportional data array failed \n");
+		return;
+	}
+	long naxes[naxis];
+
+
+	if (fits_get_img_size(fptr, naxis, naxes, status) ){
+		printf(" error: getting dimensions of proportional data array failed \n");
+		return;
+	}
+	// check dimensions
+	if (naxes[0]!=n_samples || naxes[1]!=n_ener_p || naxes[2]!=n_ener_v ){
+		*status=EXIT_FAILURE;
+		printf(" error: wrong dimensions of the proportional data array [%ld %ld %ld] \n",
+				naxes[0],naxes[1],naxes[2]);
+	}
+
+
+	// actually read the table now
+	int anynul=0;
+	double* buf;
+	buf = (double*)malloc(n_samples*n_ener_v*n_ener_p*sizeof(double));
+	CHECK_MALLOC_VOID(buf);
+
+	double nullval=0.0;
+	long nelem = n_samples*n_ener_v*n_ener_p;
+	long fpixel[naxis];
+	for (int ii=0;ii<naxis;ii++){
+		fpixel[ii]=1;
+	}
+
+	fits_read_pix(fptr, TDOUBLE, fpixel,nelem, &nullval,buf, &anynul, status);
+	fits_report_error(stdout, *status);
+	CHECK_STATUS_VOID(*status);
+
+	headas_chat(7," start reading the proportional crosstalk matrix %s [%ld %ld %ld]",extname,n_samples,n_ener_p, n_ener_v);
+	for (int ii=0; ii<n_samples ; ii++){  // freq_s loop
+		for (int jj=0; jj<n_ener_p ; jj++){
+			for (int kk=0; kk<n_ener_v ; kk++){
+					int ind = 	( kk * n_ener_p + jj ) * n_samples + ii;
+					assert(ind < nelem);
+					tab->matrix[ii][jj][kk] = buf[ind];  // already in keV !!!
+			}
+		}
+	} // ------------------------  //  end (freq_s loop)
+	headas_chat(7," ... done \n");
+
+	free(buf);
+
+	return;
+}
+
+
+void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
+	CHECK_STATUS_VOID(*status);
+	if (det->TDM_prop_file==NULL){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Tried to load proportional crosstalk with no corresponding file given at detector level");
+		return;
+	}
+
+	// Load table only once (on first iteration)
+	if (det->crosstalk_TDM_prop == NULL){
+		det->crosstalk_TDM_prop=(TDMTab*)malloc(det->pix[0].ngrades*sizeof(TDMTab));
+		CHECK_MALLOC_VOID_STATUS(det->crosstalk_TDM_prop,*status);
+		// load the tables for the proportional crosstalk
+		for (int k=0; k<det->pix[pixid].ngrades; k++){
+			load_prop_table(det, k, status);
+			CHECK_STATUS_VOID(*status);
+		}
+		assert(det->crosstalk_TDM_prop != NULL);
+	}
+
+	AdvPix* concerned_pixel = &(det->pix[pixid]);
+	AdvPix* current_pixel = NULL;
+
+	//Allocate memory
+	concerned_pixel->prop_cross_talk=newMatrixPropCrossTalk(status);
+	int max_rows=det->readout_channels->channels[concerned_pixel->column-1].num_pixels; //row in a given column, column start at 0 in structure (can differ)
+	concerned_pixel->prop_cross_talk->cross_talk_pixels_1=(int*)realloc(concerned_pixel->prop_cross_talk->cross_talk_pixels_1,sizeof(int)); //only row N+1, column N
+	concerned_pixel->prop_cross_talk->cross_talk_pixels_2=(int*)realloc(concerned_pixel->prop_cross_talk->cross_talk_pixels_2, (max_rows-1)*sizeof(int)); //All but itself in column N
+
+	int circ_next_row=(concerned_pixel->row)%(det->max_rows)+1; //If pixel is at 'last' row, it will affect row 1
+
+	//The last column may not have the same number of rows, if this is the case, since switches are sequential,
+	//type 1 cross-talk cannot happen with row N+1 within the same column, we affect the next pixel to -1 since
+	//it should not have a neighbour for type 1
+	if (circ_next_row>max_rows){
+		circ_next_row=-1;
+	}
+	//printf("Number of row %i, next row %i and max row %i\n", concerned_pixel->row, circ_next_row, max_rows);
+
+	// Iterate over the channel to find all type 1/2 pixels
+	for (int i=0;i<det->npix;i++){
+		// Cross-talk is not with yourself ;)
+		if (i==pixid) continue;
+
+		current_pixel = &(det->pix[i]);
+
+		int row = current_pixel->row;
+		int column = current_pixel->column;
+		//Quick check if the pixel is concerned
+		if (row==circ_next_row && column==concerned_pixel->column){
+			//Type 1 for next row (N+1)
+			concerned_pixel->prop_cross_talk->cross_talk_pixels_1[concerned_pixel->prop_cross_talk->type_1_pix]=i;
+			concerned_pixel->prop_cross_talk->type_1_pix+=1;
+		}
+
+		if (column==concerned_pixel->column){
+			//Type 2 for same column N
+			concerned_pixel->prop_cross_talk->cross_talk_pixels_2[concerned_pixel->prop_cross_talk->type_2_pix]=i;
+			concerned_pixel->prop_cross_talk->type_2_pix+=1;
+		}
+	}
+
+	assert(concerned_pixel->prop_cross_talk->type_1_pix<=1); //There should be 1 next row neighbor maximum
+	assert(concerned_pixel->prop_cross_talk->type_2_pix==max_rows-1); //There should be max_rows-1 in column neighbors
+	//printf("Number of type 1 pixels %i \n", concerned_pixel->prop_cross_talk->type_1_pix);
+	//printf("Number of type 2 pixels %i \n", concerned_pixel->prop_cross_talk->type_2_pix);
+}
+
+/** load the proportional crosstalk tables */
+void load_prop_table(AdvDet* det, int k ,int* status){
+
+	// check if the table exists
+	CHECK_NULL_VOID(det->TDM_prop_file,*status,"no file for the proportional crosstalk table specified");
+
+	char* EXTNAME_SAMPLES = "OFFSETS";
+	char* EXTNAME_ENER_VICTIM = "VENERGIES";
+	char* EXTNAME_ENER_PERTURBER = "PENERGIES";
+	char* COLNAME_SAMPLES = "OFFSET";
+	char* COLNAME_ENER_VICTIM = "VENERGY";
+	char* COLNAME_ENER_PERTURBER = "PENERGY";
+	char* EXTNAME_PROP_CROSSTALK_GRAD;
+
+	// Concatenating the grade
+	if (asprintf(&EXTNAME_PROP_CROSSTALK_GRAD,"CROSSTALK_%05ld",det->pix[0].grades[k].gradelim_post)== -1){
 	  *status=EXIT_FAILURE;
 	  printf(" *** error: allocating memory failed ");
 	  return;
@@ -1238,67 +1494,185 @@ void load_imod_timedep(AdvDet* det, int k, int* const status){
 	do {
 		char fullfilename[MAXFILENAME];
 		strcpy(fullfilename,det->filepath);
-		strcat(fullfilename,det->crosstalk_intermod_timedep_file);
+		strcat(fullfilename,det->TDM_prop_file);
 
 		// open the file
 		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
-		headas_chat(5, "   ... reading the time dependence imodmal table %s for grade %i \n",fullfilename, k);
+		headas_chat(5, "   ... reading the proportional crosstalk table %s for grade %i \n",fullfilename, k);
 
-		// Read time dep info for first file
-		int n_time_low, n_weight_low;
-		double* time_low;
-		double* weight_low;
-		get_imodtable_axis(&n_time_low,&time_low,EXTNAME_LOW_GRAD,COLNAME_TIME_DELAY,fptr,status);
+		// read the extensions specifying the axes of the 3d matrix
+		int n_samples, n_ener_p, n_ener_v;
+		double* samples;
+		double* ener_v;
+		double* ener_p;
+		get_imodtable_axis(&n_samples,&samples,EXTNAME_SAMPLES,COLNAME_SAMPLES,fptr,status);
 		CHECK_STATUS_BREAK(*status);
-		get_imodtable_axis(&n_weight_low,&weight_low,EXTNAME_LOW_GRAD,COLNAME_WEIGHT,fptr,status);
+		get_imodtable_axis(&n_ener_v,&ener_v,EXTNAME_ENER_VICTIM,COLNAME_ENER_VICTIM,fptr,status);
 		CHECK_STATUS_BREAK(*status);
-
-		det->crosstalk_imod_timedep[2*k].length=n_time_low;
-		det->crosstalk_imod_timedep[2*k].time=time_low;
-		det->crosstalk_imod_timedep[2*k].weight=weight_low;
-
-		// now we need to set the weight at t=0 (differs for tessim simulated LUT)
-		int ind_t0_low = binary_search(0.0, det->crosstalk_imod_timedep[2*k].time, det->crosstalk_imod_timedep[2*k].length);
-
-		double fac_low = (0.0 - det->crosstalk_imod_timedep[2*k].time[ind_t0_low]) /
-				(det->crosstalk_imod_timedep[2*k].time[ind_t0_low+1] - det->crosstalk_imod_timedep[2*k].time[ind_t0_low]);
-
-		det->crosstalk_imod_timedep[2*k].weight_t0 =
-				(1-fac_low)*det->crosstalk_imod_timedep[2*k].weight[ind_t0_low] +
-				(fac_low)  *det->crosstalk_imod_timedep[2*k].weight[ind_t0_low+1];
-
-
-		// Read time dependence info for second the second case (same grading, different frequency difference)
-		int n_time_hi, n_weight_hi;
-		double* time_hi;
-		double* weight_hi;
-		get_imodtable_axis(&n_time_hi,&time_hi,EXTNAME_HI_GRAD,COLNAME_TIME_DELAY,fptr,status);
-		CHECK_STATUS_BREAK(*status);
-		get_imodtable_axis(&n_weight_hi,&weight_hi,EXTNAME_HI_GRAD,COLNAME_WEIGHT,fptr,status);
+		get_imodtable_axis(&n_ener_p,&ener_p,EXTNAME_ENER_PERTURBER,COLNAME_ENER_PERTURBER,fptr,status);
 		CHECK_STATUS_BREAK(*status);
 
-		det->crosstalk_imod_timedep[2*k+1].length=n_time_hi;
-		det->crosstalk_imod_timedep[2*k+1].time=time_hi;
-		det->crosstalk_imod_timedep[2*k+1].weight=weight_hi;
+		//Find the correct number of samples, which varies from grade to grade
+		//For instance grade 1 has 1453 offset samples, grade 0 8181 etc... which are the samples + 1101 (the time before event)
+		n_samples=(n_samples-det->pix[0].grades[0].gradelim_post)+det->pix[0].grades[k].gradelim_post;
 
-		// now we need to set the weight at t=0 (differs for tessim simulated LUT)
-		int ind_t0_hi = binary_search(0.0, det->crosstalk_imod_timedep[2*k+1].time, det->crosstalk_imod_timedep[2*k+1].length);
+		// initialize the elec crosstalk tables
+		TDMTab* tmp_TDM=&(det->crosstalk_TDM_prop[k]);
+		initTDMTab(&(tmp_TDM), n_samples, n_ener_p, n_ener_v, samples, ener_v, ener_p, status);
+		if (*status!=EXIT_SUCCESS){
+			SIXT_ERROR("initializing proportional crosstalk table in memory failed");
+			break;
+		}
 
-		double fac_hi = (0.0 - det->crosstalk_imod_timedep[2*k+1].time[ind_t0_hi]) /
-				(det->crosstalk_imod_timedep[2*k+1].time[ind_t0_hi+1] - det->crosstalk_imod_timedep[2*k+1].time[ind_t0_hi]);
+		read_TDM_matrix(fptr, n_samples, n_ener_p, n_ener_v,&(det->crosstalk_TDM_prop[k]),
+				EXTNAME_PROP_CROSSTALK_GRAD,status);
+		if (*status != EXIT_SUCCESS){
+			printf(" *** error: reading proportional crosstalk table %s  failed\n", fullfilename);
+			break;
+		}
+		free(samples);
+		free(ener_v);
+		free(ener_p);
+	} while(0); // END of Error handling loop
 
-		det->crosstalk_imod_timedep[2*k+1].weight_t0 =
-				(1-fac_hi)*det->crosstalk_imod_timedep[2*k+1].weight[ind_t0_hi] +
-				(fac_hi)  *det->crosstalk_imod_timedep[2*k+1].weight[ind_t0_hi+1];
-
-	}while(0);
-
-	free(EXTNAME_LOW_GRAD);
-	free(EXTNAME_HI_GRAD);
-
+	free(EXTNAME_PROP_CROSSTALK_GRAD);
 	if (fptr!=NULL) {fits_close_file(fptr,status);}
+
+	return;
 }
 
+void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
+	CHECK_STATUS_VOID(*status);
+	if (det->TDM_der_file==NULL){
+		*status = EXIT_FAILURE;
+		SIXT_ERROR("Tried to load derivative crosstalk with no corresponding file given at detector level");
+		return;
+	}
+
+	// Load for each grade, every different table only once (on first iteration)
+	if (det->crosstalk_TDM_der == NULL){
+		det->crosstalk_TDM_der=(TDMTab*)malloc(det->pix[0].ngrades*sizeof(TDMTab));
+		CHECK_MALLOC_VOID_STATUS(det->crosstalk_TDM_der,*status);
+		// load the tables for the derivative crosstalk
+		for (int k=0; k<det->pix[pixid].ngrades; k++){
+			load_der_table(det, k, status);
+			CHECK_STATUS_VOID(*status);
+		}
+		assert(det->crosstalk_TDM_der != NULL);
+	}
+
+	AdvPix* concerned_pixel = &(det->pix[pixid]);
+	AdvPix* current_pixel = NULL;
+
+	//Allocate memory
+	concerned_pixel->der_cross_talk=newMatrixDerCrossTalk(status);
+	int max_rows=det->readout_channels->channels[concerned_pixel->column-1].num_pixels; //row in a given column, column start at 0 in the structure (can differ)
+	concerned_pixel->der_cross_talk->cross_talk_pixels=(int*)realloc(concerned_pixel->der_cross_talk->cross_talk_pixels,4*sizeof(int)); //for the moment only 4 considered TODO: Change once more accurate
+
+	// Find the affected 'wiring' neighbors. This concerns row (N+1), (N+2), (N-1), (N-2)
+	// in the same column. No issue as in type 1, since even columns with less rows affect the
+	// next wiring neighbours.
+	int circ_next_row=(concerned_pixel->row)%(max_rows)+1; //If pixel is at 'last' row, it will affect row 0
+	int circ_next_next_row=(concerned_pixel->row+1)%(max_rows)+1;
+	int circ_prev_row=(concerned_pixel->row+max_rows-2)%(max_rows)+1;
+	int circ_prev_prev_row=(concerned_pixel->row+max_rows-3)%(max_rows)+1;
+	//printf("Number of rows %i, row actual %i and other 4, %i, %i, %i, %i \n", max_rows, concerned_pixel->row, circ_prev_prev_row, circ_prev_row, circ_next_row, circ_next_next_row);
+
+
+	// Iterate over the channel to find all type 1/2 pixels
+	for (int i=0;i<det->npix;i++){
+		// Cross-talk is not with yourself ;)
+		if (i==pixid) continue;
+
+		current_pixel = &(det->pix[i]);
+
+		int row = current_pixel->row;
+		int column = current_pixel->column;
+
+		//Quick check if the pixel is concerned
+		if (column==concerned_pixel->column && (row==circ_next_row || row==circ_next_next_row || row==circ_prev_row || row==circ_prev_prev_row)){
+			//Type 3 for next row (N+1), (N+2), (N-1), (N-2)
+			concerned_pixel->der_cross_talk->cross_talk_pixels[concerned_pixel->der_cross_talk->num_cross_talk_pixels]=i;
+			concerned_pixel->der_cross_talk->num_cross_talk_pixels+=1;
+		}
+	}
+	//printf("Number of type 3 pixels %i \n", concerned_pixel->der_cross_talk->num_cross_talk_pixels);
+	assert(concerned_pixel->der_cross_talk->num_cross_talk_pixels==4); //There should be 4 wiring neighbors
+}
+
+/** load the proportional crosstalk tables */
+void load_der_table(AdvDet* det, int k ,int* status){
+
+	// check if the table exists
+	CHECK_NULL_VOID(det->TDM_der_file,*status,"no file for the derivative crosstalk table specified");
+
+	char* EXTNAME_SAMPLES = "OFFSETS";
+	char* EXTNAME_ENER_VICTIM = "VENERGIES";
+	char* EXTNAME_ENER_PERTURBER = "PENERGIES";
+	char* COLNAME_SAMPLES = "OFFSET";
+	char* COLNAME_ENER_VICTIM = "VENERGY";
+	char* COLNAME_ENER_PERTURBER = "PENERGY";
+	char* EXTNAME_DER_CROSSTALK_GRAD;
+
+	// Concatenating the grade
+	if (asprintf(&EXTNAME_DER_CROSSTALK_GRAD,"CROSSTALK_%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+	  *status=EXIT_FAILURE;
+	  printf(" *** error: allocating memory failed ");
+	  return;
+	}
+
+	fitsfile *fptr=NULL;
+
+	do {
+		char fullfilename[MAXFILENAME];
+		strcpy(fullfilename,det->filepath);
+		strcat(fullfilename,det->TDM_der_file);
+
+		// open the file
+		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
+		headas_chat(5, "   ... reading the derivative crosstalk table %s for grade %i \n",fullfilename, k);
+		/**headas_chat(5, "   ... reading the electrical crosstalk table %s \n",fullfilename);*/
+
+		// read the extensions specifying the axes of the 3d matrix
+		int n_samples, n_ener_p, n_ener_v;
+		double* samples;
+		double* ener_v;
+		double* ener_p;
+		get_imodtable_axis(&n_samples,&samples,EXTNAME_SAMPLES,COLNAME_SAMPLES,fptr,status);
+		CHECK_STATUS_BREAK(*status);
+		get_imodtable_axis(&n_ener_v,&ener_v,EXTNAME_ENER_VICTIM,COLNAME_ENER_VICTIM,fptr,status);
+		CHECK_STATUS_BREAK(*status);
+		get_imodtable_axis(&n_ener_p,&ener_p,EXTNAME_ENER_PERTURBER,COLNAME_ENER_PERTURBER,fptr,status);
+		CHECK_STATUS_BREAK(*status);
+
+		//Find the correct number of samples, which varies from grade to grade
+		//For instance grade 1 has 1453 offset samples, grade 0 8181 etc... which are the samples + 1101 (the time before event)
+		n_samples=(n_samples-det->pix[0].grades[0].gradelim_post)+det->pix[0].grades[k].gradelim_post;
+
+		// initialize the elec crosstalk tables
+		TDMTab* tmp_TDM=&(det->crosstalk_TDM_der[k]);
+		initTDMTab(&(tmp_TDM), n_samples, n_ener_p, n_ener_v, samples, ener_v, ener_p, status);
+		if (*status!=EXIT_SUCCESS){
+			SIXT_ERROR("initializing derivative crosstalk table in memory failed");
+			break;
+		}
+
+		read_TDM_matrix(fptr,n_samples, n_ener_p, n_ener_v,&(det->crosstalk_TDM_der[k]),
+				EXTNAME_DER_CROSSTALK_GRAD,status);
+		if (*status != EXIT_SUCCESS){
+			printf(" *** error: reading derivative crosstalk table %s  failed\n", fullfilename);
+			break;
+		}
+		free(samples);
+		free(ener_v);
+		free(ener_p);
+	} while(0); // END of Error handling loop
+
+	free(EXTNAME_DER_CROSSTALK_GRAD);
+	if (fptr!=NULL) {fits_close_file(fptr,status);}
+
+	return;
+}
 
 static int doCrosstalk(int id, AdvDet* det){
 	/** crosstalk "ALL" now exculdes the IMOD crosstalk (does not show a large effect) **/
@@ -1311,11 +1685,15 @@ static int doCrosstalk(int id, AdvDet* det){
 
 void init_crosstalk(AdvDet* det, int* const status){
 
-	headas_chat(5,"\n[crosstalk] the modes are switched on (%i): \n",det->crosstalk_id);
+	printf("\nCross-talk modes switched on: \n");
 
 	// load the channel list
 	if (det->readout_channels==NULL){
-		det->readout_channels = get_readout_channels(det,status);
+		if (det->tdm==0) {
+			det->readout_channels = get_readout_channels(det,status);
+		} else{
+			det->readout_channels = get_readout_column(det,status);
+		}
 		CHECK_STATUS_VOID(*status);
 	}
 
@@ -1326,7 +1704,7 @@ void init_crosstalk(AdvDet* det, int* const status){
 
 	// load thermal cross talk and associated time dependency
 	if (det->xt_num_thermal>0 && doCrosstalk(CROSSTALK_ID_THERM,det)){
-		headas_chat(5," - thermal crosstalk\n");
+		printf(" - thermal crosstalk\n");
 		det->crosstalk_ther_timedep=(CrosstalkTimedep**)malloc(det->xt_num_thermal*sizeof(CrosstalkTimedep*));
 		CHECK_MALLOC_VOID_STATUS(det->crosstalk_ther_timedep,*status);
 		for (int i=0; i<det->xt_num_thermal;i++){
@@ -1344,23 +1722,50 @@ void init_crosstalk(AdvDet* det, int* const status){
 
 	}
 
-	// load electrical cross talk and associated time dependency
-	if (doCrosstalk(CROSSTALK_ID_ELEC,det)){
-		headas_chat(5," - electrical crosstalk\n");
-		for (int ii=0;ii<det->npix;ii++){
-			load_electrical_cross_talk(det,ii,status);
+	if (det->tdm==0){
+		// load electrical cross talk and associated time dependency
+		if (det->crosstalk_elec_file!=NULL && doCrosstalk(CROSSTALK_ID_ELEC,det)){
+			printf(" - electrical crosstalk\n");
+			for (int ii=0;ii<det->npix;ii++){
+				load_electrical_cross_talk(det,ii,status);
+				CHECK_STATUS_VOID(*status);
+			}
+		}
+
+		// load intermodulation cross talk and associated time dependency (NOT DONE FOR CROSSTALK==ALL)
+		if (det->crosstalk_intermod_file!=NULL && det->crosstalk_id==CROSSTALK_ID_IMOD){
+			printf(" - intermodulation crosstalk\n");
+			// loop through all pixels
+			load_intermod_cross_talk(det,status);
 			CHECK_STATUS_VOID(*status);
+		}
+
+		if (det->crosstalk_id==CROSSTALK_ID_ALL){
+			printf("\n*** Note for users - Non-linear cross-talk is not used for 'all' in the FDM case (negligible impact) ***\n");
 		}
 	}
 
-	// load intermodulation cross talk and associated time dependency (NOT DONE FOR CROSSTALK==ALL)
-	if (det->crosstalk_intermod_file!=NULL && det->crosstalk_id==CROSSTALK_ID_IMOD){
-		headas_chat(5," - intermodulation crosstalk\n");
-		// loop through all pixels
-		load_intermod_cross_talk(det,status);
-		CHECK_STATUS_VOID(*status);
-	}
+	if (det->tdm==1){
+		// load proportional cross talk and associated time dependency (DONE ONLY WHEN TDM option is active)
+		if (det->TDM_prop_file!=NULL && doCrosstalk(CROSSTALK_ID_TDM_PROP,det)){
+			printf(" - proportional TDM cross-talk \n");
+			// loop through all the pixels
+			for (int ii=0;ii<det->npix;ii++){
+				load_proportional_cross_talk(det, ii, status);
+				CHECK_STATUS_VOID(*status);
+			}
+		}
 
+		// load derivative cross talk and associated time dependency (DONE ONLY WHEN TDM option is active)
+		if (det->TDM_der_file!=NULL && doCrosstalk(CROSSTALK_ID_TDM_DER,det)){
+			printf(" - derivative TDM cross-talk \n");
+			// loop through all the pixels
+			for (int ii=0;ii<det->npix;ii++){
+				load_derivative_cross_talk(det, ii, status);
+				CHECK_STATUS_VOID(*status);
+			}
+		}
+	}
 }
 
 static void add_pixel_to_readout(ReadoutChannels* read_chan, AdvPix* pix, int ic, int* status){
@@ -1383,26 +1788,46 @@ static void add_pixel_to_readout(ReadoutChannels* read_chan, AdvPix* pix, int ic
 	read_chan->channels[ic-1].pixels = (AdvPix**) realloc( read_chan->channels[ic-1].pixels,
 					(read_chan->channels[ic-1].num_pixels+1) * sizeof(AdvPix*));
 	CHECK_MALLOC_VOID_STATUS(read_chan->channels[ic-1].pixels,*status);
-
 	read_chan->channels[ic-1].pixels[read_chan->channels[ic-1].num_pixels] = pix;
-
 	read_chan->channels[ic-1].num_pixels++;
 
 	return;
 }
 
-static int get_num_chans(channel_list* cl, int* status){
+
+static int get_num_col(column_list* cl, int* status){
 
 	int num_chans = -1;
-
 	for(int ii=0; ii<cl->len; ii++){
-		num_chans = MAX(num_chans,cl->chan[ii]);
+		num_chans = MAX(num_chans,cl->col[ii]);
 	}
-
 	if (num_chans <= 0 ){
 		CHECK_STATUS_RET(*status,0);
 	}
+	return num_chans;
+}
 
+static int get_num_chans(channel_list* cl, int* status){
+
+	int num_chans = -1;
+	for(int ii=0; ii<cl->len; ii++){
+		num_chans = MAX(num_chans,cl->chan[ii]);
+	}
+	if (num_chans <= 0 ){
+		CHECK_STATUS_RET(*status,0);
+	}
+	return num_chans;
+}
+
+static int get_num_rows(column_list* cl, int* status){
+
+	int num_chans = -1;
+	for(int ii=0; ii<cl->len; ii++){
+		num_chans = MAX(num_chans,cl->row[ii]);
+	}
+	if (num_chans <= 0 ){
+		CHECK_STATUS_RET(*status,0);
+	}
 	return num_chans;
 }
 
@@ -1424,7 +1849,7 @@ ReadoutChannels* init_newReadout(int num_chan, int* status){
 		read_chan->channels[ii].num_pixels = 0;
 		read_chan->channels[ii].pixels = NULL;
 		read_chan->df_information_band[ii] = 0.0;
-                read_chan->channels[ii].fdmsys = NULL;
+        read_chan->channels[ii].fdmsys = NULL;
 	}
 
 	return read_chan;
@@ -1445,6 +1870,7 @@ ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 
 	// get the channel list
 	channel_list* chans = load_channel_list(fullfilename, status);
+
 	CHECK_STATUS_RET(*status,NULL);
 
 	// check if the file agrees with the number of pixels
@@ -1493,8 +1919,73 @@ ReadoutChannels* get_readout_channels(AdvDet* det, int* status){
 	free_channel_list(&chans);
 
 	// set the information band for each channel now
-//	set_df_information_band(read_chan,status);
+    // set_df_information_band(read_chan,status);
+	return read_chan;
+}
 
+/** Same as above but for TDM*/
+ReadoutChannels* get_readout_column(AdvDet* det, int* status){
+
+	// check if any channel file has been supplied
+    if (det->channel_file == NULL){
+    	SIXT_ERROR("No channel file supplied");
+        *status=EXIT_FAILURE;
+        return NULL;
+    }
+
+    // get the complete file name
+	char fullfilename[MAXFILENAME];
+	strcpy(fullfilename,det->filepath);
+	strcat(fullfilename,det->channel_file);
+
+	// get the channel list
+	column_list* chans = load_column_list(fullfilename, status);
+
+	CHECK_STATUS_RET(*status,NULL);
+
+	// check if the file agrees with the number of pixels
+	if (chans->len != det->npix){
+		printf("*** error: number of pixels from channel_file %s (%i) is not equal total number of pixels (%i)!\n",
+				fullfilename,chans->len,det->npix);
+		*status=EXIT_FAILURE;
+		return NULL;
+	}
+
+	int num_col = get_num_col(chans,status);
+	det->max_rows=get_num_rows(chans,status);
+	CHECK_STATUS_RET(*status,NULL);
+	ReadoutChannels* read_chan = init_newReadout(num_col, status);
+
+	// sort pixels in the channel array
+	AdvPix* pix=NULL;
+	for (int ii=0; ii < chans->len; ii++ ){
+
+		// check if PixID makes sense (PixID starts at 0)
+		if ( (chans->pixid[ii] < 0) || (chans->pixid[ii] > det->npix-1) ){
+			printf("*** error: Pixel-ID %i does not belong to the detector \n",chans->pixid[ii]);
+			*status = EXIT_FAILURE;
+			return NULL;
+		}
+
+		pix = &(det->pix[chans->pixid[ii]]);
+
+		// set row
+		pix->row = chans->row[ii];
+		pix->column = chans->col[ii];
+		if (pix->row<0){
+			printf("*** warning: assigning unrealistic row (%i) to pixel %i\n",pix->row,pix->pindex);
+		}
+		if (pix->column<0){
+			printf("*** warning: assigning unrealistic row (%i) to pixel %i\n",pix->row,pix->pindex);
+		}
+
+		// assign pixel to readout channel
+		add_pixel_to_readout(read_chan, pix, chans->col[ii], status);
+		// make sure the pixel knows its channel (Channel ID starts at 1)
+		pix->channel = &(read_chan->channels[chans->col[ii]-1]);
+	}
+	// free the channel list
+	free_column_list(&chans);
 	return read_chan;
 }
 
@@ -1503,6 +1994,15 @@ void free_channel_list(channel_list** chans){
 		free((*chans)->chan);
 		free((*chans)->pixid);
 		free((*chans)->freq);
+		free(*chans);
+	}
+}
+
+void free_column_list(column_list** chans){
+	if (*(chans)!=NULL){
+		free((*chans)->pixid);
+		free((*chans)->row);
+		free((*chans)->col);
 		free(*chans);
 	}
 }
@@ -1557,16 +2057,71 @@ channel_list* load_channel_list(char* fname, int* status){
 	      // printf("reading channel list (line %i): %i %i %lf\n",n+1,chans->pixid[n],chans->chan[n],chans->freq[n]);
 	     n++;
 	}
+
 	fclose(file);
-
     chans->len = n;
+	return chans;
+}
 
+column_list* load_column_list(char* fname, int* status){
+
+	column_list* chans = (column_list*)malloc(sizeof(column_list));
+	CHECK_MALLOC_RET_NULL(chans);
+
+	// init parameters
+	chans->len=0;
+	chans->col=NULL;
+	chans->row=NULL;
+	chans->pixid=NULL;
+
+	// open the file
+	FILE *file=NULL;
+	file=fopen(fname, "r");
+
+	if (file == NULL){
+		printf("*** error reading file %s \n",fname);
+	 	 *status=EXIT_FAILURE;
+	 	 return NULL;
+	}
+
+	int n=0;
+	int* col;
+	int* pix;
+	int* row;
+	while(!feof(file)){
+
+	     pix = realloc(chans->pixid, (n+1)*sizeof(int));
+	     col = realloc(chans->col,  (n+1)*sizeof(int));
+	     row = realloc(chans->row,  (n+1)*sizeof(double));
+
+	     if ((col==NULL)||(pix==NULL)||(row==NULL)){
+	    	 	 free_column_list(&chans);
+	    	 	 SIXT_ERROR("error when reallocating arrays");
+	    	 	 *status=EXIT_FAILURE;
+	    	 	 return NULL;
+	     } else {
+	    	 chans->pixid = pix;
+	    	 chans->col = col;
+	    	 chans->row = row;
+	     }
+	     // check that always all three numbers are matched
+	     if ((fscanf(file, "%i %i %i\n",&(chans->pixid[n]),&(chans->col[n]),&(chans->row[n]))) != 3){
+	    	 printf("*** formatting error in line %i of the channel file %s: check your input file\n",n+1,fname);
+	    	 *status=EXIT_FAILURE;
+	    	 return NULL;
+	     }
+	      // printf("reading channel list (line %i): %i %i %i\n",n+1,chans->pixid[n],chans->col[n],chans->row[n]);
+	     n++;
+	}
+
+	fclose(file);
+    chans->len = n;
 	return chans;
 }
 
 /** Compute influence of the crosstalk event on an impact using the timedependence table */
 int computeCrosstalkInfluence(CrosstalkTimedep* buffer,PixImpact* impact,PixImpact* crosstalk, double energy, double* influence){
-	// For the moment, the crosstalk event is supposed to happen afterwards, but this could be modified if needed
+
 	double time_difference = crosstalk->time - impact->time;
 	double energy_influence = 0.;
 
@@ -1635,9 +2190,8 @@ void freeCrosstalkProxy(CrosstalkProxy** xtalk_proxy){
 	}
 }
 
-
 /** Add crosstalk to proxy */
-void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpact* impact, AdvDet* det, int type, double df, int* const status){
+void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpact* impact, int type, double df, int* const status){
 	// If no more space, first check if the first events in the buffer are not too far from the current case (i.e. can we erase some)
 	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
 		int* toerase=NULL;
@@ -1647,45 +2201,27 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpa
 		for (int ii=0;ii<xtalk_proxy->xtalk_proxy_size;ii++){
 
 			//This is the difference between the last impact time (!=simulation current time) and the cross-talk impact
-			//If this is larger than DTMIN, can be erased
+			//If this is larger than DTMIN, the cross-talk event is too much in the past to affect, it can be erased
 			dt_current=current_time-xtalk_proxy->xtalk_impacts[ii]->time;
-			//This is the difference between the current time and the crosstalk impact
-			//If this is larger than DTMIN + DTMAX (in case of ctk trigger which may alter grade of next impact) or if this
-			//is -dt_current>DTMAX i.e. the cross-talk impact happens way after it could influence the last impact we erase it.
+
+			//This is the difference between the simulation current time and the cross-talk impact
+			//If this is larger than DTMIN + DTMAX (i.e. cross-talk impact is too much in the past to influence current event) and if
+			//-dt_current>DTMAX (i.e. the cross-talk impact is too much in the future to affect the last impact), we erase it.
+			// /!\ THIS INTRODUCES A SMALL BIAS AS WE COULD HAVE A CROSS-TALK TRIGGER IN-BETWEEN THESE TWO TIMES
+			// BUT 1) THIS HAPPENS EXTREMELY RARELY 2) EVEN IF THIS HAPPENS IT SHOULD NOT INFLUENCE THE CURRENT EVENT
+			// AS TIME ELAPSED IS LARGE ENOUGH THIS APPROACH INCLUDES A POTENTIAL TRIGGER AT BORDER OF INFLUENCE
 			dt_next=impact->time-xtalk_proxy->xtalk_impacts[ii]->time;
 
-			if (dt_current>DTMIN){ //Implement this as a variable not ad hoc
+			if (dt_current>DTMIN){ //TODO Implement this as a variable not ad hoc
 				toerase=(int*) realloc(toerase, (erased_crosstalks+1)*sizeof(int));
 				toerase[erased_crosstalks]=ii;
 				erased_crosstalks+=1;
-			} else if (-dt_current>DTMAX&&dt_next>DTMIN+DTMAX){
+			} else if (-dt_current>DTMAX&&dt_next>DTMIN+DTMAX){ //TODO Implement this as a variable not ad hoc
 				//In this case, the last current event is clearly high-res, we erase all in between the last event and
-				//the current time (minimal time of next impact) if their ctk energy is very low, i.e. they have no chance
-				//whatsoever of actually creating some ctk trigger (notably Nonlinear)
-				float temp_ener=0;
-				if (abs(type)==-THERCTK){
-					temp_ener=xtalk_proxy->xtalk_impacts[ii]->energy*det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].thermal_cross_talk->cross_talk_weights[xtalk_proxy->xtalk_impacts[ii]->weight_index];
-				} else if (abs(xtalk_proxy->type[ii])==-ELECCTK) {
-					double * ener_p = det->crosstalk_elec[0].ener_p; // every electrical crosstalk energy vector has to be the same
-					if ((xtalk_proxy->xtalk_impacts[ii]->energy <= ener_p[0]) || (xtalk_proxy->xtalk_impacts[ii]->energy >= ener_p[det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].n_ener-1])) {
-						headas_chat(7, " *** warning : impact event energy %g on pix %li is outside the tabulated values for electrical crosstalk [%g,%g]}n",
-								xtalk_proxy->xtalk_impacts[ii]->energy, det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID], ener_p[0],ener_p[det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].n_ener-1]);
-						headas_chat(7, "     ---> skipping this event!\n");
-					} else {
-						// now determine the energy bin
-						int ind = binary_search(xtalk_proxy->xtalk_impacts[ii]->energy ,det->crosstalk_elec[0].ener_p,det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].n_ener);
-						double fac = (xtalk_proxy->xtalk_impacts[ii]->energy - ener_p[ind]) / (ener_p[ind+1] - ener_p[ind]);
-						temp_ener =(1-fac)*det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].cross_talk_weights[xtalk_proxy->xtalk_impacts[ii]->weight_index][ind]
-							+(fac)*det->pix[xtalk_proxy->xtalk_impacts[ii]->pixID].electrical_cross_talk[0].cross_talk_weights[xtalk_proxy->xtalk_impacts[ii]->weight_index][ind+1];
-					}
-				}
-
-				if (abs(type)==-IMODCTK || temp_ener<MINEN){ //If low enough in energy, it will never trigger, we erase it
-					toerase=(int*) realloc(toerase, (erased_crosstalks+1)*sizeof(int));
-					toerase[erased_crosstalks]=ii;
-					erased_crosstalks+=1;
-				}
-
+				//the current time (minimal time of next impact).
+				toerase=(int*) realloc(toerase, (erased_crosstalks+1)*sizeof(int));
+				toerase[erased_crosstalks]=ii;
+				erased_crosstalks+=1;
 			}
 		}
 
@@ -1695,7 +2231,7 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpa
 		}
 
 	}
-	// Check that there is room left for new crosstalk
+	// Check that there is room left for new crosstalk now
 	if (xtalk_proxy->n_active_crosstalk==xtalk_proxy->xtalk_proxy_size){
 		//Then allocate a new array of double size and copy old impacts
 		PixImpact** piximp_list = (PixImpact**) malloc((xtalk_proxy->xtalk_proxy_size*2)*sizeof(PixImpact*));
@@ -1711,6 +2247,7 @@ void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpa
 		xtalk_proxy->xtalk_impacts = piximp_list;
 		xtalk_proxy->xtalk_proxy_size*=2;
 	}
+
 	// Copy crosstalk to proxy
 	copyPixImpact(xtalk_proxy->xtalk_impacts[xtalk_proxy->n_active_crosstalk],impact);
 	xtalk_proxy->xtalk_impacts[xtalk_proxy->n_active_crosstalk]->nb_pileup=0;
@@ -1736,11 +2273,8 @@ EventProxy* newEventProxy(int* const status){
 	proxy->ind_grading_previous=0;
 	proxy->ind_grading_current=0;
 	proxy->ind_grading_next=0;
-
 	proxy->ind_event=0;
-
 	proxy->nb_active=0;
-
 	proxy->event_proxy_size=INITXTALKNB;
 
 	return proxy;
@@ -1759,8 +2293,8 @@ void freeEventProxy(EventProxy** proxy){
 	}
 }
 
-/** Computes weights on a given impact given its grading */
-void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact, double* energies,
+/** Computes energy deposited crosstalk energy on a given pixel */
+void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy, PixImpact * impact, double* energies,
 		int grade,int* const status){
 
 	//Setting up proxy
@@ -1770,20 +2304,12 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact,
 	for (int ii=0;ii<xtalk_proxy->n_active_crosstalk;ii++){
 		crosstalk = xtalk_proxy->xtalk_impacts[ii];
 
-		// Time between the current impact and the crosstalk impact (can be negative if pulse is slightly after)
-		double dt = (crosstalk->time - impact->time);
-
 		//Getting the crosstalk type of the given impact
-		//Intermod crosstalk
+		//Intermod crosstalk (only if there is an impact indeed i.e. skip the first)
 		//------------------
-		if (abs(xtalk_proxy->type[ii])==-IMODCTK &&
-				(dt <= det->crosstalk_imod_table[grade].dt_max && dt >= det->crosstalk_imod_table[grade].dt_min)){
-			// see if we need to calculate the crosstalk influence
-			headas_chat(7," *** [t=%g sec]->[t=%g sec] trigger non-linear crosstalk event in pix=%ld (%.2f MHz), with perturber %ld (%.2f MHz)\n",
-					crosstalk->time,impact->time,impact->pixID,det->pix[impact->pixID].freq*1e-6,
-					crosstalk->pixID,det->pix[crosstalk->pixID].freq*1e-6);
-
-			calc_imod_xt_influence(det,impact,crosstalk,&energies[ii],dt,grade,status);
+		if (abs(xtalk_proxy->type[ii])==-IMODCTK && impact->energy>0.) {
+			//TODO This should be changed at some point, dE is assumed to be for dt=0, which is not the case...
+			calc_imod_xt_influence(det,impact,crosstalk,&energies[ii],0,grade,status);
 			CHECK_STATUS_VOID(*status);
 			headas_chat(7,"  \n");
 
@@ -1799,7 +2325,7 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact,
 			assert(det->pix[impact->pixID].electrical_cross_talk[grade].n_ener == det->crosstalk_elec[grade].n_ener_p);
 			double * ener_p = det->crosstalk_elec[grade].ener_p; // every electrical crosstalk energy vector has to be the same
 
-			if ((crosstalk->energy <= ener_p[0]) || (crosstalk->energy >= ener_p[det->pix[impact->pixID].electrical_cross_talk[grade].n_ener-1])) {
+			if ((crosstalk->energy < ener_p[0]) || (crosstalk->energy >= ener_p[det->pix[impact->pixID].electrical_cross_talk[grade].n_ener-1])) {
 				headas_chat(7, " *** warning : impact event energy %g on pix %li is outside the tabulated values for electrical crosstalk [%g,%g]}n",
 						crosstalk->energy, crosstalk->pixID, ener_p[0],ener_p[det->pix[crosstalk->pixID].electrical_cross_talk[grade].n_ener-1]);
 				headas_chat(7, "     ---> skipping this event!\n");
@@ -1810,54 +2336,113 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact,
 				energies[ii] =(1-fac)*det->pix[crosstalk->pixID].electrical_cross_talk[grade].cross_talk_weights[crosstalk->weight_index][ind]
 					+(fac)*det->pix[crosstalk->pixID].electrical_cross_talk[grade].cross_talk_weights[crosstalk->weight_index][ind+1];
 			}
+
+		//Proportional Crosstalk
+		//------------------
+		} else if (abs(xtalk_proxy->type[ii])==-PROPCTK1 || abs(xtalk_proxy->type[ii])==-PROPCTK2){
+			double dt_in_frames=0.;
+			double energy_fictional_victim=0.;
+			double crosstalk_effect=0.;
+			calc_prop_xt_influence(det,energy_fictional_victim,crosstalk->energy,&crosstalk_effect, dt_in_frames, grade);
+			if (abs(xtalk_proxy->type[ii])==-PROPCTK1){
+				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_1/1.e-2; //Scaled at 1% of amplitude;
+			} else if (abs(xtalk_proxy->type[ii])==-PROPCTK2){
+				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_2/1.e-2; //Scaled at 1% of amplitude
+			}
+
+		//Derivative Crosstalk
+		//------------------
+		} else if (abs(xtalk_proxy->type[ii])==-DERCTK){
+			double dt_in_frames=0.;
+			double energy_fictional_victim=0.;
+			double crosstalk_effect=0.;
+			calc_der_xt_influence(det,energy_fictional_victim,crosstalk->energy,&crosstalk_effect, dt_in_frames, grade);
+			energies[ii]=crosstalk_effect*det->der_TDM_scaling/1.e-2; //Scaled at 1% of amplitude;
 		}
 	}
 }
 
-/** Computes the time dependencies of the ctk events*/
+/** Computes the effect of the deposited ctk energy computed on current event*/
 void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * impact, double* energies, double* xtalk_energy,int* nb_influences,
-		 TesEventFile* event_file, int save_crosstalk, int grade, int ignore_influence,int full_proxy,int* const status){
+		 TesEventFile* event_file, int save_crosstalk, int grade, double sample_length, int* const status){
 
 	double energy_influence = 0.;
 	int has_influenced= 0;
 	int erased_crosstalks=0;
 	int* toerase=NULL;
-	CrosstalkTimedep* buffer=NULL;
 	PixImpact* crosstalk=NULL;
 	PixImpact* to_save=(PixImpact*)malloc(sizeof(PixImpact));
 	CHECK_MALLOC_VOID_STATUS(to_save,*status);
+
 	for (int ii=0;ii<xtalk_proxy->n_active_crosstalk;ii++){
 		//Getting the time dependency file
 		crosstalk = xtalk_proxy->xtalk_impacts[ii];
+		double dt = (crosstalk->time - impact->time);
+
 		//If needed, we save first occurrence (to respect causality), modify the saving index (to avoid multiple saves)
 		//and do it only if energy is non 0 (should never happen but failsafe)...
 		if (save_crosstalk==1 && xtalk_proxy->is_saved[ii]==0 && energies[ii]!=0){
 			copyPixImpact(to_save,crosstalk);
 			to_save->pixID=impact->pixID; //We put back the ID of the pixel that receives the ctk (not the perturber)
-			to_save->energy=energies[ii]; //We put the corresponding energy weight (not full perturber energy)
+			to_save->energy=energies[ii]; //We put the corresponding energy deposited (not full energy effect on pulse)
 			addRMFImpact(event_file,to_save,-2,-2,xtalk_proxy->type[ii],0,energies[ii],status);
 			xtalk_proxy->is_saved[ii]=1; //The event is now saveds
 		}
 
-		//Getting time dependency
-		buffer=getTimeDep(det, xtalk_proxy, ii, grade, status);
+		// If a previous crosstalk has no chance of influencing another events, we can clear it immediately and go on
+		if (impact->time-crosstalk->time > DTMIN){
+			toerase=(int*)realloc(toerase, (erased_crosstalks+1)*sizeof(int));
+			toerase[erased_crosstalks]=ii;
+			erased_crosstalks+=1;
+			continue;
+		}
 
-		// Compute influence if asked or if the crosstalk is going to be erased (otherwise multiple counting)
-		// or if specifically asked to compute all the influences
-		if ((!ignore_influence) && (full_proxy || impact->time-crosstalk->time > -buffer->time[0]) ){
+		//Thermal or electrical cross-talk (only a LUT multiplication)
+		if (abs(xtalk_proxy->type[ii])==-ELECCTK || abs(xtalk_proxy->type[ii])==-THERCTK){
+			//Getting time dependency
+			CrosstalkTimedep* buffer=NULL;
+			buffer=getTimeDep(det, xtalk_proxy, ii, grade, status);
+
+			// Compute influence if asked or if the crosstalk is going to be erased (otherwise multiple counting)
+			// or if specifically asked to compute all the influences
 			energy_influence=0.;
 			has_influenced=computeCrosstalkInfluence(buffer,impact, crosstalk,energies[ii],&energy_influence);
 			if (has_influenced){
 				*nb_influences+=crosstalk->nb_pileup+1;
 				*xtalk_energy+=energy_influence;
 			}
-		}
-
-		// If a previous crosstalk has no chance of influencing another events, we can clear it
-		if (impact->time-crosstalk->time > -buffer->time[0]){
-			toerase=(int*)realloc(toerase, (erased_crosstalks+1)*sizeof(int));
-			toerase[erased_crosstalks]=ii;
-			erased_crosstalks+=1;
+		//Non-linear cross-talk
+		} else if ((abs(xtalk_proxy->type[ii])==-IMODCTK)){
+			if (dt <= det->crosstalk_imod_table[grade].dt_max && dt >= det->crosstalk_imod_table[grade].dt_min){
+				energy_influence=0.;
+				calc_imod_xt_influence(det,impact,crosstalk,&energy_influence,dt,grade,status);
+				if (energy_influence!=0.){
+					*nb_influences+=crosstalk->nb_pileup+1;
+					*xtalk_energy+=energy_influence;
+				}
+			}
+		//Proportional cross-talk
+		} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK1)|| (abs(xtalk_proxy->type[ii])==-PROPCTK2)){
+			double dt_in_frames=dt/sample_length;
+			energy_influence=0.;
+			calc_prop_xt_influence(det,impact->energy,crosstalk->energy,&energy_influence, dt_in_frames, grade);
+			if (energy_influence!=0.){
+				*nb_influences+=crosstalk->nb_pileup+1;
+				if (abs(xtalk_proxy->type[ii])==-PROPCTK1){
+					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_1/1.e-2; //Scaled at 1% of amplitude;
+				} else if (abs(xtalk_proxy->type[ii])==-PROPCTK2){
+					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_2/1.e-2; //Scaled at 1%
+				}
+			}
+		//Derivative cross-talk
+		} else if (abs(xtalk_proxy->type[ii])==-DERCTK){
+			double dt_in_frames=dt/sample_length;
+			energy_influence=0.;
+			calc_der_xt_influence(det,impact->energy,crosstalk->energy,&energy_influence, dt_in_frames, grade);
+			if (energy_influence!=0.){
+				*nb_influences+=crosstalk->nb_pileup+1;
+				*xtalk_energy+=energy_influence*det->der_TDM_scaling/1.e-2; //Scaled at 1% of amplitude;
+			}
 		}
 	}
 
@@ -1867,7 +2452,6 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 	}
 
 	free(to_save);
-
 }
 
 /**Checks for pile-up or triggering ctk event*/
@@ -1876,13 +2460,11 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 
 	int ii=1; //Starting index for pile-up
 	double cumul_ener=0; //Cumulative energy
-	CrosstalkTimedep* buffer;
 
 	while(ii<xtalk_proxy->n_active_crosstalk){
 		PixImpact* previous_xtalk=(PixImpact*) malloc(sizeof(PixImpact));
 		CHECK_MALLOC_VOID_STATUS(previous_xtalk,*status);
 		copyPixImpact(previous_xtalk, xtalk_proxy->xtalk_impacts[ii-1]); //Copying it in case we need to save it (will be erased in proxy otherwise)
-		buffer=getTimeDep(det, xtalk_proxy, ii-1, grade, status);
 		int* toerase=NULL;
 		int end=0; //Boolean in case of multiple pile-ups
 		cumul_ener=energies[ii-1];
@@ -1890,7 +2472,7 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 		//Check it the ctk event is above threshold.
 		//Only consider those between current-dtmin and next+dtmax others will not influence
 		//(Condition made in case of recursive call due to cross-talk trigger)
-		if((previous_xtalk->time<next_time-buffer->time[0] || next_time==-1.0) && energies[ii-1]>det->threshold_event_lo_keV){
+		if((previous_xtalk->time<next_time-DTMIN || next_time==-1.0) && energies[ii-1]>det->threshold_event_lo_keV){
 			toerase=(int*)realloc(toerase, sizeof(int));
 			toerase[0]=ii-1;
 
@@ -1946,7 +2528,7 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 			end=0;
 
 		//If the impact is not above threshold by itself check if a possible pile-up may trigger (if more than one event)
-		} else if(xtalk_proxy->n_active_crosstalk>1 && (previous_xtalk->time<next_time-buffer->time[0]  || next_time==-1.0)
+		} else if(xtalk_proxy->n_active_crosstalk>1 && (previous_xtalk->time<next_time-DTMIN  || next_time==-1.0)
 				&& fabs(xtalk_proxy->xtalk_impacts[ii]->time-previous_xtalk->time) <= sample_length) { // TODO: code pileup length at pixel level (or use timedep table)
 			previous_xtalk->nb_pileup++;// Update number of pileups
 			cumul_ener+=energies[ii+previous_xtalk->nb_pileup-1]; //Cumul energy
@@ -2007,7 +2589,7 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 
 /** Compute crosstalk influence */
 void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy* xtalk_proxy, GradeProxy* grade_proxy, TesEventFile* event_file,double* xtalk_energy,int* nb_influences,
-		double next_time, double sample_length, int* is_trigger, int save_crosstalk, int grade, int ignore_influence,int full_proxy, int* const status){
+		double next_time, double sample_length, int* is_trigger, int save_crosstalk, int grade, int* const status){
 
 	// If there is no crosstalk in the proxy get out without any influence
 	if (xtalk_proxy==NULL || xtalk_proxy->n_active_crosstalk==0){
@@ -2016,22 +2598,25 @@ void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy*
 		return;
 	}
 
+	// Initialise the deposited dE on the victim pixel
+	//TODO: This could also be done on the addCrosstalk2Proxy level, but more flexible here, although slower
 	double energies[xtalk_proxy->n_active_crosstalk];
 	for(int jj=0;jj<xtalk_proxy->n_active_crosstalk;jj++){
 		energies[jj]=0;
 	}
 
-	//Computing weights of active ctk events on given graded event
+	//Computing deposited energy of active ctk events on given victim event
 	computeWeights(det, xtalk_proxy, impact, energies, grade, status);
 
 	//Now we check whether two of the events can trigger
 	//If pile-up occurs in the pixel between the two current event (should be rare!)
 	checkTrigger(det,impact,xtalk_proxy,grade_proxy,energies,event_file,next_time,sample_length,grade,is_trigger,save_crosstalk,status);
+
 	//If no outside trigger occurs, then we compute the values of the affected energy via the time dependency and save
 	//(Not before as we did not know if there was a trigger)
 	if (grade_proxy->is_first==1 && *is_trigger==0){
 		computeTimeDependency(det,xtalk_proxy,impact, energies, xtalk_energy,nb_influences,
-				 event_file, save_crosstalk, grade, ignore_influence,full_proxy,status);
+				 event_file, save_crosstalk, grade, sample_length, status);
 	}
 }
 

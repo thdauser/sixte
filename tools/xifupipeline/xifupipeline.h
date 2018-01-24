@@ -90,7 +90,7 @@ struct Parameters {
   double dt;
 
   int Seed;
-  
+
   /** Skip invalid patterns when producing the output pattern file. */
   char SkipInvalids;
 
@@ -117,6 +117,9 @@ struct Parameters {
   int doCrosstalk;
   int saveCrosstalk;
   float elec_ctk_scaling;
+
+  /** TDM related constants*/
+  int tdm;
 
   char history;
   char clobber;

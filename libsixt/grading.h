@@ -32,7 +32,10 @@
 #define IMODCTK -31
 #define THERCTK -32
 #define ELECCTK -33
-// In the code, -31 is the intermodulation cross-talk, -32 the thermal crosstalk and -33 the electrical one
+#define PROPCTK1 -41
+#define PROPCTK2 -42
+#define DERCTK -43
+// In the code, -31 is the intermodulation cross-talk, -32 the thermal crosstalk and -33 the electrical one...
 #define WRONGE -4
 #define GRADECHG -5
 
@@ -51,13 +54,19 @@ typedef struct{
 }imodProxy;
 
 /** Adds a below threshold crosstalk event to the grading proxy */
-void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact,AdvDet* det,int type, double df, int* const status);
+void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact,int type, double df, int* const status);
 
 /** Apply matrix cross talk: create new events on concerned pixels if corresponding energy is above the detection threshold, affect previous event otherwise */
-void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,AdvDet* det,int* const status);
+void applyMatrixCrossTalk(MatrixCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,int* const status);
 
 /** Same as "applyMatrixCrosstalk", but for the electrical crosstalk, which is energy dependent */
 void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* grade_proxys, PixImpact* impact,AdvDet* det,int* const status);
+
+/** Apply proportional matrix cross talk */
+void applyMatrixPropCrossTalk(MatrixPropCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,int* const status);
+
+/** Apply derivative matrix cross talk */
+void applyMatrixDerCrossTalk(MatrixDerCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,int* const status);
 
 /** Same as "applyMatrixCrosstalk", but for the more complicated intermodulation crosstalk */
 void applyIntermodCrossTalk(GradeProxy* grade_proxys,PixImpact* impact, AdvDet* det,int* const status);
