@@ -138,7 +138,7 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
 		  init->ancrfile,init->respfile,"NONE",init->mjdref,init->timezero,init->tstart,init->tstop,status);
   if(par->WriteRecordFile){
 	  init->record_file= opennewTesTriggerFile(par->tesTriggerFile,keywords,par->XMLFile,par->PixImpList,
-			  par->triggerSize,par->preBufferSize,init->det->SampleFreq,par->clobber,status);
+	  par->triggerSize,par->preBufferSize,init->det->SampleFreq,0,par->clobber,status);
 	  CHECK_STATUS_VOID(*status);
   }
   if (par->Reconstruct){

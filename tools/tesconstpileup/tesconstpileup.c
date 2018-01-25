@@ -16,7 +16,7 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
-*/
+ */
 
 
 
@@ -25,77 +25,103 @@
 //////////////////////////////////
 /** main procedure */
 int tesconstpileup_main(){
-  
+
   // Containing all programm parameters read by PIL.
   struct Parameters par;
-  
+
   // Detector data structure.
   AdvDet *det=NULL;
-  
+
   // Pixel impact list
   PixImpFile* plf=NULL;
-  
+
   // Error status.
   int status=EXIT_SUCCESS;
-  
-  long ii;
-  
+
+
   // Register HEATOOL:
   set_toolname("tesconstpileup");
   set_toolversion("0.05");
-  
+
   do { // Beginning of the ERROR handling loop (will at 
-       // most be run once).
-       
+    // most be run once).
+
     // Read parameters using PIL library.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
-    
+
     // Load detector information
     det=loadAdvDet(par.XMLFile, &status);
     CHECK_STATUS_BREAK(status);
-    
+
+    // Change sample frequency if asked
+    double sample_freq = 0;
+    if (par.sample_freq>0){
+      sample_freq = par.sample_freq;
+    } else {
+      sample_freq = det->SampleFreq;
+    }
+
     // Determine the event list output file.
     char piximplist_filename[MAXFILENAME];
     strcpy(piximplist_filename, par.PixImpList);
-    
+
     // Create origin impactlist_filename
     char impactlist_filename[]="tesconstpileup";
-    
+
     // Open the output file
     plf=openNewPixImpFile(piximplist_filename,
-			  par.telescop,
-			  par.instrume,
-			  par.filter,
-			  par.ancrfile,
-			  par.respfile,
-			  par.XMLFile,
-			  impactlist_filename,
-			  par.mjdref,
-			  par.timezero,
-			  0,
-			  par.tstop,
-			  par.clobber,
-			  &status);
+	par.telescop,
+	par.instrume,
+	par.filter,
+	par.ancrfile,
+	par.respfile,
+	par.XMLFile,
+	impactlist_filename,
+	par.mjdref,
+	par.timezero,
+	0,
+	par.tstop,
+	par.clobber,
+	&status);
     CHECK_STATUS_BREAK(status);
-    
+
+    // Initialize the random number generator.
+    unsigned int seed=getSeed(par.seed);
+    sixt_init_rng(seed, &status);
+    CHECK_STATUS_BREAK(status);
+
+    double offset;
+    double offset_step=0.;
+    if (par.nb_offset_values >0){
+      offset_step = 1./(par.nb_offset_values - par.nb_offset_values % 2);
+      offset = -0.5 - .5*offset_step*(par.nb_offset_values % 2 - 1);
+      //par.tstop = par.preBufferSize + 10 + (100+par.triggerSize)*(par.nb_offset_values/2+1);
+    } else if (par.offset<0){
+      offset = 0.;
+    } else {
+      offset=par.offset;
+    }
+
     // necessary initialization to have the correct first impact (10 samples after 0)
     int total_pulse_distance = par.pulseDistance + par.pulseDistance2;
-    double time=(par.preBufferSize-par.triggerSize-90+total_pulse_distance)/det->SampleFreq+par.offset/det->SampleFreq; 
-    
-    ii=0;
+    double time=(par.preBufferSize-par.triggerSize-90+total_pulse_distance)/sample_freq+(offset-offset_step)/sample_freq;
+
     PixImpact piximp;
     piximp.ph_id=0;
     while(time<=par.tstop){
       //////////////////////////////////////
       //First impact
       //////////////////////////////////////
-      time=time+(par.triggerSize+100-total_pulse_distance)/det->SampleFreq;
+      time=time+(par.triggerSize+100-total_pulse_distance+offset_step)/sample_freq;
       // populate impact structure
       piximp.pixID=0; //fixed pixID (no need to randomize here)
       piximp.time=time;
+      if (par.offset<0){
+	piximp.time+=sixt_get_random_number(&status)/sample_freq;
+      }
       piximp.energy=(float)par.energy;
       piximp.ph_id=piximp.ph_id+1;
       piximp.src_id=0;
@@ -105,13 +131,19 @@ int tesconstpileup_main(){
       piximp.detposition.y=piximp.pixposition.y+det->pix[0].sy;
       // save impact      
       addImpact2PixImpFile(plf, &piximp, &status);
+      if (piximp.ph_id==par.nb_offset_values){
+	break;
+      }
 
       //////////////////////////////////////
       //Second impact
       //////////////////////////////////////
-      time=time+par.pulseDistance/det->SampleFreq;
+      time=time+(par.pulseDistance+offset_step)/sample_freq;
       piximp.pixID=0;
       piximp.time=time;
+      if (par.offset<0){
+	piximp.time+=sixt_get_random_number(&status)/sample_freq;
+      }
       piximp.energy=(float)par.energy2;
       piximp.ph_id=piximp.ph_id+1;
       piximp.src_id=0;
@@ -121,14 +153,20 @@ int tesconstpileup_main(){
       piximp.detposition.y=piximp.pixposition.y+det->pix[0].sy;
       // save impact      
       addImpact2PixImpFile(plf, &piximp, &status);
+      if (piximp.ph_id==par.nb_offset_values){
+      	break;
+      }
 
       //////////////////////////////////////
       //Third impact if relevant
       //////////////////////////////////////
       if (par.pulseDistance2!=0) {
-	time=time+par.pulseDistance2/det->SampleFreq;
+	time=time+(par.pulseDistance2+offset_step)/sample_freq;
 	piximp.pixID=0;
 	piximp.time=time;
+	if (par.offset<0){
+	  piximp.time+=sixt_get_random_number(&status)/sample_freq;
+	}
 	piximp.energy=(float)par.energy3;
 	piximp.ph_id=piximp.ph_id+1;
 	piximp.src_id=0;
@@ -138,25 +176,27 @@ int tesconstpileup_main(){
 	piximp.detposition.y=piximp.pixposition.y+det->pix[0].sy;
 	// save impact      
 	addImpact2PixImpFile(plf, &piximp, &status);
+	if (piximp.ph_id==par.nb_offset_values){
+	  break;
+	}
       }
-      ii++;
     }
-    
+
   } while(0); // END of the error handling loop.
-  
+
   // --- Cleaning up ---
   headas_chat(3, "cleaning up ...\n");
   freePixImpFile(&plf, &status);
- 
+
   destroyAdvDet(&det);
-  
+
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
   } else {
     return(EXIT_FAILURE);
   }  
-  
+
 }
 
 int getpar(struct Parameters* const par)
@@ -224,31 +264,31 @@ int getpar(struct Parameters* const par)
   } 
   strcpy(par->respfile, sbuffer);
   free(sbuffer); 
-  
+
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("tstop", &par->tstop);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the tstop parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("timezero", &par->timezero);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the timezero parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("mjdref", &par->mjdref);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the mjdref parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("energy", &par->energy);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the energy parameter");
@@ -290,24 +330,42 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the second pulse distance");
     return(status);
   }
-  
+
   status=ape_trad_query_int("PreBufferSize", &par->preBufferSize);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the pre-buffer size");
     return(status);
   }
-  
+
   status=ape_trad_query_int("TriggerSize", &par->triggerSize);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the trigger size");
     return(status);
   }
-  
+
+  status=ape_trad_query_double("sample_freq", &par->sample_freq);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the trigger size");
+    return(status);
+  }
+
+  status=ape_trad_query_int("nb_offset_values", &par->nb_offset_values);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the nb_offset_values parameter");
+    return(status);
+  }
+
+  status=ape_trad_query_int("seed", &par->seed);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the seed for the random number generator");
+    return(status);
+  }
+
   status=ape_trad_query_bool("history", &par->history);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the history parameter");
     return(status);
   }
-  
+
   return(status);
 }

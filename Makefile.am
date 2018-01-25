@@ -19,7 +19,7 @@ include_HEADERS=sixteconfig.h
 test:
 	cd test && make test
 
-crit_mac_version=10
+crit_mac_version=9
 install-exec-hook:
 	@if [ 0$(OSX_VERSION_MINOR) -gt $(crit_mac_version)  ]; then\
 		echo "\n  ***  Mac Version $(OSX_VERSION_MAJOR).$(OSX_VERSION_MINOR) detected *** ";\

@@ -737,10 +737,10 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   if (tes->acdc) {
     // this assumes FDM
-    tes->squid_noise=tes->TTR*2e-12*sqrt(tes->sample_rate/2)*tes->simnoise;
+    tes->squid_noise=tes->TTR*par->squid_noise*tes->simnoise;
   } else {
     // this assumes TDM (extra sqrt(32pi))
-    tes->squid_noise=2e-12*sqrt(32*M_PI*tes->sample_rate/2)*tes->simnoise;
+    tes->squid_noise=par->squid_noise*tes->simnoise;
   }
 
   // set-up initial input conditions
@@ -877,7 +877,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         pulse=tes->I0_start-tes->I0;
       }
       if (tes->simnoise) {
-        pulse += gsl_ran_gaussian(rng,tes->squid_noise);
+        pulse += gsl_ran_gaussian(rng,tes->squid_noise*sqrt(tes->bandwidth));
       }
       tes->write_to_stream(tes,tes->time,pulse,status);
     }
@@ -943,7 +943,6 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
           tes->impact->time=tstop+100.;
         }
       }
-
       int s = GSL_SUCCESS;
       if (tes->stochastic_integrator) {
 		  // number of noise terms included in the stochastic differential equation system

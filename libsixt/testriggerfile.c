@@ -22,7 +22,7 @@
 
 /** Constructor. Returns a pointer to an empty TesTriggerFile data
     structure. */
-TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int* const status) {
+TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int write_doubles, int* const status) {
   TesTriggerFile* file=(TesTriggerFile*)malloc(sizeof(TesTriggerFile));
   if (NULL==file) {
     *status=EXIT_FAILURE;
@@ -43,6 +43,7 @@ TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int* const status) {
   file->ph_idCol     =4;
   file->trigger_size =triggerSize;
   file->delta_t=0;
+  file->write_doubles = write_doubles;
 
   return(file);
 }
@@ -92,10 +93,11 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 				  unsigned long triggerSize,
 				  int preBufferSize,
 				  double sampleFreq,
+				  int write_doubles,
 				  const char clobber,
 				  int* const status){
 
-  TesTriggerFile* file = newTesTriggerFile(triggerSize,status);
+  TesTriggerFile* file = newTesTriggerFile(triggerSize,write_doubles,status);
   CHECK_STATUS_RET(*status, NULL);
 
   char buffer[FLEN_FILENAME];
@@ -127,7 +129,16 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
    // Create table
   char *ttype[]={"TIME","ADC","PIXID","PH_ID"};
   char *tunit[]={"s","ADU","",""};
-  char *tform[]={"1D","1PU","1J","1PJ"};
+  char *tform[]={"1D",NULL,"1J","1PJ"};
+
+  tform[1]=malloc(FLEN_KEYWORD*sizeof(char));
+  if (write_doubles){
+    sprintf(tform[1], "%ldD",triggerSize);
+    CHECK_NULL_RET(tform[1],*status,"Memory allocation failed",NULL);
+  } else {
+    sprintf(tform[1], "%ldU",triggerSize);
+    CHECK_NULL_RET(tform[1],*status,"Memory allocation failed",NULL);
+  }
   
   // Include allocate a buffer of rows ahead of time
   file->rowbuffer = TESTRIGGERFILE_ROWBUFFERSIZE;
@@ -158,7 +169,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 
 /** Open an existing TesTriggerFile. */
 TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKeywords* keywords,int* const status){
-	TesTriggerFile* file = newTesTriggerFile(0,status);
+	TesTriggerFile* file = newTesTriggerFile(0,0,status);
 
 	//Open record file in READONLY mode
 	fits_open_file(&(file->fptr), filename, READONLY, status);
@@ -257,8 +268,13 @@ void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status)
         // write values
 	fits_write_col(outputFile->fptr, TDOUBLE, outputFile->timeCol,
 			outputFile->row, 1, 1, &(record->time), status);
-	fits_write_col(outputFile->fptr, TUSHORT, outputFile->trigCol,
-			outputFile->row, 1, record->trigger_size,record->adc_array, status);
+	if (outputFile->write_doubles){
+	  fits_write_col(outputFile->fptr, TDOUBLE, outputFile->trigCol,
+	      outputFile->row, 1, record->trigger_size,record->adc_double, status);
+	} else {
+	  fits_write_col(outputFile->fptr, TUSHORT, outputFile->trigCol,
+	      outputFile->row, 1, record->trigger_size,record->adc_array, status);
+	}
 	fits_write_col(outputFile->fptr, TLONG, outputFile->pixIDCol,
 			outputFile->row, 1, 1, &(record->pixid), status);
 	fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol,

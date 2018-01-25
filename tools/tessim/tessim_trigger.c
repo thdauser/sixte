@@ -13,7 +13,7 @@ tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes,
 				   unsigned long triggerSize,
 				   double threshold,unsigned int npts,unsigned int suppress,
 				   char *streamfile, char *impactfile, int clobber,
-				   SixtStdKeywords *keywords, int *status) {
+				   SixtStdKeywords *keywords,int write_doubles, int *status) {
 
   tes_trigger_info *data=(tes_trigger_info *)malloc(sizeof(tes_trigger_info));
   CHECK_NULL_RET(data,*status,"Memory allocation failed in tes_init_trigger: data structure",NULL);
@@ -61,6 +61,7 @@ tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes,
 				   triggerSize,
 				   preBufferSize,
 				   1./tes->delta_t,
+				   write_doubles,
 				   clobber,
 				   status);
   tes_fits_write_params(data->fptr->fptr,tes,status);
@@ -126,6 +127,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   } else {
     pulse16=(uint16_t) ((pulse-data->imin)*data->aducnv);
   }
+  pulse = (pulse-data->imin)*data->aducnv;
 
   // save data in the fifo
   data->fifo->adc_double[data->fifoind]=pulse;
@@ -153,7 +155,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   // only check trigger if we are allowed to trigger
   if (data->CanTrigger==0) {
     // only trigger if there's no overflow 
-    if (pulse16!=0xFFFF) {
+    if (pulse16!=0xFFFF || data->strategy==TRIGGER_IMPACT) {
       if (data->strategy==TRIGGER_MOVAVG) {
 	// moving average trigger
 	// fast trigger: if pulse16/moving average > threshold

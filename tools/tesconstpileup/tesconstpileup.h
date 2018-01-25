@@ -55,11 +55,14 @@ struct Parameters {
   double energy2;// energy of the secondary photons
   double energy3;// energy of the tertiary photons
   double offset;// offset in time bin
-
+  double sample_freq;// sampling frequency to use (defaults to the one in the XML file)
+  int nb_offset_values;// number of offset values to simulate in the -0.5 to 0.5 range (useful for jitter calibration)
+  
   //Necessary to ensure exactly 2/3 pulses per trigger
   int preBufferSize;
   int triggerSize;
-  
+
+  int seed;
   char clobber;
   char history;
   

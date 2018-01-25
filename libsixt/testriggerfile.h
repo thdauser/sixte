@@ -58,6 +58,9 @@ typedef struct{
 	/** Column numbers for time, trigger, impact, and pixID columns */
 	int timeCol,trigCol,ph_idCol,pixIDCol;
 
+	/** Option to write the records in doubles */
+	int write_doubles;
+
 }TesTriggerFile;
 
 #define TESTRIGGERFILE_ROWBUFFERSIZE 100 // initial default value of rowbuffer
@@ -69,7 +72,7 @@ typedef struct{
 
 /** Constructor. Returns a pointer to an empty TesTriggerFile data
     structure. */
-TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int* const status);
+TesTriggerFile* newTesTriggerFile(unsigned long triggerSize,int write_doubles,int* const status);
 
 /** Destructor. */
 void freeTesTriggerFile(TesTriggerFile** const file, int* const status);
@@ -82,6 +85,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 				  unsigned long triggerSize,
 				  int preBufferSize,
 				  double sampleFreq,
+				  int write_doubles,
 				  const char clobber,
 				  int* const status);
 

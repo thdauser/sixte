@@ -217,6 +217,7 @@ int tessim_main() {
                                            loop_par.impactlist,
                                            par.clobber,
                                            keywords,
+                                           par.write_doubles,
                                            &status);
           CHECK_STATUS_BREAK(status);
           tes->write_to_stream=&tes_append_trigger;
@@ -490,7 +491,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     // there is no crosstalk
     par->doCrosstalk=0;
   }
-  
+
 
 
   if ((*det)->npix==1){
@@ -528,6 +529,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
   if (strcmp(par->trigger,"stream")==0) {
     par->triggerSize=0;
     par->preBufferSize=0;
+    par->write_doubles=0;
   } else {
     long dummy;
     query_simput_parameter_long("triggersize",&dummy,status);
@@ -536,6 +538,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     // To Do: proper error handling for this condition
     par->preBufferSize=(unsigned long) dummy;
     assert(par->triggerSize > par->preBufferSize);
+    query_simput_parameter_bool("write_doubles", &par->write_doubles, status);
   } 
 
   long seed; // needed because par->seed is an unsigned long
@@ -657,6 +660,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
 
   }
   query_simput_parameter_bool("simnoise", &par->simnoise, status);
+  query_simput_parameter_double("squidnoise",&par->squid_noise,status);
 
   if (&par->simnoise) {
     cmd_query_simput_parameter_double(fromcmd,"m_excess",&par->m_excess,status);

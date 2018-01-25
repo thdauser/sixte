@@ -69,6 +69,7 @@ typedef struct {
   char *trigger; // string defining the trigger strategy
   unsigned long preBufferSize; // number of samples to keep before trigger
   unsigned long triggerSize; // total number of samples to record
+  int write_doubles; // option to write the records in doubles (irrelevant if triggertype=stream)
 
   int clobber;  // overwrite output files?
   int simnoise; // simulator noise 
@@ -81,6 +82,7 @@ typedef struct {
   char* frame_hit_file; //File name of frame hit model
 
   double m_excess; // magnitude of excess noise
+  double squid_noise; // amplifier noise at the SQUID input coil level [A/sqrt(Hz)]
 
   unsigned long seed; // seed of random number generator
 
@@ -199,7 +201,7 @@ tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes,
 				   unsigned long triggerSize,
 				   double threshold,unsigned int npts,unsigned int suppress,
 				   char *streamfile, char *impactfile,int clobber,
-				   SixtStdKeywords *keywords,
+				   SixtStdKeywords *keywords,int write_doubles,
 				   int *status);
 // append a pulse to the trigger data stream. 
 // this is the routine that also does the trigger
