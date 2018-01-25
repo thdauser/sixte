@@ -1425,7 +1425,7 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 
 	//Allocate memory
 	concerned_pixel->prop_cross_talk=newMatrixPropCrossTalk(status);
-	int max_rows=det->readout_channels->channels[concerned_pixel->column-1].num_pixels; //row in a given column, column start at 0 in structure (can differ)
+	int max_rows=concerned_pixel->channel->num_pixels; //rows in a given column, column start at 0 in structure (can differ)
 	concerned_pixel->prop_cross_talk->cross_talk_pixels_1=(int*)realloc(concerned_pixel->prop_cross_talk->cross_talk_pixels_1,sizeof(int)); //only row N+1, column N
 	concerned_pixel->prop_cross_talk->cross_talk_pixels_2=(int*)realloc(concerned_pixel->prop_cross_talk->cross_talk_pixels_2, (max_rows-1)*sizeof(int)); //All but itself in column N
 
@@ -1433,33 +1433,32 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 
 	//The last column may not have the same number of rows, if this is the case, since switches are sequential,
 	//type 1 cross-talk cannot happen with row N+1 within the same column, we affect the next pixel to -1 since
-	//it should not have a neighbour for type 1
+	//it should not have a neighbor for type 1
 	if (circ_next_row>max_rows){
 		circ_next_row=-1;
 	}
 	//printf("Number of row %i, next row %i and max row %i\n", concerned_pixel->row, circ_next_row, max_rows);
 
 	// Iterate over the channel to find all type 1/2 pixels
-	for (int i=0;i<det->npix;i++){
+	for (int i=0;i<concerned_pixel->channel->num_pixels;i++){
 		// Cross-talk is not with yourself ;)
-		if (i==pixid) continue;
+		if (concerned_pixel->channel->pixels[i]->pindex==pixid) continue;
 
-		current_pixel = &(det->pix[i]);
+		current_pixel = &(det->pix[concerned_pixel->channel->pixels[i]->pindex]);
 
 		int row = current_pixel->row;
-		int column = current_pixel->column;
+		assert(current_pixel->channel->channel_id==concerned_pixel->channel->channel_id); //Check if we are in the same column indeed
+
 		//Quick check if the pixel is concerned
-		if (row==circ_next_row && column==concerned_pixel->column){
+		if (row==circ_next_row){
 			//Type 1 for next row (N+1)
 			concerned_pixel->prop_cross_talk->cross_talk_pixels_1[concerned_pixel->prop_cross_talk->type_1_pix]=i;
 			concerned_pixel->prop_cross_talk->type_1_pix+=1;
 		}
 
-		if (column==concerned_pixel->column){
-			//Type 2 for same column N
-			concerned_pixel->prop_cross_talk->cross_talk_pixels_2[concerned_pixel->prop_cross_talk->type_2_pix]=i;
-			concerned_pixel->prop_cross_talk->type_2_pix+=1;
-		}
+		//Type 2 for same column N
+		concerned_pixel->prop_cross_talk->cross_talk_pixels_2[concerned_pixel->prop_cross_talk->type_2_pix]=i;
+		concerned_pixel->prop_cross_talk->type_2_pix+=1;
 	}
 
 	assert(concerned_pixel->prop_cross_talk->type_1_pix<=1); //There should be 1 next row neighbor maximum
@@ -1566,7 +1565,7 @@ void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
 
 	//Allocate memory
 	concerned_pixel->der_cross_talk=newMatrixDerCrossTalk(status);
-	int max_rows=det->readout_channels->channels[concerned_pixel->column-1].num_pixels; //row in a given column, column start at 0 in the structure (can differ)
+	int max_rows=concerned_pixel->channel->num_pixels; //row in a given column, column start at 0 in the structure (can differ)
 	concerned_pixel->der_cross_talk->cross_talk_pixels=(int*)realloc(concerned_pixel->der_cross_talk->cross_talk_pixels,4*sizeof(int)); //for the moment only 4 considered TODO: Change once more accurate
 
 	// Find the affected 'wiring' neighbors. This concerns row (N+1), (N+2), (N-1), (N-2)
@@ -1580,19 +1579,19 @@ void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
 
 
 	// Iterate over the channel to find all type 1/2 pixels
-	for (int i=0;i<det->npix;i++){
+	for (int i=0;i<concerned_pixel->channel->num_pixels;i++){
 		// Cross-talk is not with yourself ;)
-		if (i==pixid) continue;
+		if (concerned_pixel->channel->pixels[i]->pindex==pixid) continue;
 
-		current_pixel = &(det->pix[i]);
+		current_pixel = &(det->pix[concerned_pixel->channel->pixels[i]->pindex]);
 
 		int row = current_pixel->row;
-		int column = current_pixel->column;
+		assert(current_pixel->channel->channel_id==concerned_pixel->channel->channel_id); //Check if we are in the same column indeed
 
 		//Quick check if the pixel is concerned
-		if (column==concerned_pixel->column && (row==circ_next_row || row==circ_next_next_row || row==circ_prev_row || row==circ_prev_prev_row)){
+		if ((row==circ_next_row || row==circ_next_next_row || row==circ_prev_row || row==circ_prev_prev_row)){
 			//Type 3 for next row (N+1), (N+2), (N-1), (N-2)
-			concerned_pixel->der_cross_talk->cross_talk_pixels[concerned_pixel->der_cross_talk->num_cross_talk_pixels]=i;
+			concerned_pixel->der_cross_talk->cross_talk_pixels[concerned_pixel->der_cross_talk->num_cross_talk_pixels]=current_pixel->pindex;
 			concerned_pixel->der_cross_talk->num_cross_talk_pixels+=1;
 		}
 	}
@@ -1733,15 +1732,11 @@ void init_crosstalk(AdvDet* det, int* const status){
 		}
 
 		// load intermodulation cross talk and associated time dependency (NOT DONE FOR CROSSTALK==ALL)
-		if (det->crosstalk_intermod_file!=NULL && det->crosstalk_id==CROSSTALK_ID_IMOD){
+		if (det->crosstalk_intermod_file!=NULL && doCrosstalk(CROSSTALK_ID_IMOD,det)){
 			printf(" - intermodulation crosstalk\n");
 			// loop through all pixels
 			load_intermod_cross_talk(det,status);
 			CHECK_STATUS_VOID(*status);
-		}
-
-		if (det->crosstalk_id==CROSSTALK_ID_ALL){
-			printf("\n*** Note for users - Non-linear cross-talk is not used for 'all' in the FDM case (negligible impact) ***\n");
 		}
 	}
 
@@ -1971,11 +1966,7 @@ ReadoutChannels* get_readout_column(AdvDet* det, int* status){
 
 		// set row
 		pix->row = chans->row[ii];
-		pix->column = chans->col[ii];
 		if (pix->row<0){
-			printf("*** warning: assigning unrealistic row (%i) to pixel %i\n",pix->row,pix->pindex);
-		}
-		if (pix->column<0){
 			printf("*** warning: assigning unrealistic row (%i) to pixel %i\n",pix->row,pix->pindex);
 		}
 

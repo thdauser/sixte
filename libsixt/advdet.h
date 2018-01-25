@@ -187,7 +187,6 @@ struct AdvPix{
 
   /** TDM parameters */
   int row;
-  int column;
 
 }; typedef struct AdvPix AdvPix;
 

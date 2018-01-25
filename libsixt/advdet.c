@@ -118,7 +118,6 @@ AdvPix* newAdvPix(int* const status){
   pix->tes_type=NULL;
   pix->tes=NULL;
   pix->row=0;
-  pix->column=0;
 
   return(pix);
 }
