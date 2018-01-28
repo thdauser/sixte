@@ -81,7 +81,7 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
 
   // Electrical circuit equation: dI/dt -- dy_0/dt=f_0(t,y_0(t),y_1(t))
   // note: Vdn, Vexc, Vcn are the Johnson noise terms, Vunk is the unknown noise
-  eqn[0]=(tes->V0-II*(tes->Reff+RT)+tes->Vdn+tes->Vexc+tes->Vcn+tes->Vunk)/tes->Leff;
+  eqn[0]=(tes->V0-II*(tes->Reff+RT)+tes->Vdn+tes->Vexc+tes->Vcn+tes->Vunk+tes->Vbn)/tes->Leff;
   if (tes->acdc) {
     eqn[0]=eqn[0]/2.;
   }
@@ -225,7 +225,7 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   fits_update_key(fptr,TINT,"EXTVER",&version,"extension version",status);
   
   fits_update_key(fptr,TINT,"TESID",&tes->id,"Pixel ID of this pixel",status);
-  fits_update_key(fptr,TDOUBLE,"DELTAT",&tes->delta_t,"[s] Integration step size",status);
+  fits_update_key(fptr,TDOUBLE,"DELTAT",&tes->timeres,"[s] Output step size",status);
   fits_update_key(fptr,TDOUBLE,"IMIN",&tes->imin,"[A] Current corresponding to 0 ADU",status);
   fits_update_key(fptr,TDOUBLE,"IMAX",&tes->imax,"[A] Current corresponding to 65534 ADU",status);
   double dummy=1.0/tes->aducnv;
@@ -640,7 +640,22 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->sample_rate=par->sample_rate; // Sample rate in Hz (typical 100-200kHz)
   tes->timeres=1./tes->sample_rate; // time resolution
 
-  tes->decimate_factor=1; // step size wrt. sample rate
+  // BBFB info
+  tes->dobbfb = par->dobbfb;
+  tes->decimation_filter = par->decimation_filter;
+  tes->bbfb_info = NULL;
+
+  if (tes->dobbfb){
+	tes->decimate_factor=(unsigned int) (1./(tes->sample_rate*par->bbfb_tclock)); // step size wrt. sample rate
+	tes->decimation_buffer=(double*) malloc(tes->decimate_factor*sizeof(*(tes->decimation_buffer)));
+	CHECK_NULL_RET(tes->decimation_buffer,*status,"Memory allocation failed for TES structure",NULL);
+	for (unsigned int ii=0;ii<tes->decimate_factor;ii++){
+		tes->decimation_buffer[ii]=0.;
+	}
+  } else {
+	tes->decimate_factor=1; // step size wrt. sample rate
+	tes->decimation_buffer=NULL;
+  }
 
   // current to ADU conversion
   // note: we require imin<imax!
@@ -743,6 +758,13 @@ tesparams *tes_init(tespxlparams *par,int *status) {
     tes->squid_noise=par->squid_noise*tes->simnoise;
   }
 
+  // Squid coupling
+  tes->M_in=par->M_in*1e6;
+  tes->squid_error=0;
+
+  // DAC bias noise
+  tes->bias_noise=par->bias_noise;
+
   // set-up initial input conditions
   tes->I0=tes->I0_start;
   // if the effective voltage bias is negative (typically if not given at command line), compute it                                                                  
@@ -765,6 +787,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->Vcn=0.;
   tes->m_excess=par->m_excess;
   tes->Vunk=0.;
+  tes->Vbn=0.;
 
   // progress bar
   tes->progressbar=NULL;
@@ -890,6 +913,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
     for (int ii=0;ii<det->npix;ii++) {
       // get the current TES
       tesparams *tes = det->pix[ii].tes;
+
       // update progress bar
       if (tes->progressbar!=NULL && samplestep[ii] == 100000) {
         progressbar_update(tes->progressbar,
@@ -915,6 +939,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         tes->Vexc=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*2.*dRdI*tes->I0/tes->RT));
         tes->Vcn =gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->Tb(tes)*tes->Reff*tes->bandwidth));
         tes->Vunk=gsl_ran_gaussian(rng,sqrt(4.*kBoltz*tes->T1*tes->RT*tes->bandwidth*(1.+2*dRdI*tes->I0/tes->RT)*tes->m_excess*tes->m_excess) );
+        tes->Vbn=gsl_ran_gaussian(rng,tes->bias_noise*sqrt(tes->bandwidth));
       }
 
       // absorb next photon?
@@ -954,6 +979,8 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
 	  } else {
 		  s=gsl_odeiv2_driver_apply_fixed_step(tes->odedriver,&(tes->time),tes->delta_t,1,Y);
 	  }
+      samples[ii]++;
+      step_nb[ii]++;
 	  
       tes->time=tes->tstart+step_nb[ii]*tes->delta_t;
       if (s!=GSL_SUCCESS) {
@@ -961,12 +988,9 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         return(1);
       }
 
-      samples[ii]++;
-      step_nb[ii]++;
 
       tes->I0=Y[0];
       tes->T1=Y[1];
-
 
       // Update system properties
 
@@ -988,6 +1012,19 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
     for (int ii=0;ii<det->npix;ii++) {
       // get the current TES
       tesparams *tes = det->pix[ii].tes;
+
+
+      // TODO: BBFB loop is simulated here at pixel level whereas it should be done at channel level
+      double bbfb_output=0.0;
+      if (tes->dobbfb){
+    	// Need to apply SQUID noise before BBFB loop
+		double squid_noise_value = 0;
+		if (tes->simnoise) {
+		  squid_noise_value=gsl_ran_gaussian(rng,tes->squid_noise*sqrt(tes->bandwidth));
+		}
+    	bbfb_output = tes->apply_bbfb(tes,tes->time,tes->I0,squid_noise_value,rng);
+    	tes->decimation_buffer[samples[ii]-1] = bbfb_output;
+      }
 
       // put the pulse data and the time data into arrays 
       // if the decimation condition is met
@@ -1014,11 +1051,22 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
             pulse = GSL_IMAG(tes->Iout_start) - GSL_IMAG(Iout); // Q-Channel
           }
 
-        } else {
+        } else if (tes->dobbfb) {
+          // Apply decimation filter to BBFB output if requested, otherwise, use directly last BBFB output
+          double decimation_result=0.;
+          for (unsigned int ii=0;ii<tes->decimate_factor;ii++){
+            decimation_result+=tes->decimation_buffer[ii];
+          }
+          if (tes->decimation_filter){
+            pulse=sqrt(2)*tes->I0_start-decimation_result/tes->decimate_factor; // SQRT(2) needed for rms to amplitude conversion
+          } else {
+            pulse=sqrt(2)*tes->I0_start-bbfb_output; // SQRT(2) needed for rms to amplitude conversion
+          }
+        } else{
           pulse=tes->I0_start-tes->I0;
           //pulse=tes->T1;
         }
-        if (tes->simnoise) {
+        if (tes->simnoise && !(tes->dobbfb)){
           pulse += gsl_ran_gaussian(rng,tes->squid_noise);
         }
 

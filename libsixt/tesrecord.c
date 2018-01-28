@@ -31,9 +31,10 @@ TesRecord* newTesRecord(int* const status){
     return(NULL); // yes, we could return record here, but best be obvious
   }
   // Initialize pointers with NULL.
-  record->adc_array  = NULL;
-  record->adc_double = NULL;
-  record->phid_list  = NULL;
+  record->adc_array    = NULL;
+  record->adc_double   = NULL;
+  record->phid_list    = NULL;
+  record->error_double = NULL;
 
   // Initialize values.
   record->trigger_size =0;
@@ -54,6 +55,10 @@ void allocateTesRecord(TesRecord * record,unsigned long triggerSize,double delta
 	//Allocate adc_double
 	record->adc_double = malloc(triggerSize*sizeof(*(record->adc_double)));
 	CHECK_NULL_VOID(record->adc_array,*status,"allocateTesRecord: adc_double: memory allocation failed");
+
+	//Allocate error_double
+	record->error_double = malloc(triggerSize*sizeof(*(record->error_double)));
+	CHECK_NULL_VOID(record->adc_array,*status,"allocateTesRecord: error_double: memory allocation failed");
 
 	//Allocate phid_list
 	record->phid_list = newAllocatedPhIDList(MAXIMPACTNUMBER,wait_list,status);
@@ -82,9 +87,12 @@ void resizeTesRecord(TesRecord *record,unsigned long triggerSize, int* const sta
   CHECK_NULL_VOID(new_adc,*status,"Cannot reallocate ADC array");
   double *new_doub=realloc(record->adc_double,triggerSize*sizeof(double));
   CHECK_NULL_VOID(new_doub,*status,"Cannot reallocate ADC double array");
+  double *new_err=realloc(record->error_double,triggerSize*sizeof(double));
+  CHECK_NULL_VOID(new_err,*status,"Cannot reallocate ADC double array");
 
   record->adc_array=new_adc;
   record->adc_double=new_doub;
+  record->error_double=new_err;
   record->trigger_size=triggerSize;
 }
 
@@ -94,6 +102,7 @@ void freeTesRecord(TesRecord** const record){
 	if (*record!=NULL){
 		free((*record)->adc_double);
 		free((*record)->adc_array);
+		free((*record)->error_double);
 		freePhIDList((*record)->phid_list);
 		free(*record);
 		*record = NULL;

@@ -9,7 +9,7 @@ void tes_write_tesrecord(tesparams *tes,int *status);
 
 // initialize the internal TESDataStream based memory management 
 tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, int buffersize,
-				    char *streamfile, char *impactfile, int clobber,
+				    char *streamfile, char *impactfile, int clobber,int write_error,
 				    SixtStdKeywords *keywords, int *status) {
   tes_record_info *data=(tes_record_info *)malloc(sizeof(tes_record_info));
   CHECK_NULL_RET(data,*status,"Memory allocation failed in tes_init_tesrecord: data structure",NULL);
@@ -36,6 +36,11 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
   data->timecol=-1;
   data->adccol=-1;
   data->curcol=-1;
+  if (write_error){
+	data->errcol=-1;
+  } else {
+	data->errcol=-2;
+  }
   data->clobber=clobber;
 
   data->keywords=duplicateSixtStdKeywords(keywords,status);
@@ -71,6 +76,7 @@ void tes_append_tesrecord(tesparams *tes,double time,double pulse, int *status) 
 
   // save data in the fifo
   data->stream->adc_double[data->streamind]=pulse;
+  data->stream->error_double[data->streamind]=tes->squid_error;
   if ((pulse<data->imin) || (pulse>data->imax)) {
     data->stream->adc_array[data->streamind++]=0xFFFF;
   } else {
@@ -116,7 +122,13 @@ void tes_write_tesrecord(tesparams *tes,int *status) {
     long pixid=dataptr->stream->pixid;
 
     // create table extension
-    int ncolumns=3;
+    int ncolumns;
+    if (dataptr->errcol==-2){
+      ncolumns=3;
+    } else {
+      ncolumns=4;
+    }
+
     char *ttype[ncolumns];
     char *tform[ncolumns];
     char *tunit[ncolumns];
@@ -142,6 +154,17 @@ void tes_write_tesrecord(tesparams *tes,int *status) {
     tform[2]="1E";
     tunit[2]="A";
     dataptr->curcol=3;
+
+    // error
+    if (dataptr->errcol==-1){
+      ttype[3]=malloc(11*sizeof(char));
+      CHECK_NULL_VOID(ttype[3],*status,"Cannot allocate ttype[3]");
+      sprintf(ttype[3],"ERROR%05ld",pixid);
+      tform[3]="1E";
+      tunit[3]="A";
+      dataptr->errcol=4;
+    }
+
 
     fits_create_tbl(fptr,BINARY_TBL,0,ncolumns,
 		    ttype,tform,tunit,"TESDATASTREAM",status);
@@ -184,7 +207,9 @@ void tes_write_tesrecord(tesparams *tes,int *status) {
   fits_write_col(fptr, TUSHORT, dataptr->adccol, dataptr->row, 1, nrows, dataptr->stream->adc_array, status);
   //NB this will be written as single precision!
   fits_write_col(fptr, TDOUBLE,  dataptr->curcol, dataptr->row, 1, nrows, dataptr->stream->adc_double, status);
-
+  if (dataptr->errcol>0){
+    fits_write_col(fptr, TDOUBLE,  dataptr->errcol, dataptr->row, 1, nrows, dataptr->stream->error_double,status);
+  }
   dataptr->row+=nrows;
 
 }

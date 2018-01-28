@@ -70,6 +70,9 @@ typedef struct{
 	/** Double version of the record */
 	double* adc_double;
 
+	/** Error signal */
+	double* error_double;
+
 	/** PIXID of the record */
 	long pixid;
 

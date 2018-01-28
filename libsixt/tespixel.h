@@ -7,7 +7,7 @@
 #include "pixelimpactfile.h"
 #include "progressbar.h"
 #include <gsl/gsl_complex.h>
-
+#include <gsl/gsl_rng.h>
 #include <gsl/gsl_odeiv2.h>
 
 
@@ -56,6 +56,9 @@ typedef void (*tes_stream_writer) (tesparams *tes,double time, double pulse, int
 
 // this function is called whenever photon data are written. Data is the streaminfo of tesparams
 typedef void (*tes_photon_writer) (tesparams *tes, double time, long phid, int *status);
+
+// this function is called at each simulation step if a bbfb loop was requested
+typedef double (*tes_bbfb_loop) (tesparams *tes, double time, double squid_input, double squid_noise_value,gsl_rng *rng);
 
 // dRdI provider
 // a call to this function returns the current value of dR/dI
@@ -109,6 +112,7 @@ struct tesparams {
   double sample_rate; // sample rate (Hz)
   double timeres;     // time resolution for this stream (1/sample_rate)
   unsigned int decimate_factor; // step size vs. sample rate
+  double *decimation_buffer; // buffer for decimation filter (currently simple averaging)
   double bandwidth; // needed for the noise simulation
 
   double imin;    // minimum current to encode [A]
@@ -173,8 +177,20 @@ struct tesparams {
   double Vexc;   // 
   double Vunk;   // excess noise 
   double m_excess; // magnitude of excess noise relative to Johnson (bath) noise
+  double Vbn; 	// voltage noise on bias line
 
-  double squid_noise; // SQUID readout and electronics noise 
+  double bias_noise; // level of noise in the bias line [V/sqrt(Hz)]
+
+  // SQUID parameters
+  double squid_noise; // SQUID readout and electronics noise
+  double M_in; // input mutual inductance of SQUID
+  double squid_error; // error at SQUID input
+
+  // BBFB parameters
+  int dobbfb; // option to perform bbfb
+  int decimation_filter; // Option to filter with average during decimation
+  void *bbfb_info; // data for bbfb
+  tes_bbfb_loop apply_bbfb; // function to apply a bbfb mechanism (funciton pointer)
 
   int twofluid; //Do we use the twofluid model?
   //TODO Change once more models become available

@@ -35,6 +35,11 @@ int tessim_main() {
     tessim_getpar(&par,&det,&properties,&status);
     CHECK_STATUS_BREAK(status);
 
+    if (det->npix>1 && par.dobbfb){
+      SIXT_ERROR("Multipixel simulation and BBFB cannot be simulated together yet");
+      return EXIT_FAILURE;
+    }
+
     /** LOOP FOR MULTI TESSIM START */
     tespxlparams loop_par; // parameter to account for different pixel parameters during loop
     for (int ii=0;ii<det->npix;ii++) {
@@ -129,7 +134,7 @@ int tessim_main() {
       if (strcmp(par.trigger,"stream")==0) {
         tes->streaminfo=tes_init_tesrecord(par.tstart,par.tstop,tes,TESRECORD_BUFFERSIZE/det->npix,
                                            loop_par.streamfile,loop_par.impactlist,
-                                           par.clobber,
+                                           par.clobber,par.write_error,
                                            keywords,
                                            &status);
         CHECK_STATUS_BREAK(status);
@@ -224,9 +229,22 @@ int tessim_main() {
           tes->write_photon=NULL;
       }
       freeSixtStdKeywords(keywords);
+
+      // Initialize BBFB loop
+      // For architecture reasons, this is for the moment at tes level whereas it should actually be at channel level
+      // but this structure is not completely available yet
+      if (tes->dobbfb) {
+        tes->bbfb_info = init_timedomain_bbfb(par.bbfb_tclock,par.bbfb_delay,par.carrier_frequency,par.bbfb_gbw,0,
+        		par.bias_leakage*tes->I0_start,par.bias_leakage_phase,par.fb_leakage,par.fb_leakage_lag,tes->I0_start,&status);
+        tes->apply_bbfb = &run_timedomain_bbfb_loop;
+      }
       
     }
     /** LOOP FOR MULTI TESSIM END */
+
+
+
+
 
     /** SET UP CROSSTALK */
     if (det->npix > 1 && par.doCrosstalk && par.acdc) {
@@ -661,6 +679,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
   }
   query_simput_parameter_bool("simnoise", &par->simnoise, status);
   query_simput_parameter_double("squidnoise",&par->squid_noise,status);
+  query_simput_parameter_double("bias_noise", &par->bias_noise, status);
 
   if (&par->simnoise) {
     cmd_query_simput_parameter_double(fromcmd,"m_excess",&par->m_excess,status);
@@ -708,6 +727,29 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
       return;
     }
   }
+
+  // read bbfb parameters
+  query_simput_parameter_bool("dobbfb", &par->dobbfb, status);
+  query_simput_parameter_bool("decimation_filter", &par->decimation_filter, status);
+  query_simput_parameter_double("bbfb_tclock", &par->bbfb_tclock, status);
+  query_simput_parameter_double("carrier_frequency", &par->carrier_frequency, status);
+  query_simput_parameter_int("bbfb_delay", &par->bbfb_delay, status);
+  query_simput_parameter_double("bbfb_gbw", &par->bbfb_gbw, status);
+  query_simput_parameter_double("bias_leakage", &par->bias_leakage, status);
+  query_simput_parameter_double("bias_leakage_phase", &par->bias_leakage_phase, status);
+  if (!par->simnoise && par->bias_leakage_phase==-999){
+	par->bias_leakage_phase=0;
+	printf("\nWARNING: bias_leakage_phase is supposed to be random but noiseless simulation requested -> phase arbitrarily fixed to 0\n");
+  }
+  query_simput_parameter_double("fb_leakage", &par->fb_leakage, status);
+  query_simput_parameter_int("fb_leakage_lag", &par->fb_leakage_lag, status);
+  if (!par->simnoise && par->fb_leakage_lag==-999){
+	par->fb_leakage_lag=0;
+	printf("\nWARNING: fb_leakage_lag is supposed to be random but noiseless simulation requested -> lag arbitrarily fixed to 0\n");
+  }
+  query_simput_parameter_double("M_in", &par->M_in, status);
+  query_simput_parameter_bool("write_error", &par->write_error, status);
+
 
   sixt_free_query_commandline();
   

@@ -83,6 +83,20 @@ typedef struct {
 
   double m_excess; // magnitude of excess noise
   double squid_noise; // amplifier noise at the SQUID input coil level [A/sqrt(Hz)]
+  double bias_noise; // level of noise in the bias line [V/sqrt(Hz)]
+
+  int dobbfb; // bbfb loop?
+  int decimation_filter; // option to filter with average during decimation
+  double bbfb_tclock; // clock period of the BBFB process [s]
+  double carrier_frequency; // pixel carrier frequency [Hz] TODO: need to harmonize this with multipixel code in which carrier freq are read from XML
+  int bbfb_delay; // delay in clock cycles units of the FB loops (only integer values accepted here - would need DDE integrator otherwise)
+  double bbfb_gbw; // gain bandwidth of the BBFB [Hz]
+  double bias_leakage; // leakage level from the bias line to the direct chain
+  double bias_leakage_phase; // phase shift between the leakage and the signal [rad]
+  double fb_leakage; // leakage level from the feedback line to the direct chain
+  int fb_leakage_lag; // delay in clock cycles of the FB leakage
+  double M_in; // input mutual inductance of SQUID
+  int write_error; // option to also output the error signal at the SQUID level in the stream file
 
   unsigned long seed; // seed of random number generator
 
@@ -146,11 +160,12 @@ typedef struct {
   int timecol;       // column for the time
   int adccol;        // column for the ADC value
   int curcol;        // column for the current
+  int errcol; 		 // column for error signal
 } tes_record_info;
 
 // initialize a TES datastream built on tesrecords
 tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, int buffersize,
-				    char *streamfile, char *impactfile,int clobber,
+				    char *streamfile, char *impactfile,int clobber,int write_error,
 				    SixtStdKeywords *keywords,
 				    int *status);
 // append a pulse to the data stream. 
@@ -244,5 +259,44 @@ double frameImpactEffects(double time_hit, tesparams* tes, int* shift);
 void read_frame_hit_file(tesparams *tes, int *status);
 
 #define PROGRESSBAR_FACTOR 10
+
+
+////////////////////////////////
+// BBFB structure and functions
+///////////////////////////////
+typedef struct {
+
+  // BBFB parameters
+  int delay; // number of clock cycles delay
+  double tclock; // clock period
+  double time_delay; // loop delay in seconds (to avoid doing delay*tclock all the time)
+  double carrier_frequency; // frequency of the carrier
+  double gbw; // gain bandwidth product
+  double phase; // carrier phase
+  double cphase; // correction phase
+  double bias_leakage; // level of leakage from the bias line onto the direct line [A]
+  double bias_leakage_phase; // phase shift between the leakage and the signal
+  double fb_leakage; // leakage level from the feedback line to the direct chain
+  int fb_leakage_lag; // delay in clock cycles of the FB leakage
+
+  // Necessary buffers
+  double _Complex integral;
+  double* fb_values;
+  int fb_index;
+
+} timedomain_bbfb_info;
+
+// Constructor of a timedomain_bbfb_info structure
+timedomain_bbfb_info* init_timedomain_bbfb(double tclock,int delay,double carrier_frequency,
+    double gbw,double phase,double bias_leakage,double bias_leakage_phase,
+    double fb_leakage,int fb_leakage_lag,double fb_start,int* status);
+
+// Destructor of timedomain_bbfb_info structure
+void free_timedomain_bbfb(timedomain_bbfb_info **bbfb,int *status);
+
+// Run BBFB loop clock
+double run_timedomain_bbfb_loop(tesparams *tes, double time, double squid_input, double squid_noise_value,gsl_rng *rng);
+
+
 
 #endif
