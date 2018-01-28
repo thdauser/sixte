@@ -139,7 +139,7 @@ void parseGenInstXML(GenInst* const inst,
     return;
   }
 
-  // The data is read from the XML file and stored in xmlbuffer
+  // The data are read from the XML file and stored in xmlbuffer
   // without any modifications.
   struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
   CHECK_STATUS_VOID(*status);
@@ -167,9 +167,9 @@ void parseGenInstXML(GenInst* const inst,
   expandIncludesXML(xmlbuffer, filename, status);
   CHECK_STATUS_VOID(*status);
 
-  // Before acutally parsing the XML code, expand the loops and 
+  // Before actually parsing the XML code, expand the loops and 
   // arithmetic operations in the GenDet XML description.
-  // The expansion algorithm repeatetly scans the XML code and
+  // The expansion algorithm repeatedly scans the XML code and
   // searches for loop tags. It replaces the loop tags by repeating
   // the contained XML code.
   expandXML(xmlbuffer, status);
