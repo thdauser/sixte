@@ -39,10 +39,14 @@ typedef struct {
 	int index;
 
 	/** Index arrival time of the photons inside a record */
-	int * event_indexes;
+	//int * event_indexes;
+	double * event_indexes;
 
 	/** Pulse height of the photons */
 	double * pulse_heights;
+
+	/** Average of the first 4 samples of the derivative of the event (pulse) */
+	double * avgs_4samplesDerivative;  //BEA
 
 	/** Energy of the photons */
 	double * energies;
@@ -71,7 +75,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol;
+	int timeCol,energyCol,avg_4samplesDerivativeCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //BEA
 
 } TesEventFile;
 

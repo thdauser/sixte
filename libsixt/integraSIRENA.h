@@ -312,6 +312,9 @@ typedef struct PulseDetected
 	/** Energy (KeV) of the Pulse */
 	double energy;
 
+        /** Average of the first 4 samples of the derivative of the Pulse */
+	double avg_4samplesDerivative;
+        
 	/** Quality of the Pulse */
 	double quality;
         

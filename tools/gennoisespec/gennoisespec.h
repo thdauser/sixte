@@ -41,6 +41,8 @@
 	#include "genutils.h"
 	#include "pulseprocess.h"
 	#include "inoututils.h"
+	
+	#include <time.h>
 
 // CFITSIO helpers
 
@@ -121,7 +123,7 @@
 
 	int NumMeanSamples = 0;
 	gsl_vector *EventSamplesFFTMean;
-	gsl_matrix *EventSamplesFFT;
+	//gsl_matrix *EventSamplesFFT;
 
 	gsl_matrix *library;		// Not used. Necessary only in order to be used as input parameter in findPulses
 	gsl_matrix *models;		// Not used. Necessary only in order to be used as input parameter in findPulses
@@ -132,8 +134,6 @@
 	
 	gsl_matrix *noiseIntervals;
 	gsl_vector *weightpoints;
-	//gsl_matrix *covarianceMatrix;
-	//gsl_matrix *weightMatrix;
 	gsl_matrix *weightMatrixes;
 
 // OUTPUT FILE
@@ -200,7 +200,7 @@
 
 	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *mean, double *sigma, double *baseline);
 	
-	int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **covariance, gsl_matrix **weight);
+	int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **weight);
 
 	using namespace std;
 

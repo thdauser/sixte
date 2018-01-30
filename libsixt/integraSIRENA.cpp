@@ -173,6 +173,13 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 			EP_EXIT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
 		}
 	
+                double double_oflength = (double) oflength;
+                double log2_double_oflength = log2(double_oflength);            
+                if ((mode == 1) && (oflib == 1) && (strcmp(oflength_strategy,"FIXED") == 0) && ((log2_double_oflength - (int) log2_double_oflength) != 0))
+                {
+                        EP_EXIT_ERROR("If OFLib=yes, OFLength must be a power of 2",EPFAIL);
+                }
+                
 		if ((mode == 1) && (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration))
 		{
 			if ((oflib == 1) 
@@ -367,9 +374,10 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		EP_EXIT_ERROR("Warning: pulse length is larger than record size. Pulse length set to maximum value (record size)",EPFAIL);
 	}
 	
+	//cout<<"delta_t: "<<record->delta_t<<endl;
 	// Detect pulses in record
 	runDetect(record, nRecord, lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
-
+        
 	if(pulsesInRecord->ndetpulses == 0) // No pulses found in record
 	{
 		//freePulsesCollection(pulsesAllAux);
@@ -386,7 +394,8 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                 //PulsesCollection* aux = &pulsesInRecord;
 		runEnergy(record, &reconstruct_init, &pulsesInRecord, optimalFilter);
 	}
-
+	//cout<<"reconstructrecordSIRENA2"<<endl;
+	
 	if (nRecord == 1)
 	{
                 (*pulsesAll)->ndetpulses = pulsesInRecord->ndetpulses;
@@ -417,7 +426,8 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	else
 	{
 		if (event_list->energies != NULL) 	delete [] event_list->energies;
-		if (event_list->grades1 != NULL) 	delete [] event_list->grades1;
+                if (event_list->avgs_4samplesDerivative != NULL) 	delete [] event_list->avgs_4samplesDerivative;
+                if (event_list->grades1 != NULL) 	delete [] event_list->grades1;
 		if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
 		if (event_list->pulse_heights != NULL) 	delete [] event_list->pulse_heights;
 		if (event_list->ph_ids != NULL) 	delete [] event_list->ph_ids;
@@ -479,6 +489,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	// Free & Fill TesEventList structure
 	event_list->index = pulsesInRecord->ndetpulses;
 	event_list->energies = new double[event_list->index];
+        event_list->avgs_4samplesDerivative = new double[event_list->index];
 	event_list->grades1  = new int[event_list->index];
 	event_list->grades2  = new int[event_list->index];
 	event_list->pulse_heights  = new double[event_list->index];
@@ -492,11 +503,12 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			//event_list->event_indexes[ip] = 
 			//      (int)((pulsesInRecord->pulses_detected[ip].Tstart - record->time)/record->delta_t + 0.5) + 1;	// '+0.5' to nearest integer (neither 'floor' nor 'ceil')
                         // Not '+1' in order to undo the '-1' in initializeReconstructionSIRENA because it is necessary to work with intervals not samples
+                        //event_list->event_indexes[ip] = 
+			//      (int)((pulsesInRecord->pulses_detected[ip].Tstart - record->time)/record->delta_t + 0.5);	// '+0.5' to nearest integer (neither 'floor' nor 'ceil')
+                    
                         event_list->event_indexes[ip] = 
-			      (int)((pulsesInRecord->pulses_detected[ip].Tstart - record->time)/record->delta_t + 0.5);	// '+0.5' to nearest integer (neither 'floor' nor 'ceil') 
-			     //if (ip==0) cout<<event_list->event_indexes[ip]<<endl;
-                            // if (ip==1) cout<<event_list->event_indexes[ip]<<endl;
-
+			      (pulsesInRecord->pulses_detected[ip].Tstart - record->time)/record->delta_t;	
+			
 			if (reconstruct_init->mode == 1)
 			{
 				event_list->energies[ip] = pulsesInRecord->pulses_detected[ip].energy;
@@ -506,9 +518,13 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 				event_list->energies[ip] = 999.;
 			}
 
+			event_list->avgs_4samplesDerivative[ip] = pulsesInRecord->pulses_detected[ip].avg_4samplesDerivative;
+                        //cout<<ip<<" event_list->avgs_4samplesDerivative[ip]: "<<event_list->avgs_4samplesDerivative[ip]<<endl;
+                        //cout<<"event_list->avgs_4samplesDerivative[ip]: "<<event_list->avgs_4samplesDerivative[ip]<<endl;
 			event_list->grades1[ip]  = pulsesInRecord->pulses_detected[ip].grade1;
 			event_list->grades2[ip]  = pulsesInRecord->pulses_detected[ip].grade2;
 			event_list->pulse_heights[ip]  = pulsesInRecord->pulses_detected[ip].pulse_height;
+                        //cout<<ip<<" event_list->pulse_heights[ip]: "<<event_list->pulse_heights[ip]<<endl;
 			event_list->ph_ids[ip]   = 0;
 		}
 		if (lastRecord == 1)
@@ -537,9 +553,11 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		{
 		        // Free & Fill TesEventList structure
 			event_list->index = (*pulsesAll)->ndetpulses;
-			event_list->event_indexes = new int[event_list->index];
+			//event_list->event_indexes = new int[event_list->index];
+                        event_list->event_indexes = new double[event_list->index];
 			event_list->energies = new double[event_list->index];
-			event_list->grades1  = new int[event_list->index];
+                        event_list->avgs_4samplesDerivative = new double[event_list->index];
+                        event_list->grades1  = new int[event_list->index];
 			event_list->grades2  = new int[event_list->index];
 			event_list->pulse_heights  = new double[event_list->index];
 			event_list->ph_ids   = new long[event_list->index];
@@ -550,8 +568,9 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 				//event_list->event_indexes[ip] = 
 				//      (int)(((*pulsesAll)->pulses_detected[ip].Tstart - record->time)/record->delta_t + 0.5) + 1;	// '+0.5' to nearest integer (neither 'floor' nor 'ceil')
                                 // Not '+1' in order to undo the '-1' in initializeReconstructionSIRENA because it is necessary to work with intervals not samples
-                                event_list->event_indexes[ip] = 
-				      (int)(((*pulsesAll)->pulses_detected[ip].Tstart - record->time)/record->delta_t + 0.5);	// '+0.5' to nearest integer (neither 'floor' nor 'ceil')
+                                //event_list->event_indexes[ip] = 
+				//      (int)(((*pulsesAll)->pulses_detected[ip].Tstart - record->time)/record->delta_t + 0.5);	// '+0.5' to nearest integer (neither 'floor' nor 'ceil')
+                                event_list->event_indexes[ip] = ((*pulsesAll)->pulses_detected[ip].Tstart - record->time)/record->delta_t;
 
 				if (reconstruct_init->mode == 1)
 				{
@@ -562,6 +581,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 					event_list->energies[ip] = 999.;
 				}
 
+				event_list->avgs_4samplesDerivative[ip]  = (*pulsesAll)->pulses_detected[ip].avg_4samplesDerivative;
 				event_list->grades1[ip]  = (*pulsesAll)->pulses_detected[ip].grade1;
 				event_list->grades2[ip]  = (*pulsesAll)->pulses_detected[ip].grade2;
 				event_list->pulse_heights[ip]  = (*pulsesAll)->pulses_detected[ip].pulse_height;
@@ -570,6 +590,36 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		}
 	}
 	
+	/*cout<<"pulsesAll: "<<(*pulsesAll)->ndetpulses<<endl;
+        cout<<(*pulsesAll)->size<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].pulse_duration<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].grade1<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].grade2<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].grade2_1<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].pixid<<endl;
+        //cout<<((*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].pulse_adc)->size<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].Tstart<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].Tend<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].riseTime<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].fallTime<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].pulse_height<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].maxDER<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].samp1DER<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].energy<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].avg_4samplesDerivative<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].quality<<endl;
+        cout<<(*pulsesAll)->pulses_detected[(*pulsesAll)->ndetpulses-1].numLagsUsed<<endl;
+        
+        cout<<"size_energy: "<<event_list->size_energy<<endl;
+        cout<<"index: "<<event_list->index<<endl;
+        cout<<"event_indexes: "<<event_list->event_indexes[pulsesInRecord->ndetpulses-1]<<endl;
+        cout<<"pulse_heights: "<<event_list->pulse_heights[pulsesInRecord->ndetpulses-1]<<endl;
+        cout<<"energies: "<<event_list->energies[pulsesInRecord->ndetpulses-1]<<endl;
+        cout<<"avgs_4samplesDerivative: "<<event_list->avgs_4samplesDerivative[pulsesInRecord->ndetpulses-1]<<endl;
+        cout<<"grades1: "<<event_list->grades1[pulsesInRecord->ndetpulses-1]<<endl;
+        cout<<"grades2: "<<event_list->grades2[pulsesInRecord->ndetpulses-1]<<endl;
+        cout<<"ph_ids: "<<event_list->ph_ids[pulsesInRecord->ndetpulses-1]<<endl;*/
+        
 	//delete(pulsesAllAux->pulses_detected);
 	//freePulsesCollection(pulsesAllAux);
 	//delete(pulsesInRecord->pulses_detected);
@@ -578,6 +628,8 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	delete pulsesAllAux;
 	delete [] pulsesInRecord->pulses_detected;
 	delete pulsesInRecord;
+        
+        //cout<<"Acaba ReconstructInitSIRENA"<<endl;
 
 	return;
 }
@@ -856,8 +908,8 @@ extern "C" PulsesCollection* newPulsesCollection(int* const status)
 extern "C" void freePulsesCollection(PulsesCollection* PulsesColl)
 {
 	for(int i = 0; i < PulsesColl->ndetpulses; ++i){
-			gsl_vector_free(PulsesColl->pulses_detected[i].pulse_adc);
-		}
+		if (PulsesColl->pulses_detected[i].pulse_adc != NULL) gsl_vector_free(PulsesColl->pulses_detected[i].pulse_adc);
+	}
 	delete [] PulsesColl->pulses_detected;
 	delete(PulsesColl);
 }
@@ -3049,6 +3101,7 @@ PulseDetected::PulseDetected():
 		maxDER(0.0f),
 		samp1DER(0.0f),
 		energy(0.0f),
+                avg_4samplesDerivative(0.0f),
 		quality(0.0f)
 {
 

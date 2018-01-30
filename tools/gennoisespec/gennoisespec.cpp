@@ -135,16 +135,6 @@ int main (int argc, char **argv)
 	
 	writeLog(fileRef,"Log", verbosity,"Into GENNOISESPEC task");
 	
-	/*nintervalsCSD = nintervals;
-	nintervalsWEIGHT = intervalMinSamples;
-	if (nintervalsCSD >= nintervalsWEIGHT)		nintervals = nintervalsCSD;
-	else 						nintervals = nintervalsWEIGHT;*/
-	
-	/*baseline = gsl_vector_alloc(nintervals);
-	gsl_vector_set_all(baseline,-999.0);
-	sigma = gsl_vector_alloc(nintervals);
-	gsl_vector_set_all(sigma,-999.0);*/
-
 	// Open input FITS file
 	if (fits_open_file(&infileObject, infileName,0,&status))
 	{
@@ -204,12 +194,12 @@ int main (int argc, char **argv)
 		message = "Cannot read keyword " + string(keyname) + " in input file";
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
-	if (energy < 0)
+	/*if (energy < 0)
 	{
 		message = "Legal values for MONOEN (RECORDS) are non negative real numbers";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_EXIT_ERROR(message,EPFAIL);
-	}
+	}*/
 	energy = energy*1e3;
 	plspolar = 1.0;
 
@@ -377,20 +367,18 @@ int main (int argc, char **argv)
 	gsl_matrix_set_all(weightMatrixes,-999.0);
 	gsl_matrix_view tempm;
 	gsl_matrix *noiseIntervals_weightPoints;
-	gsl_matrix *covarianceMatrix;
 	gsl_matrix *weightMatrix;
 	
 	if (NumMeanSamples >= nintervals)
 	{
 		for (int i=0;i<weightpoints->size;i++)
 		{	
-			covarianceMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
 			weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
-			noiseIntervals_weightPoints = gsl_matrix_alloc(NumMeanSamples,gsl_vector_get(weightpoints,i));
+			noiseIntervals_weightPoints = gsl_matrix_alloc(nintervals,gsl_vector_get(weightpoints,i));
 			
-			tempm = gsl_matrix_submatrix(noiseIntervals,0,0,NumMeanSamples,gsl_vector_get(weightpoints,i));
+			tempm = gsl_matrix_submatrix(noiseIntervals,0,0,nintervals,gsl_vector_get(weightpoints,i));
 			gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
-			weightMatrixNoise(noiseIntervals_weightPoints, &covarianceMatrix, &weightMatrix);
+			weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
 		
 			for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
 			{
@@ -401,19 +389,17 @@ int main (int argc, char **argv)
 			}
 			
 			gsl_matrix_free(noiseIntervals_weightPoints);
-			gsl_matrix_free(covarianceMatrix);
 			gsl_matrix_free(weightMatrix);
 		}
 	}
 	else
 	{
-		covarianceMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,0),gsl_vector_get(weightpoints,0));
 		weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,0),gsl_vector_get(weightpoints,0));
 		noiseIntervals_weightPoints = gsl_matrix_alloc(NumMeanSamples,gsl_vector_get(weightpoints,0));
 		
 		tempm = gsl_matrix_submatrix(noiseIntervals,0,0,NumMeanSamples,gsl_vector_get(weightpoints,0));
 		gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
-		weightMatrixNoise(noiseIntervals_weightPoints, &covarianceMatrix, &weightMatrix);
+		weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
 
 		for (int j=0;j<gsl_vector_get(weightpoints,0);j++)
 		{
@@ -424,7 +410,6 @@ int main (int argc, char **argv)
 		}
 		
 		gsl_matrix_free(noiseIntervals_weightPoints);
-		gsl_matrix_free(covarianceMatrix);
 		gsl_matrix_free(weightMatrix);
 		
 		int NumMeanSamplesNew;
@@ -432,7 +417,6 @@ int main (int argc, char **argv)
 		gsl_matrix *noiseIntervalsAux;
 		for (int i=1;i<weightpoints->size;i++)
 		{	
-			covarianceMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
 			weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
 			if (NumMeanSamples*pow(2,i) >= nintervals)	NumMeanSamplesNew = nintervals;
 			else 						NumMeanSamplesNew = NumMeanSamples*pow(2,i);
@@ -468,7 +452,7 @@ int main (int argc, char **argv)
 			message = "W" + string(str_stat1) + " matrix calculated with " + string(str_stat);
 			writeLog(fileRef,"Log", verbosity,message);
 			
-			weightMatrixNoise(noiseIntervals_weightPoints, &covarianceMatrix, &weightMatrix);
+			weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
 		
 			for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
 			{
@@ -479,7 +463,6 @@ int main (int argc, char **argv)
 			}
 			
 			gsl_matrix_free(noiseIntervals_weightPoints);
-			gsl_matrix_free(covarianceMatrix);
 			gsl_matrix_free(weightMatrix);
 		}
 	}
@@ -503,7 +486,6 @@ int main (int argc, char **argv)
 		message = "Cannot write extensions in " +  string(gnoiseName);
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
-	
 
 	// Free allocated GSL vectors
 	//gsl_matrix_free(EventSamplesFFT);
@@ -905,8 +887,8 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	int pulseFound = 0;	// 0->The function findTstart has not found any pulse
 				// 1->The function findTstart has found at least one pulse
 
-	double baselineI;
-	double mean, sg; // To handle the pulse tails at the beginning of the record
+	/*double baselineI;
+	double mean, sg; // To handle the pulse tails at the beginning of the record*/
 	int tail_duration;
 	
 	double baselineIntervalFreeOfPulses;
@@ -987,7 +969,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 
 		// To avoid taking into account the pulse tails at the beginning of a record as part of a pulse-free interval
 		tail_duration = 0;
-		temp = gsl_vector_subvector(ioutgslNOTFIL,0,eventsz-(int)(pi*samprate*scaleFactor)-1);
+		/*temp = gsl_vector_subvector(ioutgslNOTFIL,0,eventsz-(int)(pi*samprate*scaleFactor)-1);
 		cutFreq = 2 * (1/(2*pi*scaleFactor));
 		boxLength = (int) ((1/cutFreq) * samprate);
 		
@@ -995,7 +977,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		{
 			message = "Cannot run find_baseline";
 			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-		}
+		}*/
 		/*cout<<"mean: "<<mean<<endl;
 		cout<<"sg: "<<sg<<endl;
 		cout<<"baselineI: "<<baselineI<<endl;*/
@@ -1093,10 +1075,8 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 			gsl_vector_memcpy(EventSamples,&temp.vector);
 			
 			// Baseline subtraction
-			//gsl_vector *baselinegsl = gsl_vector_alloc(EventSamples->size);
 			gsl_vector_set_all(baselinegsl,-1.0*baselineIntervalFreeOfPulses);
 			gsl_vector_add(EventSamples,baselinegsl);
-			//gsl_vector_free(baselinegsl);
 						
 			if (NumMeanSamples < nintervals)
 			{
@@ -1601,9 +1581,7 @@ int writeTPSreprExten ()
 		
 	strcpy(keyname,"BASELINE");
 	double sumBaseline;
-	//gsl_vector_Sumsubvector(baseline, 0, nintervals, &sumBaseline);
 	gsl_vector_Sumsubvector(baseline, 0, indexBaseline, &sumBaseline);
-	//double keyvaldouble = sumBaseline/nintervals;
 	double keyvaldouble = sumBaseline/indexBaseline;
 	if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
 	{
@@ -1613,9 +1591,7 @@ int writeTPSreprExten ()
 	
 	strcpy(keyname,"NOISESTD");
 	double sumSigma;
-	//gsl_vector_Sumsubvector(sigma, 0, nintervals, &sumSigma);
 	gsl_vector_Sumsubvector(sigma, 0, indexBaseline, &sumSigma);
-	//keyvaldouble = sumSigma/nintervals;
 	keyvaldouble = sumSigma/indexBaseline;
 	if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
 	{
@@ -1763,16 +1739,6 @@ int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int b
 	*baseline = mean2;
 	*mean = mean2;
 	*sigma = sg2;
-	//cout<<"baseline: "<<*baseline<<endl;
-	//cout<<"sigma: "<<*sigma<<endl;
-	
-	/*double meanX, sigmaX;
-	findMeanSigma (invector, &meanX, &sigmaX);
-	cout<<"meanX: "<<meanX<<endl;
-	cout<<"sigmaX: "<<sigmaX<<endl;*/
-
-	//*baseline = median;
-	//*baseline = mean;
 
 	return(EPOK);
 }
@@ -2032,7 +1998,7 @@ int findTstartNoise
 * Di: Pulse free interval
 * V: Covariance matrix
 * 
-*  Vij = E[DiDj]-E[Di]E[Dj] = E[DiDj], E[Di]=E[Dj]=0 because the baseline has been subtracted from the pulse-free intervals
+*  Vij = E[DiDj]-E[Di]E[Dj] 
 * 
 * Di^p: Value of the ith-sample of the pulse-free interval i
 * N: Number of samples
@@ -2051,10 +2017,9 @@ int findTstartNoise
 *
 * Parameters:
 * - intervalMatrix: GSL matrix containing pulse-free intervals whose baseline is 0 (baseline previously subtracted) [nintervals x intervalMinSamples]
-* - covariance: GSL matrix with covariance matrix
 * - weight: GSL matrix with weight matrix
 ******************************************************************************/
-int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **covariance, gsl_matrix **weight)
+int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **weight)
 {
 	string message = "";
 	char valERROR[256];
@@ -2063,9 +2028,13 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **covariance, gsl_
 	double elementValue1 = 0.0;
 	double elementValue2 = 0.0;
 	double elementValue3 = 0.0;
-	gsl_permutation *perm = gsl_permutation_alloc((*covariance)->size1);
+	gsl_permutation *perm = gsl_permutation_alloc((*weight)->size1);
 	int s=0;
+        
+        gsl_matrix *covariance = gsl_matrix_alloc((*weight)->size1,(*weight)->size2);
 	
+        clock_t t;
+        t=clock();
 	// Elements of the diagonal of the covariance matrix
 	for (int i=0;i<intervalMatrix->size2;i++)
 	{
@@ -2079,13 +2048,17 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **covariance, gsl_
 		elementValue2 = elementValue2/intervalMatrix->size1;
 		elementValue = elementValue1-elementValue2*elementValue2;
 		
-		gsl_matrix_set(*covariance,i,i,elementValue);
+		gsl_matrix_set(covariance,i,i,elementValue);
 
 		elementValue = 0.0;
 		elementValue1 = 0.0;
 		elementValue2 = 0.0;
 	}
+	cout<<"Final de la diagonal de la matriz "<<covariance->size1<<"x"<<covariance->size1<<endl;
+        t = clock() - t;
+        cout<<"Consumidos "<<((float)t)/CLOCKS_PER_SEC<<" segundos"<<endl;
 
+        t = clock();
 	// Other elements
 	for (int i=0;i<intervalMatrix->size2;i++)
 	{
@@ -2103,8 +2076,8 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **covariance, gsl_
 			elementValue3 = elementValue3/intervalMatrix->size1;
 			elementValue = elementValue1-elementValue2*elementValue3;
 
-			gsl_matrix_set(*covariance,i,j,elementValue);
-			gsl_matrix_set(*covariance,j,i,elementValue);
+			gsl_matrix_set(covariance,i,j,elementValue);
+			gsl_matrix_set(covariance,j,i,elementValue);
 
 			elementValue = 0.0;
 			elementValue1 = 0.0;
@@ -2112,11 +2085,19 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **covariance, gsl_
 			elementValue3 = 0.0;
 		}
 	}
+	cout<<"Final de los elementos FUERA de la diagonal de la matriz "<<covariance->size1<<"x"<<covariance->size1<<endl;
+        t = clock() - t;
+        cout<<"Consumidos "<<((float)t)/CLOCKS_PER_SEC<<" segundos"<<endl;
 	
+        t = clock();
 	// Calculate the weight matrix
 	// It is not necessary to check the allocation because 'covarianze' size must already be > 0
-	gsl_matrix *covarianceaux = gsl_matrix_alloc((*covariance)->size1,(*covariance)->size2);
-	gsl_matrix_memcpy(covarianceaux,*covariance);
+	gsl_matrix *covarianceaux = gsl_matrix_alloc(covariance->size1,covariance->size2);
+	gsl_matrix_memcpy(covarianceaux,covariance);
+        cout<<"Final de la preparacion de la inversion "<<covariance->size1<<"x"<<covariance->size1<<endl;
+        t = clock() - t;
+        cout<<"Consumidos "<<((float)t)/CLOCKS_PER_SEC<<" segundos"<<endl;
+        t = clock();
 	gsl_linalg_LU_decomp(covarianceaux, perm, &s);
 	if (gsl_linalg_LU_invert(covarianceaux, perm, *weight) != 0) 
 	{
@@ -2125,7 +2106,11 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **covariance, gsl_
 		message = "Singular matrix in line " + str + " (" + __FILE__ + ")";
 		EP_PRINT_ERROR(message,EPFAIL);	return(EPFAIL);
 	}
+	cout<<"Final de la inversion "<<covariance->size1<<"x"<<covariance->size1<<endl;
+        t = clock() - t;
+        cout<<"Consumidos "<<((float)t)/CLOCKS_PER_SEC<<" segundos"<<endl;
 	gsl_matrix_free(covarianceaux);
+        gsl_matrix_free(covariance);
 	gsl_permutation_free(perm);
 	
 	return (EPOK);
