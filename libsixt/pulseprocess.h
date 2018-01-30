@@ -126,6 +126,7 @@
 
 		gsl_vector *adjustedDerivative,
 		double threshold,
+		double samprate,
 
 		ReconstructInitSIRENA *reconstruct_init,
 
@@ -140,7 +141,7 @@
         
                 int firstRecord);
         
-        int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound);
+        int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound, int *indexMin, int *indexMax);
         int smoothDerivative (gsl_vector **invector, int N);
         
         int FindSecondariesA1
