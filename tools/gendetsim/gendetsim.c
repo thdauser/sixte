@@ -85,7 +85,7 @@ int gendetsim_main() {
     CHECK_STATUS_BREAK(status);
 
     // Use the background if available.
-    setGenDetIgnoreBkg(inst->det, 0);
+    setGenDetIgnoreBkg(inst->det, !par.Background);
 
     // Set the start time for the simulation.
     setGenDetStartTime(inst->det, par.TSTART);
@@ -287,6 +287,12 @@ int getpar(struct Parameters* const par)
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the seed for the random number generator");
+    return(status);
+  }
+
+  status=ape_trad_query_bool("Background", &par->Background);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the background flag");
     return(status);
   }
 
