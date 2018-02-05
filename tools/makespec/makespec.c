@@ -181,17 +181,26 @@ int makespec_main() {
       strcpy(spcancrfile,ancrfile);
     }
 
-    // We put the path to the rmf into resppathname:
-    char resppathname[MAXFILENAME];
+    // We put the paths to the rmf and the arf into
+    // resppathname and ancrpathname:
+    char resppathname[2*MAXFILENAME];
+    char ancrpathname[2*MAXFILENAME];
     if (strlen(par.RSPPath)>0) {
+      // rmf:
       strcpy(resppathname, par.RSPPath);
       strcat(resppathname, "/");
       strcat(resppathname, spcrespfile);
+      // arf:
+      strcpy(ancrpathname, par.RSPPath);
+      strcat(ancrpathname, "/");
+      strcat(ancrpathname, spcancrfile);
     } else {
       // The file should be located in the working directory.
       strcpy(resppathname, spcrespfile);
-    }    
-
+      strcpy(ancrpathname, spcancrfile);
+    }
+    
+    
     // Load the EBOUNDS of the RMF that will be used in the spectrum extraction.
     struct RMF* rmf=getRMF(&status);
     CHECK_STATUS_BREAK(status);
@@ -206,7 +215,7 @@ int makespec_main() {
 
       // Take the path to the rmf used in the simulation
       // we load the rmf used in the simulation:
-      char simresppathname[MAXFILENAME];
+      char simresppathname[2*MAXFILENAME];
       if (strlen(par.RSPPath)>0) {
 	strcpy(simresppathname, par.RSPPath);
 	strcat(simresppathname, "/");
@@ -215,7 +224,8 @@ int makespec_main() {
 	// The file should be located in the working directory.
 	strcpy(simresppathname, respfile);
       }
-
+      printf("path to the response file: %s\n", simresppathname);
+      
       // Load the EBOUNDS of the RMF.
       struct RMF* simrmf=getRMF(&status);
       CHECK_STATUS_BREAK(status);
@@ -235,23 +245,15 @@ int makespec_main() {
     if (strcmp("NONE",par.ARFfile)){
       
       // Take the path to the arf used in the simulation
-      // we load the rmf used in the simulation:
-      char simancrpathname[MAXFILENAME];
-      char ancrpathname[MAXFILENAME];
-      
+      // we load the arf used in the simulation:
+      char simancrpathname[2*MAXFILENAME];      
       if (strlen(par.RSPPath)>0) {
-	//
 	strcpy(simancrpathname, par.RSPPath);
 	strcat(simancrpathname, "/");
 	strcat(simancrpathname, ancrfile);
-	//
-	strcpy(ancrpathname, par.RSPPath);
-	strcat(ancrpathname, "/");
-	strcat(ancrpathname, spcancrfile);
       } else {
 	// The file should be located in the working directory.
 	strcpy(simancrpathname, ancrfile);
-	strcpy(ancrpathname, spcancrfile);
       }
       
       // Load the ARFs.
@@ -347,10 +349,12 @@ int makespec_main() {
     fits_update_key(sf, TSTRING, "TIME-OBS", time_obs, "", &status);
     fits_update_key(sf, TSTRING, "DATE-END", date_end, "", &status);
     fits_update_key(sf, TSTRING, "TIME-END", time_end, "", &status);
-    fits_update_key(sf, TSTRING, "ANCRFILE", spcancrfile,
-		    "ancillary response file", &status);
-    fits_update_key(sf, TSTRING, "RESPFILE", spcrespfile,
-		    "response file", &status);  
+    fits_update_key(sf, TSTRING, "LONGSTRN", "OGIP 1.0",
+		    "The OGIP long string convention may be used", &status);
+    fits_update_key_longstr(sf, "ANCRFILE", ancrpathname,
+			    "ancillary response file", &status);
+    fits_update_key_longstr(sf, "RESPFILE", resppathname,
+			    "response file", &status);
     fits_update_key(sf, TSTRING, "BACKFILE", "", 
 		    "background file", &status);
     fits_update_key(sf, TLONG, "DETCHANS", &rmf->NumberChannels,
