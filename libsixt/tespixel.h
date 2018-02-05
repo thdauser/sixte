@@ -160,6 +160,7 @@ struct tesparams {
   double V0;     // Effective bias voltage
   double I0;     // Effective current
   double T1;     // temperature
+  double pload;  // pload
 
   double RT;     // resistance(T)
   RTI_provider RTI; //

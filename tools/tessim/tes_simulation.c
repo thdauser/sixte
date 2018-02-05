@@ -89,7 +89,7 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
   // Thermal equation: dT/dt -- dy_1/dt=f_1(t,y_0(t),y_1(t))
   eqn[1]=(II*II*RT-tes->Pb1 
 	  -II*(tes->Vdn+tes->Vexc+tes->Vunk)
-	  +tes->Pnb1+tes->En1)/tes->Ce1;
+	  +tes->Pnb1+tes->En1+tes->pload)/tes->Ce1;
   eqn[1] += (tes->Pcommon)/tes->Ce1; // FDM crosstalk
 
   return GSL_SUCCESS;
@@ -109,7 +109,7 @@ double TES_sde_deterministic(double X[], int k, void *params) {
 		}
 	}
 	if (k == 1) {
-		val = (II*II*RT-tes->Pb1+tes->En1+tes->Pcommon)/tes->Ce1;
+		val = (II*II*RT-tes->Pb1+tes->En1+tes->pload+tes->Pcommon)/tes->Ce1;
 	}
 	
 	return val;
@@ -684,6 +684,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->Rpara=par->Rpara; // Parasitic 
   tes->TTR=par->TTR;	// Transformer turn ratio
   tes->bias=par->bias;  //Rn percentage bias (<1)
+  tes->pload=par->Pload; //Pload [W], generally pW or less
 
   tes->alpha=par->alpha;      // TES sensitivity (T/R*dR/dT)
   tes->beta=par->beta;       // TES current dependence (I/R*dR/dI)

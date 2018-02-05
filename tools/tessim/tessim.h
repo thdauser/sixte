@@ -59,6 +59,7 @@ typedef struct {
   double n;      // Temperature dependence of the power flow to the heat sink
   double I0;     // current at I0 [A]
   double V0;     // voltage bias [V] (computed for initial equilibrium if negative)
+  double Pload;  // Additional thermal optical power load [pW]
   int thermal_bias; // compute I0 and V0 from thermal power balance
   double bias;   // bias within the transition in term of Rn (<1)
 

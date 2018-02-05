@@ -602,8 +602,14 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     if (cmd_query_simput_parameter_double(fromcmd, "bias", &(par->bias), status)){
         par->bias*=1e-2; // %->decimal
     }
-    assert(par->bias>0.); //Not 0
+    assert(par->bias>=0.); //Not 0
     assert(par->bias<=1.); //Below Rn
+
+    par->Pload=0;
+    if (cmd_query_simput_parameter_double(fromcmd, "Pload", &(par->Pload), status)){
+        par->Pload*=1e-12; // pW->W
+    }
+    printf("Pload %.15f\n", par->Pload);
 
     if (cmd_query_simput_parameter_double(fromcmd,"I0", &(par->I0), status) ) {
       // if this is set simultaneously to the thermal balance, this throws an error
