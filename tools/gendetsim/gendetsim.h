@@ -46,6 +46,8 @@ struct Parameters {
   char Mode[MAXMSG];
   char XMLFile[MAXFILENAME];
 
+  char Background;
+
   double MJDREF;
   double TSTART;
   double Exposure;
