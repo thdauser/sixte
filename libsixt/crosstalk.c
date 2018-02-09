@@ -1452,12 +1452,12 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 		//Quick check if the pixel is concerned
 		if (row==circ_next_row){
 			//Type 1 for next row (N+1)
-			concerned_pixel->prop_cross_talk->cross_talk_pixels_1[concerned_pixel->prop_cross_talk->type_1_pix]=i;
+			concerned_pixel->prop_cross_talk->cross_talk_pixels_1[concerned_pixel->prop_cross_talk->type_1_pix]=current_pixel->pindex;
 			concerned_pixel->prop_cross_talk->type_1_pix+=1;
 		}
 
 		//Type 2 for same column N
-		concerned_pixel->prop_cross_talk->cross_talk_pixels_2[concerned_pixel->prop_cross_talk->type_2_pix]=i;
+		concerned_pixel->prop_cross_talk->cross_talk_pixels_2[concerned_pixel->prop_cross_talk->type_2_pix]=current_pixel->pindex;
 		concerned_pixel->prop_cross_talk->type_2_pix+=1;
 	}
 
@@ -2416,12 +2416,13 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 		} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK1)|| (abs(xtalk_proxy->type[ii])==-PROPCTK2)){
 			double dt_in_frames=dt/sample_length;
 			energy_influence=0.;
-			calc_prop_xt_influence(det,impact->energy,crosstalk->energy,&energy_influence, dt_in_frames, grade);
+			calc_prop_xt_influence(det,impact->energy,crosstalk->energy, &energy_influence, dt_in_frames, grade);
 			if (energy_influence!=0.){
-				*nb_influences+=crosstalk->nb_pileup+1;
-				if (abs(xtalk_proxy->type[ii])==-PROPCTK1){
+				if ((abs(xtalk_proxy->type[ii])==-PROPCTK1) && (det->prop_TDM_scaling_1>0)){
+					*nb_influences+=crosstalk->nb_pileup+1;
 					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_1/1.e-2; //Scaled at 1% of amplitude;
-				} else if (abs(xtalk_proxy->type[ii])==-PROPCTK2){
+				} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK2) && (det->prop_TDM_scaling_2>0)){
+					*nb_influences+=crosstalk->nb_pileup+1;
 					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_2/1.e-2; //Scaled at 1%
 				}
 			}
@@ -2500,8 +2501,9 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 				previous_xtalk->energy=cumul_ener;
 				previous_xtalk->pixID=impact->pixID; //As otherwise we have the pertuber index
 
-				grade_proxy->nb_crosstalk_influence=previous_xtalk->nb_pileup+1;
-				grade_proxy->crosstalk_energy=cumul_ener;
+				//Reset grade proxy to 0 as we will reprocess the event
+				grade_proxy->nb_crosstalk_influence=0.;
+				grade_proxy->crosstalk_energy=0.;
 
 				//Erasing the event from proxy
 				erasectk(xtalk_proxy, toerase, previous_xtalk->nb_pileup+1,status); // Erase the previous event(s), which now form(s) a pulse
@@ -2551,9 +2553,11 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 					//Copying information
 					previous_xtalk->time = xtalk_proxy->xtalk_impacts[ii-1+previous_xtalk->nb_pileup]->time;// to conserve causality
 					previous_xtalk->energy=cumul_ener;
-					grade_proxy->nb_crosstalk_influence=previous_xtalk->nb_pileup+1;
-					grade_proxy->crosstalk_energy=cumul_ener;
 					previous_xtalk->pixID=impact->pixID; //As otherwise we have the pertuber index /!\ HERE BECAUSE WE ERASE!
+
+					//Reset grade proxy to 0 as we will reprocess the event
+					grade_proxy->nb_crosstalk_influence=0.;
+					grade_proxy->crosstalk_energy=0.;
 
 					//Erasing the event
 					erasectk(xtalk_proxy, toerase, previous_xtalk->nb_pileup+1,status); // Erase the previous event(s), which now form(s) a pulse
