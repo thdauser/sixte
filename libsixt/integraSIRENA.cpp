@@ -164,9 +164,13 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	{
 		EP_EXIT_ERROR("Error checking if library file exists",*status);
 	}
+	
+        if ((mode == 0) && (largeFilter == -999)) largeFilter = pulse_length;
+        
 	if (exists)
 	{	
 		if (mode == 1)		largeFilter = pulse_length;
+                //if ((mode == 0) && (largeFilter == -999)) largeFilter = pulse_length;
 		reconstruct_init->library_collection = getLibraryCollection(library_file, mode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, status);
 		if (*status)
 		{
@@ -377,6 +381,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	//cout<<"delta_t: "<<record->delta_t<<endl;
 	// Detect pulses in record
 	runDetect(record, nRecord, lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
+        //cout<<"Pasa runDetect"<<endl;
         
 	if(pulsesInRecord->ndetpulses == 0) // No pulses found in record
 	{
@@ -394,7 +399,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                 //PulsesCollection* aux = &pulsesInRecord;
 		runEnergy(record, &reconstruct_init, &pulsesInRecord, optimalFilter);
 	}
-	//cout<<"reconstructrecordSIRENA2"<<endl;
+        //cout<<"Pasa runEnergy"<<endl;
 	
 	if (nRecord == 1)
 	{
@@ -495,7 +500,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	event_list->pulse_heights  = new double[event_list->index];
 	event_list->ph_ids   = new long[event_list->index];
 	
-	if (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0)
+	if (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0)     // Different from PCA
 	{
 	   	for (int ip=0; ip<pulsesInRecord->ndetpulses; ip++)
 		{	  			
@@ -1164,7 +1169,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, in
 
 	// Allocate library structure (cont.)
 	// It is not necessary to check the allocation because 'ntemplates' has been checked previously
-        if (hduPRECALWN == 1)
+        //if (hduPRECALWN == 1)
+        if ((((strcmp(energy_method,"WEIGHT") == 0) || (strcmp(energy_method,"WEIGHTN") == 0)) && (mode == 1)) || ((mode == 0) && (hduPRECALWN == 1)))
         {
                 library_collection->V = gsl_matrix_alloc(ntemplates,template_duration*template_duration);
                 library_collection->W = gsl_matrix_alloc(ntemplates,template_duration*template_duration);
@@ -2474,7 +2480,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, in
 			}	
 		}  
 	}
-	
+        
 	if ((mode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0) || (strcmp(energy_method,"I2RNOL") == 0)
 	     || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(ofnoise,"WEIGHTM") == 0) && (oflib == 1))
 	{

@@ -334,7 +334,7 @@ int main (int argc, char **argv)
 		}
 	}
 	gsl_vector_sqrtIFCA(EventSamplesFFTMean,EventSamplesFFTMean);
-
+        
 	// Mean
 	/*double value_aux;
 	for (int i=0;i<intervalMinBins;i++)
@@ -368,7 +368,7 @@ int main (int argc, char **argv)
 	gsl_matrix_view tempm;
 	gsl_matrix *noiseIntervals_weightPoints;
 	gsl_matrix *weightMatrix;
-	
+        
 	if (NumMeanSamples >= nintervals)
 	{
 		for (int i=0;i<weightpoints->size;i++)
@@ -1110,8 +1110,9 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	gsl_vector_free(ioutgsl_aux);
 	gsl_vector_free(timegsl_block);
 	gsl_matrix_free(ioutgsl_block);
-	gsl_vector_free(vector_aux);cutFreq = 2 * (1/(2*pi*scaleFactor));
-	boxLength = (int) ((1/cutFreq) * samprate);
+        gsl_vector_free(vector_aux);
+	//gsl_vector_free(vector_aux);cutFreq = 2 * (1/(2*pi*scaleFactor));
+	//boxLength = (int) ((1/cutFreq) * samprate);
 	gsl_vector_complex_free(vector_aux1);
 	gsl_vector_free(derSGN);
 	gsl_vector_free(tstartgsl);

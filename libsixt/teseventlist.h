@@ -39,8 +39,8 @@ typedef struct {
 	int index;
 
 	/** Index arrival time of the photons inside a record */
-	//int * event_indexes;
-	double * event_indexes;
+	//int * event_indexes;	
+	double * event_indexes;	//BEA
 
 	/** Pulse height of the photons */
 	double * pulse_heights;
@@ -132,6 +132,7 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,in
 void addEmptyEvent(TesEventFile* file,PixImpact* impact, int* const status);
 
 /** Update signal and grading columns of an event */
+//void updateSignal(TesEventFile* file,long row,double energy,double avg_4samplesDerivative,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status);
 void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status);
 
 #endif /* TESEVENTLIST_H */

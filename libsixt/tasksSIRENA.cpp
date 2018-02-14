@@ -3596,7 +3596,7 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
 	{
 		message = "Library created without the PRECALWN and PRCLOFWM HDUs (and without the COVARM...rE columns in the LIBRARY HDU)";
 		EP_PRINT_ERROR(message,-999);	// Only a warning
-	} 
+	}
 	else if (((*reconstruct_init)->hduPRECALWN == 1) && ((*reconstruct_init)->hduPRCLOFWM == 0))
 	{
 		message = "Library created with the PRECALWN HDU (and the COVARM...rE columns in the LIBRARY HDU) but no the PRCLOFWM HDU";
@@ -3607,12 +3607,14 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
 		message = "Library created with the PRCLOFWM HDU but no the PRECALWN HDU (and without the COVARM...rE columns in the LIBRARY HDU)";
 		EP_PRINT_ERROR(message,-999);	// Only a warning
 	}
+	cout<<"Despues mensaje"<<endl;
 
 	if (fits_close_file(*inLibObject,&status))
 	{
 		message = "Cannot close file " + string(inLibName);
 		EP_PRINT_ERROR(message,status);return(EPFAIL);
 	}
+	cout<<"Fichero cerrado"<<endl;
 	
 	return (EPOK);
 }
@@ -8990,6 +8992,7 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
         cout<<"filter: "<<gsl_vector_get(filter,0)<<endl;
         cout<<"numlags: "<<numlags<<endl;*/
         ////cout<<"pulseGrade: "<<pulseGrade<<endl;
+        //cout<<"Calculating Energy.... "<<endl;
 	
 	// LowRes
         if (vector->size <= 3)
