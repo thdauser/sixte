@@ -121,7 +121,7 @@ struct Parameters {
 	int mode;
         
         //DetectionMode: Adjusted Derivative(AD) or Alternative1(A1)
-	char detectionMode[2];
+	char detectionMode[3];
 
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
@@ -140,15 +140,9 @@ struct Parameters {
 	
 	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LbT;
-	
-	/** Baseline (in ADC units) **/
-	double baseline;
 
 	//Noise filename
 	char NoiseFile[MAXFILENAME];
-	
-	//Pixel Type: SPA, LPA1, LPA2 or LPA3
-	char PixelType[5];
 
 	//Filtering Domain: Time(T) or Frequency(F)
 	char FilterDomain[2];

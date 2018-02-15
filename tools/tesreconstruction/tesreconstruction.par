@@ -15,7 +15,6 @@ Threshold,r,h,40.,,,"Threshold level"
 Calfac,r,h,1.61403237679,,,"Calibration factor (should be read from the xml file)"
 NormalExclusion,i,h,32,,,"Minimal distance before using OFs after a misreconstruction"
 DerivateExclusion,i,h,8,,,"Minimal distance before reconstructing any event after a misreconstruction"
-#SaturationValue,r,h,65534.,,,"Saturation level of the ADC curves"
 #
 # SIRENA reconstruction method
 # 
@@ -30,7 +29,7 @@ LbT,r,h,1.E-3,,,"Baseline averaging length for the RS raw energy estimation (sec
 monoenergy,r,h,-999.,,,"Monochromatic energy of the pulses in the input FITS file in eV (only for library creation)"
 hduPRECALWN,b,h,no,,,"Add or not the PRECALWN HDU in the library file (1/0) (only for library creation)"
 hduPRCLOFWM,b,h,no,,,"Add or not the PRCLOFWM HDU in the library file (1/0) (only for library creation)"
-largeFilter,i,h,8000,,,"Length of the longest fixed filter (only for library creation)"
+largeFilter,i,h,-999,,,"Length of the longest fixed filter (only for library creation)"
 mode,i,h,1,,,"Calibration run (0) or energy reconstruction run (1)"
 detectionMode,s,h,"AD",,,"Adjusted Derivative (AD) or Alternative 1 (A1)"
 NoiseFile,s,h,"noise.fits",,,"Noise FITS file with noise spectrum"

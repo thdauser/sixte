@@ -414,7 +414,7 @@ typedef struct ReconstructInitSIRENA
 	int mode;
         
         /** Detection Mode: AD (Adjusted Derivative) or A1 (Alternative1) **/
-	char detectionMode[2];
+	char detectionMode[3];
 
 	/** Noise spectrum **/
 	NoiseSpec* noise_spectrum;
