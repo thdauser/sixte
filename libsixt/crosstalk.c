@@ -1749,6 +1749,19 @@ void init_crosstalk(AdvDet* det, int* const status){
 				load_proportional_cross_talk(det, ii, status);
 				CHECK_STATUS_VOID(*status);
 			}
+
+			/* addtional check: if tdm_prop1 or tdm_prop2 is given, only type1 or type2 will be simulated,
+				and the other scaling factor set to 0 */
+			char *buf;
+			query_simput_parameter_string("doCrosstalk", &buf, status );
+			if (strncmp(buf,"tdm_prop1",9)==0){
+				det->prop_TDM_scaling_2=0.0;
+				printf("    -> only simulating TYPE 1 proportional crosstalk (scaling=%.2e)\n",det->prop_TDM_scaling_1);
+			} else if (strncmp(buf,"tdm_prop2",9)==0){
+					det->prop_TDM_scaling_1=0.0;
+				printf("    -> only simulating TYPE 2 proportional crosstalk (scaling=%.2e)\n",det->prop_TDM_scaling_2);
+			}
+			free(buf);
 		}
 
 		// load derivative cross talk and associated time dependency (DONE ONLY WHEN TDM option is active)
@@ -2418,10 +2431,10 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 			energy_influence=0.;
 			calc_prop_xt_influence(det,impact->energy,crosstalk->energy, &energy_influence, dt_in_frames, grade);
 			if (energy_influence!=0.){
-				if ((abs(xtalk_proxy->type[ii])==-PROPCTK1) && (det->prop_TDM_scaling_1>0)){
+				if ((abs(xtalk_proxy->type[ii])==-PROPCTK1) && (det->prop_TDM_scaling_1>1e-9)){
 					*nb_influences+=crosstalk->nb_pileup+1;
 					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_1/1.e-2; //Scaled at 1% of amplitude;
-				} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK2) && (det->prop_TDM_scaling_2>0)){
+				} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK2) && (det->prop_TDM_scaling_2>1e-9)){
 					*nb_influences+=crosstalk->nb_pileup+1;
 					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_2/1.e-2; //Scaled at 1%
 				}

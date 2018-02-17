@@ -996,11 +996,11 @@ int xifupipeline_getpar(struct Parameters* const par)
 		par->doCrosstalk = CROSSTALK_ID_IMOD;
 	} else if ((strncmp(buf,"none",4)==0) || (strlen(buf)==0)){
 		par->doCrosstalk=CROSSTALK_ID_NONE;
-	} else if ((strncmp(buf,"no",4)==0) || (strlen(buf)==0)){
+	} else if ((strncmp(buf,"no",2)==0) || (strlen(buf)==0)){
 		par->doCrosstalk=CROSSTALK_ID_NONE;
-	} else if (strncmp(buf,"tdm_prop",5)==0){
+	} else if (strncmp(buf,"tdm_prop",8)==0){
 		par->doCrosstalk=CROSSTALK_ID_TDM_PROP;
-	} else if (strncmp(buf,"tdm_der",6)==0){
+	} else if (strncmp(buf,"tdm_der",7)==0){
 		par->doCrosstalk=CROSSTALK_ID_TDM_DER;
 	} else {
 		status=-1;
