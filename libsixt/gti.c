@@ -183,8 +183,9 @@ GTI* getGTIFromFileOrContinuous(char* const filename,
       CHECK_STATUS_RET(*status, gti);
       verifyMJDREF(mjdref, gti->mjdref, "in GTI file", status);
       CHECK_STATUS_RET(*status, gti);
-      SIXT_WARNING("the specification of a GTI file overwrites the settings "
-		   "for TSTART and Exposure");
+      SIXT_WARNING("the given GTI file overwrites the settings for TSTART, MJDREF and Exposure");
+      printf("    -> simulating from TSTART=%.6e until TSTOP=%.6e (MJDREF=%.3f) \n",
+    		  gti->start[0],gti->stop[gti->ngti-1],gti->mjdref);
     }
   }
 

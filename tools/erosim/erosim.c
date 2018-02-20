@@ -323,11 +323,23 @@ int erosim_main()
     // The FoV is the same as for an individual sub-telescope.
     // We ignore any misalignment for the moment.
     fov7=subinst[0]->tel->fov_diameter;
+
     
+    // Get a GTI.
+    gti=getGTIFromFileOrContinuous(par.GTIFile,
+				   par.TSTART, par.TSTART+par.Exposure,
+				   par.MJDREF, &status);
+    CHECK_STATUS_BREAK(status);
+    // if we do not use a GTI file, write a warning that TSTART and EXPOSURE are overwritten
+    double tstart=gti->start[0];
+    double tstop=gti->stop[gti->ngti-1];
+    double mjdref=gti->mjdref;
+
+
     // Set up the Attitude.
     if (par.Attitude=='\0' ||(strlen(par.Attitude)==0)||(0==strcmp(par.Attitude, "NONE"))) {
       // Set up a simple pointing attitude.
-      ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
+      ac=getPointingAttitude(mjdref, tstart, tstop,
 			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
 
@@ -338,17 +350,12 @@ int erosim_main()
       
       // Check if the required time interval for the simulation
       // is a subset of the period covered by the attitude file.
-      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
-				par.TSTART+par.Exposure, &status);
+      checkAttitudeTimeCoverage(ac, mjdref, tstart, tstop,
+				 &status);
       CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
-    // Get a GTI.
-    gti=getGTIFromFileOrContinuous(par.GTIFile, 
-				   par.TSTART, par.TSTART+par.Exposure,
-				   par.MJDREF, &status);
-    CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT X-ray source catalogs.
     srccat[0]=loadSourceCatalog(par.Simput, arf7, &status);
@@ -409,7 +416,6 @@ int erosim_main()
 
     // --- Open and set up files ---
 
-    double tstop=gti->stop[gti->ngti-1];
 
     // Open the output photon list files.
     if (strlen(photonlist_filename_template)>0) {
@@ -429,7 +435,7 @@ int erosim_main()
     				telescop, instrume, "Normal",
 					subinst[ii]->tel->arf_filename,
 					subinst[ii]->det->rmf_filename,
-					par.MJDREF, 0.0, par.TSTART, tstop,
+					mjdref, 0.0, tstart, tstop,
 					par.clobber, &status);
     		CHECK_STATUS_BREAK(status);
     	}
@@ -454,7 +460,7 @@ int erosim_main()
     				telescop, instrume, "Normal",
 					subinst[ii]->tel->arf_filename,
 					subinst[ii]->det->rmf_filename,
-					par.MJDREF, 0.0, par.TSTART, tstop,
+					mjdref, 0.0, tstart, tstop,
 					par.clobber, &status);
     		CHECK_STATUS_BREAK(status);
     	}
@@ -478,7 +484,7 @@ int erosim_main()
 			       telescop, instrume, "Normal", 
 			       subinst[ii]->tel->arf_filename, 
 			       subinst[ii]->det->rmf_filename,
-			       par.MJDREF, 0.0, par.TSTART, tstop,
+			       mjdref, 0.0, tstart, tstop,
 			       subinst[ii]->det->pixgrid->xwidth,
 			       subinst[ii]->det->pixgrid->ywidth,
 			       par.clobber, &status);
@@ -507,7 +513,7 @@ int erosim_main()
 				telescop, instrume, "Normal", 
 				subinst[ii]->tel->arf_filename, 
 				subinst[ii]->det->rmf_filename,
-				par.MJDREF, 0.0, par.TSTART, tstop,
+				mjdref, 0.0, tstart, tstop,
 				subinst[ii]->det->pixgrid->xwidth,
 				subinst[ii]->det->pixgrid->ywidth,
 				par.clobber, &status);
@@ -520,7 +526,7 @@ int erosim_main()
     // photon list.
     if (1==ac->nentries) {
       // Determine the telescope pointing direction and roll angle.
-      Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
+      Vector pointing=getTelescopeNz(ac, tstart, &status);
       CHECK_STATUS_BREAK(status);
     
       // Direction.
@@ -528,7 +534,7 @@ int erosim_main()
       calculate_ra_dec(pointing, &ra, &dec);
     
       // Roll angle.
-      float rollangle=getRollAngle(ac, par.TSTART, &status);
+      float rollangle=getRollAngle(ac, tstart, &status);
       CHECK_STATUS_BREAK(status);
 
       // Store the RA and Dec information in the FITS header.
@@ -683,172 +689,172 @@ int erosim_main()
     double simtime=0.;
     int gtibin=0;
     do {
-      // Currently regarded interval.
-      double t0=gti->start[gtibin];
-      double t1=gti->stop[gtibin];
-      
-      // Set the start time for the detector models.
-      for (ii=0; ii<7; ii++) {
-	setGenDetStartTime(subinst[ii]->det, t0);
-      }
+    	// Currently regarded interval.
+    	double t0=gti->start[gtibin];
+    	double t1=gti->stop[gtibin];
 
-      // Loop over photon generation and processing
-      // till the time of the photon exceeds the requested
-      // time interval.
-      do {
+    	// Set the start time for the detector models.
+    	for (ii=0; ii<7; ii++) {
+    		setGenDetStartTime(subinst[ii]->det, t0);
+    	}
 
-    	  // Photon generation.
-    	  Photon ph;
-    	  int isph=phgen(ac, srccat, MAX_N_SIMPUT,
-    			  t0, t1, par.MJDREF, par.dt,
-				  fov7, &ph, &status);
-    	  CHECK_STATUS_BREAK(status);
+    	// Loop over photon generation and processing
+    	// till the time of the photon exceeds the requested
+    	// time interval.
+    	do {
 
-    	  // If no photon has been generated, break the loop.
-    	  if (0==isph) break;
+    		// Photon generation.
+    		Photon ph;
+    		int isph=phgen(ac, srccat, MAX_N_SIMPUT,
+    				t0, t1, par.MJDREF, par.dt,
+					fov7, &ph, &status);
+    		CHECK_STATUS_BREAK(status);
 
-    	  // Check if the photon still is within the requested
-	// exposre time.
-	assert(ph.time<=t1);
+    		// If no photon has been generated, break the loop.
+    		if (0==isph) break;
 
-	// Randomly assign the photon to one of the 7 sub-telescopes.
-	//ii=(unsigned int)(sixt_get_random_number(&status)*7.0);
-	//CHECK_STATUS_BREAK(status);
+    		// Check if the photon still is within the requested
+    		// exposure time.
+    		assert(ph.time<=t1);
 
-	// Randomly assign the photon to one of the 7 sub-telescopes.
-	// TODO: need to change this (as ARFs are and can be different)
-	ii = get_telid_arf(cumulARF,ph.energy,arf7->NumberEnergyBins,arf7->LowEnergy,NUM_TELS,&status);
-	CHECK_STATUS_BREAK(status);
+    		// Randomly assign the photon to one of the 7 sub-telescopes.
+    		//ii=(unsigned int)(sixt_get_random_number(&status)*7.0);
+    		//CHECK_STATUS_BREAK(status);
 
-	assert(ii<NUM_TELS);
+    		// Randomly assign the photon to one of the 7 sub-telescopes.
+    		// TODO: need to change this (as ARFs are and can be different)
+    		ii = get_telid_arf(cumulARF,ph.energy,arf7->NumberEnergyBins,arf7->LowEnergy,NUM_TELS,&status);
+    		CHECK_STATUS_BREAK(status);
 
-	// If requested, write the photon to the output file.
-	if (NULL!=plf[ii]) {
-	  status=addPhoton2File(plf[ii], &ph);
-	  CHECK_STATUS_BREAK(status);
-	}
+    		assert(ii<NUM_TELS);
 
-	// Photon imaging.
-	Impact imp;
-	int isimg=phimg(subinst[ii]->tel, ac, &ph, &imp, &status);
-	CHECK_STATUS_BREAK(status);
+    		// If requested, write the photon to the output file.
+    		if (NULL!=plf[ii]) {
+    			status=addPhoton2File(plf[ii], &ph);
+    			CHECK_STATUS_BREAK(status);
+    		}
 
-	// If the photon is not imaged but lost in the optical system,
-	// continue with the next one.
-	if (0==isimg) continue;
+    		// Photon imaging.
+    		Impact imp;
+    		int isimg=phimg(subinst[ii]->tel, ac, &ph, &imp, &status);
+    		CHECK_STATUS_BREAK(status);
 
-	// If requested, write the impact to the output file.
-	if (NULL!=ilf[ii]) {
-	  addImpact2File(ilf[ii], &imp, &status);
-	  CHECK_STATUS_BREAK(status);
-	}
+    		// If the photon is not imaged but lost in the optical system,
+    		// continue with the next one.
+    		if (0==isimg) continue;
 
-	// Photon Detection.
-	phdetGenDet(subinst[ii]->det, &imp, t1, &status);
-	CHECK_STATUS_BREAK(status);
+    		// If requested, write the impact to the output file.
+    		if (NULL!=ilf[ii]) {
+    			addImpact2File(ilf[ii], &imp, &status);
+    			CHECK_STATUS_BREAK(status);
+    		}
 
-	// Program progress output.
-	while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
-	  progress++;
-	  if (NULL==progressfile) {
-	    headas_chat(2, "\r%.0lf %%", progress*1.);
-	    fflush(NULL);
-	  } else {
-	    rewind(progressfile);
-	    fprintf(progressfile, "%.2lf", progress*1./100.);
-	    fflush(progressfile);	
-	  }
-	}
+    		// Photon Detection.
+    		phdetGenDet(subinst[ii]->det, &imp, t1, &status);
+    		CHECK_STATUS_BREAK(status);
 
-      } while(1);
-      CHECK_STATUS_BREAK(status);
-      // END of photon processing loop for the current interval.
+    		// Program progress output.
+    		while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
+    			progress++;
+    			if (NULL==progressfile) {
+    				headas_chat(2, "\r%.0lf %%", progress*1.);
+    				fflush(NULL);
+    			} else {
+    				rewind(progressfile);
+    				fprintf(progressfile, "%.2lf", progress*1./100.);
+    				fflush(progressfile);
+    			}
+    		}
 
-      // Clear the detectors.
-      for (ii=0; ii<7; ii++) {
-	phdetGenDet(subinst[ii]->det, NULL, t1, &status);
-	CHECK_STATUS_BREAK(status);
-	long jj;
-	for (jj=0; jj<subinst[ii]->det->pixgrid->ywidth; jj++) {
-	  GenDetClearLine(subinst[ii]->det, jj);
-	}
-      }
-      CHECK_STATUS_BREAK(status);
+    	} while(1);
+    	CHECK_STATUS_BREAK(status);
+    	// END of photon processing loop for the current interval.
 
-      // Proceed to the next GTI interval.
-      simtime+=gti->stop[gtibin]-gti->start[gtibin];
-      gtibin++;
-      if (gtibin>=gti->ngti) break;
+    	// Clear the detectors.
+    	for (ii=0; ii<7; ii++) {
+    		phdetGenDet(subinst[ii]->det, NULL, t1, &status);
+    		CHECK_STATUS_BREAK(status);
+    		long jj;
+    		for (jj=0; jj<subinst[ii]->det->pixgrid->ywidth; jj++) {
+    			GenDetClearLine(subinst[ii]->det, jj);
+    		}
+    	}
+    	CHECK_STATUS_BREAK(status);
+
+    	// Proceed to the next GTI interval.
+    	simtime+=gti->stop[gtibin]-gti->start[gtibin];
+    	gtibin++;
+    	if (gtibin>=gti->ngti) break;
 
     } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
-    
-      
+
+
     // Progress output.
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.0lf %%\n", 100.);
-      fflush(NULL);
+    	headas_chat(2, "\r%.0lf %%\n", 100.);
+    	fflush(NULL);
     } else {
-      rewind(progressfile);
-      fprintf(progressfile, "%.2lf", 1.);
-      fflush(progressfile);	
+    	rewind(progressfile);
+    	fprintf(progressfile, "%.2lf", 1.);
+    	fflush(progressfile);
     }
 
 
     // Use parallel computation via OpenMP.
     // #pragma omp parallel for reduction(+:status)
     for (ii=0; ii<7; ii++) {
-      status=EXIT_SUCCESS;
-      // Perform a pattern analysis, only if split events are simulated.
-      if (GS_NONE!=subinst[ii]->det->split->type) {
-	// Pattern analysis.
-	headas_chat(3, "start event pattern analysis ...\n");
-	phpat(subinst[ii]->det, elf[ii], patf[ii], par.SkipInvalids, &status);
-	//CHECK_STATUS_BREAK(status);
-      } else {
-	// If no split events are simulated, simply copy the event lists
-	// to pattern lists.
-	headas_chat(3, "copy events to pattern files ...\n");
-	copyEventFile(elf[ii], patf[ii],
-		      subinst[ii]->det->threshold_event_lo_keV,
-		      subinst[ii]->det->threshold_pattern_up_keV,
-		      &status);
-	//CHECK_STATUS_BREAK(status);
-	fits_update_key(patf[ii]->fptr, TSTRING, "EVTYPE", "PATTERN", 
-			"event type", &status);
-	//CHECK_STATUS_BREAK(status);
-      }
+    	status=EXIT_SUCCESS;
+    	// Perform a pattern analysis, only if split events are simulated.
+    	if (GS_NONE!=subinst[ii]->det->split->type) {
+    		// Pattern analysis.
+    		headas_chat(3, "start event pattern analysis ...\n");
+    		phpat(subinst[ii]->det, elf[ii], patf[ii], par.SkipInvalids, &status);
+    		//CHECK_STATUS_BREAK(status);
+    	} else {
+    		// If no split events are simulated, simply copy the event lists
+    		// to pattern lists.
+    		headas_chat(3, "copy events to pattern files ...\n");
+    		copyEventFile(elf[ii], patf[ii],
+    				subinst[ii]->det->threshold_event_lo_keV,
+					subinst[ii]->det->threshold_pattern_up_keV,
+					&status);
+    		//CHECK_STATUS_BREAK(status);
+    		fits_update_key(patf[ii]->fptr, TSTRING, "EVTYPE", "PATTERN",
+    				"event type", &status);
+    		//CHECK_STATUS_BREAK(status);
+    	}
     }
     CHECK_STATUS_BREAK(status);
-    
+
     // Store the GTI extension in the event files.
     for (ii=0; ii<7; ii++) {
-      saveGTIExt(elf[ii]->fptr, "STDGTI", gti, &status);
-      CHECK_STATUS_BREAK(status);
+    	saveGTIExt(elf[ii]->fptr, "STDGTI", gti, &status);
+    	CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
 
     // Close files in order to save memory.
     for (ii=0; ii<7; ii++) {
-      freePhotonFile(&plf[ii], &status);
-      freeImpactFile(&ilf[ii], &status);
-      freeEventFile(&elf[ii], &status);
+    	freePhotonFile(&plf[ii], &status);
+    	freeImpactFile(&ilf[ii], &status);
+    	freeEventFile(&elf[ii], &status);
     }
     CHECK_STATUS_BREAK(status);
 
     // Run the event projection.
     headas_chat(3, "start sky projection ...\n");
     for (ii=0; ii<7; ii++) {
-      phproj(subinst[ii], ac, patf[ii], par.TSTART, par.Exposure, &status);
-      CHECK_STATUS_BREAK(status);
+    	phproj(subinst[ii], ac, patf[ii], tstart, tstop-tstart, &status);
+    	CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
 
     // Store the GTI extension in the pattern files.
     for (ii=0; ii<7; ii++) {
-      saveGTIExt(patf[ii]->fptr, "STDGTI", gti, &status);
-      CHECK_STATUS_BREAK(status);
+    	saveGTIExt(patf[ii]->fptr, "STDGTI", gti, &status);
+    	CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
 
@@ -869,113 +875,113 @@ int erosim_main()
 
 
   // --- Clean up ---
-  
+
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
   for (ii=0; ii<7; ii++) {
-    destroyGenInst(&subinst[ii], &status);
-    freeEventFile(&patf[ii],  &status);
-    freeEventFile(&elf[ii], &status);
-    freeImpactFile(&ilf[ii], &status);
-    freePhotonFile(&plf[ii], &status);
-    free_cumulARF(cumulARF,arf7->NumberEnergyBins);
+	  destroyGenInst(&subinst[ii], &status);
+	  freeEventFile(&patf[ii],  &status);
+	  freeEventFile(&elf[ii], &status);
+	  freeImpactFile(&ilf[ii], &status);
+	  freePhotonFile(&plf[ii], &status);
+	  free_cumulARF(cumulARF,arf7->NumberEnergyBins);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
-    freeSourceCatalog(&srccat[ii], &status);
+	  freeSourceCatalog(&srccat[ii], &status);
   }
   freeGTI(&gti);
   freeAttitude(&ac);
 
   if (NULL!=progressfile) {
-    fclose(progressfile);
-    progressfile=NULL;
+	  fclose(progressfile);
+	  progressfile=NULL;
   }
 
   // Clean up the random number generator.
   sixt_destroy_rng();
-  
+
   if (EXIT_SUCCESS==status) {
-    headas_chat(3, "finished successfully!\n\n");
-    return(EXIT_SUCCESS);
+	  headas_chat(3, "finished successfully!\n\n");
+	  return(EXIT_SUCCESS);
   } else {
-    return(EXIT_FAILURE);
+	  return(EXIT_FAILURE);
   }
 }
 
 
 int erosim_getpar(struct Parameters* const par)
 {
-  // String input buffer.
-  char* sbuffer=NULL;
+	// String input buffer.
+	char* sbuffer=NULL;
 
-  // Error status.
-  int status=EXIT_SUCCESS; 
+	// Error status.
+	int status=EXIT_SUCCESS;
 
-  // check if any obsolete keywords are given
-  sixt_check_obsolete_keyword(&status);
-  CHECK_STATUS_RET(status,EXIT_FAILURE);
+	// check if any obsolete keywords are given
+	sixt_check_obsolete_keyword(&status);
+	CHECK_STATUS_RET(status,EXIT_FAILURE);
 
-  // Read all parameters via the ape_trad_ routines.
+	// Read all parameters via the ape_trad_ routines.
 
-  status=ape_trad_query_string("Prefix", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the prefix for the output files");
-    return(status);
-  }
-  strcpy(par->Prefix, sbuffer);
-  free(sbuffer);
+	status=ape_trad_query_string("Prefix", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the prefix for the output files");
+		return(status);
+	}
+	strcpy(par->Prefix, sbuffer);
+	free(sbuffer);
 
-  status=ape_trad_query_string("PhotonList", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the photon list");
-    return(status);
-  }
-  strcpy(par->PhotonList, sbuffer);
-  free(sbuffer);
+	status=ape_trad_query_string("PhotonList", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the name of the photon list");
+		return(status);
+	}
+	strcpy(par->PhotonList, sbuffer);
+	free(sbuffer);
 
-  status=ape_trad_query_string("ImpactList", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the impact list");
-    return(status);
-  }
-  strcpy(par->ImpactList, sbuffer);
-  free(sbuffer);
+	status=ape_trad_query_string("ImpactList", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the name of the impact list");
+		return(status);
+	}
+	strcpy(par->ImpactList, sbuffer);
+	free(sbuffer);
 
-  status=ape_trad_query_string("RawData", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the event list");
-    return(status);
-  }
-  strcpy(par->RawData, sbuffer);
-  free(sbuffer);
+	status=ape_trad_query_string("RawData", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the name of the event list");
+		return(status);
+	}
+	strcpy(par->RawData, sbuffer);
+	free(sbuffer);
 
-  status=ape_trad_query_string("EvtFile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the pattern list");
-    return(status);
-  }
-  strcpy(par->EvtFile, sbuffer);
-  free(sbuffer);
+	status=ape_trad_query_string("EvtFile", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the name of the pattern list");
+		return(status);
+	}
+	strcpy(par->EvtFile, sbuffer);
+	free(sbuffer);
 
-  status=ape_trad_query_string("XMLFile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
-    return(status);
-  }
-  strcpy(par->XMLFile, sbuffer);
-  free(sbuffer);
+	status=ape_trad_query_string("XMLFile", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the name of the XML file");
+		return(status);
+	}
+	strcpy(par->XMLFile, sbuffer);
+	free(sbuffer);
 
-  status=ape_trad_query_string("XMLFile1", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file 1");
-    return(status);
-  }
-  strcpy(par->XMLFile1, sbuffer);
-  free(sbuffer);
+	status=ape_trad_query_string("XMLFile1", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
+		SIXT_ERROR("failed reading the name of the XML file 1");
+		return(status);
+	}
+	strcpy(par->XMLFile1, sbuffer);
+	free(sbuffer);
 
-  status=ape_trad_query_string("XMLFile2", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
+	status=ape_trad_query_string("XMLFile2", &sbuffer);
+	if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 2");
     return(status);
   }
