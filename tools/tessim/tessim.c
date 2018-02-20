@@ -91,6 +91,7 @@ int tessim_main() {
         loop_par.twofluid = par.twofluid;
         loop_par.stochastic_integrator = par.stochastic_integrator;
         loop_par.frame_hit=0; //Setting to default false //TODO add to multi-tessim
+        loop_par.dobbfb=0; // Disabled for now in multitessim
  
         // assign the actual pixid, input and output filename
         loop_par.id = det->pix[ii].pindex + 1; // id's start with 0 in advdet, but not in tessim...
