@@ -1329,7 +1329,7 @@ static void initTDMTab(TDMTab** tab, int n_samples, int n_ener_p, int n_ener_v,
 }
 
 /** read one electrical crosstalk matrix from a fits file and store it in the structure (units given in keV) */
-void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v,
+void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v, float scaling,
 		TDMTab* tab, char* extname, int* status){
 
 	// ampl and dt arrays should be initialized before
@@ -1388,7 +1388,7 @@ void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v,
 			for (int kk=0; kk<n_ener_v ; kk++){
 					int ind = 	( kk * n_ener_p + jj ) * n_samples + ii;
 					assert(ind < nelem);
-					tab->matrix[ii][jj][kk] = buf[ind];  // already in keV !!!
+					tab->matrix[ii][jj][kk] = buf[ind]*scaling;  // already in keV !!!
 			}
 		}
 	} // ------------------------  //  end (freq_s loop)
@@ -1523,7 +1523,7 @@ void load_prop_table(AdvDet* det, int k ,int* status){
 			break;
 		}
 
-		read_TDM_matrix(fptr, n_samples, n_ener_p, n_ener_v,&(det->crosstalk_TDM_prop[k]),
+		read_TDM_matrix(fptr, n_samples, n_ener_p, n_ener_v,det->elec_ctk_scaling,&(det->crosstalk_TDM_prop[k]),
 				EXTNAME_PROP_CROSSTALK_GRAD,status);
 		if (*status != EXIT_SUCCESS){
 			printf(" *** error: reading proportional crosstalk table %s  failed\n", fullfilename);
@@ -1656,7 +1656,7 @@ void load_der_table(AdvDet* det, int k ,int* status){
 			break;
 		}
 
-		read_TDM_matrix(fptr,n_samples, n_ener_p, n_ener_v,&(det->crosstalk_TDM_der[k]),
+		read_TDM_matrix(fptr,n_samples, n_ener_p, n_ener_v,det->elec_ctk_scaling,&(det->crosstalk_TDM_der[k]),
 				EXTNAME_DER_CROSSTALK_GRAD,status);
 		if (*status != EXIT_SUCCESS){
 			printf(" *** error: reading derivative crosstalk table %s  failed\n", fullfilename);

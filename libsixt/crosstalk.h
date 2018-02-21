@@ -226,7 +226,7 @@ void read_elec_matrix(fitsfile* fptr,int n_freq_s, int n_freq_p, int n_ener_p, f
 		ElecTab* tab, char* extname, int* status);
 
 /** read one TDM crosstalk matrix from a fits file and store it in the structure (units given in keV) */
-void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v,
+void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v, float scaling,
 		TDMTab* tab, char* extname, int* status);
 
 /** read one intermodulation matrix from a fits file and store it in the structure */
