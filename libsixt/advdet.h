@@ -362,7 +362,7 @@ typedef struct{
   char* crosstalk_elec_timedep_file;
   ElecTab* crosstalk_elec;
   CrosstalkTimedep* crosstalk_elec_timedep;
-  float elec_ctk_scaling;
+  float scaling;
 
   /** Structure containing the proportional TDM cross-talk tables */
   char* TDM_prop_file;

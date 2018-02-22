@@ -758,7 +758,7 @@ void load_elec_table(AdvDet* det, int k ,int* status){
 			break;
 		}
 
-		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, det->elec_ctk_scaling, &(det->crosstalk_elec[k]),
+		read_elec_matrix(fptr,n_freq_s,n_freq_p, n_ener_p, det->scaling, &(det->crosstalk_elec[k]),
 				EXTNAME_FDM_CROSSTALK_GRAD,status);
 		if (*status != EXIT_SUCCESS){
 			printf(" *** error: reading electrical crosstalk table %s  failed\n", fullfilename);
@@ -1523,7 +1523,7 @@ void load_prop_table(AdvDet* det, int k ,int* status){
 			break;
 		}
 
-		read_TDM_matrix(fptr, n_samples, n_ener_p, n_ener_v,det->elec_ctk_scaling,&(det->crosstalk_TDM_prop[k]),
+		read_TDM_matrix(fptr, n_samples, n_ener_p, n_ener_v,det->scaling,&(det->crosstalk_TDM_prop[k]),
 				EXTNAME_PROP_CROSSTALK_GRAD,status);
 		if (*status != EXIT_SUCCESS){
 			printf(" *** error: reading proportional crosstalk table %s  failed\n", fullfilename);
@@ -1656,7 +1656,7 @@ void load_der_table(AdvDet* det, int k ,int* status){
 			break;
 		}
 
-		read_TDM_matrix(fptr,n_samples, n_ener_p, n_ener_v,det->elec_ctk_scaling,&(det->crosstalk_TDM_der[k]),
+		read_TDM_matrix(fptr,n_samples, n_ener_p, n_ener_v,det->scaling,&(det->crosstalk_TDM_der[k]),
 				EXTNAME_DER_CROSSTALK_GRAD,status);
 		if (*status != EXIT_SUCCESS){
 			printf(" *** error: reading derivative crosstalk table %s  failed\n", fullfilename);
@@ -1724,7 +1724,7 @@ void init_crosstalk(AdvDet* det, int* const status){
 	if (det->tdm==0){
 		// load electrical cross talk and associated time dependency
 		if (det->crosstalk_elec_file!=NULL && doCrosstalk(CROSSTALK_ID_ELEC,det)){
-			printf(" - electrical crosstalk\n");
+			printf(" - electrical crosstalk (scaling=%.2e)\n", det->scaling);
 			for (int ii=0;ii<det->npix;ii++){
 				load_electrical_cross_talk(det,ii,status);
 				CHECK_STATUS_VOID(*status);
@@ -1743,7 +1743,7 @@ void init_crosstalk(AdvDet* det, int* const status){
 	if (det->tdm==1){
 		// load proportional cross talk and associated time dependency (DONE ONLY WHEN TDM option is active)
 		if (det->TDM_prop_file!=NULL && doCrosstalk(CROSSTALK_ID_TDM_PROP,det)){
-			printf(" - proportional TDM cross-talk \n");
+			printf(" - proportional TDM crosstalk \n");
 			// loop through all the pixels
 			for (int ii=0;ii<det->npix;ii++){
 				load_proportional_cross_talk(det, ii, status);
@@ -1756,17 +1756,17 @@ void init_crosstalk(AdvDet* det, int* const status){
 			query_simput_parameter_string("doCrosstalk", &buf, status );
 			if (strncmp(buf,"tdm_prop1",9)==0){
 				det->prop_TDM_scaling_2=0.0;
-				printf("    -> only simulating TYPE 1 proportional crosstalk (scaling=%.2e)\n",det->prop_TDM_scaling_1);
+				printf("    -> only simulating TYPE 1 proportional crosstalk (scaling=%.2e)\n", det->prop_TDM_scaling_1*det->scaling);
 			} else if (strncmp(buf,"tdm_prop2",9)==0){
-					det->prop_TDM_scaling_1=0.0;
-				printf("    -> only simulating TYPE 2 proportional crosstalk (scaling=%.2e)\n",det->prop_TDM_scaling_2);
+				det->prop_TDM_scaling_1=0.0;
+				printf("    -> only simulating TYPE 2 proportional crosstalk (scaling=%.2e)\n", det->prop_TDM_scaling_2*det->scaling);
 			}
 			free(buf);
 		}
 
 		// load derivative cross talk and associated time dependency (DONE ONLY WHEN TDM option is active)
 		if (det->TDM_der_file!=NULL && doCrosstalk(CROSSTALK_ID_TDM_DER,det)){
-			printf(" - derivative TDM cross-talk \n");
+			printf(" - derivative TDM crosstalk \n");
 			// loop through all the pixels
 			for (int ii=0;ii<det->npix;ii++){
 				load_derivative_cross_talk(det, ii, status);

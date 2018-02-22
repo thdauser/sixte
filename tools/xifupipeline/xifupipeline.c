@@ -464,7 +464,7 @@ int xifupipeline_main()
 
 		// --- Initialize Crosstalk Structure ---
 		det->crosstalk_id=par.doCrosstalk;
-		det->elec_ctk_scaling=par.elec_ctk_scaling;
+		det->scaling=par.scaling;
 		if (det->crosstalk_id>0){
 			headas_chat(3, "initializing crosstalk ...\n");
 			init_crosstalk(det, &status);
@@ -1009,9 +1009,9 @@ int xifupipeline_getpar(struct Parameters* const par)
 		return(status);
 	}
 
-	status=ape_trad_query_float("elecCtkScaling", &par->elec_ctk_scaling);
+	status=ape_trad_query_float("scaling", &par->scaling);
 	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading elecCtkScaling");
+		SIXT_ERROR("failed reading scaling");
 		return(status);
 	}
 

@@ -116,7 +116,7 @@ struct Parameters {
 
   int doCrosstalk;
   int saveCrosstalk;
-  float elec_ctk_scaling;
+  float scaling;
 
   /** TDM related constants*/
   int tdm;
