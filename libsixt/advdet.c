@@ -1225,7 +1225,15 @@ void addRMF(AdvDet* det,AdvPix* pixel,int rmf_index,int* const status){
 	//Add RMF to the library
 	char filepathname[MAXFILENAME];
 	strncpy(filepathname,det->filepath,MAXFILENAME);
-	strncat(filepathname,pixel->grades[rmf_index].rmffile,MAXFILENAME);
+	int maxch=strlen(filepathname);
+	if (maxch<MAXFILENAME) {
+	  strncat(filepathname,pixel->grades[rmf_index].rmffile,MAXFILENAME-maxch);
+	  filepathname[MAXFILENAME-1]='\0';
+	} else {
+	  *status=EXIT_FAILURE;
+	  SIXT_ERROR("RMF path and filename are too long");
+	  return;
+	}
 	det->rmf_library->rmf_array[det->rmf_library->n_rmf] = loadRMF(filepathname,status);
 	det->rmf_library->filenames[det->rmf_library->n_rmf] = strndup(pixel->grades[rmf_index].rmffile,MAXFILENAME);
 	pixel->grades[rmf_index].rmf=det->rmf_library->rmf_array[det->rmf_library->n_rmf];
