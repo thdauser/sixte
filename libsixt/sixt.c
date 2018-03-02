@@ -290,6 +290,8 @@ void sixt_get_LADXMLFile(char* const filename,
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 void sixt_get_eroXMLFile(char *filename,
 			const int telescop_index,
 			int* const status){
@@ -297,6 +299,7 @@ void sixt_get_eroXMLFile(char *filename,
   sprintf(filename, "%s/instruments/srg/erosita_%d.xml", SIXT_DATA_PATH, telescop_index+1);
   
 }
+#pragma GCC diagnostic pop
 
 
 void sixt_get_date_time(const double mjdref,
@@ -845,7 +848,7 @@ int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *
       // Throw an error.
       char msg[MAXMSG];
       snprintf(msg,MAXMSG,"file '%s' already exists", filename);
-      msg[MAXMSG]='\0';
+      msg[MAXMSG-1]='\0';
       SIXT_ERROR(msg);
       *status=EXIT_FAILURE;
       CHECK_STATUS_RET(*status,0);

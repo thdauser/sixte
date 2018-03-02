@@ -39,16 +39,16 @@ GenPixGrid* newGenPixGrid(int* const status)
   // Initialize all pointers with NULL.
 
   // Initialize values.
-  grid->xwidth=0;
-  grid->ywidth=0;
-  grid->xrpix =0.;
-  grid->yrpix =0.;
-  grid->xrval =0.;
-  grid->yrval =0.;
-  grid->xdelt =0.;
-  grid->ydelt =0.;
-  grid->rota  =0.;
-  grid->xborder=0.;
+  grid->xwidth=INT_MAX;
+  grid->ywidth=INT_MAX;
+  grid->xrpix =NAN;
+  grid->yrpix =NAN;
+  grid->xrval =NAN;
+  grid->yrval =NAN;
+  grid->xdelt =NAN;
+  grid->ydelt =NAN;
+  grid->rota  =NAN;
+  grid->xborder=0.; // dead area: 0 by default
   grid->yborder=0.;
 
   return(grid);

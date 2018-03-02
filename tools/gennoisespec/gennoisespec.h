@@ -112,7 +112,7 @@
 	char *straux = new char[255];
 
 	// Parameters used to inDataIterator
-	int ntotalrows = 1;		// Total number of rows processed
+	long ntotalrows = 1;		// Total number of rows processed
 
 	//Used in relation with findInterval
 	int nIntervals;			// Number of free-pulse intervals in an event

@@ -447,7 +447,7 @@ int main (int argc, char **argv)
 			}
 			gsl_matrix_free(noiseIntervalsAux);
 			
-			sprintf(str_stat,"%d",noiseIntervals_weightPoints->size1);
+			sprintf(str_stat,"%ld",noiseIntervals_weightPoints->size1);
 			sprintf(str_stat1,"%d",(int) gsl_vector_get(weightpoints,i));
 			message = "W" + string(str_stat1) + " matrix calculated with " + string(str_stat);
 			writeLog(fileRef,"Log", verbosity,message);
@@ -946,12 +946,12 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 			break;
 		}
 
-		sprintf(straux,"%d",ntotalrows);
+		sprintf(straux,"%ld",ntotalrows);
 		message = "-------------> Record: " + string(straux);
-		sprintf(straux,"%d",eventcnt);
+		sprintf(straux,"%ld",eventcnt);
 		message += " of " + string(straux) + " <------------------ ";
 		writeLog(fileRef,"Log", verbosity,message);
-		sprintf(val,"-------------> Record: %d of %d <------------------ ",ntotalrows,eventcnt);
+		sprintf(val,"-------------> Record: %ld of %ld <------------------ ",ntotalrows,eventcnt);
 
 		// Information has been read by blocks (with nrows per block)
 		// Now, information is going to be used by rows

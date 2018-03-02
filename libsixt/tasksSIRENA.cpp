@@ -1130,13 +1130,10 @@ int createDetectFile(ReconstructInitSIRENA* reconstruct_init, int nRecord, doubl
 	else
 	{
 		// Check if dtcName has '.fits' and if not, append it
-		if (strncmp(strndup(dtcName+strlen(dtcName)-5, 5),".fits",5) != 0)
+	        if (strstr(dtcName+strlen(dtcName)-5,".fits") != NULL)
 		{
 			// dtcName does not finish as '.fits' => Append '.fits' to dtcName
-			char dtcNameaux[256];
-			snprintf(dtcNameaux,256,dtcName);
-			strcat(dtcNameaux,".fits");
-			strncpy(dtcName,dtcNameaux,255);
+		        strncat(dtcName,".fits",255);
 			dtcName[255]='\0';
 		}
 	}
@@ -3351,7 +3348,7 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
 
                 char keyvalstr[1000];
 
-                char str_procnumber[125];               snprintf(str_procnumber,125,"%d",eventcntLib);
+                char str_procnumber[125];               snprintf(str_procnumber,125,"%ld",eventcntLib);
                 string strprocname (string("PROC") + string(str_procnumber));
                 strcpy(keyname,strprocname.c_str());
                 string strprocval (string("PROC") + string(str_procnumber) + string(" Starting parameter list"));
@@ -3977,7 +3974,7 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
 			message = "Cannot move to HDU  " + string(extname) + " in library";
 			EP_PRINT_ERROR(message,status);return(EPFAIL);
 		}
-		snprintf(str_length,125,"%d",optimalfilter_FFT_RI->size/2);
+		snprintf(str_length,125,"%ld",optimalfilter_FFT_RI->size/2);
 		strcpy(objFREQ.nameCol,(string("F")+string(str_length)).c_str());
 		strcpy(objFREQ.unit," ");
 		optimalfiltersF_matrix = gsl_matrix_alloc(1,optimalfilter_FFT_RI->size);

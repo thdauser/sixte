@@ -214,46 +214,53 @@ void parseGenInstXML(GenInst* const inst,
     return;
   }
 
-
   // Release memory.
   XML_ParserFree(parser);
 
   // Remove the XML string buffer.
   freeXMLBuffer(&xmlbuffer);
 
-
   // Check if all required parameters have been read successfully from 
   // the XML file.
-  if (0==inst->det->pixgrid->xwidth) {
-    SIXT_WARNING("no specification of x-width of pixel array");
+  if (INT_MAX==inst->det->pixgrid->xwidth) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no specification of x-width of pixel array");
+    return;    
   }  
-  if (0==inst->det->pixgrid->ywidth) {
-    SIXT_WARNING("no specification of y-width of pixel array");
+  if (INT_MAX==inst->det->pixgrid->ywidth) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no specification of y-width of pixel array");
+    return;    
   }
 
-  if (0.==inst->det->pixgrid->xrpix) {
-    SIXT_WARNING("no specification of x reference pixel");
-    SIXT_WARNING("Ignore this if x coordinate of reference pixel equals zero");
+  if (isnan(inst->det->pixgrid->xrpix)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no specification of x reference pixel");
+    return;    
   }
-  if (0.==inst->det->pixgrid->yrpix) {
-    SIXT_WARNING("no specification of y reference pixel");
-    SIXT_WARNING("Ignore this warning if the y coordinate of the");
-    SIXT_WARNING("reference pixel equals zero");
+  if (isnan(inst->det->pixgrid->yrpix)) {
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("no specification of y reference pixel");
+    return;    
   }
 
-  if (0.==inst->det->pixgrid->xdelt) {
+  if (isnan(inst->det->pixgrid->xdelt)) {
+    *status=EXIT_FAILURE;
     SIXT_WARNING("no specification of pixel x-width");
+    return;    
   }
-  if (0.==inst->det->pixgrid->ydelt) {
+  if (isnan(inst->det->pixgrid->ydelt)) {
+    *status=EXIT_FAILURE;
     SIXT_WARNING("no specification of pixel y-width");
+    return;    
   }
   
-  if (0.>inst->det->pixgrid->xborder) {
+  if (inst->det->pixgrid->xborder<0.) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("invalid specification of x-border of pixels");
     return;    
   }
-  if (0.>inst->det->pixgrid->yborder) {
+  if (inst->det->pixgrid->yborder<0.) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("invalid specification of y-border of pixels");
     return;    

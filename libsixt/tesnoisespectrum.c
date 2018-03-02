@@ -168,12 +168,12 @@ int genNoiseSpectrum(AdvPix** simulated_pixels,
                      int* const status) 
 {
     double Gx, Gy, sigma, df;
-    const double pi=3.14159265359;
+    const double pi=M_PI;
     int i,j, k;
     
     fftw_complex *in;
     double *out;
-    fftw_plan p;
+    fftw_plan p=NULL;
     fftw_complex Ze, Po, H; /* Products of Zeros & Poles */
     double w, f;               /* Omega and frequency*/
     
