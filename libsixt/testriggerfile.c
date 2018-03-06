@@ -215,8 +215,10 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
     // (although unlikely, we might have a very large file, so we best
     // use the LONGLONG interface to the descriptor
     LONGLONG rec_trigsize;
-    LONGLONG offset;
-    fits_read_descriptll(file->fptr,file->trigCol,file->row,&rec_trigsize,&offset,status);
+    LONGLONG col_width;
+    int adc_col_typecode;
+    fits_get_coltypell(file->fptr,file->trigCol,&adc_col_typecode,
+		       &rec_trigsize,&col_width,status);
     CHECK_STATUS_RET(*status,0);
 
     // resize buffers if that is necessary
