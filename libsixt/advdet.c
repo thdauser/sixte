@@ -1204,22 +1204,22 @@ void addRMF(AdvDet* det,AdvPix* pixel,int rmf_index,int* const status){
 
 	// Update size if necessary
 	if (det->rmf_library->n_rmf>=det->rmf_library->size){
-		det->rmf_library->size = det->rmf_library->size*2;
-		struct RMF** new_rmf_array = realloc(det->rmf_library->rmf_array,det->rmf_library->size*sizeof(*(det->rmf_library->rmf_array)));
-		if (NULL==new_rmf_array){
-			*status = EXIT_FAILURE;
-			SIXT_ERROR("Size update of RMF library failed");
-			return;
-		}
-		char** new_filenames = realloc(det->rmf_library->filenames,det->rmf_library->size*sizeof(*(det->rmf_library->filenames)));
-		if (NULL==new_filenames){
-			*status = EXIT_FAILURE;
-			SIXT_ERROR("Size update of RMF library failed");
-			return;
-		}
+	  det->rmf_library->size *=2;
+	  struct RMF** new_rmf_array = realloc(det->rmf_library->rmf_array,det->rmf_library->size*sizeof(*(det->rmf_library->rmf_array)));
+	  if (NULL==new_rmf_array){
+	    *status = EXIT_FAILURE;
+	    SIXT_ERROR("Size update of RMF library failed");
+	    return;
+	  }
+	  char** new_filenames = realloc(det->rmf_library->filenames,det->rmf_library->size*sizeof(*(det->rmf_library->filenames)));
+	  if (NULL==new_filenames){
+	    *status = EXIT_FAILURE;
+	    SIXT_ERROR("Size update of RMF library failed");
+	    return;
+	  }
 
-		det->rmf_library->rmf_array=new_rmf_array;
-		det->rmf_library->filenames=new_filenames;
+	  det->rmf_library->rmf_array=new_rmf_array;
+	  det->rmf_library->filenames=new_filenames;
 	}
 
 	//Add RMF to the library
