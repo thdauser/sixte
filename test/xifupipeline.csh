@@ -2,9 +2,9 @@
 
 source setup/setup.csh
 
-set xml = $xmldir/athena/1469mm_xifu
+set xml = $xmldir/athena-xifu
 set std = $xml/xifu_baseline.xml
-set adv = $xml/xifu_detector_hex_baseline.xml
+set adv = $xml/xifu_detector_lpa2_pixoffset_mux40.xml
 
 if (! (-d $xml)) then
     echo " *** warning *** did not find required instrument-directory '$xml'"  > /dev/stderr    
