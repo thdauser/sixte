@@ -144,7 +144,7 @@ void addEventToList(TesEventList* event_list,int index,double pulse_height,int g
 		event_list->size = event_list->size * 2;
 
 		//Allocate new arrays
-		int * new_event_index_array = realloc(event_list->event_indexes,(event_list->size)*sizeof(*(event_list->event_indexes)));
+		double * new_event_index_array = realloc(event_list->event_indexes,(event_list->size)*sizeof(*(event_list->event_indexes)));
 		if (!new_event_index_array){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation during size update of TesEventList failed");
