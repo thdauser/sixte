@@ -32,27 +32,6 @@
 #define TOOLSUB tesreconstruction_main
 #include "headas_main.c"
 
-//typedef struct
-//{
-//	/** The grade values */
-//        int value;
-//
-//	/** Size in samples before and after one pulse defining the grade */
-//	long gradelim_pre;
-//	long gradelim_post;
-//
-//} gradeData;
-
-//typedef struct 
-//{
-//	// Number of grades 
-//	int ngrades;
-//
-//	// Structure which contains the grading data
-//	gradeData *gradeData;
-//	
-//} Grading;
-
 struct Parameters {
 	//File containing the optimal filter
 	char OptimalFilterFile[MAXFILENAME];

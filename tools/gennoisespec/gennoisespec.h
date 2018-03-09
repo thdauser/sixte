@@ -100,6 +100,9 @@
 	double LbT;			// Baseline averaging length (in the RS filter case): T -> Time => Seconds
 	double Lrs;			// LrsT in samples
 	double Lb;			// LbT in samples
+	
+	char weightMSStr[4];		// WeightMS=yes then write output weight noise matrixes
+	int weightMS=0;
 
 	char nameLog[255];		// Output log file name
 	int verbosity;			// Verbosity level of the output log file
@@ -112,7 +115,7 @@
 	char *straux = new char[255];
 
 	// Parameters used to inDataIterator
-	long ntotalrows = 1;		// Total number of rows processed
+	int ntotalrows = 1;		// Total number of rows processed
 
 	//Used in relation with findInterval
 	int nIntervals;			// Number of free-pulse intervals in an event

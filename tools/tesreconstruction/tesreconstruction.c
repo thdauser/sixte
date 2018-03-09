@@ -29,7 +29,7 @@ int tesreconstruction_main() {
   // Error status.
   int status=EXIT_SUCCESS;
   
-  double sampling_rate=0.;
+  double sampling_rate = -999.0;
 
   // Register HEATOOL:
   set_toolname("tesreconstruction");
@@ -116,7 +116,8 @@ int tesreconstruction_main() {
     TesRecord* record = newTesRecord(&status);
     allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
     CHECK_STATUS_BREAK(status);
-    if (sampling_rate != 1./record_file->delta_t)
+    
+    if (sampling_rate != 1/record_file->delta_t)
     {
         SIXT_ERROR("Sampling rate from the XML file and the FITS file do not match");
         return(EXIT_FAILURE);
@@ -133,11 +134,7 @@ int tesreconstruction_main() {
     {
       if(!strcmp(par.Rcmethod,"PP"))
       {
-	    /*nrecord = nrecord + 1;
-	    if(nrecord == record_file->nrows) lastRecord=1;
-	    printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");*/
-	    
-	    reconstructRecord(record,event_list,reconstruct_init,0,&status);
+            reconstructRecord(record,event_list,reconstruct_init,0,&status);
       }
       else
       {
@@ -318,13 +315,6 @@ int getpar(struct Parameters* const par)
 		SIXT_ERROR("failed reading the DerivateExclusion parameter");
 		return(status);
 	}
-
-	/*status=ape_trad_query_double("SaturationValue", &par->SaturationValue);
-	if (EXIT_SUCCESS!=status) {
-		SIXT_ERROR("failed reading the SaturationValue parameter");
-		return(status);
-	}*/
-	
   }else if(strcmp(par->Rcmethod,"SIRENA")==0){
 	
 	// SIRENA parameters
@@ -397,11 +387,7 @@ int getpar(struct Parameters* const par)
 
 	status=ape_trad_query_bool("OFLib", &par->OFLib);
 	
-	//status=ape_trad_query_string("OFInterp", &sbuffer);
-        //strcpy(par->OFInterp, sbuffer);
-        //free(sbuffer);
 	strcpy(par->OFInterp, "DAB");
-	//strcpy(par->OFInterp, "MF");
 	
 	status=ape_trad_query_string("OFStrategy", &sbuffer);
 	strcpy(par->OFStrategy, sbuffer);
@@ -428,22 +414,14 @@ int getpar(struct Parameters* const par)
 		return(status);
 	}
 	
-	//assert((par->mode ==0) || (par->mode ==1));
-	/*int mode_0_1;
-	mode_0_1 = ((par->mode ==0) || (par->mode ==1));
-	assert(mode_0_1);*/
 	MyAssert((par->mode == 0) || (par->mode == 1), "mode must be 0 or 1");
 	  
-	//assert((par->intermediate == 0) || (par->intermediate == 1));
 	MyAssert((par->intermediate == 0) || (par->intermediate == 1), "intermediate must be 0 or 1");
 	
-	//assert(par->monoenergy > 0);
-	MyAssert(par->monoenergy > 0, "monoenergy must be greater than 0");
+        if (par->mode == 0) MyAssert(par->monoenergy > 0, "monoenergy must be greater than 0");
 	
-	//assert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0));
 	MyAssert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0), "FilterDomain must be T or F");
 	
-	//assert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0));
 	MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0),"FilterMethod must be F0 or B0");
 	
 	MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
@@ -452,7 +430,6 @@ int getpar(struct Parameters* const par)
 	
 	MyAssert((strcmp(par->OFNoise,"NSD") == 0) || (strcmp(par->OFNoise,"WEIGHTM") == 0), "OFNoise must be NSD or WEIGHTM");
 	
-	//assert((par->LagsOrNot ==0) || (par->LagsOrNot ==1));
 	MyAssert((par->LagsOrNot ==0) || (par->LagsOrNot ==1), "LagsOrNot must me 0 or 1");
 
 	if (((strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0)) && (par->LagsOrNot == 1))
@@ -461,7 +438,6 @@ int getpar(struct Parameters* const par)
 		return(EXIT_FAILURE);
 	}
 	
-	//assert((par->OFIter ==0) || (par->OFIter ==1));
 	MyAssert((par->OFIter ==0) || (par->OFIter ==1), "OFIter must be 0 or 1");
 	
 	if ((par->OFLib == 1) && (strcmp(par->FilterMethod,"F0") != 0))
@@ -481,24 +457,13 @@ int getpar(struct Parameters* const par)
 		return(EXIT_FAILURE);
 	}
 	
-	//assert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0));
 	MyAssert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BASE2") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0), 
 		 "OFStrategy must be FREE, BASE2, BYGRADE or FIXED");
 	
-	//assert(&par->OFLength > 0);
-	MyAssert(par->OFLength > 0, "OFLength must be greater than 0");
+        MyAssert(par->OFLength > 0, "OFLength must be greater than 0");
 	
-	/*if (((strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RALL") == 0) || (strcmp(par->EnergyMethod,"I2RNOL") == 0)) && (par->tstartPulse1 == 0))
-	{
-		printf("%s %d %s","Error",status,"\n");
-		SIXT_ERROR("parameter error: EnergyMethod=I2R/I2RALL/I2RNOL and tstartPulse1=0 (If I2R/I2RALL/I2RNOL, tstartPulsex must be always provided)");
-		return(EXIT_FAILURE);
-	}*/	
-	
-	//assert(par->energyPCA1 > 0);
 	MyAssert(par->energyPCA1 > 0, "energyPCA1 must be greater than 0");
-	//assert(par->energyPCA2 > 0);
-	MyAssert(par->energyPCA2 > 0, "energyPCA2 must be greater than 0");
+        MyAssert(par->energyPCA2 > 0, "energyPCA2 must be greater than 0");
 	
   } else {
 	SIXT_ERROR("failed reading the Rcmethod parameter");
