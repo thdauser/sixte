@@ -462,18 +462,18 @@ int athenapwfisim_main()
     for (ii=0; ii<nchips; ii++) {
       char keystr[MAXMSG];
       long value;
-      sprintf(keystr, "TLMIN%d", elf[ii]->cpi);
+      sprintf(keystr, "TLMIN%d", elf[ii]->cpha);
       value=subinst[ii]->det->rmf->FirstChannel;
       fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
-      sprintf(keystr, "TLMAX%d", elf[ii]->cpi);
+      sprintf(keystr, "TLMAX%d", elf[ii]->cpha);
       value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
       fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);
     
-      sprintf(keystr, "TLMIN%d", patf[ii]->cpi);
+      sprintf(keystr, "TLMIN%d", patf[ii]->cpha);
       value=subinst[ii]->det->rmf->FirstChannel;
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
-      sprintf(keystr, "TLMAX%d", patf[ii]->cpi);
+      sprintf(keystr, "TLMAX%d", patf[ii]->cpha);
       value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);

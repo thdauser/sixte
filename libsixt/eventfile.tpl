@@ -22,9 +22,9 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TUNIT#  s               / Unit of column TIME
 	TTYPE#  FRAME           / Frame counter
 	TFORM#  J               / Format of column FRAME
-	TTYPE#  PI              / Corrected Energy Channel
-	TFORM#  J               / Format of column PI
-	TUNIT#  ADU             / Unit of column PI
+	TTYPE#  PHA              / Corrected Energy Channel
+	TFORM#  J               / Format of column PHA
+	TUNIT#  ADU             / Unit of column PHA
 	TTYPE#  SIGNAL          / Pixel SIGNAL
 	TFORM#  E               / Format of column SIGNAL
 	TUNIT#  keV             / Unit of column SIGNAL
@@ -53,6 +53,6 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  SIGNALS         / Signals in surrounding 3x3 matrix
 	TFORM#  9E              / Format of column SIGNALS
 	TUNIT#  keV             / Unit of column SIGNAL
-	TTYPE#  PIS             / Energy channels in surrounding 3x3 matrix
-	TFORM#  9J              / Format of column PIS
-	TUNIT#  ADU             / Unit of column PIS
+	TTYPE#  PHAS             / Energy channels in surrounding 3x3 matrix
+	TFORM#  9J              / Format of column PHAS
+	TUNIT#  ADU             / Unit of column PHAS

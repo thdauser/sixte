@@ -450,7 +450,7 @@ int epicpn_events_main()
       }
 
       // PI and PHA.
-      ev.pha=event.pi;
+      ev.pha=event.pha;
       ev.pi =(int)(event.signal*1000.);
 
       // Store the event in the output file.

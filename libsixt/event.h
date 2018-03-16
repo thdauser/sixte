@@ -42,8 +42,8 @@ typedef struct {
   /** Raw detector coordinates. Indices start at 0. */
   int rawx, rawy;
 
-  /** Detected PI channel [adu]. */
-  long pi;
+  /** Detected PHA channel [adu]. */
+  long pha;
 
   /** Signal in [keV]. */
   float signal;
@@ -84,7 +84,7 @@ typedef struct {
 
   /** 3x3 array with individual energy channels [adu] around the main
       event. */
-  long pis[9];
+  long phas[9];
 
 } Event;
 

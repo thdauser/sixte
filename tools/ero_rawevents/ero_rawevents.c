@@ -269,7 +269,7 @@ int ero_rawevents_main()
       fits_write_col(fptr, TLONG, cots, row+1, 1, 1, &ots, &status);
       fits_write_col(fptr, TLONG, cfracsec, row+1, 1, 1, &fracsec, &status);
       fits_write_col(fptr, TLONG, cframe, row+1, 1, 1, &event.frame, &status);
-      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &event.pi, &status);
+      fits_write_col(fptr, TLONG, cpha, row+1, 1, 1, &event.pha, &status);
       int rawx=event.rawx+1;
       fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &rawx, &status);
       int rawy=event.rawy+1;

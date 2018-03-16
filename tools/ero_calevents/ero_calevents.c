@@ -527,7 +527,7 @@ int ero_calevents_main()
 	ev.suby=0;
 
 	// Detected channel.
-	ev.pha=event.pis[ii];
+	ev.pha=event.phas[ii];
 
 	// Calibrated and recombined amplitude in [eV].
 	// The amplitude is positive for the main event only. For

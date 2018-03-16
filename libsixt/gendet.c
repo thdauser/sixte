@@ -295,9 +295,9 @@ static inline void GenDetReadoutPixel(GenDet* const det,
     
       // Apply the detector response if available.
       if (NULL!=det->rmf) {
-	event->pi=getEBOUNDSChannel(event->signal, det->rmf);
+	event->pha=getEBOUNDSChannel(event->signal, det->rmf);
       } else {
-	event->pi=0;
+	event->pha=0;
       }
 
       // Store remaining information.

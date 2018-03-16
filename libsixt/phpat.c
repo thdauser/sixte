@@ -318,35 +318,35 @@ void phpat(GenDet* const det,
 	      if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx-1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
 		  event->signals[0]=neighborlist[kk]->signal;
-		  event->pis[0]    =neighborlist[kk]->pi;
+		  event->phas[0]    =neighborlist[kk]->pha;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
 		  event->signals[3]=neighborlist[kk]->signal;
-		  event->pis[3]    =neighborlist[kk]->pi;
+		  event->phas[3]    =neighborlist[kk]->pha;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
 		  event->signals[6]=neighborlist[kk]->signal;
-		  event->pis[6]    =neighborlist[kk]->pi;
+		  event->phas[6]    =neighborlist[kk]->pha;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
 		  event->signals[1]=neighborlist[kk]->signal;
-		  event->pis[1]    =neighborlist[kk]->pi;
+		  event->phas[1]    =neighborlist[kk]->pha;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
 		  event->signals[4]=neighborlist[kk]->signal;
-		  event->pis[4]    =neighborlist[kk]->pi;
+		  event->phas[4]    =neighborlist[kk]->pha;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
 		  event->signals[7]=neighborlist[kk]->signal;
-		  event->pis[7]    =neighborlist[kk]->pi;
+		  event->phas[7]    =neighborlist[kk]->pha;
 		}
 	      } else if (neighborlist[kk]->rawx==neighborlist[maxidx]->rawx+1) {
 		if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy-1) {
 		  event->signals[2]=neighborlist[kk]->signal;
-		  event->pis[2]    =neighborlist[kk]->pi;
+		  event->phas[2]    =neighborlist[kk]->pha;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy) {
 		  event->signals[5]=neighborlist[kk]->signal;
-		  event->pis[5]    =neighborlist[kk]->pi;
+		  event->phas[5]    =neighborlist[kk]->pha;
 		} else if (neighborlist[kk]->rawy==neighborlist[maxidx]->rawy+1) {
 		  event->signals[8]=neighborlist[kk]->signal;
-		  event->pis[8]    =neighborlist[kk]->pi;
+		  event->phas[8]    =neighborlist[kk]->pha;
 		}
 	      }
 
@@ -375,11 +375,11 @@ void phpat(GenDet* const det,
 	    }
 	    // END of loop over all entries in the neighbor list.
 
-	    // Determine the PI channel corresponding to the total signal.
+	    // Determine the PHA channel corresponding to the total signal.
 	    if (NULL!=det->rmf) {
-	      event->pi=getEBOUNDSChannel(event->signal, det->rmf);
+	      event->pha=getEBOUNDSChannel(event->signal, det->rmf);
 	    } else {
-	      event->pi=0;
+	      event->pha=0;
 	    }
 
 	    // Check for pile-up.

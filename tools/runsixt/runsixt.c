@@ -392,18 +392,18 @@ int runsixt_main()
     // TLMIN and TLMAX of PI column.
     char keystr[MAXMSG];
     long value;
-    sprintf(keystr, "TLMIN%d", elf->cpi);
+    sprintf(keystr, "TLMIN%d", elf->cpha);
     value=inst->det->rmf->FirstChannel;
     fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
-    sprintf(keystr, "TLMAX%d", elf->cpi);
+    sprintf(keystr, "TLMAX%d", elf->cpha);
     value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
     fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);
     
-    sprintf(keystr, "TLMIN%d", patf->cpi);
+    sprintf(keystr, "TLMIN%d", patf->cpha);
     value=inst->det->rmf->FirstChannel;
     fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
-    sprintf(keystr, "TLMAX%d", patf->cpi);
+    sprintf(keystr, "TLMAX%d", patf->cpha);
     value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
     fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);

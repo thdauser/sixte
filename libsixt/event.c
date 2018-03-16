@@ -30,7 +30,7 @@ Event* getEvent(int* const status)
   // Initalize.
   ev->rawx=0;
   ev->rawy=0;
-  ev->pi  =0;
+  ev->pha  =0;
   ev->signal =0.;
   ev->time   =0.;
   ev->frame  =0;
@@ -43,7 +43,7 @@ Event* getEvent(int* const status)
   int ii;
   for(ii=0; ii<9; ii++) {
     ev->signals[ii]=0.;
-    ev->pis[ii]    =0;
+    ev->phas[ii]    =0;
   }
   for(ii=0; ii<NEVENTPHOTONS; ii++) {
     ev->ph_id[ii] =0;

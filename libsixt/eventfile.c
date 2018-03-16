@@ -34,7 +34,7 @@ EventFile* newEventFile(int* const status)
   file->nrows=0;
   file->ctime=0;
   file->cframe =0;
-  file->cpi    =0;
+  file->cpha    =0;
   file->csignal=0;
   file->crawx  =0;
   file->crawy  =0;
@@ -45,7 +45,7 @@ EventFile* newEventFile(int* const status)
   file->ctype   =0;
   file->cnpixels=0;
   file->csignals=0;
-  file->cpis    =0;
+  file->cphas    =0;
   file->cpileup =0;
 
   return(file);
@@ -170,7 +170,7 @@ EventFile* openEventFile(const char* const filename,
   // Determine the column numbers.
   fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
   fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
@@ -182,7 +182,7 @@ EventFile* openEventFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "TYPE", &file->ctype, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status);
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNALS", &file->csignals, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PIS", &file->cpis, status);
+  fits_get_colnum(file->fptr, CASEINSEN, "PHAS", &file->cphas, status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
@@ -262,8 +262,8 @@ void getEventFromFile(const EventFile* const file,
 		&dnull, &event->time, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
 		&lnull, &event->frame, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cpi, row, 1, 1, 
-		&lnull, &event->pi, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1,
+		&lnull, &event->pha, &anynul, status);
   fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
 		&fnull, &event->signal, &anynul, status);
   fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
@@ -288,8 +288,8 @@ void getEventFromFile(const EventFile* const file,
 		&inull, &event->pileup, &anynul, status);
   fits_read_col(file->fptr, TFLOAT, file->csignals, row, 1, 9, 
 		&fnull, &event->signals, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cpis, row, 1, 9, 
-		&lnull, &event->pis, &anynul, status);
+  fits_read_col(file->fptr, TLONG, file->cphas, row, 1, 9,
+		&lnull, &event->phas, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   // Check if an error occurred during the reading process.
@@ -310,8 +310,8 @@ void updateEventInFile(const EventFile* const file,
 		 1, 1, &event->time, status);
   fits_write_col(file->fptr, TLONG, file->cframe, row, 
 		 1, 1, &event->frame, status);
-  fits_write_col(file->fptr, TLONG, file->cpi, row, 
-		 1, 1, &event->pi, status);
+  fits_write_col(file->fptr, TLONG, file->cpha, row,
+		 1, 1, &event->pha, status);
   fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
 		 1, 1, &event->signal, status);
   fits_write_col(file->fptr, TINT, file->crawx, row, 
@@ -336,8 +336,8 @@ void updateEventInFile(const EventFile* const file,
 		 1, 1, &event->type, status);
   fits_write_col(file->fptr, TFLOAT, file->csignals, row, 
 		 1, 9, &event->signals, status);
-  fits_write_col(file->fptr, TLONG, file->cpis, row, 
-		 1, 9, &event->pis, status);
+  fits_write_col(file->fptr, TLONG, file->cphas, row,
+		 1, 9, &event->phas, status);
   CHECK_STATUS_VOID(*status);
 }
 

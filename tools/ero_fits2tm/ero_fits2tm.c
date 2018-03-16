@@ -153,15 +153,15 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
 				       const Event* const event)
 {
   // Check for overflows:
-  assert(event->pi<=0x3FFF);
+  assert(event->pha<=0x3FFF);
   assert(event->rawx<=0xFF);
   assert(event->rawy<=0xFF);
   
   // Write the data of the event to the byte output buffer:
   binary_output->bytes[binary_output->n_bytes++]=
-    0x3F & (unsigned char)(event->pi>>8);
+    0x3F & (unsigned char)(event->pha>>8);
   binary_output->bytes[binary_output->n_bytes++]=
-    0xFF & (unsigned char)event->pi;
+    0xFF & (unsigned char)event->pha;
   binary_output->bytes[binary_output->n_bytes++]=
     0xFF & (unsigned char)event->rawy;
   binary_output->bytes[binary_output->n_bytes++]=
@@ -317,7 +317,7 @@ int ero_fits2tm_main()
     int count;
     for (count=0; count<10000; count++) {
       eventlist[count].time=0.;
-      eventlist[count].pi=0;
+      eventlist[count].pha=0;
       eventlist[count].rawx=0;
       eventlist[count].rawy=0;
       eventlist[count].frame=0;
