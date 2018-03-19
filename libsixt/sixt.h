@@ -100,6 +100,14 @@ extern char **sixt_argv;
 #define CHECK_STATUS_VOID(status) \
   if (EXIT_SUCCESS!=status) return;
 
+extern char _fits_err_msg[80];
+#define CHECK_STATUS_BREAK_WITH_FITSERROR(status) \
+  if (EXIT_SUCCESS!=status){ \
+    fits_get_errstatus(status,_fits_err_msg); \
+    SIXT_ERROR(_fits_err_msg); \
+    status=EXIT_FAILURE; \
+    break; \
+  }
 
 #define CHECK_NULL_VOID(a,status,msg) \
   if (NULL==a) { \

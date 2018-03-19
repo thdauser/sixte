@@ -59,6 +59,7 @@ void phpat(GenDet* const det,
 	   const char skip_invalids,
 	   int* const status)
 {
+
   // Pattern / grade statistics.
   struct PatternStatistics statistics={
     .nvalids   =0,
@@ -89,14 +90,13 @@ void phpat(GenDet* const det,
   // event threshold has already been printed.
   static int threshold_warning_printed=0;
 
-
   // Error handling loop.
   do {
 
     // Check if the input file contains single-pixel events.
     char evtype[MAXMSG], comment[MAXMSG];
     fits_read_key(src->fptr, TSTRING, "EVTYPE", evtype, comment, status);
-    CHECK_STATUS_BREAK(*status);
+    CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
     strtoupper(evtype);
     if (0!=strcmp(evtype, "PIXEL")) {
       *status=EXIT_FAILURE;
@@ -109,7 +109,7 @@ void phpat(GenDet* const det,
     // Set the event type in the output file to 'PATTERN'.
     fits_update_key(dest->fptr, TSTRING, "EVTYPE", "PATTERN", 
 		    "event type", status);
-    CHECK_STATUS_BREAK(*status);
+    CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
 
     // Allocate memory.
     framelist=(Event**)malloc(maxnframelist*sizeof(Event*));
@@ -125,7 +125,7 @@ void phpat(GenDet* const det,
     char telescope[MAXMSG];
     fits_read_key(src->fptr, TSTRING, "TELESCOP", 
 		  telescope, comment, status);
-    CHECK_STATUS_BREAK(*status);
+    CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
     strtoupper(telescope);
     if (!strcmp(telescope, "EROSITA")) {
       iseROSITA=1;

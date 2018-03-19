@@ -16,6 +16,8 @@ const double eromjdref=51543.875;
     to 1998-01-01T00:00:00.00. */
 const double xmmmjdref=50814.;
 
+/** FITS error message for error handling macro, which retrieves error status */
+char _fits_err_msg[80];
 
 unsigned int getSeed(int seed)
 {
