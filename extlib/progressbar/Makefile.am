@@ -10,8 +10,8 @@ AUTOMAKE_OPTIONS=subdir-objects
 lib_LTLIBRARIES=libprogressbar.la
 
 # include options
-libprogressbar_la_CFLAGS=-I./include
-libprogressbar_la_CPPFLAGS=-I./include
+libprogressbar_la_CFLAGS=-I@srcdir@/include
+libprogressbar_la_CPPFLAGS=-I@srcdir@/include
 
 # Sources
 libprogressbar_la_SOURCES=lib/progressbar.c lib/statusbar.c
