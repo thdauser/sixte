@@ -53,9 +53,11 @@ static int isNeighbor(const Event* const e1, const Event* const e2) {
 }
 
 
+
 void phpat(GenDet* const det,
 	   const EventFile* const src,
 	   EventFile* const dest,
+		 const char* picorr_file,
 	   const char skip_invalids,
 	   int* const status)
 {
@@ -89,6 +91,9 @@ void phpat(GenDet* const det,
   // Flag, whether the warning that the split threshold lies above the
   // event threshold has already been printed.
   static int threshold_warning_printed=0;
+
+  // LOAD Pha2PI Correction File if existent
+  Pha2Pi* p2p = loadPha2Pi(picorr_file, status);
 
   // Error handling loop.
   do {
@@ -382,6 +387,8 @@ void phpat(GenDet* const det,
 	      event->pha=0;
 	    }
 
+	    // TODO: PICORRECT
+
 	    // Check for pile-up.
 	    if (NEVENTPHOTONS>=2) {
 	      if (0!=event->ph_id[1]) {
@@ -581,4 +588,107 @@ void phpat(GenDet* const det,
     free(neighborlist);
   }
 }
+
+
+Pha2Pi* getPha2Pi(int* const status)
+{
+  // Allocate memory.
+  Pha2Pi* p2p=(Pha2Pi*)malloc(sizeof(Pha2Pi));
+  CHECK_NULL_RET(p2p, *status, "memory allocation for Pha2Pi failed",
+		 p2p);
+
+  // Initialize.
+  p2p->nrows=0;
+  p2p->ngrades=0;
+  p2p->pha=NULL;
+  p2p->pien=NULL;
+  p2p->pilow=NULL;
+  p2p->pihigh=NULL;
+
+  return(p2p);
+}
+
+
+
+void freePha2Pi(Pha2Pi** const p2p)
+{
+	if (NULL!=*p2p) {
+		if (NULL!=(*p2p)->pha) {
+			free((*p2p)->pha);
+		}
+		if (NULL!=(*p2p)->pien) {
+			free((*p2p)->pien);
+		}
+		if (NULL!=(*p2p)->pilow) {
+			free((*p2p)->pilow);
+		}
+		if (NULL!=(*p2p)->pihigh) {
+			free((*p2p)->pihigh);
+		}
+		free(*p2p);
+    *p2p=NULL;
+  }
+}
+
+Pha2Pi* loadPha2Pi(const char* const filename,
+			int* const status)
+{
+	if( strlen(filename)==0 ){
+		printf("No Pha2Pi File given");
+		return NULL;
+	}
+	else if( access(filename,F_OK)!=0 ){
+		char msg[MAXMSG];
+		sprintf(msg,"Pha2Pi correction File '%s' not accessible!",filename);
+		SIXT_WARNING(msg);
+		return NULL;
+	}
+
+
+  int colnum, typecode, nelements;
+  long width;
+  int anynul=0;
+
+  Pha2Pi* p2p=getPha2Pi(status);
+  CHECK_STATUS_RET(*status, p2p);
+
+  headas_chat(3, "open Pha2Pi file '%s' ...\n", filename);
+  fitsfile* fptr;
+  fits_open_table(&fptr, filename, READONLY, status);
+  CHECK_STATUS_RET(*status, p2p);
+
+  // Determine the number of rows.
+  fits_get_num_rows(fptr, &p2p->nrows, status);
+
+  // Determine the number of grades element dimension.
+  fits_get_colnum(fptr, CASEINSEN, "PIEN", &colnum, status);
+  fits_get_coltype(fptr, colnum, &typecode, &p2p->ngrades,
+		   &width, status);
+  CHECK_STATUS_RET(*status, p2p);
+
+  // Load PIEN, PILOW, PIHIGH columns
+  nelements = p2p->nrows * p2p->ngrades;
+  p2p->pien = (double **)malloc(nelements * sizeof(double));
+  fits_read_col(fptr, TDOUBLE, colnum, 1, 1, nelements, NULL, p2p->pien, &anynul, status);
+  CHECK_STATUS_RET(*status, p2p);
+
+  p2p->pilow = (double **)malloc(nelements * sizeof(double));
+  fits_get_colnum(fptr, CASEINSEN, "PILOW", &colnum, status);
+  fits_read_col(fptr, TDOUBLE, colnum, 1, 1, nelements, NULL, p2p->pilow, &anynul, status);
+  CHECK_STATUS_RET(*status, p2p);
+
+  p2p->pihigh = (double **)malloc(nelements * sizeof(double));
+  fits_get_colnum(fptr, CASEINSEN, "PIHIGH", &colnum, status);
+  fits_read_col(fptr, TDOUBLE, colnum, 1, 1, nelements, NULL, p2p->pihigh, &anynul, status);
+  CHECK_STATUS_RET(*status, p2p);
+
+  // Load PHA column
+  p2p->pha = (double *)malloc(p2p->nrows * sizeof(double));
+  fits_get_colnum(fptr, CASEINSEN, "PHA", &colnum, status);
+  fits_read_col(fptr, TDOUBLE, colnum, 1, 1, p2p->nrows, NULL, p2p->pha, &anynul, status);
+  CHECK_STATUS_RET(*status, p2p);
+
+  return(p2p);
+}
+
 

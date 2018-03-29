@@ -35,8 +35,35 @@
 void phpat(GenDet* const det,
 	   const EventFile* const src,
 	   EventFile* const dest,
+		 const char* picorr_file,
 	   const char skip_invalids,
 	   int* const status);
+
+// PHA2PI /** FITS file containing the correction from PHA to PI. */
+typedef struct {
+
+  /** Total number of rows in the file. */
+  long nrows, ngrades;
+
+  double* pha;
+  double** pien;
+  double** pilow;
+  double** pihigh;
+
+} Pha2Pi;
+
+/** Constructor. Returns a pointer to an empty Pha2Pi data
+    structure. */
+Pha2Pi* getPha2Pi(int* const status);
+
+void printPha2Pi(Pha2Pi* const p2p);
+
+/** Destructor. */
+void freePha2Pi(Pha2Pi** const p2p);
+
+/** Load Pha2Pi structure from File. */
+Pha2Pi* loadPha2Pi(const char* const filename,
+			 int* const status);
 
 
 #endif /* PHPAT_H */

@@ -74,6 +74,11 @@ int evpat_main()
     char evtfile_filename[MAXFILENAME];
     strcpy(evtfile_filename, par.EvtFile);
 
+    // Determine the output file.
+    char pha2pi_filename[MAXFILENAME];
+    strcpy(pha2pi_filename, par.Pha2Pi);
+
+
     // Load the GTI extension from the event file.
     gti=loadGTI(rawdata_filename, &status);
     CHECK_STATUS_BREAK(status);
@@ -116,7 +121,7 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.
-    phpat(inst->det, elf, plf, par.SkipInvalids, &status);
+    phpat(inst->det, elf, plf, pha2pi_filename, par.SkipInvalids, &status);
     CHECK_STATUS_BREAK(status);
 
     // Store the GTI in the pattern file.
@@ -157,21 +162,25 @@ int getpar(struct Parameters* const par)
   sixt_check_obsolete_keyword(&status);
   CHECK_STATUS_RET(status,EXIT_FAILURE);
 
-  status=ape_trad_query_file_name("RawData", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the input event list");
-    return(status);
-  } 
-  strcpy(par->RawData, sbuffer);
-  free(sbuffer);
+//  status=ape_trad_query_file_name("RawData", &sbuffer);
+//  if (EXIT_SUCCESS!=status) {
+//    SIXT_ERROR("failed reading the name of the input event list");
+//    return(status);
+//  }
+//  strcpy(par->RawData, sbuffer);
+//  free(sbuffer);
+//
+//  status=ape_trad_query_file_name("EvtFile", &sbuffer);
+//  if (EXIT_SUCCESS!=status) {
+//    SIXT_ERROR("failed reading the name of the output pattern list");
+//    return(status);
+//  }
+//  strcpy(par->EvtFile, sbuffer);
+//  free(sbuffer);
 
-  status=ape_trad_query_file_name("EvtFile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the output pattern list");
-    return(status);
-  } 
-  strcpy(par->EvtFile, sbuffer);
-  free(sbuffer);
+  query_simput_parameter_file_name_buffer("RawData", par->RawData, MAXFILENAME, &status);
+  query_simput_parameter_file_name_buffer("EvtFile", par->EvtFile, MAXFILENAME, &status);
+  query_simput_parameter_file_name_buffer("Pha2Pi", par->Pha2Pi, MAXFILENAME, &status);
 
   status=ape_trad_query_string("Mission", &sbuffer);
   if (EXIT_SUCCESS!=status) {

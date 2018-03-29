@@ -539,7 +539,7 @@ int runsixt_main()
     if (GS_NONE!=inst->det->split->type) {
       // Pattern analysis.
       headas_chat(3, "start event pattern analysis ...\n");
-      phpat(inst->det, elf, patf, par.SkipInvalids, &status);
+      phpat(inst->det, elf, patf, "none", par.SkipInvalids, &status);
       CHECK_STATUS_BREAK(status);
 
     } else {

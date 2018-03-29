@@ -6,6 +6,7 @@ EventList,s,h,"none",,,"Obsolete Keyword, now called RawData! (single-pixel even
 PatternList,s,h,"none",,,"Obsolete keyword, now called EvtFile! (event pattern list output file)"
 RawData,s,h,"none",,,"raw data output file"
 EvtFile,s,h,"none",,,"cleaned event output file (equivalent to level 2 or filtered event files)"
+Pha2Pi,s,h,"none",,,"PHA to PI correction fits file name (optional)"
 SkipInvalids,b,h,no,,,"skip invalid patterns in the output file?"
 Seed,i,lh,-1,,,"seed for random number generator (-1: initialize with system time)"
 chatter,i,lh,3,,,"verbosity"

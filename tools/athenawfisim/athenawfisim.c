@@ -626,7 +626,7 @@ int athenapwfisim_main()
       if (GS_NONE!=subinst[ii]->det->split->type) {
 	// Pattern analysis.
 	headas_chat(3, "start event pattern analysis ...\n");
-	phpat(subinst[ii]->det, elf[ii], patf[ii], par.SkipInvalids, &status);
+	phpat(subinst[ii]->det, elf[ii], patf[ii], "none", par.SkipInvalids, &status);
 	//CHECK_STATUS_BREAK(status);
       } else {
 	// If no split events are simulated, simply copy the event lists
