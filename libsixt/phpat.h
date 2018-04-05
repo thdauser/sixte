@@ -25,6 +25,7 @@
 #include "event.h"
 #include "eventfile.h"
 #include "gendet.h"
+#include "gsl/gsl_rng.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -56,7 +57,7 @@ typedef struct {
     structure. */
 Pha2Pi* getPha2Pi(int* const status);
 
-void printPha2Pi(Pha2Pi* const p2p);
+void printPha2Pi(const Pha2Pi* const p2p);
 
 /** Destructor. */
 void freePha2Pi(Pha2Pi** const p2p);
@@ -65,5 +66,7 @@ void freePha2Pi(Pha2Pi** const p2p);
 Pha2Pi* loadPha2Pi(const char* const filename,
 			 int* const status);
 
+/** Do the pha2pi correction. */
+void pha2picorrect(Event* const evt, const Pha2Pi* const p2p, int* const status);
 
 #endif /* PHPAT_H */

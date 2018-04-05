@@ -35,6 +35,7 @@ EventFile* newEventFile(int* const status)
   file->ctime=0;
   file->cframe =0;
   file->cpha    =0;
+  file->cpi    =0;
   file->csignal=0;
   file->crawx  =0;
   file->crawy  =0;
@@ -171,6 +172,19 @@ EventFile* openEventFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
   fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
   fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+  /* CHECK if 'PI' column exists. If not, insert it next to PHA column if mode=READWRITE
+  	 DO NOT MOVE THESE LINES. Reading following columns must come after
+  	 the inserted line. Otherwise their colnum would not be updated yet
+  */
+  fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
+  if( *status == COL_NOT_FOUND ){
+  	*status=EXIT_SUCCESS;
+  	if( mode == READWRITE ){
+  		fits_insert_col(file->fptr,file->cpha+1,"PI","E",status);
+  		CHECK_STATUS_RET(*status, file);
+  		file->cpi = file->cpha+1;
+  	}
+  }
   fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
   fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
@@ -292,6 +306,13 @@ void getEventFromFile(const EventFile* const file,
 		&lnull, &event->phas, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
+  // only read PI column if file->cpi is valid
+  if( file->cpi > 0 ){
+  	fits_read_col(file->fptr, TLONG, file->cpi, row, 1, 1,
+  			&dnull, &event->pi,&anynul, status);
+  	CHECK_STATUS_VOID(*status);
+  }
+
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     *status=EXIT_FAILURE;
@@ -339,6 +360,13 @@ void updateEventInFile(const EventFile* const file,
   fits_write_col(file->fptr, TLONG, file->cphas, row,
 		 1, 9, &event->phas, status);
   CHECK_STATUS_VOID(*status);
+
+  // only write PI value if event->pi value is valid, i.e., != -1.
+  if( file->cpi > 0 ){
+  	fits_write_col(file->fptr, TFLOAT, file->cpi, row,
+  			1, 1, &event->pi, status);
+    CHECK_STATUS_VOID(*status);
+  }
 }
 
 

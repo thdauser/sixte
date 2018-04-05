@@ -25,6 +25,9 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TTYPE#  PHA              / Corrected Energy Channel
 	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
+	TTYPE#  PI              / Pulse Invariant Energy
+	TFORM#  E               / Format of column PI
+	TUNIT#  keV             / Unit of column PI
 	TTYPE#  SIGNAL          / Pixel SIGNAL
 	TFORM#  E               / Format of column SIGNAL
 	TUNIT#  keV             / Unit of column SIGNAL
