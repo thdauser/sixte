@@ -121,7 +121,7 @@ int evpat_main()
     CHECK_STATUS_BREAK(status);
 
     // Pattern recombination.
-    phpat(inst->det, elf, plf, pha2pi_filename, par.SkipInvalids, &status);
+    phpat(inst->det, elf, plf, pha2pi_filename, seed, par.SkipInvalids, &status);
     CHECK_STATUS_BREAK(status);
 
     // Store the GTI in the pattern file.

@@ -51,7 +51,7 @@ static int isNeighbor(const Event* const e1, const Event* const e2) {
 }
 
 void phpat(GenDet* const det, const EventFile* const src, EventFile* const dest,
-		const char* picorr_file, const char skip_invalids, int* const status) {
+		const char* picorr_file, const unsigned int seed, const char skip_invalids, int* const status) {
 
 	// Pattern / grade statistics.
 	struct PatternStatistics statistics = { .nvalids = 0, .npvalids = 0,
@@ -80,8 +80,7 @@ void phpat(GenDet* const det, const EventFile* const src, EventFile* const dest,
 	static int threshold_warning_printed = 0;
 
 	// TODO: LOAD Pha2PI Correction File if existent
-	Pha2Pi* p2p = loadPha2Pi(picorr_file, status);
-//	printPha2Pi(p2p);
+	Pha2Pi* p2p = initPha2Pi(picorr_file, seed, status);
 
 	// Error handling loop.
 	do {
@@ -138,6 +137,7 @@ void phpat(GenDet* const det, const EventFile* const src, EventFile* const dest,
 				getEventFromFile(src, ii + 1, event, status);
 				CHECK_STATUS_BREAK(*status);
 			}
+
 
 			// Check if the new event belongs to a different frame than
 			// the previous ones.
@@ -472,7 +472,6 @@ void phpat(GenDet* const det, const EventFile* const src, EventFile* const dest,
 						}
 						nneighborlist = 0;
 
-
 						// TODO: PHA2PI CORRECTION
 						pha2picorrect( event, p2p , status);
 						CHECK_STATUS_BREAK(*status);
@@ -481,7 +480,6 @@ void phpat(GenDet* const det, const EventFile* const src, EventFile* const dest,
 						// the upper event threshold.
 						if ((det->threshold_pattern_up_keV == 0.)
 								|| (event->signal <= det->threshold_pattern_up_keV)) {
-
 							// Update the event statistics.
 							if (event->type < 0) {
 								statistics.ninvalids++;
@@ -593,6 +591,7 @@ Pha2Pi* getPha2Pi(int* const status) {
 	CHECK_NULL_RET(p2p, *status, "memory allocation for Pha2Pi failed", p2p);
 
 	// Initialize.
+	p2p->randgen = NULL;
 	p2p->nrows = 0;
 	p2p->ngrades = 0;
 	p2p->pha = NULL;
@@ -605,6 +604,9 @@ Pha2Pi* getPha2Pi(int* const status) {
 
 void freePha2Pi(Pha2Pi** const p2p) {
 	if (NULL != *p2p) {
+		if (NULL != (*p2p)->randgen) {
+			gsl_rng_free((*p2p)->randgen);
+		}
 		if (NULL != (*p2p)->pha) {
 			free((*p2p)->pha);
 		}
@@ -631,7 +633,7 @@ void freePha2Pi(Pha2Pi** const p2p) {
 	}
 }
 
-Pha2Pi* loadPha2Pi(const char* const filename, int* const status) {
+Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* const status) {
 	if (strlen(filename) == 0) {
 		return NULL;
 	} else if (access(filename, F_OK) != 0) {
@@ -648,6 +650,11 @@ Pha2Pi* loadPha2Pi(const char* const filename, int* const status) {
 	Pha2Pi* p2p = getPha2Pi(status);
 	CHECK_STATUS_RET(*status, p2p);
 
+	/** INITIALIZE RANDOM NUMBER GENERATOR */
+	p2p->randgen=gsl_rng_alloc(gsl_rng_taus);
+	gsl_rng_set(p2p->randgen,seed);
+
+	/** LOAD FILE */
 	headas_chat(3, "open Pha2Pi file '%s' ...\n", filename);
 	fitsfile* fptr;
 	fits_open_table(&fptr, filename, READONLY, status);
@@ -696,24 +703,8 @@ Pha2Pi* loadPha2Pi(const char* const filename, int* const status) {
 	return (p2p);
 }
 
-void printPha2Pi(const Pha2Pi* const p2p)
-{
-	// Do nothing if the Pha2Pi structure is uninitialized
-	if( p2p == NULL ){
-		return;
-	}
 
-	char msg[MAXMSG];
-	for( int ii=0; ii<p2p->nrows; ++ii){
-		sprintf(msg,"ROW %.4d:",ii);
-		for( int jj=0; jj<p2p->ngrades; ++jj){
-			sprintf(msg,"%s%10.4f",msg,p2p->pilow[ii][jj]);
-		}
-		printf("%s\n",msg);
-	}
-}
 
-gsl_rng *rng=NULL; // initialize to NULL and set it in tes_init
 
 void pha2picorrect(Event* const evt, const Pha2Pi* const p2p, int* const status) {
 
@@ -725,7 +716,7 @@ void pha2picorrect(Event* const evt, const Pha2Pi* const p2p, int* const status)
 	// Do nothing if event is invalid => pi = -1.
 	if( evt->type == -1
 			|| evt->pha < 0
-			|| evt->pha > p2p->pihigh[p2p->nrows-1][evt->type]){
+			|| evt->pha > p2p->pha[p2p->nrows-1]){
 		return;
 	}
 	// Make sure the requested evt->type is tabulated
@@ -737,12 +728,7 @@ void pha2picorrect(Event* const evt, const Pha2Pi* const p2p, int* const status)
 	}
 	// Determine a PI value for the event's PHA value
 	else{
-	  if (rng==NULL){
-	    rng=gsl_rng_alloc(gsl_rng_taus);
-		  gsl_rng_set(rng,1);
-	  }
-	  double ran = gsl_rng_uniform(rng);
-//		double ran = sixt_get_random_number(status);
+	  double ran = gsl_rng_uniform(p2p->randgen);
 		int index = 0;
 		while ( index < p2p->nrows && p2p->pha[index] != evt->pha  ){ ++index; };
 		const double emin = p2p->pilow[index][evt->type];

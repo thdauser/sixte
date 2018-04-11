@@ -31,7 +31,7 @@ Event* getEvent(int* const status)
   ev->rawx=0;
   ev->rawy=0;
   ev->pha  =0;
-  ev->pi   = NAN;
+  ev->pi   = -1.;
   ev->signal =0.;
   ev->time   =0.;
   ev->frame  =0;

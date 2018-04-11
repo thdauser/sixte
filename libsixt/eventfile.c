@@ -308,7 +308,7 @@ void getEventFromFile(const EventFile* const file,
 
   // only read PI column if file->cpi is valid
   if( file->cpi > 0 ){
-  	fits_read_col(file->fptr, TLONG, file->cpi, row, 1, 1,
+  	fits_read_col(file->fptr, TFLOAT, file->cpi, row, 1, 1,
   			&dnull, &event->pi,&anynul, status);
   	CHECK_STATUS_VOID(*status);
   }

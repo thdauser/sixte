@@ -37,13 +37,17 @@ void phpat(GenDet* const det,
 	   const EventFile* const src,
 	   EventFile* const dest,
 		 const char* picorr_file,
+		 const unsigned int seed,
 	   const char skip_invalids,
 	   int* const status);
 
 // PHA2PI /** FITS file containing the correction from PHA to PI. */
 typedef struct {
 
-  /** Total number of rows in the file. */
+	/** RANDOM NUMBER GENERATOR */
+	gsl_rng *randgen;
+
+  /** FILE CONTENT */
   long nrows, ngrades;
 
   double* pha;
@@ -57,16 +61,17 @@ typedef struct {
     structure. */
 Pha2Pi* getPha2Pi(int* const status);
 
-void printPha2Pi(const Pha2Pi* const p2p);
-
 /** Destructor. */
 void freePha2Pi(Pha2Pi** const p2p);
 
-/** Load Pha2Pi structure from File. */
-Pha2Pi* loadPha2Pi(const char* const filename,
-			 int* const status);
+/** Initialize RNG and Load Pha2Pi structure from File. */
+Pha2Pi* initPha2Pi(const char* const filename,
+		const unsigned int seed,
+		int* const status);
 
 /** Do the pha2pi correction. */
-void pha2picorrect(Event* const evt, const Pha2Pi* const p2p, int* const status);
+void pha2picorrect(Event* const evt,
+		const Pha2Pi* const p2p,
+		int* const status);
 
 #endif /* PHPAT_H */
