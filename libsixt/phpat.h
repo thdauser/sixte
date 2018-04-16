@@ -50,7 +50,7 @@ typedef struct {
   /** FILE CONTENT */
   long nrows, ngrades;
 
-  double* pha;
+  long* pha;
   double** pien;
   double** pilow;
   double** pihigh;

@@ -663,6 +663,21 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 	// Determine the number of rows.
 	fits_get_num_rows(fptr, &p2p->nrows, status);
 
+	// Load PHA column
+	p2p->pha = (long *) malloc(p2p->nrows * sizeof(long));
+	fits_get_colnum(fptr, CASEINSEN, "PHA", &colnum, status);
+	fits_read_col(fptr, TINT32BIT, colnum, 1, 1, p2p->nrows, NULL, p2p->pha,
+			&anynul, status);
+	CHECK_STATUS_RET(*status, p2p);
+
+	// CHECK CONSISTENCY: PHA has to start at zero and must be continues
+	if( p2p->pha[0] != 0 || p2p->pha[p2p->nrows-1] != p2p->nrows-1 ){
+		char msg[MAXMSG];
+		sprintf(msg, "Pha2Pi correction File is inconsistent! PHA values must be continues starting with 0!");
+		SIXT_ERROR(msg);
+		return NULL;
+	}
+
 	// Determine the number of grades element dimension.
 	fits_get_colnum(fptr, CASEINSEN, "PIEN", &colnum, status);
 	fits_get_coltype(fptr, colnum, &typecode, &p2p->ngrades, &width, status);
@@ -693,13 +708,6 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 		CHECK_STATUS_RET(*status, p2p);
 	}
 
-	// Load PHA column
-	p2p->pha = (double *) malloc(p2p->nrows * sizeof(double));
-	fits_get_colnum(fptr, CASEINSEN, "PHA", &colnum, status);
-	fits_read_col(fptr, TDOUBLE, colnum, 1, 1, p2p->nrows, NULL, p2p->pha,
-			&anynul, status);
-	CHECK_STATUS_RET(*status, p2p);
-
 	return (p2p);
 }
 
@@ -729,10 +737,8 @@ void pha2picorrect(Event* const evt, const Pha2Pi* const p2p, int* const status)
 	// Determine a PI value for the event's PHA value
 	else{
 	  double ran = gsl_rng_uniform(p2p->randgen);
-		int index = 0;
-		while ( index < p2p->nrows && p2p->pha[index] != evt->pha  ){ ++index; };
-		const double emin = p2p->pilow[index][evt->type];
-		const double emax = p2p->pihigh[index][evt->type];
+		const double emin = p2p->pilow[evt->pha][evt->type];
+		const double emax = p2p->pihigh[evt->pha][evt->type];
 		evt->pi = emin + ran*(emax-emin);
 	}
 
