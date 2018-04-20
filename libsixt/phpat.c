@@ -562,11 +562,18 @@ void phpat(GenDet* const det, const EventFile* const src, EventFile* const dest,
 			fits_update_key(dest->fptr, TLONG, keyword, &statistics.npgrade[ii],
 					comment, status);
 		}
+		// Set Pha2Pi keyword if correction was performed
+		if(p2p != NULL){
+			fits_update_key(dest->fptr, TSTRING, "PHA2PI", p2p->p2p_filename,
+					"Pha2Pi file - set if correction was performed", status);
+		}
 		CHECK_STATUS_BREAK(*status);
 
 	} while (0); // End of error handling loop.
 
 	// Release memory.
+	freePha2Pi(&p2p);
+
 	if (NULL != framelist) {
 		for (ii = 0; ii < nframelist; ii++) {
 			if (NULL != framelist[ii]) {
@@ -591,6 +598,7 @@ Pha2Pi* getPha2Pi(int* const status) {
 	CHECK_NULL_RET(p2p, *status, "memory allocation for Pha2Pi failed", p2p);
 
 	// Initialize.
+	p2p->p2p_filename = NULL;
 	p2p->randgen = NULL;
 	p2p->nrows = 0;
 	p2p->ngrades = 0;
@@ -604,6 +612,9 @@ Pha2Pi* getPha2Pi(int* const status) {
 
 void freePha2Pi(Pha2Pi** const p2p) {
 	if (NULL != *p2p) {
+		if (NULL != (*p2p)->p2p_filename) {
+			free((*p2p)->p2p_filename);
+		}
 		if (NULL != (*p2p)->randgen) {
 			gsl_rng_free((*p2p)->randgen);
 		}
@@ -649,6 +660,12 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 
 	Pha2Pi* p2p = getPha2Pi(status);
 	CHECK_STATUS_RET(*status, p2p);
+
+	/** Store filename */
+	p2p->p2p_filename=(char*)malloc((strlen(filename)+1)*sizeof(char));
+	CHECK_NULL_RET(p2p->p2p_filename, *status,
+			"memory allocation for p2p_filename failed", p2p);
+	strcpy(p2p->p2p_filename, filename);
 
 	/** INITIALIZE RANDOM NUMBER GENERATOR */
 	p2p->randgen=gsl_rng_alloc(gsl_rng_taus);

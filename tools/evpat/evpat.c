@@ -44,7 +44,7 @@ int evpat_main()
 
   // Register HEATOOL:
   set_toolname("evpat");
-  set_toolversion("0.06");
+  set_toolversion("0.07");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -74,7 +74,7 @@ int evpat_main()
     char evtfile_filename[MAXFILENAME];
     strcpy(evtfile_filename, par.EvtFile);
 
-    // Determine the output file.
+    // Determine the Pha2Pi file.
     char pha2pi_filename[MAXFILENAME];
     strcpy(pha2pi_filename, par.Pha2Pi);
 

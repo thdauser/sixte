@@ -5,6 +5,7 @@ EventList,s,h,"none",,,"Obsolete Keyword, now called RawData! (single-pixel even
 PatternList,s,h,"none",,,"Obsolete keyword, now called EvtFile! (event pattern list output file)"
 RawData,s,h,"none",,,"raw data output file"
 EvtFile,s,h,"none",,,"cleaned event output file (equivalent to level 2 or filtered event files)"
+Pha2Pi,s,h,"none",,,"PHA to PI correction fits file name (optional)"
 Mission,s,lq,"SRG",,,"mission name: Chandra, GRAVITAS, IXO, ATHENA, SRG, XMM"
 Instrument,s,lq,"eROSITA",,,"instrument name"
 Mode,s,lq,"none",,,"instrument mode (including filter)"

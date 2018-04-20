@@ -44,6 +44,9 @@ void phpat(GenDet* const det,
 // PHA2PI /** FITS file containing the correction from PHA to PI. */
 typedef struct {
 
+	/** FILE NAME */
+	char* p2p_filename;
+
 	/** RANDOM NUMBER GENERATOR */
 	gsl_rng *randgen;
 

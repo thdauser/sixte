@@ -52,6 +52,7 @@ struct Parameters {
   char ImpactList[MAXFILENAME];
   char EvtFile[MAXFILENAME];
   char RawData[MAXFILENAME];
+  char Pha2Pi[MAXFILENAME];
   char* Attitude;
   char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
