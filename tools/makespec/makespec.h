@@ -47,6 +47,7 @@ struct Parameters {
   int Seed;
   
   char clobber;
+  char usesignal;
 };
 
 

@@ -49,7 +49,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.09");
+  set_toolversion("0.10");
 
   
   do {  // Beginning of the ERROR handling loop.
@@ -151,6 +151,24 @@ int makespec_main() {
     fits_get_colnum(ef, CASEINSEN, "SIGNAL", &csignal, &status);
     CHECK_STATUS_BREAK(status);
 
+  	/** Check if EventFile has Pha2Pi corrected column 'PI' */
+    if(par.usesignal==0){
+    	char pha2pi[MAXMSG];
+    	fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, comment, &status);
+    	if (COL_NOT_FOUND == status) {
+    		SIXT_WARNING("Events are not Pha2Pi corrected! Falling back to 'SIGNAL' for spectra creation ...");
+    		status = EXIT_SUCCESS;
+    		//break;
+    	}
+    	else{
+    		fits_get_colnum(ef, CASEINSEN, "PI", &csignal, &status);
+    	}
+    	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+    }
+    else{
+  		SIXT_WARNING("Using uncorrected 'SIGNAL' values to make the spectrum!");
+    }
+
     // Determine the number of rows.
     long nrows;
     fits_get_num_rows(ef, &nrows, &status);
@@ -217,12 +235,12 @@ int makespec_main() {
       // we load the rmf used in the simulation:
       char simresppathname[2*MAXFILENAME];
       if (strlen(par.RSPPath)>0) {
-	strcpy(simresppathname, par.RSPPath);
-	strcat(simresppathname, "/");
-	strcat(simresppathname, respfile);
+      	strcpy(simresppathname, par.RSPPath);
+      	strcat(simresppathname, "/");
+      	strcat(simresppathname, respfile);
       } else {
-	// The file should be located in the working directory.
-	strcpy(simresppathname, respfile);
+      	// The file should be located in the working directory.
+      	strcpy(simresppathname, respfile);
       }
       printf("path to the response file: %s\n", simresppathname);
       
@@ -236,9 +254,9 @@ int makespec_main() {
       if((rmf->NumberChannels != simrmf->NumberChannels) ||
       	 (rmf->ChannelLowEnergy[0]   != simrmf->ChannelLowEnergy[0]) ||
       	 (rmf->ChannelHighEnergy[rmf->NumberChannels-2] != simrmf->ChannelHighEnergy[simrmf->NumberChannels-2])){
-	status=EXIT_FAILURE;
-	SIXT_ERROR("Required RMF has not the same binning as the original one");
-	break;
+      	status=EXIT_FAILURE;
+      	SIXT_ERROR("Required RMF has not the same binning as the original one");
+      	break;
       }
     }
     // Check the ARF:
@@ -248,13 +266,14 @@ int makespec_main() {
       // we load the arf used in the simulation:
       char simancrpathname[2*MAXFILENAME];      
       if (strlen(par.RSPPath)>0) {
-	strcpy(simancrpathname, par.RSPPath);
-	strcat(simancrpathname, "/");
-	strcat(simancrpathname, ancrfile);
+      	strcpy(simancrpathname, par.RSPPath);
+      	strcat(simancrpathname, "/");
+      	strcat(simancrpathname, ancrfile);
       } else {
-	// The file should be located in the working directory.
-	strcpy(simancrpathname, ancrfile);
+      	// The file should be located in the working directory.
+      	strcpy(simancrpathname, ancrfile);
       }
+      printf("path to the ancilliary file: %s\n", simancrpathname);
       
       // Load the ARFs.
       struct ARF* arf=loadARF(ancrpathname,&status);
@@ -472,6 +491,11 @@ int makespec_getpar(struct Parameters* par)
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the clobber parameter");
+    return(status);
+  }
+  status=ape_trad_query_bool("usesignal", &par->usesignal);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the usesignal parameter");
     return(status);
   }
 
