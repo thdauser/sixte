@@ -205,7 +205,7 @@ int ero_calevents_main()
     // Create the event table.
     char *ttype[]={"TIME", "RA", "DEC", "X", "Y", "ENERGY",
 		   "EV_WEIGHT", "RAWX", "RAWY", "SUBX", "SUBY",
-		   "PHA", "PAT_TYP", "PAT_INF", "CCDNR",
+		   "PHA", "PAT_TYP", "PAT_INF", "TM_NR",
 		   "FLAG", "FRAME"};
     char *tform[]={"D", "J", "J", "J", "J", "E",
 		   "E", "I", "I", "B", "B",
@@ -259,7 +259,7 @@ int ero_calevents_main()
     fits_get_colnum(fptr, CASEINSEN, "PHA", &cpha, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_TYP", &cpat_typ, &status);
     fits_get_colnum(fptr, CASEINSEN, "PAT_INF", &cpat_inf, &status);
-    fits_get_colnum(fptr, CASEINSEN, "CCDNR", &cccdnr, &status);
+    fits_get_colnum(fptr, CASEINSEN, "TM_NR", &cccdnr, &status);
     fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
     fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
     CHECK_STATUS_BREAK(status);
