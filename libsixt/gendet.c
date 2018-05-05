@@ -40,6 +40,7 @@ GenDet* newGenDet(int* const status)
   det->pixgrid  =NULL;
   det->split    =NULL;
   det->line     =NULL;
+  det->pha2pi_filename=NULL;
   det->rmf_filename=NULL;
   det->rmf      =NULL;
   det->elf      =NULL;
@@ -94,6 +95,9 @@ void destroyGenDet(GenDet** const det)
 	destroyGenDetLine(&(*det)->line[ii]);
       }
       free((*det)->line);
+    }
+    if (NULL!=(*det)->pha2pi_filename) {
+      free((*det)->pha2pi_filename);
     }
     if (NULL!=(*det)->rmf_filename) {
       free((*det)->rmf_filename);

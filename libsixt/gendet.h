@@ -120,6 +120,10 @@ typedef struct {
   /** Array of pointers to pixel lines. */
   GenDetLine** line;
 
+  /** Pha2Pi correction filename used to convert PHA to PI accounting
+      for signal loss due to lower energy thresholds */
+  char* pha2pi_filename;
+
   /** Detector response matrix. The RMF file that is originally loaded
       may also contain ARF contributions. But as these already have
       been taken into account in the generation of the input spectra
