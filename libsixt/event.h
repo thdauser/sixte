@@ -45,8 +45,8 @@ typedef struct {
   /** Detected PHA channel [adu]. */
   long pha;
 
-  /** PI value derived from PHA channel [keV]. */
-  float pi;
+  /** PI value derived from PHA channel [adu]. */
+  long pi;
 
   /** Signal in [keV]. */
   float signal;
