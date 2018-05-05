@@ -363,7 +363,7 @@ void updateEventInFile(const EventFile* const file,
 
   // only write PI value if event->pi value is valid, i.e., != -1.
   if( file->cpi > 0 ){
-  	fits_write_col(file->fptr, TFLOAT, file->cpi, row,
+  	fits_write_col(file->fptr, TLONG, file->cpi, row,
   			1, 1, &event->pi, status);
     CHECK_STATUS_VOID(*status);
   }
