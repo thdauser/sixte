@@ -64,7 +64,7 @@ int runsixt_main()
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.19");
+  set_toolversion("0.18");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -76,10 +76,6 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
-
-    // Determine the Pha2Pi file.
-    char pha2pi_filename[MAXFILENAME];
-    strcpy(pha2pi_filename, par.Pha2Pi);
 
     // Determine the prefix for the output files.
     char ucase_buffer[MAXFILENAME];
@@ -543,7 +539,7 @@ int runsixt_main()
     if (GS_NONE!=inst->det->split->type) {
       // Pattern analysis.
       headas_chat(3, "start event pattern analysis ...\n");
-      phpat(inst->det, elf, patf, pha2pi_filename, seed, par.SkipInvalids, &status);
+      phpat(inst->det, elf, patf, par.SkipInvalids, &status);
       CHECK_STATUS_BREAK(status);
 
     } else {
@@ -712,7 +708,6 @@ int runsixt_getpar(struct Parameters* const par)
   }
 
   query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
-  query_simput_parameter_file_name_buffer("Pha2Pi", par->Pha2Pi, MAXFILENAME, &status);
 
   // only load RA,Dec if Attitude is not given
   if (par->Attitude=='\0'){

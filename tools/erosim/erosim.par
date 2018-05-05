@@ -5,7 +5,6 @@ EventList,s,h,"none",,,"Obsolete Keyword, now called RawData! (single-pixel even
 PatternList,s,h,"none",,,"Obsolete keyword, now called EvtFile! (event pattern list output file)"
 RawData,s,h,"none",,,"raw data output file"
 EvtFile,s,h,"none",,,"cleaned event output file (equivalent to level 2 or filtered event files)"
-Pha2Pi,s,h,"none",,,"PHA to PI correction fits file name (optional)"
 XMLFile,s,h,"none",,,"XML input file with instrument definition"
 XMLFile1,s,h,"none",,,"XML input file with instrument definition for sub-instrument 1"
 XMLFile2,s,h,"none",,,"XML input file with instrument definition for sub-instrument 2"

@@ -133,7 +133,7 @@ int erosim_main()
 
   // Register HEATOOL
   set_toolname("erosim");
-  set_toolversion("1.3");
+  set_toolversion("1.2");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -145,10 +145,6 @@ int erosim_main()
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
-
-    // Determine the Pha2Pi file.
-    char pha2pi_filename[MAXFILENAME];
-    strcpy(pha2pi_filename, par.Pha2Pi);
 
     // Determine the prefix for the output files.
     char ucase_buffer[MAXFILENAME];
@@ -814,7 +810,7 @@ int erosim_main()
     	if (GS_NONE!=subinst[ii]->det->split->type) {
     		// Pattern analysis.
     		headas_chat(3, "start event pattern analysis ...\n");
-    		phpat(subinst[ii]->det, elf[ii], patf[ii], pha2pi_filename, seed, par.SkipInvalids, &status);
+    		phpat(subinst[ii]->det, elf[ii], patf[ii], par.SkipInvalids, &status);
     		//CHECK_STATUS_BREAK(status);
     	} else {
     		// If no split events are simulated, simply copy the event lists
@@ -1039,7 +1035,6 @@ int erosim_getpar(struct Parameters* const par)
   }
 
   query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
-  query_simput_parameter_file_name_buffer("Pha2Pi", par->Pha2Pi, MAXFILENAME, &status);
 
   // only load RA,Dec if Attitude is not given
   if (par->Attitude=='\0'){

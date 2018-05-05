@@ -28,7 +28,6 @@
 #include "geninst.h"
 #include "gti.h"
 #include "phpat.h"
-#include "parinput.h"
 
 #define TOOLSUB evpat_main
 #include "headas_main.c"
@@ -47,7 +46,6 @@ struct Parameters {
 
   char EvtFile[MAXFILENAME];
   char RawData[MAXFILENAME];
-  char Pha2Pi[MAXFILENAME];
 
   /** Skip invalid patterns when producing the output file. */
   char SkipInvalids;
