@@ -172,6 +172,7 @@ AC_CONFIG_FILES([Makefile
 		tools/comabackpro/Makefile
 		tools/projev/Makefile
 		tools/evpat/Makefile
+		tools/picorrect/Makefile
 		tools/imgev/Makefile
 		tools/fudgexp/Makefile
 		tools/orbatt/Makefile

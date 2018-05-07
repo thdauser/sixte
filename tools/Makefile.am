@@ -8,5 +8,6 @@ SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         epicmos2_events piximpacts tesstream pixdetillum pulsetemplgen  \
         pulsetemplimport streamtotriggers runtes tesconstpileup tessim  \
 	comaimgPM comabackpro xml2svg tesreconstruction xifupipeline   \
-	gennoisespec exposure_map gradeddetection tesgenimpacts
+	gennoisespec exposure_map gradeddetection tesgenimpacts         \
+	picorrect
 
