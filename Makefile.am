@@ -3,7 +3,7 @@ dist_bin_SCRIPTS+=sixte-install.csh
 
 ACLOCAL_AMFLAGS = -I ./build-aux/m4/
 
-EXTRA_DIST=INSTALL.txt # include INSTALL.txt in the distributed package
+EXTRA_DIST=INSTALL.txt mac_solve_sixte_dependencies.sh # include INSTALL.txt in the distributed package
 
 # The sub-directories are built before the current directory.
 # In order to change this, include "." in the list of SUBDIRS.
