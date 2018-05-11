@@ -107,10 +107,6 @@ typedef struct{
 /** Add crosstalk to proxy */
 void addCrosstalk2Proxy(CrosstalkProxy* xtalk_proxy, float current_time, PixImpact* impact, int type, double df, int* const status);
 
-/**  Binary search for to find interpolation interval
- *   - return value is the bin [ind,ind+1]
- *   - assume list is sorted ascending */
-int binary_search(double val, double* arr, int n);
 
 /** Finds influence of a proportional cross-talk */
 void calc_prop_xt_influence(AdvDet* det,double signal_energy, double perturber_energy, double* enweight, double dt_in_frames, int grading);

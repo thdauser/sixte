@@ -20,61 +20,6 @@
 
 #include "crosstalk.h"
 
-/** Calculates distance between two pixels */
-/**static double distance_two_pixels(AdvPix* pix1,AdvPix*pix2){
-	// Note: this assumes no pixel overlap (this was ensured at detector loading stage)
-
-	// pix1 is on the right of pix2
-	if(pix1->sx>pix2->sx + .5*pix2->width){
-		// pix1 is above pix2
-		if (pix1->sy > pix2->sy + .5*pix2->height){
-			// distance is distance between bottom left corner of pix1 and top right corner of pix2
-			return sqrt(pow(pix1->sx - .5*pix1->width - (pix2->sx + .5*pix2->width),2) +
-					pow(pix1->sy - .5*pix1->height - (pix2->sy + .5*pix2->height),2));
-		}
-		// pix1 is below pix2
-		if (pix1->sy < pix2->sy - .5*pix2->height){
-			// distance is distance between top left corner of pix1 and bottom right corner of pix2
-			return sqrt(pow(pix1->sx - .5*pix1->width - (pix2->sx + .5*pix2->width),2) +
-					pow(pix1->sy + .5*pix1->height - (pix2->sy - .5*pix2->height),2));
-		}
-		// pix1 is at the same level as pix2
-		// distance is distance between left edge of pix1 and right edge of pix2
-		return pix1->sx - .5*pix1->width - (pix2->sx + .5*pix2->width);
-	}
-
-	// pix1 is on the left of pix2
-	if(pix1->sx<pix2->sx - .5*pix2->width){
-		// pix1 is above pix2
-		if (pix1->sy > pix2->sy + .5*pix2->height){
-			// distance is distance between bottom right corner of pix1 and top left corner of pix2
-			return sqrt(pow(pix1->sx + .5*pix1->width - (pix2->sx - .5*pix2->width),2) +
-					pow(pix1->sy - .5*pix1->height - (pix2->sy + .5*pix2->height),2));
-		}
-		// pix1 is below pix2
-		if (pix1->sy < pix2->sy - .5*pix2->height){
-			// distance is distance between top right corner of pix1 and bottom left corner of pix2
-			return sqrt(pow(pix1->sx + .5*pix1->width - (pix2->sx - .5*pix2->width),2) +
-					pow(pix1->sy + .5*pix1->height - (pix2->sy - .5*pix2->height),2));
-		}
-		// pix1 is at the same level as pix2
-		// distance is distance between right edge of pix1 and left edge of pix2
-		return (pix2->sx - .5*pix2->width) - (pix1->sx + .5*pix1->width);
-
-	}
-
-	// pix1 is at the same left/right position as pix2
-
-	// pix1 is above pix2
-	if (pix1->sy > pix2->sy){
-		// distance is distance between bottom edge of pix1 and top edge of pix2
-		return (pix1->sy - .5*pix1->height - (pix2->sy + .5*pix2->height));
-	}
-	// pix1 is below pix2
-	// distance is distance between top edge of pix1 and bottom edge of pix2
-	return (pix2->sy - .5*pix2->height - (pix1->sy + .5*pix1->height));
-}*/
-
 /** Adds a cross talk pixel to the matrix */
 static void add_xt_pixel(MatrixCrossTalk* matrix,AdvPix* pixel,int xt_index, double xt_weigth,int* const status){
 	CHECK_STATUS_VOID(*status);
@@ -2626,27 +2571,4 @@ void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy*
 		computeTimeDependency(det,xtalk_proxy,impact, energies, xtalk_energy,nb_influences,
 				 event_file, save_crosstalk, grade, sample_length, status);
 	}
-}
-
-/**  Binary search for to find interpolation interval
- *   - return value is the bin [ind,ind+1]
- *   - assume list is sorted ascending */
-int binary_search(double val, double* arr, int n){
-
-	if (val < arr[0] || val > arr[n-1]){
-		return -1;
-	}
-
-	int high=n-1;
-	int low=0;
-	int mid;
-	while (high > low) {
-		mid=(low+high)/2;
-		if (arr[mid] <= val) {
-			low=mid+1;
-		} else {
-			high=mid;
-		}
-	}
-	return low-1;
 }
