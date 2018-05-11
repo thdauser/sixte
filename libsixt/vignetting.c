@@ -241,6 +241,30 @@ void destroyVignetting(Vignetting** const vi) {
 }
 
 
+// At the moment SIXTE can only handle the cases without phi dependece phi = 0.
+static float get_vign_ener(const float theta, const float* arr_theta, float** arr_vign, const int ntheta){
+
+
+	// Check if the required angle is larger than the biggest in the
+	// vignetting data.
+	if (theta>=arr_theta[ntheta-1]) {
+		return(arr_vign[ntheta-1][0]);
+	}
+
+	// Find the two values in the vignetting data surrounding
+	// the required angle.
+	int jj;
+	for(jj=1; jj<ntheta; jj++) {
+		if (arr_theta[jj]>=theta) {
+			// Interpolate between both values.
+			return(arr_vign[jj-1][0]+
+					(arr_vign[jj][0]-arr_vign[jj-1][0])*
+					(theta-arr_theta[jj-1])/(arr_theta[jj]-arr_theta[jj-1]));
+		}
+	}
+	return 1.;
+}
+
 float get_Vignetting_Factor(const Vignetting* const vi, const float energy, 
 			    const float theta, const float phi) 
 {
@@ -263,28 +287,35 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
   } 
   
   // Find the right energy bin.
+  // assume linear interpolation at middle of the bin
   int ii;
+  int ind_bin = 0;
+  float vign_val[2];
   for(ii=0; ii<vi->nenergies; ii++) {
-    if ((energy>=vi->energ_lo[ii])&&(energy<=vi->energ_hi[ii])) {
-      
-      // Check if the required angle is larger than the biggest in the 
-      // vignetting data.
-      if (theta>=vi->theta[vi->ntheta-1]) {
-	return(vi->vignet[ii][vi->ntheta-1][0]);
-      }
+	  if ((energy>=vi->energ_lo[ii])&&(energy<=vi->energ_hi[ii])) {
+		  float ener_mean = 0.5* (vi->energ_lo[ii] + vi->energ_hi[ii]);
 
-      // Find the two values in the vignetting data surrounding
-      // the required angle.
-      int jj;
-      for(jj=1; jj<vi->ntheta; jj++) {
-	if (vi->theta[jj]>=theta) {
-	  // Interpolate between both values.
-	  return(vi->vignet[ii][jj-1][0]+
-		 (vi->vignet[ii][jj][0]-vi->vignet[ii][jj-1][0])*
-		 (theta-vi->theta[jj-1])/(vi->theta[jj]-vi->theta[jj-1]));
-	}
-      }
-    }
+		  // if below first grid point: return first grid point
+		  if (ii==0 && energy < ener_mean ){
+			  return get_vign_ener(theta, vi->theta, vi->vignet[ii], vi->ntheta);
+		  }
+
+
+
+		  // if above last grid point: return last grid point
+		  if (ii==vi->nenergies-1 && energy > ener_mean ){
+			  return get_vign_ener(theta, vi->theta, vi->vignet[ii], vi->ntheta);
+		  }
+
+
+		  // we're in the first energy bin
+		  if (energy < 0.5*(e)==0){
+			  vign_val = get_vign_ener(theta, vi->theta, vi->vignet[ii], vi->ntheta);
+
+		  }
+
+		  return vign_val;
+	  }
   } 
   // END of loop to find the right energy bin.
 
