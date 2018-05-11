@@ -899,3 +899,28 @@ void sixt_check_obsolete_keyword(int* status){
 	}
 
 }
+
+
+/**  Binary search for to find interpolation interval
+ *   - return value is the bin [ind,ind+1]
+ *   - assume list is sorted ascending */
+int binary_search(double val, double* arr, int n){
+
+	if (val < arr[0] || val > arr[n-1]){
+		return -1;
+	}
+
+	int high=n-1;
+	int low=0;
+	int mid;
+	while (high > low) {
+		mid=(low+high)/2;
+		if (arr[mid] <= val) {
+			low=mid+1;
+		} else {
+			high=mid;
+		}
+	}
+	return low-1;
+}
+

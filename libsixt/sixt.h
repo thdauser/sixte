@@ -412,5 +412,10 @@ void fits_close_file_chksum(fitsfile *fptr,int *status);
 // check for obsolete input keywords
 void sixt_check_obsolete_keyword(int* status);
 
+/**  Binary search for to find interpolation interval
+ *   - return value is the bin [ind,ind+1]
+ *   - assume list is sorted ascending */
+int binary_search(double val, double* arr, int n);
+
 #endif /* SIXT_H */
 
