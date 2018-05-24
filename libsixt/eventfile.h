@@ -57,6 +57,9 @@ EventFile* newEventFile(int* const status);
 /** Destructor. */
 void freeEventFile(EventFile** const file, int* const status);
 
+/** Initializes EventFile column numbers */
+void getColNumsFromEventFile(EventFile* const file,	int* const status);
+
 /** Create and open a new EventFile. */
 EventFile* openNewEventFile(const char* const filename,
 			    char* const telescop,
@@ -76,6 +79,15 @@ EventFile* openNewEventFile(const char* const filename,
 /** Open an existing EventFile. */
 EventFile* openEventFile(const char* const filename,
 			 const int mode, int* const status);
+
+/** Add a column to open EventFile. EventFile must be opened in
+    READWRITE mode. ttype should be known in EventFile typedef,
+    otherwise added column will be ignored by the other
+    EventFile routines */
+void addCol2EventFile(EventFile* const file,
+		int* const colnum, char* const ttype,
+		char* const tform, char* const tunit,
+		int* const status);
 
 /** Append a new event to the event file. */
 void addEvent2File(EventFile* const file, 

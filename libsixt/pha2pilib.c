@@ -282,6 +282,13 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
     loadEbounds(rmf, resppathname, status);
     CHECK_STATUS_VOID(*status);
 
+	// Add 'PI' column to evtfile if necessary
+	if( evtfile->cpi == 0 ){
+		evtfile->cpi = evtfile->cpha+1;
+		addCol2EventFile(evtfile, &evtfile->cpi, "PI", "J", "ADU", status );
+		CHECK_STATUS_VOID(*status);
+	}
+
     // Loop over all events in the input list.
     long ii;
     for (ii=1; ii<=evtfile->nrows; ii++) {

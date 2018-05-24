@@ -72,6 +72,29 @@ void freeEventFile(EventFile** const file,
   }
 }
 
+void getColNumsFromEventFile(EventFile* const file,	int* const status)
+{
+	fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
+	if( *status == COL_NOT_FOUND ){   // Optional Column: reset status if not existent
+		*status=EXIT_SUCCESS;
+	}
+	fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "NPIXELS", &file->cnpixels, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "TYPE", &file->ctype, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "SIGNALS", &file->csignals, status);
+	fits_get_colnum(file->fptr, CASEINSEN, "PHAS", &file->cphas, status);
+}
+
 
 EventFile* openNewEventFile(const char* const filename,
 			    char* const telescop,
@@ -169,34 +192,7 @@ EventFile* openEventFile(const char* const filename,
   fits_get_num_rows(file->fptr, &file->nrows, status);
 
   // Determine the column numbers.
-  fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
-  /* CHECK if 'PI' column exists. If not, insert it next to PHA column if mode=READWRITE
-  	 DO NOT MOVE THESE LINES. Reading following columns must come after
-  	 the inserted line. Otherwise their colnum would not be updated yet
-  */
-  fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
-  if( *status == COL_NOT_FOUND ){
-  	*status=EXIT_SUCCESS;
-  	if( mode == READWRITE ){
-  		fits_insert_col(file->fptr,file->cpha+1,"PI","J",status);
-  		CHECK_STATUS_RET(*status, file);
-  		file->cpi = file->cpha+1;
-  	}
-  }
-  fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "RAWX", &file->crawx, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "RAWY", &file->crawy, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->cra, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->cdec, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->cph_id, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "NPIXELS", &file->cnpixels, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "TYPE", &file->ctype, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "SIGNALS", &file->csignals, status);
-  fits_get_colnum(file->fptr, CASEINSEN, "PHAS", &file->cphas, status);
+  getColNumsFromEventFile(file, status);
   CHECK_STATUS_RET(*status, file);
 
   // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
@@ -235,6 +231,48 @@ EventFile* openEventFile(const char* const filename,
   return(file);
 }
 
+void addCol2EventFile(EventFile* const file,
+		int* const colnum,
+		char* const ttype,
+		char* const tform,
+		char* const tunit,
+		int* const status){
+
+	// Check if colnum is out of bounds
+	int cnum = 0;
+	fits_get_num_cols(file->fptr, &cnum, status);
+	CHECK_STATUS_VOID(*status);
+	if( (*colnum <= 0) || (*colnum > cnum+1) ){
+		*colnum = cnum+1;
+	}
+
+	// Insert column in File
+	fits_insert_col(file->fptr,*colnum,ttype,tform,status);
+	CHECK_STATUS_VOID(*status);
+
+	// Set TUNIT of added column
+	char keystr[MAXMSG];
+	sprintf(keystr, "TUNIT%d", *colnum);
+	char comment[MAXMSG];
+	sprintf(comment, "Unit of column %s", ttype);
+	fits_update_key(file->fptr, TSTRING, keystr, tunit, comment, status);
+	CHECK_STATUS_VOID(*status);
+
+	// Re-initilize column numbers in EventFile
+	getColNumsFromEventFile(file, status);
+	CHECK_STATUS_VOID(*status);
+
+	// TEST if added column is really there
+	fits_get_colnum(file->fptr, CASEINSEN, ttype, &cnum, status);
+	if( *status == COL_NOT_FOUND ){
+		char msg[MAXMSG];
+    	sprintf(msg, "Adding column '%s' at %d failed!",
+    			ttype,*colnum);
+    	SIXT_ERROR(msg);
+    	*status=EXIT_FAILURE;
+	}
+	return;
+}
 
 void addEvent2File(EventFile* const file, 
 		   Event* const event, 
