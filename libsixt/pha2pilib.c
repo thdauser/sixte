@@ -272,8 +272,12 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 		SIXT_ERROR(msg);
 		*status=EXIT_FAILURE;
 		return;
-	}else{
-		printf("***INFO picorrect: Using RMF='%s' for PI binning!\n",resppathname);
+	}else if ( strcmp(RESPfile,p2p->rmffile) != 0 ){
+		char msg[MAXMSG];
+		sprintf(msg, "pha2pi: Using RMF='%s' for PI binning instead of '%s/%s'!\n",
+				resppathname, RSPPath, p2p->rmffile
+				);
+		SIXT_WARNING(msg);
 	}
 
     // Load the EBOUNDS of the RMF that will be used in the pi correction.
@@ -292,7 +296,6 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
     // Loop over all events in the input list.
     long ii;
     for (ii=1; ii<=evtfile->nrows; ii++) {
-//	    printf("\r%.1lf %%", 100.*(double)(ii)/(double)(evtfile->nrows));
     	// Get event
     	Event* event = getEvent(status);
     	CHECK_STATUS_BREAK(*status);
@@ -308,5 +311,17 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 
 	    // Release memory.
 	    freeEvent(&event);
+    }
+    if( *status == EXIT_SUCCESS ){
+    	fits_update_key(evtfile->fptr, TSTRING, "PHA2PI", p2p->pha2pi_filename , "Pha2Pi correction file", status);
+        return;
+    }
+    else{
+    	char msg[MAXMSG];
+    	sprintf(msg, "*** ERROR occurred while Pha2Pi correcting using Pha2PiFile='%s'!",
+    			p2p->pha2pi_filename);
+    	SIXT_ERROR(msg);
+    	*status=EXIT_FAILURE;
+		return;
     }
 }
