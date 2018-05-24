@@ -18,10 +18,10 @@
    Copyright 2007-2014 Christian Schmid, FAU
 */
 
-#include "picorrect.h"
+#include "pha2pi.h"
 
 
-int picorrect_main()
+int pha2pi_main()
 {
   // Containing all program parameters read by PIL
   struct Parameters par; 
@@ -36,7 +36,7 @@ int picorrect_main()
   int status=EXIT_SUCCESS; 
 
   // Register HEATOOL:
-  set_toolname("picorrect");
+  set_toolname("pha2pi");
   set_toolversion("0.01");
 
 
@@ -45,7 +45,7 @@ int picorrect_main()
     headas_chat(3, "initialization ...\n");
 
     // Read parameters using PIL library:
-    picorrect_getpar(&par,&status);
+    pha2pi_getpar(&par,&status);
     CHECK_STATUS_BREAK(status);
 
     // Load the instrument configuration.
@@ -78,8 +78,8 @@ int picorrect_main()
     CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
     // Run PI correction on evtfile.
-    picorrect_eventfile( evtfile, p2p, RSPPath, RESPfile, &status);
-    CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+    pha2pi_correct_eventfile( evtfile, p2p, RSPPath, RESPfile, &status);
+    CHECK_STATUS_BREAK(status);
 
 
   } while(0); // END of the error handling loop.
@@ -101,7 +101,7 @@ int picorrect_main()
 }
 
 
-void picorrect_getpar(struct Parameters* const par, int* const status){
+void pha2pi_getpar(struct Parameters* const par, int* const status){
   query_simput_parameter_file_name_buffer("EvtFile", par->EvtFile, MAXFILENAME, status);
   query_simput_parameter_file_name_buffer("Pha2Pi", par->Pha2Pi, MAXFILENAME, status);
   query_simput_parameter_file_name_buffer("RSPPath", par->RSPPath, MAXFILENAME, status);

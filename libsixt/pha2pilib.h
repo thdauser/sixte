@@ -18,8 +18,8 @@
    Copyright 2007-2014 Christian Schmid, FAU
 */
 
-#ifndef PHA2PI_H
-#define PHA2PI_H 1
+#ifndef PHA2PILIB_H
+#define PHA2PILIB_H 1
 
 #include "sixt.h"
 #include "event.h"
@@ -79,18 +79,18 @@ int binary_search_float(float val, float* arr, long n);
 
 
 /** Do the pha2pi correction on a single event. */
-void picorrect_event(Event* const evt,
+void pha2pi_correct_event(Event* const evt,
 		const Pha2Pi* const p2p,
 		const struct RMF* const rmf,
 		int* const status);
 
 /** Do the pha2pi correction on a eventfile. */
-void picorrect_eventfile(EventFile* const evtfile,
+void pha2pi_correct_eventfile(EventFile* const evtfile,
 		const Pha2Pi* const p2p,
 		const char* RSPPath,
 		const char* RESPfile,
 		int* const status);
 
 
-#endif /* PHA2PI_H */
+#endif /* PHA2PILIB_H */
 

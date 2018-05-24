@@ -45,7 +45,7 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  attitude.c attitudefile.c sixt.c photon.c		\
 		  check_fov.c photonfile.c kdtreeelement.c		\
 		  sourcecatalog.c source.c linkedpholist.c		\
-		  ladsignallist.c background.c pha2pi.c phgen.c phimg.c	\
+		  ladsignallist.c background.c pha2pilib.c phgen.c phimg.c	\
 		  phdet.c phproj.c phpat.c event.c ladsignal.c		\
 		  ladevent.c ladimpact.c lad.c lad_init.c xmlbuffer.c	\
 		  gti.c sourceimage.c reconstruction.c eventarray.c	\
@@ -76,7 +76,7 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		attitudefile.h telescope.h sixt.h point.h photon.h	\
 		check_fov.h photonfile.h kdtreeelement.h		\
 		sourcecatalog.h source.h linkedpholist.h		\
-		ladsignallist.h background.h pha2pi.h phgen.h phimg.h	\
+		ladsignallist.h background.h pha2pilib.h phgen.h phimg.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h gti.h	\
 		sourceimage.h reconstruction.h eventarray.h		\
 		fft_array.h balancing.h find_position.h			\

@@ -18,17 +18,17 @@
    Copyright 2007-2014 Christian Schmid, FAU
 */
 
-#ifndef PICORRECT_H
-#define PICORRECT_H 1
+#ifndef PHA2PI_H
+#define PHA2PI_H 1
 
 
 #include "sixt.h"
 #include "event.h"
 #include "eventfile.h"
 #include "parinput.h"
-#include "pha2pi.h"
+#include "pha2pilib.h"
 
-#define TOOLSUB picorrect_main
+#define TOOLSUB pha2pi_main
 #include "headas_main.c"
 
 
@@ -54,9 +54,9 @@ struct Parameters {
 
 
 // Reads the program parameters using PIL.
-void picorrect_getpar(struct Parameters* const par, int* const status);
+void pha2pi_getpar(struct Parameters* const par, int* const status);
 
 
 
-#endif /* PICORRECT_H */
+#endif /* pha2pi_H */
 

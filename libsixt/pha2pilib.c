@@ -18,7 +18,7 @@
  Copyright 2007-2014 Christian Schmid, FAU
  */
 
-#include "pha2pi.h"
+#include "pha2pilib.h"
 
 
 Pha2Pi* getPha2Pi(int* const status) {
@@ -197,7 +197,7 @@ int binary_search_float(float val, float* arr, long n){
 	return low-1;
 }
 
-void picorrect_event(Event* const evt, const Pha2Pi* const p2p,
+void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 		const struct RMF* const rmf, int* const status) {
 
 	// Do nothing if the Pha2Pi structure is uninitialized
@@ -232,7 +232,7 @@ void picorrect_event(Event* const evt, const Pha2Pi* const p2p,
 }
 
 
-void picorrect_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
+void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 		const char* RSPPath, const char* RESPfile,	int* const status) {
 
     // Read the eventfile RESPFILE keyword.
@@ -293,7 +293,7 @@ void picorrect_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
     	CHECK_STATUS_BREAK(*status);
 
     	// run pi correction on event
-    	picorrect_event(event, p2p, rmf, status);
+    	pha2pi_correct_event(event, p2p, rmf, status);
 
     	// Save changes to eventfile
     	updateEventInFile(evtfile, ii, event, status);
