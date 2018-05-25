@@ -62,6 +62,7 @@ int makespec_main() {
 
     headas_chat(3, "initialize ...\n");
     
+    // Assemble event file name with filter
     char ucase_buffer[MAXFILENAME];
     strcpy(ucase_buffer, par.EventFilter);
     strtoupper(ucase_buffer);
@@ -69,9 +70,9 @@ int makespec_main() {
       strcpy(evtlistfiltered, par.EvtFile);
     }else{
       if(0>=sprintf(evtlistfiltered, "%s[EVENTS][%s]", par.EvtFile, par.EventFilter)){
-	status=EXIT_FAILURE;
-	SIXT_ERROR("Assembling file name failed.");
-	break;
+    	  status=EXIT_FAILURE;
+    	  SIXT_ERROR("Assembling file name failed.");
+    	  break;
       }
     }
 
@@ -100,21 +101,18 @@ int makespec_main() {
       SIXT_ERROR("could not find keyword 'FILTER' in event file");
       break;
     }
-
     char ancrfile[MAXMSG];
     fits_read_key(ef, TSTRING, "ANCRFILE", ancrfile, comment, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not find keyword 'ANCRFILE' in event file");
       break;
     }
-    
     char respfile[MAXMSG];
     fits_read_key(ef, TSTRING, "RESPFILE", respfile, comment, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not find keyword 'RESPFILE' in event file");
       break;
     }
-
     char date_obs[MAXMSG];
     fits_read_key(ef, TSTRING, "DATE-OBS", date_obs, comment, &status);
     if (EXIT_SUCCESS!=status) {
@@ -146,28 +144,31 @@ int makespec_main() {
     CHECK_STATUS_BREAK(status);
     double exposure=sumGTI(gti);
 
-    // Determine the column containing the signal information.
-    int csignal;
-    fits_get_colnum(ef, CASEINSEN, "SIGNAL", &csignal, &status);
-    CHECK_STATUS_BREAK(status);
 
-  	/** Check if EventFile has Pha2Pi corrected column 'PI' */
-    if(par.usesignal==0){
-    	char pha2pi[MAXMSG];
-    	fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, comment, &status);
-    	if (COL_NOT_FOUND == status) {
-    		SIXT_WARNING("Events are not Pha2Pi corrected! Falling back to 'SIGNAL' for spectra creation ...");
-    		status = EXIT_SUCCESS;
-    		//break;
-    	}
-    	else{
-    		fits_get_colnum(ef, CASEINSEN, "PI", &csignal, &status);
-    	}
-    	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+    // Determine the column containing the signal information.
+    char pha2pi[MAXMSG];
+    pha2pi[0] = 0;
+
+    int csignal;
+	fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
+    CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+    if( par.usepha == 0 ){
+    	fits_get_colnum(ef, CASEINSEN, "PI", &csignal, &status);
+        if( status==COL_NOT_FOUND ){
+        	SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
+        	status = EXIT_SUCCESS;
+        }
+        CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+
+        // Get PHA2PI key used for pha2pi correction
+        fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, NULL, &status);
+        if( status==VALUE_UNDEFINED ){
+        	SIXT_WARNING("'PHA2PI' key not found, but 'PI' column exits!");
+        	status = EXIT_SUCCESS;
+        }
+        CHECK_STATUS_BREAK_WITH_FITSERROR(status);
     }
-    else{
-  		SIXT_WARNING("Using uncorrected 'SIGNAL' values to make the spectrum!");
-    }
+
 
     // Determine the number of rows.
     long nrows;
@@ -318,21 +319,18 @@ int makespec_main() {
     for (ii=0; ii<nrows; ii++) {
       
       // Read the next event from the file.
-      float signal;
-      float fnull=0.0;
+      long signal;
+      long fnull=0;
       int anynul=0;
-      fits_read_col(ef, TFLOAT, csignal, ii+1, 1, 1, 
+      fits_read_col(ef, TINT, csignal, ii+1, 1, 1,
 		    &fnull, &signal, &anynul, &status);
       CHECK_STATUS_BREAK(status);
-      
-      // Determine the PHA channel.
-      long pha=getEBOUNDSChannel(signal, rmf);
-      
+
       // Add the event to the spectrum.
-      long idx=pha-rmf->FirstChannel;
+      long idx=signal-rmf->FirstChannel;
       if(idx>=0) {
-	assert(idx<rmf->NumberChannels);      
-	spec[idx]++;
+    	  assert(idx<rmf->NumberChannels);
+    	  spec[idx]++;
       }
     }
     CHECK_STATUS_BREAK(status);
@@ -378,8 +376,8 @@ int makespec_main() {
 		    "background file", &status);
     fits_update_key(sf, TLONG, "DETCHANS", &rmf->NumberChannels,
 		    "number of detector channels", &status);
-    fits_update_key(sf, TSTRING, "CORRFILE", "", 
-		    "none", &status);
+    fits_update_key(sf, TSTRING, "CORRFILE", &pha2pi,
+		    "Pha2Pi correction file", &status);
     fits_update_key(sf, TDOUBLE, "EXPOSURE", &exposure,
 		    "exposure time", &status);
     fits_update_key(sf, TSTRING, "FilterExpr", par.EventFilter,
@@ -493,9 +491,9 @@ int makespec_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
-  status=ape_trad_query_bool("usesignal", &par->usesignal);
+  status=ape_trad_query_bool("usepha", &par->usepha);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the usesignal parameter");
+    SIXT_ERROR("failed reading the usepha parameter");
     return(status);
   }
 
