@@ -1,4 +1,4 @@
-EvtFile,s,h,"none",,,"cleaned event input file (equivalent to level 2 or filtered event files)"
+EvtFile,s,h,"none",,,"event input file (must be writable)"
 Pha2Pi,s,h,"none",,,"PHA to PI correction fits file name"
 RSPPath,s,h,"none",,,"path to response files"
 RESPfile,s,h,"none",,,"Response file (the same used in the simulation is set by default)"
