@@ -487,6 +487,7 @@ void sixt_read_fits_stdkeywords_obsolete(fitsfile* const ifptr,
 
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  const int hdunum,
+				  char* const filter,
 				  char* const creation_date,
 				  char* const date_obs,
 				  char* const time_obs,
@@ -533,7 +534,6 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   float frametim=50.0;
   fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametim, "[ms] nominal frame time", status);
   
-  char filter[MAXMSG]="OPEN";
   fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
 
   long obs_id=0;

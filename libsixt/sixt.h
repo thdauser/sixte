@@ -325,6 +325,7 @@ void sixt_read_fits_stdkeywords_obsolete(fitsfile* const ifptr,
     specified file. */
 void sixt_add_fits_erostdkeywords(fitsfile* const fptr, 
 				  const int hdunum,
+				  char* const filter,
 				  char* const creation_date,
 				  char* const date_obs,
 				  char* const time_obs,

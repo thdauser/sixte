@@ -151,6 +151,17 @@ int ero_rawevents_main()
       break;
     }
 
+    // Read the FILTER key word (from event file)
+    char filter[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "FILTER", filter, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+    	char msg[MAXMSG];
+    	sprintf(msg, "could not read FITS keyword 'FILTER' from input "
+    			"event list '%s'", par.RawData);
+    	SIXT_ERROR(msg);
+    	break;
+    }
+
     // Verify values of MJDREF and TIMEZERO.
     verifyMJDREF(eromjdref, mjdref, "in event file", &status);
     CHECK_STATUS_BREAK(status);
@@ -209,11 +220,11 @@ int ero_rawevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Insert the standard eROSITA header keywords.
-    sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
+    sixt_add_fits_erostdkeywords(fptr, 1, filter, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop, 
 				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
-    sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
+    sixt_add_fits_erostdkeywords(fptr, 2, filter, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop, 
 				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);

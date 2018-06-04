@@ -196,6 +196,28 @@ int ero_calevents_main()
       }
     }
 
+    // Read arf from header key to determine filter
+    char arffile[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "ANCRFILE", arffile, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+      char msg[MAXMSG];
+      sprintf(msg, "could not read FITS keyword 'ANCRFILE' from input "
+	      "event list '%s'", par.EvtFile);
+      SIXT_ERROR(msg);
+      break;
+    }
+
+    // Read the FILTER key word (from event file)
+    char filter[MAXMSG];
+    fits_read_key(elf->fptr, TSTRING, "FILTER", filter, comment, &status);
+    if (EXIT_SUCCESS!=status) {
+    	char msg[MAXMSG];
+    	sprintf(msg, "could not read FITS keyword 'FILTER' from input "
+    			"event list '%s'", par.EvtFile);
+    	SIXT_ERROR(msg);
+    	break;
+    }
+
     // Create and open a new FITS file.
     headas_chat(3, "create new eROSITA event list file '%s' ...\n",
 		par.eroEvtFile);
@@ -233,11 +255,11 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Insert the standard eROSITA header keywords.
-    sixt_add_fits_erostdkeywords(fptr, 1, creation_date, date_obs, time_obs,
+    sixt_add_fits_erostdkeywords(fptr, 1, filter, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop,
 				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
-    sixt_add_fits_erostdkeywords(fptr, 2, creation_date, date_obs, time_obs,
+    sixt_add_fits_erostdkeywords(fptr, 2, filter, creation_date, date_obs, time_obs,
 				 date_end, time_end, tstart, tstop,
 				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
