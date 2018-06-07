@@ -25,7 +25,6 @@
 #include "event.h"
 #include "eventfile.h"
 #include "rmf.h"
-#include "gsl/gsl_rng.h"
 
 #include <unistd.h>
 
@@ -39,8 +38,8 @@ typedef struct {
 	/** FILE NAME */
 	char* pha2pi_filename;
 
-	/** RANDOM NUMBER GENERATOR */
-	gsl_rng *randgen;
+	/** RANDOM NUMBER SEED */
+	int seed;
 
 	/** FILE CONTENT */
 	char* rmffile;

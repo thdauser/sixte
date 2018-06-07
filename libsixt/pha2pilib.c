@@ -28,7 +28,7 @@ Pha2Pi* getPha2Pi(int* const status) {
 
 	// Initialize.
 	p2p->pha2pi_filename = NULL;
-	p2p->randgen = NULL;
+	p2p->seed = -1;
 	p2p->rmffile = NULL;
 	p2p->nrows = 0;
 	p2p->ngrades = 0;
@@ -47,9 +47,6 @@ void freePha2Pi(Pha2Pi** const p2p) {
 		}
 		if (NULL != (*p2p)->rmffile) {
 			free((*p2p)->rmffile);
-		}
-		if (NULL != (*p2p)->randgen) {
-			gsl_rng_free((*p2p)->randgen);
 		}
 		if (NULL != (*p2p)->pha) {
 			free((*p2p)->pha);
@@ -75,6 +72,8 @@ void freePha2Pi(Pha2Pi** const p2p) {
 		free(*p2p);
 		*p2p = NULL;
 	}
+
+	sixt_destroy_rng();
 }
 
 Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* const status) {
@@ -101,8 +100,10 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 	strcpy(p2p->pha2pi_filename, filename);
 
 	/** INITIALIZE RANDOM NUMBER GENERATOR */
-	p2p->randgen=gsl_rng_alloc(gsl_rng_taus);
-	gsl_rng_set(p2p->randgen,seed);
+	p2p->seed = seed;
+	sixt_init_rng(seed,status);
+	CHECK_STATUS_RET(*status, p2p);
+
 
 	/** LOAD FILE */
 	headas_chat(3, "open Pha2Pi file '%s' ...\n", filename);
@@ -198,7 +199,8 @@ void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 	// Determine a PI value for the event's PHA value
 	else{
 		// PI value in keV
-		double ran = gsl_rng_uniform(p2p->randgen);
+		double ran = sixt_get_random_number(status);
+		CHECK_STATUS_VOID(*status);
 		const double emin = p2p->pilow[evt->pha][evt->type];
 		const double emax = p2p->pihigh[evt->pha][evt->type];
 		const float pi = emin + ran*(emax-emin);
