@@ -421,7 +421,7 @@ void sixt_check_obsolete_keyword(int* status);
  *   - assume list is sorted ascending */
 int binary_search(double val, double* arr, int n);
 int binary_search_long(double val, double* arr, long n);
-int binary_search_float(float val, float* arr, long n);
+int binary_search_float(float val, float* arr, int n);
 int binary_search_float_long(float val, float* arr, long n);
 
 #endif /* SIXT_H */
