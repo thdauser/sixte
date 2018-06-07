@@ -20,23 +20,6 @@
 
 #include "erosim.h"
 
-/**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
- 	 return bin k for which arr[k]<=val<arr[k+1] **/
-int binary_search_float(float* arr,int n,float val){
-
-	int klo=0;
-	int khi=n-1;
-	int k=-1;
-	while ( (khi-klo) > 1 ){
-		k=(khi+klo)/2;
-		if(arr[k]>val){
-			khi=k;
-		} else {
-			klo=k;
-		}
-	}
-	return klo;
-}
 
 int get_telid_arf(float** cumulARF, float ph_ener, int nener, float* ener_lo, int ntel, int* status){
 
@@ -44,7 +27,7 @@ int get_telid_arf(float** cumulARF, float ph_ener, int nener, float* ener_lo, in
 	float rand_num = sixt_get_random_number(status);
 	CHECK_STATUS_RET(*status,-1);
 
-	int kk = binary_search_float(ener_lo, nener, ph_ener);
+	int kk = binary_search_float(ph_ener, ener_lo, nener);
 
 	int id = 0;
 	while( (rand_num>cumulARF[kk][id]) && ( (id+1)<ntel)){

@@ -174,29 +174,6 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 	return (p2p);
 }
 
-/**  Binary search for to find interpolation interval
- *   - return value is the bin [ind,ind+1]
- *   - assume list is sorted ascending */
-int binary_search_float(float val, float* arr, long n){
-
-	if (val < arr[0] || val > arr[n-1]){
-		return -1;
-	}
-
-	long high=n-1;
-	long low=0;
-	long mid;
-	while (high > low) {
-		mid=(low+high)/2;
-		if (arr[mid] <= val) {
-			low=mid+1;
-		} else {
-			high=mid;
-		}
-	}
-	return low-1;
-}
-
 void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 		const struct RMF* const rmf, int* const status) {
 
@@ -227,7 +204,7 @@ void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 		const float pi = emin + ran*(emax-emin);
 
 		// PI value in ADU based on given RMF's EBOUNDS
-		evt->pi = binary_search_float( pi, rmf->ChannelLowEnergy, rmf->NumberChannels) + 1;
+		evt->pi = binary_search_float_long( pi, rmf->ChannelLowEnergy, rmf->NumberChannels) + 1;
 	}
 }
 

@@ -72,11 +72,6 @@ Pha2Pi* initPha2Pi(const char* const filename,
 		const unsigned int seed,
 		int* const status);
 
-/**  Binary search for to find interpolation interval
- *   - return value is the bin [ind,ind+1]
- *   - assume list is sorted ascending */
-int binary_search_float(float val, float* arr, long n);
-
 
 /** Do the pha2pi correction on a single event. */
 void pha2pi_correct_event(Event* const evt,

@@ -930,3 +930,63 @@ int binary_search(double val, double* arr, int n){
 	return low-1;
 }
 
+int binary_search_long(double val, double* arr, long n){
+
+	if (val < arr[0] || val > arr[n-1]){
+		return -1;
+	}
+
+	long high=n-1;
+	long low=0;
+	long mid;
+	while (high > low) {
+		mid=(low+high)/2;
+		if (arr[mid] <= val) {
+			low=mid+1;
+		} else {
+			high=mid;
+		}
+	}
+	return low-1;
+}
+
+int binary_search_float(float val, float* arr, int n){
+
+	if (val < arr[0] || val > arr[n-1]){
+		return -1;
+	}
+
+	int high=n-1;
+	int low=0;
+	int mid;
+	while (high > low) {
+		mid=(low+high)/2;
+		if (arr[mid] <= val) {
+			low=mid+1;
+		} else {
+			high=mid;
+		}
+	}
+	return low-1;
+}
+
+int binary_search_float_long(float val, float* arr, long n){
+
+	if (val < arr[0] || val > arr[n-1]){
+		return -1;
+	}
+
+	long high=n-1;
+	long low=0;
+	long mid;
+	while (high > low) {
+		mid=(low+high)/2;
+		if (arr[mid] <= val) {
+			low=mid+1;
+		} else {
+			high=mid;
+		}
+	}
+	return low-1;
+}
+
