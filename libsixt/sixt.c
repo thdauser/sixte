@@ -19,13 +19,19 @@ const double xmmmjdref=50814.;
 /** FITS error message for error handling macro, which retrieves error status */
 char _fits_err_msg[80];
 
+unsigned long microtime(){
+	struct timeval currentTime;
+	gettimeofday(&currentTime, NULL);
+	return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;
+}
+
 unsigned int getSeed(int seed)
 {
   if (seed>=0) {
     return((unsigned int)seed);
   } else {
-    // Determine the seed from the system clock.
-    return((unsigned int)time(NULL));
+    // Determine the seed from the system clock in MicroSecond precision.
+    return((unsigned int)microtime());
   }
 }
 

@@ -28,6 +28,7 @@
 #include <limits.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
@@ -212,6 +213,8 @@ typedef struct {
 // Function declarations.
 /////////////////////////////////////////////////////////////////
 
+/** Return current time in micro second precision. */
+unsigned long microtime();
 
 /** Return a seed for the random number generator. */
 unsigned int getSeed(int seed);

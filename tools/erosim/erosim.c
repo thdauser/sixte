@@ -225,7 +225,7 @@ int erosim_main()
     	sixt_get_eroXMLFile(xml_filename, ii, &status);
 
     	// Initialize the random number generator for each Telescope
-    	seed=getSeed(par.Seed+ii);
+    	seed=getSeed(par.Seed) + ii;
     	sixt_init_rng(seed, &status);
     	CHECK_STATUS_BREAK(status);
 
