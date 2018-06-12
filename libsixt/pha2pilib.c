@@ -203,10 +203,10 @@ void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 		CHECK_STATUS_VOID(*status);
 		const double emin = p2p->pilow[evt->pha][evt->type];
 		const double emax = p2p->pihigh[evt->pha][evt->type];
-		const float pi = emin + ran*(emax-emin);
+		const double pi = emin + ran*(emax-emin);
 
 		// PI value in ADU based on given RMF's EBOUNDS
-		evt->pi = binary_search_float_long( pi, rmf->ChannelLowEnergy, rmf->NumberChannels) + 1;
+		evt->pi = binary_search_float_long( (float)pi, rmf->ChannelLowEnergy, rmf->NumberChannels) + 1;
 	}
 }
 
