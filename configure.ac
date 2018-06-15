@@ -197,6 +197,7 @@ AC_CONFIG_FILES([Makefile
                 tools/tesgenimpacts/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
+		tools/runmask/Makefile
 		])
 
 AC_OUTPUT
