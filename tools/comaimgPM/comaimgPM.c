@@ -202,7 +202,11 @@ int comaimgPM_main() {
     wcs.crval[1]=dec;
     wcs.cdelt[0]=atan(det_pixelwidth/distance)*180./M_PI;
     wcs.cdelt[1]=atan(det_pixelwidth/distance)*180./M_PI;
-   
+    strcpy(wcs.cunit[0], "deg");
+    strcpy(wcs.cunit[1], "deg");
+    strcpy(wcs.ctype[0], "RA---TAN");
+    strcpy(wcs.ctype[1], "DEC--TAN");
+
     //initialization of wcs parameter structure for determining the impact position at collimator height
     struct wcsprm wcs2 = {
       .flag=-1
@@ -219,6 +223,11 @@ int comaimgPM_main() {
     wcs2.crval[1]=dec;
     wcs2.cdelt[0]=atan(det_pixelwidth/coll_distance)*180./M_PI;
     wcs2.cdelt[1]=atan(det_pixelwidth/coll_distance)*180./M_PI;
+    strcpy(wcs2.cunit[0], "deg");
+    strcpy(wcs2.cunit[1], "deg");
+    strcpy(wcs2.ctype[0], "RA---TAN");
+    strcpy(wcs2.ctype[1], "DEC--TAN");
+    
     // --- END of Initialization ---
 
 
