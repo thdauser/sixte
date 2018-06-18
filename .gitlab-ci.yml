@@ -1,0 +1,52 @@
+# SIXTE CI jobs
+#
+# build, test, and deploy SIXTE scripts
+# build:
+# test:  run 'make test' to test sixte tools
+# deploy:
+
+before_script:
+  - source /data/system/software/softwarescript.bash && source /data/system/software/softwarescript_Xray.bash
+  - export SIMPUT=/userdata/data/sixte/simputsoft
+  - export SIXTE=`pwd`
+  - export HEADASNOQUERY=
+  - export HEADASPROMPT=/dev/null
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - autoreconf --install --force
+    - ./configure --prefix=$SIXTE --with-simput=$SIMPUT --with-gsl=/data/system/software/gsl/current/BUILD
+    - make
+    - make install
+  only:
+    - master
+    - gitlab-ci
+  artifacts:
+    expire_in: 30 min
+    paths:
+      - ./*
+
+
+test:
+  stage: test
+  script:
+    - . $SIXTE/sixte-install.sh
+    - ln -sf /home/sixte/instruments.git/instruments share/sixte/instruments
+    - make test
+  only:
+    - master
+    - gitlab-ci
+
+provide:
+  stage: deploy
+  script:
+    - git push /data/git/sixt.git HEAD:master 
+  only:
+    - master
+    - gitlab-ci
