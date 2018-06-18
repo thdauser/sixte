@@ -4,7 +4,7 @@ source setup/setup.csh
 set xml = ${xmldir}/nustar/
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'nustarsim' "  > /dev/stderr    
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'nustarsim' "      
     exit 
 endif
 

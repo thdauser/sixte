@@ -4,7 +4,7 @@ source setup/setup.csh
 set xml = ${xmldir}/athena-wfi/wfi_w_filter
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'athenawfisim' "  > /dev/stderr    
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'athenawfisim' "      
     exit 
 endif
 

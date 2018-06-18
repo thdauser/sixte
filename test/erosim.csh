@@ -4,8 +4,8 @@ source setup/setup.csh
 set xml = ${xmldir}/srg
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml'"  > /dev/stderr    
-    echo "  --> skip testing 'erosim', 'ero_calevents',and 'ero_rawevents' "  > /dev/stderr    
+    echo " *** warning *** did not find required instrument-directory '$xml'"      
+    echo "  --> skip testing 'erosim', 'ero_calevents',and 'ero_rawevents' "      
     exit 
 endif
 
@@ -25,7 +25,7 @@ erosim  \
 
 set num_wc = `ls output/erosim*_evt.fits* | wc -l`
 if ($num_wc != 7) then
-    echo " *** error in erosim *** not the expected number of files created"  > /dev/stderr
+    echo " *** error in erosim *** not the expected number of files created"  
     set status = 1
     exit
 endif
@@ -48,7 +48,7 @@ erosim  \
 
 set num_wc = `ls output/keep_erosim*.fits | wc -l`
 if ($num_wc != 14) then
-    echo " *** error in erosim *** not the expected number of files created"  > /dev/stderr
+    echo " *** error in erosim *** not the expected number of files created"  
     set status = 1
     exit
 endif
@@ -63,7 +63,7 @@ ero_calevents \
 
 set num_wc = `ls output/erosim_ccd1_eroevt.fits | wc -l`
 if ($num_wc != 1) then
-    echo " *** error in erosim *** not the expected number of files created"  > /dev/stderr
+    echo " *** error in erosim *** not the expected number of files created"  
     set status = 1
     exit
 endif
@@ -77,7 +77,7 @@ ero_rawevents \
 
 set num_wc = `ls output/erosim_ccd1_raweroevt.fits | wc -l`
 if ($num_wc != 1) then
-    echo " *** error in erosim *** not the expected number of files created"  > /dev/stderr
+    echo " *** error in erosim *** not the expected number of files created"  
     set status = 1
     exit
 endif

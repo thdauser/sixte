@@ -7,8 +7,8 @@ set std = $xml/xifu_baseline.xml
 set adv = $xml/xifu_detector_lpa2_pixoffset_mux40.xml
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml'"  > /dev/stderr    
-    echo "  --> skip testing 'xifupipeline' "  > /dev/stderr    
+    echo " *** warning *** did not find required instrument-directory '$xml'"      
+    echo "  --> skip testing 'xifupipeline' "      
     exit 
 endif
 

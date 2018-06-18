@@ -4,7 +4,7 @@ source setup/setup.csh
 set xml = ${xmldir}/srg
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'projev' and 'evpat' "  > /dev/stderr    
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'projev' and 'evpat' "      
     exit 
 endif
 

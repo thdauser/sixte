@@ -4,8 +4,8 @@ source setup/setup.csh
 set xml = ${xmldir}/xmm
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' "  > /dev/stderr    
-    echo "  --> skip testing 'epicpn_events', 'epicmos1_events', and 'epicmos2_events' "  > /dev/stderr    
+    echo " *** warning *** did not find required instrument-directory '$xml' "      
+    echo "  --> skip testing 'epicpn_events', 'epicmos1_events', and 'epicmos2_events' "      
     exit 
 endif
 

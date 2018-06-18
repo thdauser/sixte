@@ -4,7 +4,7 @@ source setup/setup.csh
 set xml = ${xmldir}/athena/1469mm_wfi_wo_filter
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'imgev' "  > /dev/stderr    
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'imgev' "      
     exit 
 endif
 
