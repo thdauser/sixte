@@ -197,39 +197,34 @@ void phpat(GenDet* const det,
 	    // For eROSITA we need a special treatment (according to
 	    // a prescription of K. Dennerl).
 	    if (1==iseROSITA) {
-	      if (det->threshold_split_lo_fraction > 0.) {
-		float vertical=0., horizontal=0.;
-		long ll;
-		for (ll=0; ll<nframelist; ll++) {
-		  if (NULL!=framelist[ll]) {
-		    if (isNeighbor(maxsignalev, framelist[ll])) {
-		      if (framelist[ll]->rawx==maxsignalev->rawx) {
-			if (framelist[ll]->signal>horizontal) {
-			  horizontal=framelist[ll]->signal;
-			}
-		      } else {
-			if (framelist[ll]->signal>vertical) {
-			  vertical=framelist[ll]->signal;
-			}
-		      }
-		    }
-		  }
-		}
-		split_threshold=det->threshold_split_lo_fraction*
-		  (maxsignalev->signal+horizontal+vertical);
-	      } else {
-		SIXT_ERROR("eROSITA requires a fractional split threshold");
-		*status=EXIT_FAILURE;
-		break;
-	      }
-
+	    	if (det->threshold_split_lo_fraction > 0.) {
+	    		float vertical=0., horizontal=0.;
+	    		long ll;
+	    		for (ll=0; ll<nframelist; ll++) {
+	    			if (NULL!=framelist[ll]) {
+	    				if (isNeighbor(maxsignalev, framelist[ll])) {
+	    					if (framelist[ll]->rawx==maxsignalev->rawx) {
+	    						if (framelist[ll]->signal>horizontal) {
+	    							horizontal=framelist[ll]->signal;
+	    						}
+	    					} else {
+	    						if (framelist[ll]->signal>vertical) {
+	    							vertical=framelist[ll]->signal;
+	    						}
+	    					}
+	    				}
+	    			}
+	    		}
+	    		split_threshold=det->threshold_split_lo_fraction*
+	    				(maxsignalev->signal+horizontal+vertical);
+	    	}
 	    } else { // Split threshold for generic instruments.
-	      if (det->threshold_split_lo_fraction>0.) {
-		split_threshold=
-		  det->threshold_split_lo_fraction*maxsignalev->signal;
-	      } else {
-		split_threshold=det->threshold_split_lo_keV;
-	      }
+	    	if (det->threshold_split_lo_fraction>0.) {
+	    		split_threshold=
+	    				det->threshold_split_lo_fraction*maxsignalev->signal;
+	    	} else {
+	    		split_threshold=det->threshold_split_lo_keV;
+	    	}
 	    }
 	    // END of determine the split threshold.
 
