@@ -120,8 +120,10 @@ int phogen_main()
       strcpy(instrume, inst->instrume);
     }
     plf=openNewPhotonFile(photonlist_filename,
-			  telescop, instrume, "Normal",
-			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  telescop, instrume,
+			  inst->tel->arf->Filter,
+			  inst->tel->arf_filename,
+			  inst->det->rmf_filename,
 			  par.MJDREF, timezero, par.TSTART, par.TSTART+par.Exposure,
 			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);

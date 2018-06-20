@@ -130,8 +130,10 @@ int phoimg_main() {
 
     // Open the output impact list file.
     ilf=openNewImpactFile(impactlist_filename, 
-			  telescop, instrume, "Normal",
-			  inst->tel->arf_filename, inst->det->rmf_filename,
+			  telescop, instrume,
+			  inst->tel->arf->Filter,
+			  inst->tel->arf_filename,
+			  inst->det->rmf_filename,
 			  mjdref, timezero, tstart, tstop,
 			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);

@@ -288,8 +288,10 @@ int xifupipeline_main()
 		// Open the output photon list file.
 		if (strlen(photonlist_filename)>0) {
 			plf=openNewPhotonFile(photonlist_filename,
-					telescop, instrume, "Normal",
-					inst->tel->arf_filename, inst->det->rmf_filename,
+					telescop, instrume,
+					inst->tel->arf->Filter,
+					inst->tel->arf_filename,
+					inst->det->rmf_filename,
 					par.MJDREF, 0.0, par.TSTART, tstop,
 					par.clobber, &status);
 			CHECK_STATUS_BREAK(status);
@@ -298,16 +300,21 @@ int xifupipeline_main()
 		// Open the output impact list file.
 		if (strlen(impactlist_filename)>0) {
 			ilf=openNewImpactFile(impactlist_filename,
-					telescop, instrume, "Normal",
-					inst->tel->arf_filename, inst->det->rmf_filename,
+					telescop, instrume,
+					inst->tel->arf->Filter,
+					inst->tel->arf_filename,
+					inst->det->rmf_filename,
 					par.MJDREF, 0.0, par.TSTART, tstop,
 					par.clobber, &status);
 			CHECK_STATUS_BREAK(status);
 		}
 
 		// Open the piximpact file
-		pixilf=openNewPixImpFile(piximpactlist_filename,telescop, instrume, "Normal",
-				inst->tel->arf_filename, inst->det->rmf_filename,par.XMLFile,impactlist_filename,
+		pixilf=openNewPixImpFile(piximpactlist_filename,telescop, instrume,
+				inst->tel->arf->Filter,
+				inst->tel->arf_filename,
+				inst->det->rmf_filename,
+				par.XMLFile,impactlist_filename,
 				par.MJDREF, 0.0, par.TSTART, tstop,
 				par.clobber, &status);
 		CHECK_STATUS_BREAK(status);
@@ -343,7 +350,7 @@ int xifupipeline_main()
 
 		} else{
 			det = loadAdvDet(par.AdvXml,&status);
-			keywords = buildSixtStdKeywords(telescop,instrume,"Normal",inst->tel->arf_filename, inst->det->rmf_filename,"NONE",par.MJDREF, 0.0, par.TSTART, tstop,&status);
+			keywords = buildSixtStdKeywords(telescop,instrume,inst->tel->arf->Filter,inst->tel->arf_filename, inst->det->rmf_filename,"NONE",par.MJDREF, 0.0, par.TSTART, tstop,&status);
 			event_file = opennewTesEventFile(par.EvtFile,keywords,par.clobber,&status);
 			loadRMFLibrary(det,&status);
 

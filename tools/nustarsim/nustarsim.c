@@ -332,7 +332,8 @@ int nustarsim_main()
 	char photonlist_filename[MAXFILENAME];
 	sprintf(photonlist_filename, photonlist_filename_template, ii);
 	plf[ii]=openNewPhotonFile(photonlist_filename, 
-				  telescop, instrume, "Normal", 
+				  telescop, instrume,
+				  subinst[ii]->tel->arf->Filter,
 				  subinst[ii]->tel->arf_filename,
 				  subinst[ii]->det->rmf_filename,
 				  par.MJDREF, 0.0, par.TSTART, tstop,
@@ -357,7 +358,8 @@ int nustarsim_main()
 	char impactlist_filename[MAXFILENAME];
 	sprintf(impactlist_filename, impactlist_filename_template, ii);
 	ilf[ii]=openNewImpactFile(impactlist_filename, 
-				  telescop, instrume, "Normal", 
+				  telescop, instrume,
+				  subinst[ii]->tel->arf->Filter,
 				  subinst[ii]->tel->arf_filename,
 				  subinst[ii]->det->rmf_filename,
 				  par.MJDREF, 0.0, par.TSTART, tstop,
@@ -381,7 +383,8 @@ int nustarsim_main()
       char rawdata_filename[MAXFILENAME];
       sprintf(rawdata_filename, rawdata_filename_template, ii);
       elf[ii]=openNewEventFile(rawdata_filename,
-			       telescop, instrume, "Normal",
+			       telescop, instrume,
+				   subinst[ii]->tel->arf->Filter,
 			       subinst[ii]->tel->arf_filename,
 			       subinst[ii]->det->rmf_filename,
 			       par.MJDREF, 0.0, par.TSTART, tstop,
@@ -410,7 +413,8 @@ int nustarsim_main()
       char evtfile_filename[MAXFILENAME];
       sprintf(evtfile_filename, evtfile_filename_template, ii);
       patf[ii]=openNewEventFile(evtfile_filename,
-				telescop, instrume, "Normal", 
+				telescop, instrume,
+				subinst[ii]->tel->arf->Filter,
 				subinst[ii]->tel->arf_filename,
 				subinst[ii]->det->rmf_filename,
 				par.MJDREF, 0.0, par.TSTART, tstop,

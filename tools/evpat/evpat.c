@@ -106,7 +106,8 @@ int evpat_main()
       strcpy(instrume, inst->instrume);
     }
     plf=openNewEventFile(evtfile_filename,
-			 telescop, instrume, "Normal",
+			 telescop, instrume,
+			 inst->tel->arf->Filter,
 			 inst->tel->arf_filename,
 			 inst->det->rmf_filename,
 			 mjdref, timezero, tstart, tstop,			   

@@ -309,7 +309,8 @@ int athenapwfisim_main()
     // Open the output photon list files.
     if (strlen(photonlist_filename)>0) {
       plf=openNewPhotonFile(photonlist_filename,
-			    telescop, instrume, "Normal", 
+			    telescop, instrume,
+				subinst[0]->tel->arf->Filter,
 			    subinst[0]->tel->arf_filename,
 			    subinst[0]->det->rmf_filename,
 			    par.MJDREF, 0.0, par.TSTART, tstop,
@@ -320,7 +321,8 @@ int athenapwfisim_main()
     // Open the output impact list files.
     if (strlen(impactlist_filename)>0) {
       ilf=openNewImpactFile(impactlist_filename, 
-			    telescop, instrume, "Normal", 
+			    telescop, instrume,
+				subinst[0]->tel->arf->Filter,
 			    subinst[0]->tel->arf_filename,
 			    subinst[0]->det->rmf_filename,
 			    par.MJDREF, 0.0, par.TSTART, tstop,
@@ -333,7 +335,8 @@ int athenapwfisim_main()
       char rawdata_filename[MAXFILENAME];
       sprintf(rawdata_filename, rawdata_filename_template, ii);
       elf[ii]=openNewEventFile(rawdata_filename,
-			       telescop, instrume, "Normal", 
+    		  	   telescop, instrume,
+    		  	   subinst[0]->tel->arf->Filter,
 			       subinst[0]->tel->arf_filename,
 			       subinst[0]->det->rmf_filename,
 			       par.MJDREF, 0.0, par.TSTART, tstop,
@@ -353,7 +356,8 @@ int athenapwfisim_main()
       char evtfile_filename[MAXFILENAME];
       sprintf(evtfile_filename, evtfile_filename_template, ii);
       patf[ii]=openNewEventFile(evtfile_filename,
-				telescop, instrume, "Normal", 
+				telescop, instrume,
+				subinst[0]->tel->arf->Filter,
 				subinst[0]->tel->arf_filename,
 				subinst[0]->det->rmf_filename,
 				par.MJDREF, 0.0, par.TSTART, tstop,

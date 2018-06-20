@@ -111,8 +111,10 @@ int gendetsim_main() {
       strcpy(instrume, inst->instrume);
     }
     elf=openNewEventFile(rawdata_filename,
-			 telescop, instrume, "Normal", 
-			 inst->tel->arf_filename, inst->det->rmf_filename,
+			 telescop, instrume,
+			 inst->tel->arf->Filter,
+			 inst->tel->arf_filename,
+			 inst->det->rmf_filename,
 			 par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
 			 inst->det->pixgrid->xwidth, 
 			 inst->det->pixgrid->ywidth, 

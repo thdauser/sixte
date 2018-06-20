@@ -415,7 +415,8 @@ int erosim_main()
     		char photonlist_filename[MAXFILENAME];
     		sprintf(photonlist_filename, photonlist_filename_template, ii+1);
     		plf[ii]=openNewPhotonFile(photonlist_filename,
-    				telescop, instrume, "Normal",
+    				telescop, instrume,
+					subinst[ii]->tel->arf->Filter,
 					subinst[ii]->tel->arf_filename,
 					subinst[ii]->det->rmf_filename,
 					mjdref, 0.0, tstart, tstop,
@@ -440,7 +441,8 @@ int erosim_main()
     		char impactlist_filename[MAXFILENAME];
     		sprintf(impactlist_filename, impactlist_filename_template, ii+1);
     		ilf[ii]=openNewImpactFile(impactlist_filename,
-    				telescop, instrume, "Normal",
+    				telescop, instrume,
+					subinst[ii]->tel->arf->Filter,
 					subinst[ii]->tel->arf_filename,
 					subinst[ii]->det->rmf_filename,
 					mjdref, 0.0, tstart, tstop,
@@ -464,7 +466,8 @@ int erosim_main()
       char rawdata_filename[MAXFILENAME];
       sprintf(rawdata_filename, rawdata_filename_template, ii+1);
       elf[ii]=openNewEventFile(rawdata_filename,
-			       telescop, instrume, "Normal", 
+			       telescop, instrume,
+				   subinst[ii]->tel->arf->Filter,
 			       subinst[ii]->tel->arf_filename, 
 			       subinst[ii]->det->rmf_filename,
 			       mjdref, 0.0, tstart, tstop,
@@ -493,7 +496,8 @@ int erosim_main()
       char evtfile_filename[MAXFILENAME];
       sprintf(evtfile_filename, evtfile_filename_template, ii+1);
       patf[ii]=openNewEventFile(evtfile_filename,
-				telescop, instrume, "Normal", 
+				telescop, instrume,
+				subinst[ii]->tel->arf->Filter,
 				subinst[ii]->tel->arf_filename, 
 				subinst[ii]->det->rmf_filename,
 				mjdref, 0.0, tstart, tstop,
