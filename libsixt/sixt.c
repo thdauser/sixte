@@ -526,7 +526,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   char telescop[MAXMSG]="eROSITA";
   fits_update_key(fptr, TSTRING, "TELESCOP", telescop, "", status);
   char instrume[MAXMSG];
-  sprintf(instrume, "FM%d", ccdnr);
+  sprintf(instrume, "TM%d", ccdnr);
   fits_update_key(fptr, TSTRING, "INSTRUME", instrume, "", status);
   fits_update_key(fptr, TSTRING, "INSTRUM1", instrume, "", status);
   int ninst=1;
