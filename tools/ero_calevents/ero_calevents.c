@@ -494,6 +494,13 @@ int ero_calevents_main()
 	sprintf(msg, 
 		"WCS coordinate conversion failed (RA=%lf, Dec=%lf, error code %d)", 
 		world[0], world[1], wcsstatus);
+	if ( strcmp(par.Projection, "AIT") != 0 )
+	{
+	  char tmpmsg[MAXMSG];
+	  sprintf(tmpmsg, "\n(---> You might want to consider the AIT projection type "
+	      "instead of %s)", par.Projection);
+	  strcat(msg, tmpmsg);
+	}
 	SIXT_ERROR(msg);
 	status=EXIT_FAILURE;
 	break;
