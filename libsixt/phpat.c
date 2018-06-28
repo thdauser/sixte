@@ -193,11 +193,15 @@ void phpat(GenDet* const det,
 	    } while(updated);
 
 	    // Determine the split threshold [keV].
-	    float split_threshold;
+
+	    // set the default value
+	    float split_threshold = det->threshold_split_lo_keV;
+
 	    // For eROSITA we need a special treatment (according to
 	    // a prescription of K. Dennerl).
-	    if (1==iseROSITA) {
-	    	if (det->threshold_split_lo_fraction > 0.) {
+    	if (det->threshold_split_lo_fraction > 0.) {
+
+    		if (1==iseROSITA) {
 	    		float vertical=0., horizontal=0.;
 	    		long ll;
 	    		for (ll=0; ll<nframelist; ll++) {
@@ -217,15 +221,13 @@ void phpat(GenDet* const det,
 	    		}
 	    		split_threshold=det->threshold_split_lo_fraction*
 	    				(maxsignalev->signal+horizontal+vertical);
-	    	}
-	    } else { // Split threshold for generic instruments.
-	    	if (det->threshold_split_lo_fraction>0.) {
+    		} else {
+
+    	    // Split threshold for generic instruments.
 	    		split_threshold=
 	    				det->threshold_split_lo_fraction*maxsignalev->signal;
-	    	} else {
-	    		split_threshold=det->threshold_split_lo_keV;
 	    	}
-	    }
+    	}
 	    // END of determine the split threshold.
 
 	    // Check if the split threshold is above the event threshold.
