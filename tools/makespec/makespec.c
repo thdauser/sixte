@@ -150,23 +150,34 @@ int makespec_main() {
     pha2pi[0] = 0;
 
     int csignal;
+    int coltmp;
 	fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(status);
     if( par.usepha == 0 ){
-    	fits_get_colnum(ef, CASEINSEN, "PI", &csignal, &status);
+    	fits_get_colnum(ef, CASEINSEN, "PI", &coltmp, &status);
         if( status==COL_NOT_FOUND ){
         	SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
+        	SIXT_WARNING("The spectrum will not be calibrated. ");
+        	fits_clear_errmsg();
         	status = EXIT_SUCCESS;
-        }
-        CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+        } else {
+            CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
-        // Get PHA2PI key used for pha2pi correction
-        fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, NULL, &status);
-        if( status==VALUE_UNDEFINED ){
-        	SIXT_WARNING("'PHA2PI' key not found, but 'PI' column exits!");
-        	status = EXIT_SUCCESS;
+            // now see if we find the PHA2PI information in the header used for pha2pi correction
+            fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, NULL, &status);
+            if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND ){
+            	SIXT_WARNING("'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...");
+            	fits_clear_errmsg();
+            	status = EXIT_SUCCESS;
+
+            } else {
+            	// now we have the PI column and the correction, so we use it
+            	csignal = coltmp;
+            }
+            CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+
         }
-        CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+
     }
 
 
