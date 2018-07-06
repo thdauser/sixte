@@ -333,7 +333,7 @@ int makespec_main() {
       long signal;
       long fnull=0;
       int anynul=0;
-      fits_read_col(ef, TINT, csignal, ii+1, 1, 1,
+      fits_read_col(ef, TLONG, csignal, ii+1, 1, 1,
 		    &fnull, &signal, &anynul, &status);
       CHECK_STATUS_BREAK(status);
 
