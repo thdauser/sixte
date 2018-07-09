@@ -49,7 +49,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.10");
+  set_toolversion("0.11");
 
   
   do {  // Beginning of the ERROR handling loop.
@@ -151,9 +151,20 @@ int makespec_main() {
 
     int csignal;
     int coltmp;
+	int usesignal = 0;
+
 	fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
-    CHECK_STATUS_BREAK_WITH_FITSERROR(status);
-    if( par.usepha == 0 ){
+	if( status == COL_NOT_FOUND ){
+		SIXT_WARNING("'PHA' column not found! Falling back to 'signal' for spectra creation ...");
+    	SIXT_WARNING("The spectrum will not be calibrated. ");
+    	fits_clear_errmsg();
+    	status = EXIT_SUCCESS;
+		fits_get_colnum(ef, CASEINSEN, "signal", &csignal, &status);
+		CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+		usesignal = 1;
+	}
+	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+	if( usesignal==0 && par.usepha == 0 ){
     	fits_get_colnum(ef, CASEINSEN, "PI", &coltmp, &status);
         if( status==COL_NOT_FOUND ){
         	SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
@@ -175,9 +186,7 @@ int makespec_main() {
             	csignal = coltmp;
             }
             CHECK_STATUS_BREAK_WITH_FITSERROR(status);
-
         }
-
     }
 
 
@@ -326,26 +335,54 @@ int makespec_main() {
     // --- Begin Spectrum Binning ---
     headas_chat(3, "calculate spectrum ...\n");
 
-    // LOOP over all events in the FITS table.
-    for (ii=0; ii<nrows; ii++) {
-      
-      // Read the next event from the file.
-      long signal;
-      long fnull=0;
-      int anynul=0;
-      fits_read_col(ef, TLONG, csignal, ii+1, 1, 1,
-		    &fnull, &signal, &anynul, &status);
-      CHECK_STATUS_BREAK(status);
+    // Determine channel id from signal and rmf
+    if( usesignal==1 ){
+        for (ii=0; ii<nrows; ii++) {
 
-      // Add the event to the spectrum.
-      long idx=signal-rmf->FirstChannel;
-      if(idx>=0) {
-    	  assert(idx<rmf->NumberChannels);
-    	  spec[idx]++;
-      }
+          // Read the next event from the file.
+          float signal;
+          float fnull=0.0;
+          int anynul=0;
+          fits_read_col(ef, TFLOAT, csignal, ii+1, 1, 1,
+    		    &fnull, &signal, &anynul, &status);
+          CHECK_STATUS_BREAK(status);
+
+          // Determine the PHA channel.
+          long pha=getEBOUNDSChannel(signal, rmf);
+
+          // Add the event to the spectrum.
+          long idx=pha-rmf->FirstChannel;
+          if(idx>=0) {
+        	  assert(idx<rmf->NumberChannels);
+        	  spec[idx]++;
+          }
+        }
+    	CHECK_STATUS_BREAK(status);
+    	// END of loop over all events in the input file.
     }
-    CHECK_STATUS_BREAK(status);
-    // END of loop over all events in the input file.
+    // Read channel id directly from PHA/PI
+    else{
+    	// LOOP over all events in the FITS table.
+    	for (ii=0; ii<nrows; ii++) {
+
+    		// Read the next event from the file.
+    		long signal;
+    		long fnull=0;
+    		int anynul=0;
+    		fits_read_col(ef, TLONG, csignal, ii+1, 1, 1,
+    				&fnull, &signal, &anynul, &status);
+    		CHECK_STATUS_BREAK(status);
+
+    		// Add the event to the spectrum.
+    		long idx=signal-rmf->FirstChannel;
+    		if(idx>=0) {
+    			assert(idx<rmf->NumberChannels);
+    			spec[idx]++;
+    		}
+    	}
+    	CHECK_STATUS_BREAK(status);
+    	// END of loop over all events in the input file.
+    }
 
     // Store the spectrum in the output file.
     headas_chat(3, "store spectrum ...\n");
