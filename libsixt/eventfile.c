@@ -77,8 +77,10 @@ void getColNumsFromEventFile(EventFile* const file,	int* const status)
 	fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->ctime, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "FRAME", &file->cframe, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "PHA", &file->cpha, status);
+	CHECK_STATUS_VOID(*status);
 	fits_get_colnum(file->fptr, CASEINSEN, "PI", &file->cpi, status);
 	if( *status == COL_NOT_FOUND ){   // Optional Column: reset status if not existent
+		fits_clear_errmsg();
 		*status=EXIT_SUCCESS;
 	}
 	fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->csignal, status);
@@ -93,6 +95,7 @@ void getColNumsFromEventFile(EventFile* const file,	int* const status)
 	fits_get_colnum(file->fptr, CASEINSEN, "PILEUP", &file->cpileup, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "SIGNALS", &file->csignals, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "PHAS", &file->cphas, status);
+	CHECK_STATUS_VOID(*status);
 }
 
 
