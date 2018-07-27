@@ -42,11 +42,11 @@ AC_ARG_WITH(gsl,
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran -headerpad_max_install_names"
-CPPFLAGS="$CPPCFLAGS -I$simput_dir/include -headerpad_max_install_names"
+CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
+CPPFLAGS="$CPPCFLAGS -I$simput_dir/include"
 
 # Linker Flags:
-LDFLAGS="$LDFLAGS -g -W -Wall  -L$simput_dir/lib -headerpad_max_install_names"
+LDFLAGS="$LDFLAGS -g -W -Wall  -L$simput_dir/lib"
 
 
 if test "x$gsl_dir" != xno; then
@@ -60,6 +60,9 @@ case $build_os in
   darwin*)
   OSX_VERSION_MAJOR=`sw_vers -productVersion | awk -F '.' '{print $1}'`
   OSX_VERSION_MINOR=`sw_vers -productVersion | awk -F '.' '{print $2}'`
+  CFLAGS="$CFLAGS -headerpad_max_install_names"                                                                     
+  CPPFLAGS="$CPPFLAGS -headerpad_max_install_names"
+  LDFLAGS="$LDFLAGS -headerpad_max_install_names"   							
   ;;
 esac
 AC_SUBST(OSX_VERSION_MAJOR)
