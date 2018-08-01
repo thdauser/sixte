@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.4.11], [thomas.dauser@sternwarte.uni-erlangen.de])
+AC_INIT([sixte], [2.4.11], [sixte-support@lists.fau.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -147,56 +147,57 @@ AC_CONFIG_HEADER([sixteconfig.h])
 AC_CONFIG_FILES([Makefile
 		libsixt/Makefile
 		tools/Makefile
-		tools/runsixt/Makefile
-		tools/phogen/Makefile
-		tools/phoimg/Makefile
-		tools/comaphovign/Makefile
-		tools/ladsim/Makefile
-		tools/makespec/Makefile
-		tools/makelc/Makefile
-		tools/psfgen/Makefile
-		tools/xms_pixtemp/Makefile
-		tools/ero_exposure/Makefile
-		tools/ero_vis/Makefile
-		tools/ero_calevents/Makefile
-		tools/ero_rawevents/Makefile
-		tools/ero_fits2tm/Makefile
-		tools/erosim/Makefile
-		tools/comaexp/Makefile
-		tools/nustarsim/Makefile
 		tools/athenawfisim/Makefile
-		tools/htrssim/Makefile
-		tools/tes_grades/Makefile
-		tools/gendetsim/Makefile
+		tools/comabackpro/Makefile
+		tools/comadet/Makefile
+		tools/comaexp/Makefile
 		tools/comaimg/Makefile
 		tools/comaimgPM/Makefile
-		tools/comadet/Makefile
+		tools/comaphovign/Makefile
 		tools/comarecon/Makefile
-		tools/comabackpro/Makefile
-		tools/projev/Makefile
-		tools/evpat/Makefile
-		tools/pha2pi/Makefile
-		tools/imgev/Makefile
-		tools/fudgexp/Makefile
-		tools/orbatt/Makefile
-		tools/epicpn_events/Makefile
 		tools/epicmos1_events/Makefile
 		tools/epicmos2_events/Makefile
-		tools/piximpacts/Makefile
-		tools/tesstream/Makefile
-		tools/tessim/Makefile
+		tools/epicpn_events/Makefile
+		tools/ero_calevents/Makefile
+		tools/ero_exposure/Makefile
+		tools/ero_fits2tm/Makefile
+		tools/ero_rawevents/Makefile
+		tools/ero_vis/Makefile
+		tools/erosim/Makefile
+		tools/evpat/Makefile
+		tools/exposure_map/Makefile
+		tools/fudgexp/Makefile
+		tools/gendetsim/Makefile
+		tools/gennoisespec/Makefile
+		tools/gradeddetection/Makefile
+		tools/htrssim/Makefile
+		tools/imgev/Makefile
+		tools/ladsim/Makefile
+		tools/makelc/Makefile
+		tools/makespec/Makefile
+		tools/nustarsim/Makefile
+		tools/orbatt/Makefile
+		tools/pha2pi/Makefile
+		tools/phogen/Makefile
+		tools/phoimg/Makefile
 		tools/pixdetillum/Makefile
+		tools/piximpacts/Makefile
+		tools/projev/Makefile
+		tools/psfgen/Makefile
 		tools/pulsetemplgen/Makefile
 		tools/pulsetemplimport/Makefile
-		tools/streamtotriggers/Makefile
+		tools/runsixt/Makefile
 		tools/runtes/Makefile
+		tools/sixteversion/Makefile		
+		tools/streamtotriggers/Makefile
+		tools/tes_grades/Makefile
 		tools/tesconstpileup/Makefile
-		tools/xml2svg/Makefile
 		tools/tesreconstruction/Makefile
+		tools/tessim/Makefile
+		tools/tesstream/Makefile
 		tools/xifupipeline/Makefile
-		tools/gennoisespec/Makefile
-		tools/exposure_map/Makefile
-		tools/gradeddetection/Makefile
+		tools/xml2svg/Makefile
+		tools/xms_pixtemp/Makefile
                 tools/tesgenimpacts/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
