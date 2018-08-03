@@ -9,7 +9,7 @@
 #
 
 if [ "X${SIXTE}" == X ];  then
-  echo "sixte-install.csh: ERROR -- set SIXTE before sourcing sixte-install.csh"
+  echo "sixte-install.sh: ERROR -- set SIXTE before sourcing sixte-install.sh"
   exit 1
 fi
 
@@ -20,8 +20,8 @@ fi
 
 if [ "X${SIMPUT}" == X ];  then
     export SIMPUT=${SIXTE}
-    if ! [ -e ${SIMPUT}/bin/simput-install.csh ]; then
-	echo "sixte-install.csh: ERROR -- set SIMPUT environment variable before sourcing sixte-install.csh"
+    if ! [ -e ${SIMPUT}/bin/simput-install.sh ]; then
+	echo "sixte-install.sh: ERROR -- set SIMPUT environment variable before sourcing sixte-install.sh"
 	exit 1
     fi
 fi
