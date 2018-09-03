@@ -6,7 +6,7 @@ AC_INIT([sixte], [2.4.11], [sixte-support@lists.fau.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
 
 # Check for programs:
