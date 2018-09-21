@@ -244,7 +244,7 @@ int ero_exposure_main()
     wcs.crpix[1]=par.dec_bins/2+0.5;
     wcs.crval[0]=0.5*(par.ra1 +par.ra2 )*180./M_PI;
     wcs.crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;    
-    wcs.cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
+    wcs.cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins*-1.0; // needs to be <0 as coordinates increase to the left
     wcs.cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
     strcpy(wcs.cunit[0], "deg");
     strcpy(wcs.cunit[1], "deg");
