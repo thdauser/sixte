@@ -31,7 +31,7 @@
 
 /* Program parameters */
 struct Parameters {
-  char Attitude[MAXFILENAME];    // filename of the attitude file
+  char* Attitude;  // filename of the attitude file
   char Vignetting[MAXFILENAME];  // filename of the vignetting file
   char Exposuremap[MAXFILENAME]; // output: exposure map
   char ProgressFile[MAXFILENAME];
@@ -198,7 +198,7 @@ int ero_exposure_main()
 
   // Register HEATOOL:
   set_toolname("ero_exposure");
-  set_toolversion("0.11");
+  set_toolversion("0.12");
   
 
   do { // Beginning of the ERROR handling loop.
@@ -294,9 +294,7 @@ int ero_exposure_main()
     }
 
     // Set up the Attitude.
-    strcpy(ucase_buffer, par.Attitude);
-    strtoupper(ucase_buffer);
-    if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
+    if (par.Attitude==NULL) {
       // Set up a simple pointing attitude.
       ac=getPointingAttitude(0., par.TSTART, par.TSTART+par.timespan,
 			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
@@ -315,7 +313,6 @@ int ero_exposure_main()
       CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
-
 
     // Load the Vignetting data.
     if (strlen(par.Vignetting)>0) {
@@ -513,27 +510,19 @@ int ero_exposure_getpar(struct Parameters *par)
 
   // Read all parameters via the ape_trad_ routines.
   
-  status=ape_trad_query_string("Attitude", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the attitude file");
-    return(status);
-  } 
-  strcpy(par->Attitude, sbuffer);
-  free(sbuffer);
+  query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 
-  status=ape_trad_query_float("RA", &par->RA);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the right ascension of the telescope "
-	       "pointing");
-    return(status);
-  } 
-
-  status=ape_trad_query_float("Dec", &par->Dec);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the declination of the telescope "
-	       "pointing");
-    return(status);
-  } 
+  // only load RA,Dec if Attitude is not given
+  if (par->Attitude==NULL) {
+	  query_simput_parameter_float("RA",&(par->RA),&status);
+	  query_simput_parameter_float("Dec",&(par->Dec),&status);
+	  headas_chat(3, "using RA=%.3f, Dec=%.3f as no Attitude file is given\n",par->RA,par->Dec);
+  } else {
+	  // set to default values
+	  par->RA=0.0;
+	  par->Dec=0.0;
+	  headas_chat(3, "using Attitude File: %s \n",par->Attitude);
+  }
 
   // Get the filename of the vignetting data file (FITS file).
   status=ape_trad_query_string("Vignetting", &sbuffer);

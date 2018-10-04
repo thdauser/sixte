@@ -41,7 +41,7 @@
 struct Parameters {
   char EvtFile[MAXFILENAME];
   char eroEvtFile[MAXFILENAME];
-  char Attitude[MAXFILENAME];
+  char* Attitude;
 
   int CCDNr;
 

@@ -46,7 +46,7 @@ int ero_calevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_calevents");
-  set_toolversion("0.14");
+  set_toolversion("0.15");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -759,39 +759,26 @@ int ero_calevents_main()
 
     headas_chat(3, "append CORRATT extension ...\n");
 
-    // If available, load the specified attitude file.
-    if (strlen(par.Attitude)>0) {
-      char ucase_buffer[MAXFILENAME];
-      strcpy(ucase_buffer, par.Attitude);
-      strtoupper(ucase_buffer);
-      if (0!=strcmp(ucase_buffer, "NONE")) {
-	ac=loadAttitude(par.Attitude, &status);
-	CHECK_STATUS_BREAK(status);
-	verifyMJDREF(mjdref, ac->mjdref, "in attitude file", &status);
-	CHECK_STATUS_BREAK(status);
-      } else {
-      // if no attitude is available, fake one
-        ac=getAttitude(&status);
-        CHECK_STATUS_BREAK(status);
-        ac->tstart=tstart;
-        ac->tstop=tstop;
-        ac->mjdref=mjdref;
-        ac->nentries=2;
-        ac->align=ATTNX_NORTH;
-        ac->entry=(AttitudeEntry*)malloc(ac->nentries*sizeof(AttitudeEntry));
-        if (NULL==ac->entry) {
-          status=EXIT_FAILURE;
-          SIXT_ERROR("not enough memory available to store the Attitude");
-          break;
-        }
-        ac->entry[0].time=tstart;
-        ac->entry[1].time=tstop;
-        ac->entry[0].roll_angle=0.;
-        ac->entry[1].roll_angle=0.;
-        ac->entry[0].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
-        ac->entry[1].nz=unit_vector(par.RA*M_PI/180., par.Dec*M_PI/180.);
-      }
+    // Set up the Attitude.
+    if (par.Attitude==NULL) {
+    	// Set up a simple pointing attitude.
+    	ac=getPointingAttitude(mjdref, tstart, tstop,
+    			par.RA*M_PI/180., par.Dec*M_PI/180., &status);
+    	CHECK_STATUS_BREAK(status);
+
+    } else {
+    	// Load the attitude from the given file.
+    	ac=loadAttitude(par.Attitude, &status);
+    	CHECK_STATUS_BREAK(status);
+
+    	// Check if the required time interval for the simulation
+    	// is a subset of the period covered by the attitude file.
+    	checkAttitudeTimeCoverage(ac, mjdref, tstart, tstop,
+    			&status);
+    	CHECK_STATUS_BREAK(status);
     }
+    // END of setting up the attitude.
+
 
     if (NULL!=ac) {
       // Create the CORRATT table.
@@ -981,25 +968,19 @@ int getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_string("Attitude", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the attitude file");
-    return(status);
-  }
-  strcpy(par->Attitude, sbuffer);
-  free(sbuffer);
+  query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 
-  status=ape_trad_query_float("RA", &par->RA);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading RA");
-    return(status);
+  // only load RA,Dec if Attitude is not given
+  if (par->Attitude==NULL) {
+	  query_simput_parameter_float("RA",&(par->RA),&status);
+	  query_simput_parameter_float("Dec",&(par->Dec),&status);
+  } else {
+	  // set to default values
+	  par->RA=0.0;
+	  par->Dec=0.0;
+	  headas_chat(3, "using Attitude File: %s \n",par->Attitude);
   }
 
-  status=ape_trad_query_float("Dec", &par->Dec);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading DEC");
-    return(status);
-  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
