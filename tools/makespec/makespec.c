@@ -25,8 +25,8 @@
 /** Main procedure. */
 int makespec_main() {
   // Program parameters.
-  struct Parameters par; 
-  
+  struct Parameters par;
+
   // Full file name with filter.
   char evtlistfiltered[2*MAXFILENAME];
 
@@ -51,7 +51,7 @@ int makespec_main() {
   set_toolname("makespec");
   set_toolversion("0.11");
 
-  
+
   do {  // Beginning of the ERROR handling loop.
 
     // --- Initialization ---
@@ -61,7 +61,7 @@ int makespec_main() {
     CHECK_STATUS_BREAK(status);
 
     headas_chat(3, "initialize ...\n");
-    
+
     // Assemble event file name with filter
     char ucase_buffer[MAXFILENAME];
     strcpy(ucase_buffer, par.EventFilter);
@@ -138,7 +138,7 @@ int makespec_main() {
       break;
     }
 
-    // Load the GTI extension in order to be able to determine the 
+    // Load the GTI extension in order to be able to determine the
     // exposure time.
     gti=loadGTI(par.EvtFile, &status);
     CHECK_STATUS_BREAK(status);
@@ -154,11 +154,17 @@ int makespec_main() {
 	int usesignal = 0;
 
 	fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
-	if( status == COL_NOT_FOUND ){
-		SIXT_WARNING("'PHA' column not found! Falling back to 'signal' for spectra creation ...");
-    	SIXT_WARNING("The spectrum will not be calibrated. ");
-    	fits_clear_errmsg();
-    	status = EXIT_SUCCESS;
+  // Print a warning if we find a PHA column in an X-IFU event file.
+  if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
+    SIXT_WARNING("Event file contains a PHA column and is not compatible with this version of makespec");
+	}
+  if( status == COL_NOT_FOUND ){
+    if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
+		  SIXT_WARNING("'PHA' column not found! Falling back to 'signal' for spectra creation ...");
+      SIXT_WARNING("The spectrum will not be calibrated. ");
+    }
+    fits_clear_errmsg();
+    status = EXIT_SUCCESS;
 		fits_get_colnum(ef, CASEINSEN, "signal", &csignal, &status);
 		CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 		usesignal = 1;
@@ -166,9 +172,15 @@ int makespec_main() {
 	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 	if( usesignal==0 && par.usepha == 0 ){
     	fits_get_colnum(ef, CASEINSEN, "PI", &coltmp, &status);
+        // Print a warning if we find a PHA column in an X-IFU event file.
+        if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
+          SIXT_WARNING("Event file contains a PI column and is not compatible with this version of makespec");
+        }
         if( status==COL_NOT_FOUND ){
-        	SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
-        	SIXT_WARNING("The spectrum will not be calibrated. ");
+          if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
+        	  SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
+        	  SIXT_WARNING("The spectrum will not be calibrated. ");
+          }
         	fits_clear_errmsg();
         	status = EXIT_SUCCESS;
         } else {
@@ -207,14 +219,14 @@ int makespec_main() {
     // we first check whether the user demands a different rmf or/and arf:
     // Check the rmf:
     char spcrespfile[MAXFILENAME];
-    if (strcmp("NONE",par.RMFfile)){ // User demands a different rmf 
+    if (strcmp("NONE",par.RMFfile)){ // User demands a different rmf
       strcpy(spcrespfile,par.RMFfile);
     } else {                         // We use the same rmf as in the simulation
       strcpy(spcrespfile,respfile);
     }
     // Check the arf:
     char spcancrfile[MAXFILENAME];
-    if (strcmp("NONE",par.ARFfile)){ // User demands a different arf    
+    if (strcmp("NONE",par.ARFfile)){ // User demands a different arf
       strcpy(spcancrfile,par.ARFfile);
     } else {                         // We use the same arf as in the simulation
       strcpy(spcancrfile,ancrfile);
@@ -238,15 +250,15 @@ int makespec_main() {
       strcpy(resppathname, spcrespfile);
       strcpy(ancrpathname, spcancrfile);
     }
-    
-    
+
+
     // Load the EBOUNDS of the RMF that will be used in the spectrum extraction.
     struct RMF* rmf=getRMF(&status);
     CHECK_STATUS_BREAK(status);
     loadEbounds(rmf, resppathname, &status);
     CHECK_STATUS_BREAK(status);
 
-    
+
     // If diferent rmf and/or arf are required, we need to check that the binning
     // is compatible with the ones used for the simulation:
     // Check the RMF:
@@ -264,13 +276,13 @@ int makespec_main() {
       	strcpy(simresppathname, respfile);
       }
       printf("path to the response file: %s\n", simresppathname);
-      
+
       // Load the EBOUNDS of the RMF.
       struct RMF* simrmf=getRMF(&status);
       CHECK_STATUS_BREAK(status);
       loadEbounds(simrmf, simresppathname, &status);
       CHECK_STATUS_BREAK(status);
-      
+
       // We check the number of bins and the low and high energy:
       if((rmf->NumberChannels != simrmf->NumberChannels) ||
       	 (rmf->ChannelLowEnergy[0]   != simrmf->ChannelLowEnergy[0]) ||
@@ -282,10 +294,10 @@ int makespec_main() {
     }
     // Check the ARF:
     if (strcmp("NONE",par.ARFfile)){
-      
+
       // Take the path to the arf used in the simulation
       // we load the arf used in the simulation:
-      char simancrpathname[2*MAXFILENAME];      
+      char simancrpathname[2*MAXFILENAME];
       if (strlen(par.RSPPath)>0) {
       	strcpy(simancrpathname, par.RSPPath);
       	strcat(simancrpathname, "/");
@@ -295,13 +307,13 @@ int makespec_main() {
       	strcpy(simancrpathname, ancrfile);
       }
       printf("path to the ancilliary file: %s\n", simancrpathname);
-      
+
       // Load the ARFs.
       struct ARF* arf=loadARF(ancrpathname,&status);
       CHECK_STATUS_BREAK(status);
       struct ARF* simarf=loadARF(simancrpathname,&status);
       CHECK_STATUS_BREAK(status);
-      
+
       // We check the number of bins and the low and high energy:
       if((arf->NumberEnergyBins != simarf->NumberEnergyBins) ||
       	 (arf->LowEnergy[0]     != simarf->LowEnergy[0]) ||
@@ -323,7 +335,7 @@ int makespec_main() {
     spec=(long*)malloc(rmf->NumberChannels*sizeof(long));
     CHECK_NULL_BREAK(spec, status, "memory allocation for spectrum failed");
 
-    // Initialize the spectrum with 0. 
+    // Initialize the spectrum with 0.
     long ii;
     for (ii=0; ii<rmf->NumberChannels; ii++) {
       spec[ii]=0;
@@ -390,7 +402,7 @@ int makespec_main() {
     // Create a new FITS-file (remove existing one before):
     remove(par.Spectrum);
     char buffer[MAXFILENAME];
-    sprintf(buffer, "%s(%s%s)", par.Spectrum, SIXT_DATA_PATH, 
+    sprintf(buffer, "%s(%s%s)", par.Spectrum, SIXT_DATA_PATH,
 	    "/templates/makespec.tpl");
     fits_create_file(&sf, buffer, &status);
     CHECK_STATUS_BREAK(status);
@@ -420,7 +432,7 @@ int makespec_main() {
 			    "ancillary response file", &status);
     fits_update_key_longstr(sf, "RESPFILE", resppathname,
 			    "response file", &status);
-    fits_update_key(sf, TSTRING, "BACKFILE", "", 
+    fits_update_key(sf, TSTRING, "BACKFILE", "",
 		    "background file", &status);
     fits_update_key(sf, TLONG, "DETCHANS", &rmf->NumberChannels,
 		    "number of detector channels", &status);
@@ -433,7 +445,7 @@ int makespec_main() {
     CHECK_STATUS_BREAK(status);
 
     // Loop over all channels in the spectrum.
-    for (ii=0; ii<rmf->NumberChannels; ii++) {    
+    for (ii=0; ii<rmf->NumberChannels; ii++) {
       long channel=ii+rmf->FirstChannel;
       fits_write_col(sf, TLONG, cchannel, ii+1, 1, 1, &channel, &status);
     }
@@ -474,7 +486,7 @@ int makespec_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status = EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -482,7 +494,7 @@ int makespec_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list file");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -490,7 +502,7 @@ int makespec_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the event filter expression");
     return(status);
-  } 
+  }
   strcpy(par->EventFilter, sbuffer);
   free(sbuffer);
 
@@ -498,7 +510,7 @@ int makespec_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output spectrum file");
     return(status);
-  } 
+  }
   strcpy(par->Spectrum, sbuffer);
   free(sbuffer);
 
@@ -506,7 +518,7 @@ int makespec_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading path to the response files");
     return(status);
-  } 
+  }
   strcpy(par->RSPPath, sbuffer);
   free(sbuffer);
 
