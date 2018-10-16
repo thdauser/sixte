@@ -72,6 +72,9 @@ int xifupipeline_main()
 	// Pulse reconstruction initialization structure
 	ReconstructInit* reconstruct_init = NULL;
 
+	// Modulated X-ray sources parameter structure
+	MXSparams* mxs_params = NULL;
+
 	// Error status.
 	int status=EXIT_SUCCESS;
 
@@ -270,7 +273,6 @@ int xifupipeline_main()
 			}
 		}
 
-
 		// --- End of Initialization ---
 
 
@@ -367,6 +369,14 @@ int xifupipeline_main()
 		  printf(" ERROR initializing the TES setup \n");
 		  break;
 		}
+
+		// Load and initialize the mxs parameters if mxs is enabled
+    if (par.enable_mxs) {
+			mxs_params = loadMXSparams(par.mxs_frequency, par.mxs_flash_duration,
+			                           par.mxs_rate, det->npix, seed, &status);
+		  CHECK_STATUS_BREAK(status);
+		}
+
 		// ---- End of TES initialization ----
 
 
@@ -507,6 +517,11 @@ int xifupipeline_main()
 		long current_impact_row = 0;
 		long current_impact_write_row = 0;
 		long nimpacts=0;
+
+    // Start and end time of current mxs flash.
+		double flash_start_time = 0;
+		double flash_end_time = 0;
+
 		do {
 			// Currently regarded interval.
 			double t0=gti->start[gtibin];
@@ -515,28 +530,52 @@ int xifupipeline_main()
 			// Set the start time for the instrument model.
 			//setGenDetStartTime(inst->det, t0);
 
-			// Set up the variables for nxb managment
+			// Set up the variables for nxb and mxs managment
 			// These allow to maintain causality
 			int get_next_photon=1;
 			int get_next_nxb=1;
+			int get_next_mxs=0;
 			if (inst->det->ignore_bkg){
 				get_next_nxb=0;
 			}
+			if (par.enable_mxs){
+				get_next_mxs=1;
+			}
 			int isnxbph=0;
 			int isph=0;
+			int ismxsph=0;
 
 			// Loop over photon generation and processing
 			// till the time of the photon exceeds the requested
 			// time interval.
 			Photon ph;
 			Impact nxb_imp;
-			do {
+			Impact mxs_imp;
 
+			// Set start and end time of first mxs flash in current gti.
+			if (par.enable_mxs){
+	  		while (flash_start_time < t0) {
+		  	  flash_start_time += 1./mxs_params->mxs_frequency;
+			  }
+		    flash_end_time = flash_start_time + mxs_params->mxs_flash_duration;
+      }
+
+			do {
 				// Photon generation.
 				if (get_next_photon){
 					isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1, par.MJDREF, par.dt,
 							inst->tel->fov_diameter, &ph, &status);
 					CHECK_STATUS_BREAK(status);
+				}
+
+				// MXS generation
+				if (get_next_mxs){
+					ismxsph=phmxsgen(det, t0, t1, &mxs_imp, mxs_params,
+						               &flash_start_time, &flash_end_time, &status);
+					CHECK_STATUS_BREAK(status);
+					if (!ismxsph){
+						mxs_imp.time=t1;
+					}
 				}
 
 				if (get_next_nxb){ //Creating the linked list with all the bkg events
@@ -549,10 +588,12 @@ int xifupipeline_main()
 					assert(nxb_imp.time<=t1);
 				}
 
-				// If no photon has been generated in both bkg and sources, break the loop.
+				// If no photon has been generated in sources, bkg or mxs, break the loop.
 				if (!isph){
-					if(!isnxbph){ //NXB and photon list over
-						break;
+					if(!isnxbph){ //NXB and photon list over.
+						if (!ismxsph){ // And also no mxs photon.
+						  break;
+						}
 					}
 					ph.time=t1; //To avoid segfaulting, this photon will NOT be saved
 				}
@@ -560,7 +601,9 @@ int xifupipeline_main()
 				// Check if the photon still is within the requested
 				// exposure time.
 				assert(ph.time<=t1);
-				if (!inst->det->ignore_bkg){ //In case of bkg, check which comes first
+
+				// If simulating background and no mxs.
+				if (!inst->det->ignore_bkg && !par.enable_mxs){ //In case of bkg, check which comes first
 					if (ph.time<=nxb_imp.time){ //Photon should be treated first
 						get_next_nxb=0;
 						get_next_photon=1;
@@ -570,23 +613,63 @@ int xifupipeline_main()
 					}
 				}
 
+        // If simulating mxs and no background.
+				if (inst->det->ignore_bkg && par.enable_mxs){
+					if (ph.time<=mxs_imp.time){ //Photon should be treated first
+						get_next_mxs=0;
+						get_next_photon=1;
+					} else{ //mxs should be treated first
+						get_next_mxs=1;
+						get_next_photon=0;
+					}
+				}
+
+				// If simulating mxs and background.
+				if (!inst->det->ignore_bkg && par.enable_mxs) {
+					if (nxb_imp.time <= mxs_imp.time) {
+						if (ph.time <= nxb_imp.time) { // Photon should be treated first
+							get_next_photon = 1;
+							get_next_nxb = 0;
+							get_next_mxs = 0;
+						} else { // nxb should be treated first
+							get_next_photon = 0;
+							get_next_nxb = 1;
+							get_next_mxs = 0;
+						}
+					} else { // mxs arrives before nxb
+						if (ph.time <= mxs_imp.time) { // Photon should be treated first
+							get_next_photon = 1;
+							get_next_nxb = 0;
+							get_next_mxs = 0;
+						} else { // mxs should be treated first
+							get_next_photon = 0;
+							get_next_nxb = 0;
+							get_next_mxs = 1;
+						}
+					}
+				}
+
 				// If requested, write the photon to the output file.
-				if (NULL!=plf && !get_next_nxb) {
+				if (NULL!=plf && !get_next_nxb && !get_next_mxs) {
 					status=addPhoton2File(plf, &ph);
 					CHECK_STATUS_BREAK(status);
 				}
 
 				// Photon imaging.
 				Impact imp;
-				if (!get_next_nxb){ //Only the non NXB events are imaged by the mirror
+				if (!get_next_nxb && !get_next_mxs){ //Only the non NXB/MXS events are imaged by the mirror
 					int isimg=phimg(inst->tel, ac, &ph, &imp, &status);
 					CHECK_STATUS_BREAK(status);
 
 					// If the photon is not imaged but lost in the optical system,
 					// continue with the next one.
 					if (!isimg) continue;
-				} else{
-					copyImpact(&imp, &nxb_imp); //Otherwise the impact is a background event (not imaged)
+				} else { //Otherwise the impact is a background or mxs event (not imaged)
+					if (get_next_nxb) {
+					  copyImpact(&imp, &nxb_imp);
+					} else {
+						copyImpact(&imp, &mxs_imp);
+					}
 				}
 
 				// If requested, write the impact to the output file.
@@ -732,11 +815,11 @@ int xifupipeline_main()
 		event_file->row=1;
 		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,par.ProjCenter,&status);
 		CHECK_STATUS_BREAK(status);
-		
+
 		//Store number of impacts in event file
 		fits_update_key(event_file->fptr, TLONG, "NIMP", &nimpacts,
 				"Number of impacts", &status);
-		
+
 		// Store the GTI extension in the event file.
 		saveGTIExt(event_file->fptr, "STDGTI", gti, &status);
 		CHECK_STATUS_BREAK(status);
@@ -1129,6 +1212,12 @@ int xifupipeline_getpar(struct Parameters* const par)
 		return(status);
 	}
 
+	/* Read mxs related parameters */
+	query_simput_parameter_bool("enable_mxs", &par->enable_mxs, &status);
+	query_simput_parameter_double("mxs_frequency", &par->mxs_frequency, &status);
+	query_simput_parameter_double("mxs_flash_duration", &par->mxs_flash_duration, &status);
+	query_simput_parameter_double("mxs_rate", &par->mxs_rate, &status);
+
 	return(status);
 }
 
@@ -1189,4 +1278,3 @@ void getListPixelsHit(PixImpFile* pixilf,int** list_pixels,int npix,int* const s
 	}
 
 }
-

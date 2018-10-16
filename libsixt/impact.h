@@ -33,10 +33,10 @@
 typedef struct {
   /** Arrival time of the photon on the detector [s]. */
   double time;
-  
+
   /** Photon energy [keV]. */
   float energy;
-  
+
   /** Impact position of the photon on the detector [m]. */
   struct Point2d position;
 

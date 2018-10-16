@@ -12,7 +12,7 @@ endif
 # Directory where to install the FITS template files.
 fitstemplatesdir=$(pkgdatadir)/templates
 dist_fitstemplates_DATA =coma.eventlist.tpl
-dist_fitstemplates_DATA+=photonfile.tpl 
+dist_fitstemplates_DATA+=photonfile.tpl
 dist_fitstemplates_DATA+=impactfile.tpl
 dist_fitstemplates_DATA+=eventfile.tpl
 dist_fitstemplates_DATA+=ladimpactfile.tpl
@@ -59,7 +59,7 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  testrigger.c integraSIRENA.cpp tasksSIRENA.cpp        \
                   pulseprocess.cpp inoututils.cpp genutils.cpp          \
 		  crosstalk.c grading.c tescrosstalk.c linkedimplist.c  \
-		  masksystem.c
+		  masksystem.c mxs.c
 
 ############ HEADERS #################
 
@@ -91,5 +91,4 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		integraSIRENA.h tasksSIRENA.h pulseprocess.h            \
                 inoututils.h genutils.h crosstalk.h grading.h           \
 		tescrosstalk.h tespixel.h linkedimplist.h sixt_main.c   \
-		masksystem.h
-	
+		masksystem.h  mxs.h

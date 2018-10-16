@@ -44,6 +44,7 @@
 #include "crosstalk.h"
 #include "parinput.h"
 #include "grading.h"
+#include "mxs.h"
 
 #define TOOLSUB xifupipeline_main
 #include "headas_main.c"
@@ -124,6 +125,11 @@ struct Parameters {
   char history;
   char clobber;
 
+  /** MXS related parameters */
+  int enable_mxs;
+  double mxs_frequency;
+  double mxs_flash_duration;
+  double mxs_rate;
 
 };
 
@@ -143,4 +149,3 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
 void getListPixelsHit(PixImpFile* pixilf,int** list_pixels,int npix,int* const status);
 
 #endif /* XIFUPIPELINE_H */
-
