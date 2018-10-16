@@ -49,7 +49,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.11");
+  set_toolversion("0.12");
 
 
   do {  // Beginning of the ERROR handling loop.

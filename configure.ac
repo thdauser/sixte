@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT([sixte], [2.4.13], [sixte-support@lists.fau.de])
+AC_INIT([sixte], [2.4.14], [sixte-support@lists.fau.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
@@ -11,7 +11,7 @@ AC_CONFIG_SRCDIR([libsixt/sixt.h])
 
 # Check for programs:
 AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
-AC_PROG_CXX # Search for a CXX-Compiler 
+AC_PROG_CXX # Search for a CXX-Compiler
 AC_PROG_FC # Search for a Fortran compiler.
 AM_PROG_AR
 
@@ -23,7 +23,7 @@ AC_ARG_WITH(simput,
 	[Provide an alternative path to the SIMPUT software])],
 	simput_dir=$withval,
 	simput_dir=${prefix}
-)  
+)
 
 AC_SUBST(simput_dir)
 
@@ -32,7 +32,7 @@ AC_ARG_WITH(gsl,
 	[Provide an alternative path to the GSL software (requires lib to be in <path>/lib and includes in <path>/includes])],
 	gsl_dir=$withval,
 	gsl_dir=no
-)  
+)
 
 
 # Compiler Flags:
@@ -60,9 +60,9 @@ case $build_os in
   darwin*)
   OSX_VERSION_MAJOR=`sw_vers -productVersion | awk -F '.' '{print $1}'`
   OSX_VERSION_MINOR=`sw_vers -productVersion | awk -F '.' '{print $2}'`
-  CFLAGS="$CFLAGS -headerpad_max_install_names"                                                                     
+  CFLAGS="$CFLAGS -headerpad_max_install_names"
   CPPFLAGS="$CPPFLAGS -headerpad_max_install_names"
-  LDFLAGS="$LDFLAGS -headerpad_max_install_names"   							
+  LDFLAGS="$LDFLAGS -headerpad_max_install_names"
   ;;
 esac
 AC_SUBST(OSX_VERSION_MAJOR)
@@ -71,8 +71,8 @@ AC_SUBST(OSX_VERSION_MINOR)
 
 ####################################
 # Conditional usage of RCL library (Remeis random number server).
-AC_ARG_ENABLE([rcl], 
-              [AS_HELP_STRING([--enable-rcl], 
+AC_ARG_ENABLE([rcl],
+              [AS_HELP_STRING([--enable-rcl],
 	          [enable usage of RCL library])],
 	          [rcl=true], [rcl=false])
 AM_CONDITIONAL([RCL], [test x$rcl = xtrue])
@@ -85,21 +85,21 @@ AC_SEARCH_LIBS([clock_gettime], [rt], [], [ echo "Warning:  No Real Time library
 
 ####################################
 # expat
-AC_SEARCH_LIBS(XML_Parse, [expat], 
+AC_SEARCH_LIBS(XML_Parse, [expat],
 	[], [AC_MSG_ERROR([No expat library found!])], [])
 
-#################################### 
+####################################
 # ncurses and readline (required by ape and progressbar library)
 AC_SEARCH_LIBS(beep, ncurses, [], [AC_MSG_ERROR([No ncurses library found!])], [])
 AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!])], [])
 
 
-#################################### 
+####################################
 # boostlib
 AC_CONFIG_MACRO_DIR(./build-aux/m4/)
 AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboost-all-dev])])
 
-#################################### 
+####################################
 # GSL Libraries:
 
 AX_PATH_GSL(1.16,
@@ -112,7 +112,7 @@ AC_SEARCH_LIBS([gsl_sf_erf_Q], [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
 
 
-#################################### 
+####################################
 
 # Check for header files:
 AC_HEADER_STDC
@@ -188,7 +188,7 @@ AC_CONFIG_FILES([Makefile
 		tools/pulsetemplimport/Makefile
 		tools/runsixt/Makefile
 		tools/runtes/Makefile
-		tools/sixteversion/Makefile		
+		tools/sixteversion/Makefile
 		tools/streamtotriggers/Makefile
 		tools/tes_grades/Makefile
 		tools/tesconstpileup/Makefile
