@@ -425,7 +425,8 @@ void load_thermal_cross_talk(AdvDet* det,int pixid,int* const status){
 		// Iterate over cross-talk values and look for the first matching one
 		for (int xt_index=0;xt_index<det->xt_num_thermal;xt_index++){
 			if (pixel_distance<det->xt_dist_thermal[xt_index]){
-				add_xt_pixel(concerned_pixel->thermal_cross_talk,current_pixel,xt_index,det->xt_weight_thermal[xt_index],status);
+				add_xt_pixel(concerned_pixel->thermal_cross_talk,current_pixel,xt_index,
+						det->xt_weight_thermal[xt_index]*det->scaling,status);
 				CHECK_STATUS_VOID(*status);
 				// If one cross talk was identified, go to next pixel (the future cross-talks should be lower order cases)
 				break;
@@ -1648,7 +1649,7 @@ void init_crosstalk(AdvDet* det, int* const status){
 
 	// load thermal cross talk and associated time dependency
 	if (det->xt_num_thermal>0 && doCrosstalk(CROSSTALK_ID_THERM,det)){
-		printf(" - thermal crosstalk\n");
+		printf(" - thermal crosstalk (scaling=%.2e)\n", det->scaling);
 		det->crosstalk_ther_timedep=(CrosstalkTimedep**)malloc(det->xt_num_thermal*sizeof(CrosstalkTimedep*));
 		CHECK_MALLOC_VOID_STATUS(det->crosstalk_ther_timedep,*status);
 		for (int i=0; i<det->xt_num_thermal;i++){
