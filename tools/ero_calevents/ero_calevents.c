@@ -532,7 +532,7 @@ int ero_calevents_main()
 
       // TODO In the current implementation the value of FLAG is set
       // by default. This needs to be changed later.
-      ev.flag=0xC0000000;
+      ev.flag=0xC00001C0;
 
       // TODO Inverse vignetting correction factor is not used.
       ev.ev_weight=1.0; // Invers vignetting correction factor.
