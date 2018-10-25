@@ -526,39 +526,52 @@ static void GenInstXMLElementStart(void* parsedata,
     xmlparsedata->inst->tel->arf=loadARF(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
-  } else if (!strcmp(Uelement, "RMF")) {
-
-    // Check if the RMF has been defined previously.
-    if (NULL!=xmlparsedata->inst->det->rmf) {
-      xmlparsedata->status=EXIT_FAILURE;
-      SIXT_ERROR("RMF already defined (cannot be loaded twice)");
-      return;
-    }
+  } else if (!strcmp(Uelement, "PHA2PI")) {
 
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
 
-    // Check if a file name has been specified.
-    if (strlen(filename)==0) {
-      xmlparsedata->status=EXIT_FAILURE;
-      SIXT_ERROR("no file specified for RMF");
-      return;
-    }
-
-    // Store the file name of the RMF.
-    xmlparsedata->inst->det->rmf_filename=
+    // Store the file name of the Pha2Pi.
+    xmlparsedata->inst->det->pha2pi_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->det->rmf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->inst->det->pha2pi_filename,
 		    xmlparsedata->status,
-		    "memory allocation for RMF file name failed");
-    strcpy(xmlparsedata->inst->det->rmf_filename, filename);
+		    "memory allocation for Pha2Pi file name failed");
+    strcpy(xmlparsedata->inst->det->pha2pi_filename, filename);
 
-    // Load the RMF.
-    char filepathname[MAXFILENAME];
-    strcpy(filepathname, xmlparsedata->inst->filepath);
-    strcat(filepathname, filename);
-    xmlparsedata->inst->det->rmf=loadRMF(filepathname, &xmlparsedata->status);
-    CHECK_STATUS_VOID(xmlparsedata->status);
+  } else if (!strcmp(Uelement, "RMF")) {
+
+	    // Check if the RMF has been defined previously.
+	    if (NULL!=xmlparsedata->inst->det->rmf) {
+	      xmlparsedata->status=EXIT_FAILURE;
+	      SIXT_ERROR("RMF already defined (cannot be loaded twice)");
+	      return;
+	    }
+
+	    char filename[MAXFILENAME];
+	    getXMLAttributeString(attr, "FILENAME", filename);
+
+	    // Check if a file name has been specified.
+	    if (strlen(filename)==0) {
+	      xmlparsedata->status=EXIT_FAILURE;
+	      SIXT_ERROR("no file specified for RMF");
+	      return;
+	    }
+
+	    // Store the file name of the RMF.
+	    xmlparsedata->inst->det->rmf_filename=
+	      (char*)malloc((strlen(filename)+1)*sizeof(char));
+	    CHECK_NULL_VOID(xmlparsedata->inst->det->rmf_filename,
+			    xmlparsedata->status,
+			    "memory allocation for RMF file name failed");
+	    strcpy(xmlparsedata->inst->det->rmf_filename, filename);
+
+	    // Load the RMF.
+	    char filepathname[MAXFILENAME];
+	    strcpy(filepathname, xmlparsedata->inst->filepath);
+	    strcat(filepathname, filename);
+	    xmlparsedata->inst->det->rmf=loadRMF(filepathname, &xmlparsedata->status);
+	    CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "RSP")) {
 

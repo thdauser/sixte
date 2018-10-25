@@ -22,7 +22,10 @@ LONGSTR = OGIP 1.0        / support multi-line COMMENTs or HISTORY records
 	TUNIT#  s               / Unit of column TIME
 	TTYPE#  FRAME           / Frame counter
 	TFORM#  J               / Format of column FRAME
-	TTYPE#  PHA              / Corrected Energy Channel
+	TTYPE#  PHA             / Energy Channel
+	TFORM#  J               / Format of column PHA
+	TUNIT#  ADU             / Unit of column PHA
+	TTYPE#  PI              / Corrected Energy Channel
 	TFORM#  J               / Format of column PHA
 	TUNIT#  ADU             / Unit of column PHA
 	TTYPE#  SIGNAL          / Pixel SIGNAL

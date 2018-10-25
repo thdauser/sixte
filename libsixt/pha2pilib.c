@@ -36,6 +36,7 @@ Pha2Pi* getPha2Pi(int* const status) {
 	p2p->pien = NULL;
 	p2p->pilow = NULL;
 	p2p->pihigh = NULL;
+	p2p->nulval = -255;
 
 	return (p2p);
 }
@@ -77,21 +78,26 @@ void freePha2Pi(Pha2Pi** const p2p) {
 }
 
 Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* const status) {
-	if (strlen(filename) == 0) {
+
+	/** CHECK if Pha2Pi file is accessible */
+	if ( filename==NULL || strlen(filename) == 0 ) {
+		printf("No Pha2Pi correction file given ... skipping correction!\n");
 		return NULL;
-	} else if (access(filename, F_OK) != 0) {
+	}
+	if (access(filename, F_OK) != 0) {
 		char msg[MAXMSG];
 		sprintf(msg, "Pha2Pi correction File '%s' not accessible!", filename);
-		SIXT_WARNING(msg);
+		SIXT_ERROR(msg);
+		*status = EXIT_FAILURE;
 		return NULL;
 	}
 
 	int colnum, typecode;
 	long width;
-	int anynul = 0;
 
 	Pha2Pi* p2p = getPha2Pi(status);
 	CHECK_STATUS_RET(*status, p2p);
+
 
 	/** Store filename */
 	p2p->pha2pi_filename=(char*)malloc((strlen(filename)+1)*sizeof(char));
@@ -129,14 +135,15 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 	p2p->pha = (long *) malloc(p2p->nrows * sizeof(long));
 	fits_get_colnum(fptr, CASEINSEN, "PHA", &colnum, status);
 	fits_read_col(fptr, TINT32BIT, colnum, 1, 1, p2p->nrows, NULL, p2p->pha,
-			&anynul, status);
+			&p2p->nulval, status);
 	CHECK_STATUS_RET(*status, p2p);
 
-	// CHECK CONSISTENCY: PHA has to start at zero and must be continues
+	// CHECK CONSISTENCY: PHA has to start at zero and must be continues (assuming sorted PHAs)
 	if( p2p->pha[0] != 0 || p2p->pha[p2p->nrows-1] != p2p->nrows-1 ){
 		char msg[MAXMSG];
 		sprintf(msg, "Pha2Pi correction File is inconsistent! PHA values must be continues starting with 0!");
 		SIXT_ERROR(msg);
+		*status = EXIT_FAILURE;
 		return NULL;
 	}
 
@@ -150,7 +157,7 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 	for (int ii=0; ii<p2p->nrows; ++ii){
 		p2p->pien[ii] = (double *) malloc(p2p->ngrades * sizeof(double));
 		fits_read_col(fptr, TDOUBLE, colnum, ii+1, 1, p2p->ngrades, NULL, p2p->pien[ii],
-				&anynul, status);
+				&p2p->nulval, status);
 		CHECK_STATUS_RET(*status, p2p);
 	}
 	fits_get_colnum(fptr, CASEINSEN, "PILOW", &colnum, status);
@@ -158,7 +165,7 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 	for (int ii=0; ii<p2p->nrows; ++ii){
 		p2p->pilow[ii] = (double *) malloc(p2p->ngrades * sizeof(double));
 		fits_read_col(fptr, TDOUBLE, colnum, ii+1, 1, p2p->ngrades, NULL, p2p->pilow[ii],
-				&anynul, status);
+				&p2p->nulval, status);
 		CHECK_STATUS_RET(*status, p2p);
 	}
 	fits_get_colnum(fptr, CASEINSEN, "PIHIGH", &colnum, status);
@@ -166,7 +173,7 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 	for (int ii=0; ii<p2p->nrows; ++ii){
 		p2p->pihigh[ii] = (double *) malloc(p2p->ngrades * sizeof(double));
 		fits_read_col(fptr, TDOUBLE, colnum, ii+1, 1, p2p->ngrades, NULL, p2p->pihigh[ii],
-				&anynul, status);
+				&p2p->nulval, status);
 		CHECK_STATUS_RET(*status, p2p);
 	}
 
@@ -198,15 +205,44 @@ void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 	}
 	// Determine a PI value for the event's PHA value
 	else{
-		// PI value in keV
+		// Find energy range [emin,emax] corresponding to event's pha
+		const long ind = evt->pha - rmf->FirstChannel;
+		// Consistency check: Does index point to correct pha channel?
+		if(evt->pha != p2p->pha[ind]){
+			char msg[MAXMSG];
+			sprintf(msg, "pha2pi: Event PHA (%ld) not equal to PHA (%ld) in Pha2Pi file '%s' ... aborting!\n",
+					evt->pha,p2p->pha[ind],p2p->pha2pi_filename
+					);
+			SIXT_ERROR(msg);
+			*status = EXIT_FAILURE;
+			return;
+		}
+
+		const double emin = p2p->pilow[ind][evt->type];
+		const double emax = p2p->pihigh[ind][evt->type];
+		/* Consistency check:
+		 * Pha2Pi File might contain NaN entries for requested
+		 * PHA-TYPE combination -> Pha2Pi File is invalid!
+		 * */
+		if( isnan(emin) || isnan(emax) ){
+			// IF this case occurs the Pha2Pi File is not valid!
+			char msg[MAXMSG];
+			sprintf(msg, "pha2pi: Pha2Pi file '%s' contains invalid NULL entries for PHA=%ld and TYPE=%d! Aborting ...\n",
+					p2p->pha2pi_filename,evt->pha,evt->type
+					);
+			SIXT_ERROR(msg);
+			*status = EXIT_FAILURE;
+			// HOTFIX:
+			//evt->pi = evt->pha;
+			return;
+		}
+		// PI value in keV randomly picked within
 		double ran = sixt_get_random_number(status);
 		CHECK_STATUS_VOID(*status);
-		const double emin = p2p->pilow[evt->pha][evt->type];
-		const double emax = p2p->pihigh[evt->pha][evt->type];
 		const double pi = emin + ran*(emax-emin);
 
 		// PI value in ADU based on given RMF's EBOUNDS
-		evt->pi = binary_search_float_long( (float)pi, rmf->ChannelLowEnergy, rmf->NumberChannels) + 1;
+		evt->pi = getEBOUNDSChannel( (float)pi, rmf );
 	}
 }
 
@@ -214,18 +250,27 @@ void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 		const char* RSPPath, const char* RESPfile,	int* const status) {
 
-    // Read the eventfile RESPFILE keyword.
+	// Do nothing if the Pha2Pi structure is uninitialized
+	if( p2p == NULL ){
+		return;
+	}
+
+	headas_chat(3, "run pha2pi correction on event file ...\n");
+
+	// Read the eventfile RESPFILE keyword.
 	char comment[MAXMSG];
     char evtrmf[MAXMSG];
+    fits_movnam_hdu(evtfile->fptr, BINARY_TBL, "EVENTS", 0, status);
+    CHECK_STATUS_VOID(*status);
     fits_read_key(evtfile->fptr, TSTRING, "RESPFILE", &evtrmf, comment, status);
     CHECK_STATUS_VOID(*status);
 
     // CHECK if eventfile & Pha2Pi file were created with the same RMF
-//    if( strcmp(evtrmf,p2p->rmffile) != 0 ){
-//      	*status=EXIT_FAILURE;
-//      	SIXT_ERROR("RESPfile keyword of EventFile and Pha2Pi are different, but must be the same!");
-//      	return;
-//    }
+    if( strcmp(evtrmf,p2p->rmffile) != 0 ){
+      	*status=EXIT_FAILURE;
+      	SIXT_ERROR("RESPfile keyword of EventFile and Pha2Pi are different, but must be the same!");
+      	return;
+    }
 
     // CHECK whether the user demands a different RMF:
     char respfile[MAXFILENAME];

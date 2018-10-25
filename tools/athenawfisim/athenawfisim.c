@@ -71,13 +71,18 @@ int athenapwfisim_main()
   // Output file for progress status.
   FILE* progressfile=NULL;
 
+  // Pha2Pi correction files
+  Pha2Pi* p2p[nchips];
+  for(ii=0; ii<nchips; ii++){
+    patf[ii]=NULL;
+  }
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL
   set_toolname("athenapwfisim");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -206,6 +211,10 @@ int athenapwfisim_main()
       // Set the usage of the detector background according to
       // the respective program parameter.
       setGenDetIgnoreBkg(subinst[ii]->det, !par.Background);
+
+      // Initialize & load Pha2Pi File (NULL if not set)
+      p2p[ii] = initPha2Pi(subinst[ii]->det->pha2pi_filename, seed, &status);
+      CHECK_STATUS_BREAK_WITH_FITSERROR(status);
     }
     CHECK_STATUS_BREAK(status);
     
@@ -682,6 +691,19 @@ int athenapwfisim_main()
     }
     CHECK_STATUS_BREAK(status);
 
+    // Run PI correction on Pattern file.
+    for (ii=0; ii<nchips; ii++) {
+    	if( p2p[ii] != NULL ){
+    		headas_chat(3, "start Pha2Pi correction ...\n");
+    		pha2pi_correct_eventfile( patf[ii], p2p[ii],
+    				subinst[ii]->filepath,
+					subinst[ii]->det->rmf_filename,
+					&status);
+    		CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+    	}
+    }
+	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+
     // --- End of simulation process ---
 
     // remove RawData files if not requested
@@ -711,6 +733,7 @@ int athenapwfisim_main()
     destroyGenInst(&subinst[ii], &status);
     freeEventFile(&patf[ii], &status);
     freeEventFile(&elf[ii], &status);
+    freePha2Pi(&p2p[ii]);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&srccat[ii], &status);

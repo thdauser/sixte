@@ -32,6 +32,7 @@
 #include "phgen.h"
 #include "phimg.h"
 #include "photonfile.h"
+#include "pha2pilib.h"
 #include "phpat.h"
 #include "phproj.h"
 #include "sourcecatalog.h"

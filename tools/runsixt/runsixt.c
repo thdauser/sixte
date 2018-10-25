@@ -58,13 +58,16 @@ int runsixt_main()
   // Output file for progress status.
   FILE* progressfile=NULL;
 
+  // Pha2Pi correction file
+  Pha2Pi* p2p=NULL;
+
   // Error status.
   int status=EXIT_SUCCESS; 
 
 
   // Register HEATOOL
   set_toolname("runsixt");
-  set_toolversion("0.18");
+  set_toolversion("0.19");
 
 
   do { // Beginning of ERROR HANDLING Loop.
@@ -159,6 +162,10 @@ int runsixt_main()
     // Load the instrument configuration.
     inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
+
+    // Initialize & load Pha2Pi File (NULL if not set)
+    p2p = initPha2Pi(inst->det->pha2pi_filename, seed, &status);
+    CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
     // Set the usage of the detector background according to
     // the respective program parameter.
@@ -574,6 +581,13 @@ int runsixt_main()
     saveGTIExt(patf->fptr, "STDGTI", gti, &status);
     CHECK_STATUS_BREAK(status);
 
+    // Run PI correction on Pattern file.
+    if( p2p != NULL ){
+    	headas_chat(3, "start Pha2Pi correction ...\n");
+    	pha2pi_correct_eventfile( patf, p2p, inst->filepath, inst->det->rmf_filename, &status);
+    	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+    }
+
     // --- End of simulation process ---
     // remove RawData files if not requested
     if (delete_rawdata){
@@ -598,6 +612,7 @@ int runsixt_main()
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
     freeSourceCatalog(&(srccat[ii]), &status);
   }
+  freePha2Pi(&p2p);
   freeGTI(&gti);
   freeAttitude(&ac);
   destroyGenInst(&inst, &status);

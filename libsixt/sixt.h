@@ -71,6 +71,10 @@ extern const double eromjdref;
     to 1998-01-01T00:00:00.00. */
 extern const double xmmmjdref;
 
+/** BOOLEAN: 1 if sixt_init_rng was performed, else 0
+ *  sixt_destroy_rng sets this boolean back to 0 */
+extern unsigned int SIXT_RNG_INITIALIZD;
+
 /////////////////////////////////////////////////////////////////
 extern int sixt_argc;
 extern char **sixt_argv;
@@ -218,6 +222,9 @@ unsigned long microtime();
 
 /** Return a seed for the random number generator. */
 unsigned int getSeed(int seed);
+
+/** Return value of SIXT_RNG_INITIALIZED. */
+unsigned int sixt_rng_is_initialized();
 
 /** This routine returns a random number. The values are either
     obtained from the Remeis random number server or are created by

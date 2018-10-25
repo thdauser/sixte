@@ -19,6 +19,10 @@ const double xmmmjdref=50814.;
 /** FITS error message for error handling macro, which retrieves error status */
 char _fits_err_msg[80];
 
+/** BOOLEAN: 1 if sixt_init_rng was performed, else 0
+ *  sixt_destroy_rng sets this boolean back to 0 */
+unsigned int SIXT_RNG_INITIALIZED = 0;
+
 unsigned long microtime(){
 	struct timeval currentTime;
 	gettimeofday(&currentTime, NULL);
@@ -35,6 +39,10 @@ unsigned int getSeed(int seed)
   }
 }
 
+unsigned int sixt_rng_is_initialized()
+{
+	return SIXT_RNG_INITIALIZED;
+}
 
 double sixt_get_random_number(int* const status)
 {
@@ -71,7 +79,13 @@ void sixt_init_rng(const unsigned int seed, int* const status)
   // Note that this has to be done in any case, even
   // if the RCL random number server is used, because
   // the HEAdas routines (like heasp) rely on HDmtDrand().
-  HDmtInit(seed);
+
+	if( SIXT_RNG_INITIALIZED == 1 ){
+		return;
+	}
+
+	HDmtInit(seed);
+	SIXT_RNG_INITIALIZED=1;
 
 #ifdef USE_RCL
 
@@ -97,7 +111,10 @@ void sixt_init_rng(const unsigned int seed, int* const status)
 void sixt_destroy_rng()
 {
   // Release HEADAS random number generator:
-  HDmtFree();
+	if( SIXT_RNG_INITIALIZED==1 ){
+		HDmtFree();
+		SIXT_RNG_INITIALIZED=0;
+	}
 }
 
 

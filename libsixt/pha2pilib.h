@@ -51,6 +51,9 @@ typedef struct {
 	double** pilow;
 	double** pihigh;
 
+	/** Replacement for NULL/NaN */
+	int nulval;
+
 } Pha2Pi;
 
 

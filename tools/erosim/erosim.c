@@ -126,6 +126,9 @@ int erosim_main()
   // Output file for progress status.
   FILE* progressfile=NULL;
 
+  // Pha2Pi correction file
+  Pha2Pi* p2p[NUM_TELS]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+
   // special for erosita: need cumulative ARF
   float** cumulARF = NULL;
 
@@ -277,6 +280,10 @@ int erosim_main()
     	// Set the usage of the detector background according to
     	// the respective program parameter.
     	setGenDetIgnoreBkg(subinst[ii]->det, !par.Background);
+
+        // Initialize & load Pha2Pi File (NULL if not set)
+        p2p[ii] = initPha2Pi(subinst[ii]->det->pha2pi_filename, seed, &status);
+        CHECK_STATUS_BREAK_WITH_FITSERROR(status);
     }
     CHECK_STATUS_BREAK(status);
     
@@ -864,6 +871,19 @@ int erosim_main()
     }
     CHECK_STATUS_BREAK(status);
 
+    // Run PI correction on Pattern file.
+    for (ii=0; ii<7; ii++) {
+    	if( p2p[ii] != NULL ){
+    		headas_chat(3, "start Pha2Pi correction ...\n");
+    		pha2pi_correct_eventfile( patf[ii], p2p[ii],
+    				subinst[ii]->filepath,
+					subinst[ii]->det->rmf_filename,
+					&status);
+    		CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+    	}
+    }
+	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+
     // --- End of simulation process ---
 
     // remove RawData files if not requested
@@ -891,6 +911,7 @@ int erosim_main()
 	  freeEventFile(&elf[ii], &status);
 	  freeImpactFile(&ilf[ii], &status);
 	  freePhotonFile(&plf[ii], &status);
+	  freePha2Pi(&p2p[ii]);
 	  free_cumulARF(cumulARF,arf7->NumberEnergyBins);
   }
   for (ii=0; ii<MAX_N_SIMPUT; ii++) {
