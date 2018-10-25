@@ -81,7 +81,7 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
 
 	/** CHECK if Pha2Pi file is accessible */
 	if ( filename==NULL || strlen(filename) == 0 ) {
-		printf("No Pha2Pi correction file given ... skipping correction!\n");
+	        headas_chat(5,"No Pha2Pi correction file given ... skipping correction!\n");
 		return NULL;
 	}
 	if (access(filename, F_OK) != 0) {
