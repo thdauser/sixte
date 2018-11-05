@@ -115,6 +115,10 @@ AttitudeFile* open_AttitudeFile(const char filename[],
     opt_status=EXIT_SUCCESS;
 
     fits_get_colnum(af->fptr, CASEINSEN, "ROLLANG", &af->crollang, &opt_status);
+    if (0==af->crollang) {
+      fits_get_colnum(af->fptr, CASEINSEN, "ROLL1", &af->crollang, status);
+      CHECK_STATUS_BREAK(*status);
+    }
 
     fits_clear_errmark();
     // End of determine the column numbers.
