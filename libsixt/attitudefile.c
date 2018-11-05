@@ -101,6 +101,7 @@ AttitudeFile* open_AttitudeFile(const char filename[],
     fits_write_errmark();
 
     fits_get_colnum(af->fptr, CASEINSEN, "RA", &af->cra, &opt_status);
+    fits_clear_errmark();
     if (0==af->cra) {
       fits_get_colnum(af->fptr, CASEINSEN, "VIEWRA", &af->cra, status);
       CHECK_STATUS_BREAK(*status);
@@ -108,6 +109,7 @@ AttitudeFile* open_AttitudeFile(const char filename[],
     opt_status=EXIT_SUCCESS;
 
     fits_get_colnum(af->fptr, CASEINSEN, "DEC", &af->cdec, &opt_status);
+    fits_clear_errmark();
     if (0==af->cdec) {
       fits_get_colnum(af->fptr, CASEINSEN, "VIEWDECL", &af->cdec, status);
       CHECK_STATUS_BREAK(*status);
@@ -116,8 +118,13 @@ AttitudeFile* open_AttitudeFile(const char filename[],
 
     fits_get_colnum(af->fptr, CASEINSEN, "ROLLANG", &af->crollang, &opt_status);
     if (0==af->crollang) {
-      fits_get_colnum(af->fptr, CASEINSEN, "ROLL1", &af->crollang, status);
+      opt_status=EXIT_SUCCESS;
+      fits_get_colnum(af->fptr, CASEINSEN, "ROLL1", &af->crollang, &opt_status);
       CHECK_STATUS_BREAK(*status);
+      if (af->crollang==0){
+    	  headas_chat(3, " *** warning : could not find ROLLANG/ROLL1 field in Attitude file %s\n",filename);
+    	  headas_chat(3, "               setting roll angle to 0.0 %i \n",af->crollang);
+      }
     }
 
     fits_clear_errmark();
