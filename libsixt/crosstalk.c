@@ -2407,7 +2407,7 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 
 /**Checks for pile-up or triggering ctk event*/
 void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, GradeProxy* grade_proxy, double* energies, TesEventFile* event_file,
-		double next_time, double sample_length,int grade, int* is_trigger, int save_crosstalk,int* const status){
+		double next_time, double sample_length, int* is_trigger, int save_crosstalk,int* const status){
 
 	int ii=1; //Starting index for pile-up
 	double cumul_ener=0; //Cumulative energy
@@ -2471,7 +2471,7 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 
 				// Process now triggered event and exit the function
 				*is_trigger=1;
-				processGradedEvent(grade_proxy,sample_length,previous_xtalk,det,event_file,1,save_crosstalk,grade,status);
+				processGradedEvent(grade_proxy,sample_length,previous_xtalk,det,event_file,1,save_crosstalk,status);
 				free(previous_xtalk);
 				return;
 			}
@@ -2524,7 +2524,7 @@ void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, G
 					end=0;
 					// Process now triggered event and exit the function
 					*is_trigger=1;
-					processGradedEvent(grade_proxy,sample_length,previous_xtalk,det,event_file,1,save_crosstalk,grade,status);
+					processGradedEvent(grade_proxy,sample_length,previous_xtalk,det,event_file,1,save_crosstalk,status);
 					free(previous_xtalk);
 					return;
 				}
@@ -2564,7 +2564,7 @@ void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy*
 
 	//Now we check whether two of the events can trigger
 	//If pile-up occurs in the pixel between the two current event (should be rare!)
-	checkTrigger(det,impact,xtalk_proxy,grade_proxy,energies,event_file,next_time,sample_length,grade,is_trigger,save_crosstalk,status);
+	checkTrigger(det,impact,xtalk_proxy,grade_proxy,energies,event_file,next_time,sample_length,is_trigger,save_crosstalk,status);
 
 	//If no outside trigger occurs, then we compute the values of the affected energy via the time dependency and save
 	//(Not before as we did not know if there was a trigger)

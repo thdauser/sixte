@@ -270,7 +270,7 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 
 		// Once all the crosstalk potential impacts were stored, go on and process the impact itself
 		// Process impact and get its grade
-		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,save_crosstalk,-99,status); //Grade here given only for comparison
+		processGradedEvent(&(grade_proxys[id]),sample_length,&impact,det,event_file,0,save_crosstalk,status); //Grade here given only for comparison
 		CHECK_STATUS_VOID(*status);
 
 		// Program progress output.
@@ -294,7 +294,7 @@ void impactsToEvents(AdvDet *det,PixImpFile *piximpactfile,TesEventFile* event_f
 			if (grade_proxys[ii].impact->ph_id<0){
 				is_crosstalk=1;
 			}
-			processGradedEvent(&(grade_proxys[ii]),sample_length,NULL,det,event_file,is_crosstalk,save_crosstalk,-99,status);
+			processGradedEvent(&(grade_proxys[ii]),sample_length,NULL,det,event_file,is_crosstalk,save_crosstalk,status);
 			free(grade_proxys[ii].times);
 		}
 		free(grade_proxys[ii].impact);
@@ -519,7 +519,7 @@ void addCrosstalkEvent(GradeProxy* grade_proxy,PixImpact* impact, int type, doub
 
 /** Processes a graded event : update grading proxy and save previous event */
 void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixImpact* next_impact,
-		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int grdcmp, int* const status){
+		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int* const status){
 	long grade1, grade2;
 	int grading;
 	int grading_index;
@@ -656,17 +656,9 @@ void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixI
 
 		//Should we have a crosstalk event changing the grading, flag it and go on (very rare!)
 		if(is_trigger==0){
-			//if (grdcmp==CROSSTALK){ //This was a cross-talk event being processed
-			//	printf("Current grade for cross-talk is %i\n", grading);
-			//	grading=CROSSTALK;
-			//} else if ((grdcmp != -99) && grdcmp!=grading-1){
-			//	headas_chat(7," *** Grade num %i changed to %i because of crosstalk *** \n", grdcmp+1, grading);
-			//	printf(" *** Grade num %i changed to %i because of crosstalk *** \n", grdcmp+1, grading);
-			//	grading=GRADECHG; //The grade changed so we flag it
-			//}
 			//TODO: Perhaps add a column to event list to flag the crosstalk impacts and their influenced victim (in grading)
-			// Add processed event to event file if not pile-up!
 
+			// Add processed event to event file if not pile-up!
 			updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,
 					grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
 			if (*status!=EXIT_SUCCESS){
@@ -692,6 +684,6 @@ void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixI
 	//If a crosstalk event triggered, stop the process and once it was saved,
 	//reprocess next_impact with this new event (which is now current)
 	if(is_trigger==1){
-		processGradedEvent(grade_proxy,sample_length,next_impact,det,event_file,0,save_crosstalk,CROSSTALK,status);
+		processGradedEvent(grade_proxy,sample_length,next_impact,det,event_file,0,save_crosstalk,status);
 	}
 }

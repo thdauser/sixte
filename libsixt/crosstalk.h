@@ -116,7 +116,7 @@ void calc_der_xt_influence(AdvDet* det,double signal_energy, double perturber_en
 
 /**Checks for pile-up or trigger of event*/
 void checkTrigger(AdvDet* det, PixImpact* impact, CrosstalkProxy* xtalk_proxy, GradeProxy* grade_proxy, double* energies, TesEventFile* event_file,
-		double next_time, double sample_length,int grade,int* is_trigger, int save_crosstalk,int* const status);
+		double next_time, double sample_length, int* is_trigger, int save_crosstalk,int* const status);
 
 /** Compute total crosstalk influence */
 void computeAllCrosstalkInfluence(AdvDet* det,PixImpact * impact,CrosstalkProxy* xtalk_proxy, GradeProxy* grade_proxy, TesEventFile* event_file,double* xtalk_energy,int* nb_influences,
@@ -237,7 +237,7 @@ void storeEventtype(CrosstalkProxy* xtalk_proxy, int type, double df, int* const
 
 /** Processes a graded event : update grading proxy and save previous event */
 void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixImpact* next_impact,
-		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int grdcmp, int* const status);
+		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int* const status);
 
 
 #endif /* CROSSTALK_H */

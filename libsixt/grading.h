@@ -87,7 +87,7 @@ void processImpactsWithRMF(AdvDet* det,PixImpFile* piximpacfile,TesEventFile* ev
 
 /** Processes a graded event : update grading proxy and save previous event */
 void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixImpact* next_impact,
-		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int grdcmp, int* const status);
+		AdvDet* det,TesEventFile* event_file, int is_crosstalk, int save_crosstalk, int* const status);
 
 /** writes the grading to an existing piximpact file **/
 void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status);
