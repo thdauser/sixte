@@ -32,12 +32,18 @@ MXSparams* loadMXSparams (double mxs_frequency, double mxs_flash_duration,
  * Generates the next mxs photon that hits the detector. Adjusts flash_start_time
  * and flash_end_time if necessary.
  */
-int phmxsgen(AdvDet *det, double t0, double tend, Impact* impact,
+int phmxsgen(AdvDet *det, double tend, Impact* impact,
              MXSparams *mxs_params, double *flash_start_time,
              double *flash_end_time, int* const status)
 {
-  // Set time_of_last_mxs_impact to start of current gti, i.e., t0.
+  // Keeps track internally of the last mxs impact time. Used to calculate the
+  // next impact time.
   static double time_of_last_mxs_impact = -1.;
+
+  // If phmxsgen is called for the first time in a gti,
+  // time_of_last_mxs_impact might be smaller than the start time of the first
+  // flash in that gti. Set time_of_last_mxs_impact to the flash_start_time in
+  // that case.
   if (time_of_last_mxs_impact < *flash_start_time) {
     time_of_last_mxs_impact = *flash_start_time;
   }
@@ -120,9 +126,9 @@ double getMXSEnergy()
 
   if (random_int <= 3) {
     return (12 - 3) * gsl_rng_uniform(rng) + 3;
-  } else if (random_int = 4) {
-    return 5;
+  } else if ( random_int==4 ) {
+    return 5.0;
   } else {
-    return 8;
+    return 8.0;
   }
 }

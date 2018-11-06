@@ -29,7 +29,7 @@ MXSparams* loadMXSparams (double mxs_frequency, double mxs_flash_duration,
  * Generates the next mxs photon that hits the detector. Adjusts flash_start_time
  * and flash_end_time if necessary.
  */
-int phmxsgen(AdvDet *det, double t0, double tend, Impact* impact,
+int phmxsgen(AdvDet *det, double tend, Impact* impact,
              MXSparams *mxs_params, double *flash_start_time,
              double *flash_end_time, int* const status);
 

@@ -570,7 +570,7 @@ int xifupipeline_main()
 
 				// MXS generation
 				if (get_next_mxs){
-					ismxsph=phmxsgen(det, t0, t1, &mxs_imp, mxs_params,
+					ismxsph=phmxsgen(det, t1, &mxs_imp, mxs_params,
 						               &flash_start_time, &flash_end_time, &status);
 					CHECK_STATUS_BREAK(status);
 					if (!ismxsph){
