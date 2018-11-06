@@ -690,8 +690,7 @@ int nustarsim_main()
     }
 
 
-    // Use parallel computation via OpenMP.
-#pragma omp parallel for reduction(+:status)
+// Use parallel computation via OpenMP.
     for (ii=0; ii<2; ii++) {
       status=EXIT_SUCCESS;
 
