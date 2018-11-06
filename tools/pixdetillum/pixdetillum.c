@@ -29,7 +29,7 @@
 
 /** Use the C rand() function to determine a random number between 0
     and 1. */
-static inline double getRndNum(int* const status) 
+/** static inline double getRndNum(int* const status)
 {
   double r=(double)rand()/((double)RAND_MAX+1.0);
   assert(r<1.0);
@@ -37,7 +37,7 @@ static inline double getRndNum(int* const status)
 
   // Status variable is not needed.
   (void)(*status);
-}
+} **/
 
 //////////////////////////////////
 /** main procedure */

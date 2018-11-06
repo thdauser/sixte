@@ -1565,7 +1565,7 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
             
                 temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate,0,(*modelFound)->size);
                 gsl_vector_memcpy(*modelFound,&temp.vector);
-                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que había un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
+                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que habï¿½a un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
                 
                 //cout<<"Emin: "<<gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1)<<endl;
                 //cout<<"Emax: >"<<gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1)<<endl;
@@ -2676,8 +2676,11 @@ int FindSecondaries
                                                 
                                                 //cout<<*numberPulses<<" angleS: "<<angleStart1<<endl;
                                                 
-                                                if ((*numberPulses > 1) && ((tstartJITTER<= gsl_vector_get(*tstartgsl,*numberPulses-2)) || (fabs(tstartJITTER*(1/samprate)-gsl_vector_get(*tstartgsl,*numberPulses-2)*(1/samprate)) < 10e-6)) || (tstartJITTER < 0) || (tstartJITTER >= sizeRecord) ||
-                                                (angleStart1<criteriaDER_value))
+                                                if ( ((*numberPulses>1)
+                                                		&& ((tstartJITTER<= gsl_vector_get(*tstartgsl,*numberPulses-2)) || (fabs(tstartJITTER*(1/samprate)-gsl_vector_get(*tstartgsl,*numberPulses-2)*(1/samprate)) < 10e-6)))
+														|| (tstartJITTER < 0)
+														|| (tstartJITTER >= sizeRecord)
+														|| (angleStart1<criteriaDER_value))
                                                 {
                                                         previouslyFalsePulse = gsl_vector_get(*tstartgsl,*numberPulses-1);
                                                         *numberPulses = *numberPulses-1;

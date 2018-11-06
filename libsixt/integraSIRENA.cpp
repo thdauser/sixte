@@ -1499,7 +1499,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, in
 			gsl_matrix_set_row(library_collection->W,it,vectorAux_W);
 		}
 			
-		if ((mode == 1) && (it < ntemplates-1) && (strcmp(energy_method,"WEIGHT") == 0) ||
+		if ( ((mode == 1) && (it < ntemplates-1) && (strcmp(energy_method,"WEIGHT") == 0)) ||
 			((mode == 0) && (hduPRECALWN == 1) && (ntemplates > 1) && (it < ntemplates-1)))
 		{
 			gsl_matrix_get_row(vectorAux_T,matrixAux_T,it);
@@ -1519,14 +1519,14 @@ LibraryCollection* getLibraryCollection(const char* const filename, int mode, in
 			gsl_vector_set(library_collection->r,it,gsl_vector_get(vectorAux_r,it));
 		}	
 		
-		if ((mode == 1)  && (it < ntemplates-1) &&(strcmp(energy_method,"WEIGHTN") == 0) ||
+		if (((mode == 1)  && (it < ntemplates-1) &&(strcmp(energy_method,"WEIGHTN") == 0)) ||
 			((mode == 0) && (hduPRECALWN == 1) && (ntemplates > 1) && (it < ntemplates-1)))
                 {
                         gsl_matrix_get_row(vectorAux_WAB,matrixAux_WAB,it);
 			gsl_matrix_set_row(library_collection->WAB,it,vectorAux_WAB);
                 }
                 
-		if ((mode == 1)  && (it < ntemplates-1) &&(strcmp(energy_method,"WEIGHTN") == 0) ||
+		if (((mode == 1)  && (it < ntemplates-1) &&(strcmp(energy_method,"WEIGHTN") == 0)) ||
 			((mode == 0) && (ntemplates > 1) && (it < ntemplates-1)))
 		{
 			
@@ -2931,8 +2931,9 @@ PulseDetected::PulseDetected():
 		maxDER(0.0f),
 		samp1DER(0.0f),
 		energy(0.0f),
-                avg_4samplesDerivative(0.0f),
-		quality(0.0f)
+        avg_4samplesDerivative(0.0f),
+		quality(0.0f),
+		numLagsUsed(0)
 {
 
 }
