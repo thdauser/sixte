@@ -7,6 +7,8 @@
  *  This code by Nicolas Devillard - 1998. Public domain.
  */
 
+#include "sixt.h"
+#include "torben.c"
 
 #define ELEM_SWAP(a,b) { register elem_type t=(a);(a)=(b);(b)=t; }
 
@@ -58,6 +60,7 @@ elem_type quick_select(elem_type arr[], int n)
         if (hh >= median)
         high = hh - 1;
     }
+    return NULL;
 }
 
 #undef ELEM_SWAP

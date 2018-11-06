@@ -223,7 +223,7 @@ void findNeighbors(int x, int y, int PixAmount, PixPositionList* ppl, SourceImag
      }
 
      if(sky_pixels->pixel[x+PixAmount/2][y]/sky_pixels->pixel[x][y] >= 0.8){
-       xamount=xamount;
+       // xamount=xamount;
      }else{
        if(sky_pixels->pixel[x+PixAmount/2-1][y]/sky_pixels->pixel[x][y] >= 0.8){
 	 xamount-=1;
@@ -246,7 +246,7 @@ void findNeighbors(int x, int y, int PixAmount, PixPositionList* ppl, SourceImag
      }
 
      if(sky_pixels->pixel[x][y+PixAmount/2]/sky_pixels->pixel[x][y] >= 0.8){
-       yamount=yamount;
+       // yamount=yamount;
      }else{
        if(sky_pixels->pixel[x][y+PixAmount/2-1]/sky_pixels->pixel[x][y] >= 0.8){
 	 yamount-=1;
