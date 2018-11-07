@@ -6,8 +6,13 @@ AC_INIT([sixte], [2.4.17], [sixte-support@lists.fau.de])
 
 # Store auxiliary files in the sub-directory 'build-aux'.
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CONFIG_MACRO_DIR(build-aux/m4)
+
 AM_INIT_AUTOMAKE([-Wall foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
+
+# For cmocka testing with TAP output
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 # Check for programs:
 AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
@@ -96,7 +101,6 @@ AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!
 
 ####################################
 # boostlib
-AC_CONFIG_MACRO_DIR(./build-aux/m4/)
 AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboost-all-dev])])
 
 ####################################
@@ -198,10 +202,12 @@ AC_CONFIG_FILES([Makefile
 		tools/xifupipeline/Makefile
 		tools/xml2svg/Makefile
 		tools/xms_pixtemp/Makefile
-                tools/tesgenimpacts/Makefile
+        tools/tesgenimpacts/Makefile
 		extlib/Makefile
 		extlib/progressbar/Makefile
 		tools/runmask/Makefile
+		test/Makefile
+		test/unit/Makefile
 		])
 
 AC_OUTPUT

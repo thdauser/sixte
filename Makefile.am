@@ -1,13 +1,13 @@
 dist_bin_SCRIPTS =sixte-install.sh
 dist_bin_SCRIPTS+=sixte-install.csh
 
-ACLOCAL_AMFLAGS = -I ./build-aux/m4/
+ACLOCAL_AMFLAGS = -I build-aux/m4
 
 EXTRA_DIST=INSTALL.txt mac_solve_sixte_dependencies.sh # include INSTALL.txt in the distributed package
 
 # The sub-directories are built before the current directory.
 # In order to change this, include "." in the list of SUBDIRS.
-SUBDIRS=extlib libsixt tools
+SUBDIRS=extlib libsixt tools test
 
 # need also to tell distcheck where simput is
 AM_DISTCHECK_CONFIGURE_FLAGS= --with-simput=${SIMPUT}
@@ -17,7 +17,7 @@ include_HEADERS=sixteconfig.h
 
 .PHONY: test
 test:
-	cd test && make test
+	cd test/exec/ && make test
 
 crit_mac_version=9
 install-exec-hook:
@@ -26,3 +26,4 @@ install-exec-hook:
 		echo "\n   ... trying to solve known problems with this installation with this script:\n\n ";\
 		./mac_solve_sixte_dependencies.sh @simput_dir@ @prefix@;\
 	fi
+
