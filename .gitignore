@@ -39,3 +39,6 @@ build-aux/*
 .project
 make.log
 make_install.log
+.version
+.tarball-version
+.settings/

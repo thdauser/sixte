@@ -27,3 +27,8 @@ install-exec-hook:
 		./mac_solve_sixte_dependencies.sh @simput_dir@ @prefix@;\
 	fi
 
+BUILT_SOURCES = $(top_srcdir)/.version
+$(top_srcdir)/.version:
+	echo $(VERSION) > $@-t && mv $@-t $@
+dist-hook:
+	echo $(VERSION) > $(distdir)/.tarball-version                                                                       
