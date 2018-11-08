@@ -14,6 +14,8 @@ AC_CONFIG_SRCDIR([libsixt/sixt.h])
 # For cmocka testing with TAP output
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
+AC_REQUIRE_AUX_FILE([git-version-gen])
+
 # Check for programs:
 AC_PROG_CC # Search for a C-Compiler and store it in the Variable 'CC'.
 AC_PROG_CXX # Search for a CXX-Compiler

@@ -32,9 +32,13 @@ sixt*.tar.gz
 *.DS_Store
 build-aux/ar-lib
 build-aux/compile
+build-aux/config*
+build-aux/decomp
 build-aux/m4
+build-aux/install*
 build-aux/ltmain.sh
-build-aux/*
+build-aux/missing
+build-aux/test-driver
 .cproject
 .project
 make.log
