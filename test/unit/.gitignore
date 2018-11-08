@@ -1,0 +1,4 @@
+unit_test_all
+*.log
+*
+*.trs
