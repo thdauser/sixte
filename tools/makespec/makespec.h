@@ -47,7 +47,7 @@ struct Parameters {
   int Seed;
   
   char clobber;
-  char usepha;
+  int usepha;
 };
 
 

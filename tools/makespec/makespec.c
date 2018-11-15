@@ -49,7 +49,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.12");
+  set_toolversion("0.13");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -153,54 +153,59 @@ int makespec_main() {
     int coltmp;
 	int usesignal = 0;
 
+
+
 	fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
-  // Print a warning if we find a PHA column in an X-IFU event file.
-  if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
-    SIXT_WARNING("Event file contains a PHA column and is not compatible with this version of makespec");
+	// Print a warning if we find a PHA column in an X-IFU event file.
+	if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
+		SIXT_WARNING("Event file contains a PHA column and is not compatible with this version of makespec");
 	}
-  if( status == COL_NOT_FOUND ){
-    if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
-		  SIXT_WARNING("'PHA' column not found! Falling back to 'signal' for spectra creation ...");
-      SIXT_WARNING("The spectrum will not be calibrated. ");
-    }
-    fits_clear_errmsg();
-    status = EXIT_SUCCESS;
+	if( par.usepha==-1 || status == COL_NOT_FOUND ){
+		/** if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
+			SIXT_WARNING("'PHA' column not found! Falling back to 'signal' for spectra creation ...");
+			SIXT_WARNING("The spectrum will not be calibrated. ");
+		} **/
+		fits_clear_errmsg();
+		status = EXIT_SUCCESS;
 		fits_get_colnum(ef, CASEINSEN, "signal", &csignal, &status);
 		CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 		usesignal = 1;
 	}
+
 	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+
 	if( usesignal==0 && par.usepha == 0 ){
-    	fits_get_colnum(ef, CASEINSEN, "PI", &coltmp, &status);
-        // Print a warning if we find a PHA column in an X-IFU event file.
-        if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
-          SIXT_WARNING("Event file contains a PI column and is not compatible with this version of makespec");
-        }
-        if( status==COL_NOT_FOUND ){
-          if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
-        	  SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
-        	  SIXT_WARNING("The spectrum will not be calibrated. ");
-          }
-        	fits_clear_errmsg();
-        	status = EXIT_SUCCESS;
-        } else {
-            CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+		fits_get_colnum(ef, CASEINSEN, "PI", &coltmp, &status);
+		// Print a warning if we find a PHA column in an X-IFU event file.
+		if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
+			SIXT_WARNING("Event file contains a PI column and is not compatible with this version of makespec");
+		}
 
-            // now see if we find the PHA2PI information in the header used for pha2pi correction
-            fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, NULL, &status);
-            if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND ){
-            	SIXT_WARNING("'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...");
-            	fits_clear_errmsg();
-            	status = EXIT_SUCCESS;
+		if( status==COL_NOT_FOUND || status==KEY_NO_EXIST ){
+			if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
+				SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
+				SIXT_WARNING("The spectrum will not be calibrated. ");
+			}
+			fits_clear_errmsg();
+			status = EXIT_SUCCESS;
+		} else {
+			CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
-            } else {
-            	// now we have the PI column and the correction, so we use it
-            	csignal = coltmp;
-            }
-            CHECK_STATUS_BREAK_WITH_FITSERROR(status);
-        }
-    }
+			// now see if we find the PHA2PI information in the header used for pha2pi correction
+			fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, NULL, &status);
 
+			if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST){
+				headas_chat(5," *** warning : 'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...");
+				fits_clear_errmsg();
+				status = EXIT_SUCCESS;
+
+			} else {
+				// now we have the PI column and the correction, so we use it
+				csignal = coltmp;
+			}
+			CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+		}
+	}
 
     // Determine the number of rows.
     long nrows;
@@ -253,13 +258,13 @@ int makespec_main() {
 
 
     // Load the EBOUNDS of the RMF that will be used in the spectrum extraction.
-    struct RMF* rmf=getRMF(&status);
-    CHECK_STATUS_BREAK(status);
-    loadEbounds(rmf, resppathname, &status);
+    //   -> need to load full RMF to get FirstChannel correct
+    //      (TODO: this can be simplified)
+    struct RMF* rmf = loadRMF(resppathname,&status);
     CHECK_STATUS_BREAK(status);
 
 
-    // If diferent rmf and/or arf are required, we need to check that the binning
+    // If different rmf and/or arf are required, we need to check that the binning
     // is compatible with the ones used for the simulation:
     // Check the RMF:
     if (strcmp("NONE",par.RMFfile)){
@@ -551,7 +556,7 @@ int makespec_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
-  status=ape_trad_query_bool("usepha", &par->usepha);
+  status=ape_trad_query_int("usepha", &par->usepha);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the usepha parameter");
     return(status);

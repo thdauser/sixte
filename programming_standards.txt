@@ -1,13 +1,40 @@
-Programming standards for SIXT (Christian Schmid, 2010/08/20)
+Programming standards for SIXTE
 
-- Data structures
+** Versioning **
 
-* Each data structure ([NAME]) containing any pointers should have a
-  constructor (new[NAME]) and a desctructor (destroy[NAME]). The
-  constructor should either allocate memory for the pointers or
-  initialize them with NULL. The constructor returns a pointer to the
-  initialized data structure. It also has an error status parameter
-  which is set to EXIT_FAILURE if any serious problems occur. The
-  destructor should release the allocated memory. Both constructor and
-  destructor use the corresponding routines of underlying data
-  structures.
+Increasing the version number works by adding a commented "tag" in git,
+which has the form "v1.2.3". This would look like
+
+git tar v1.2.3 -m "version 1.2.3"
+
+[you can also add a tag to an older commit in retrospect if you/we
+forgot to change the version number]
+
+If you use something like "git log --decorate" or "git log --decorate
+--oneline" to look at the git repository, these tags will be shown
+alongside the commit message.
+
+If sixte is then compiled in this git repository (or a tar ball built
+from this repository), it will contain this version number. 
+
+Also, if you have additional commits, without any tag, the number of
+commits since the last "version tag" will be counted plus the 4 first
+digits of the git hash number.
+
+Lastly, if you have still uncommited changes in your repository, the
+string "-dirty" will be added. This is very important as it shows you
+are using a version where some files have been change.
+
+
+
+** Data structures **
+
+Each data structure ([NAME]) containing any pointers should have a
+constructor (new[NAME]) and a desctructor (destroy[NAME]). The
+constructor should either allocate memory for the pointers or
+initialize them with NULL. The constructor returns a pointer to the
+initialized data structure. It also has an error status parameter
+which is set to EXIT_FAILURE if any serious problems occur. The
+destructor should release the allocated memory. Both constructor and
+destructor use the corresponding routines of underlying data
+structures.
