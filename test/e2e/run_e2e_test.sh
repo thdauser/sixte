@@ -54,7 +54,7 @@ done
 echo "  "  |tee $log_file
 echo " *****  SUMMARY of E2E Testing *****"  |tee $log_file
 echo "     TOTAL   : $n_tests"  |tee $log_file
-echo "     FAILED  : $n_succ" |tee $log_file 
-echo "     SUCESS  : $n_fail" |tee $log_file
+echo "     SUCESS  : $n_succ" |tee $log_file
+echo "     FAILED  : $n_fail" |tee $log_file 
 echo " ***********************************"  |tee $log_file
 echo "  "  |tee $log_file
