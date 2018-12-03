@@ -75,7 +75,7 @@ int ero_vis_main()
 
   // Register HEATOOL:
   set_toolname("ero_vis");
-  set_toolversion("0.08");
+  set_toolversion("0.09");
 
 
   do { // Beginning of the ERROR handling loop.
