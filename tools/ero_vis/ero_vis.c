@@ -41,10 +41,10 @@ struct Parameters {
 
   /** GTI file. */
   char* GTIfile;
-  
+
   double TSTART;
   double Exposure;
-  double dt; 
+  double dt;
 
   /** [rad]. */
   double visibility_range;
@@ -76,7 +76,7 @@ int ero_vis_main()
   // Register HEATOOL:
   set_toolname("ero_vis");
   set_toolversion("0.08");
-  
+
 
   do { // Beginning of the ERROR handling loop.
 
@@ -90,7 +90,7 @@ int ero_vis_main()
     CHECK_STATUS_BREAK(status);
 
     // Load the SIMPUT source catalog, if available.
-    if ( par.Simput==NULL ) {
+    if ( par.Simput!=NULL ) {
     	cat=openSimputCtlg(par.Simput, READONLY, 0, 0, 0, 0, &status);
     	CHECK_STATUS_BREAK(status);
 
@@ -176,18 +176,18 @@ int ero_vis_main()
     // Print some informational data.
     double ra, dec;
     calculate_ra_dec(refpos, &ra, &dec);
-    headas_chat(5, "ra=%lf deg, dec=%lf deg, cone radius=%lf deg\n", 
+    headas_chat(5, "ra=%lf deg, dec=%lf deg, cone radius=%lf deg\n",
     		ra*180./M_PI, dec*180./M_PI, cone_radius*180./M_PI);
 
     // Determine the diameter of the search radius (minimum cos-value).
     // (angle(telescope,source) <= 1/2 * diameter)
     double search_angle=0.5*par.visibility_range+cone_radius;
-    double min_align; 
+    double min_align;
     if (search_angle<=M_PI) {
     	min_align=cos(search_angle);
     } else {
     	min_align=-1.;
-    }      
+    }
 
     // --- Beginning of GTI calculation ---
 
@@ -278,7 +278,7 @@ int ero_vis_main()
       CHECK_STATUS_BREAK(status);
     }
     CHECK_STATUS_BREAK(status);
-    
+
     // Close the file.
     fits_close_file(fptr, &status);
     CHECK_STATUS_BREAK(status);
@@ -309,11 +309,11 @@ int ero_vis_main()
 int ero_vis_getpar(struct Parameters *par)
 {
   int status=EXIT_SUCCESS; // Error status
-  
+
   query_simput_parameter_file_name("Attitude", &par->Attitude, &status);
   query_simput_parameter_file_name("Simput", &par->Simput, &status);
 
-  // only load RA,Dec if Attitude is not given
+  // only load srcRA and srcDec if Simput is not given
   if ( par->Simput==NULL ) {
 	  query_simput_parameter_double("SrcRA",&par->SrcRA,&status);
 	  query_simput_parameter_double("SrcDec",&par->SrcDec,&status);
@@ -336,4 +336,3 @@ int ero_vis_getpar(struct Parameters *par)
 
   return(status);
 }
-
