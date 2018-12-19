@@ -38,6 +38,7 @@ test:
   script:
     - . $SIXTE/sixte-install.sh
     - ln -sf /home/sixte/instruments.git/instruments share/sixte/instruments
+    - make check
     - make test
   only:
     - master
