@@ -50,16 +50,16 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  ladevent.c ladimpact.c lad.c lad_init.c xmlbuffer.c	\
 		  gti.c sourceimage.c reconstruction.c eventarray.c	\
 		  fft_array.c balancing.c find_position.c det_phi_max.c \
-	          advdet.c pixelimpactfile.c tesdatastream.c 		\
+	      advdet.c pixelimpactfile.c tesdatastream.c 		\
 		  tesnoisespectrum.c tesproftemplates.c maskshadow.c 	\
 		  tesstreamfile.c testriggerfile.c testimg.c 		\
 		  projectedmask.c repix.c tesinitialization.c	        \
 		  comaevent.c skyimage.c detstruct2obj2d.c obj2d.c 	\
 		  sixtesvg.c tesrecord.c teseventlist.c optimalfilters.c\
 		  testrigger.c integraSIRENA.cpp tasksSIRENA.cpp        \
-                  pulseprocess.cpp inoututils.cpp genutils.cpp          \
+          pulseprocess.cpp inoututils.cpp genutils.cpp          \
 		  crosstalk.c grading.c tescrosstalk.c linkedimplist.c  \
-		  masksystem.c mxs.c
+		  masksystem.c mxs.c rndgen.c mt19937ar.c
 
 ############ HEADERS #################
 
@@ -89,6 +89,6 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		detstruct2obj2d.h obj2d.h sixtesvg.h tesrecord.h	\
 		teseventlist.h optimalfilters.h testrigger.h            \
 		integraSIRENA.h tasksSIRENA.h pulseprocess.h            \
-                inoututils.h genutils.h crosstalk.h grading.h           \
+        inoututils.h genutils.h crosstalk.h grading.h           \
 		tescrosstalk.h tespixel.h linkedimplist.h sixt_main.c   \
-		masksystem.h  mxs.h
+		masksystem.h  mxs.h rndgen.h mt19937ar.h
