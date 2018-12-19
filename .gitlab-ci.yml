@@ -37,7 +37,7 @@ test:
   stage: test
   script:
     - . $SIXTE/sixte-install.sh
-#    - ln -sf /home/sixte/instruments.git/instruments share/sixte/instruments
+    - ln -sf /home/sixte/instruments.git/instruments share/sixte/instruments
     - make test
   only:
     - master
