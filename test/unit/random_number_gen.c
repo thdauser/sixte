@@ -52,16 +52,21 @@ void test_rndgen_init_pseudo(){
 }
 
 void test_rndgen_exec(){
+
+	printf(" XXXXXXXXX \n");
 	int status = init_rndgen(default_seed);
 
+	printf(" XXXXXXXXX \n");
 	assert_int_equal(sixt_use_pseudo_rng(),0); // make sure we are not using the pseudo rng
 
 	const int nrand = 10000;
 	double mean = 0.0;
+	printf(" XXXXXXXXX \n");
 
 	double val;
 	for (int ii=0; ii<nrand; ii++){
 		val = sixt_get_random_number(&status);
+		printf(" XXXXXXXXX \n");
 		assert_in_range(val,0,1);
 		mean +=val;
 	}
@@ -124,7 +129,6 @@ void test_rndgen_pseudo_exec(){
 		val = sixt_get_random_number(&status);
 		assert_in_range(val,0,1);
 		mean +=val;
-//		printf("%i - %e \n",ii,val);
 	}
 	mean /= nrand;
 
@@ -140,12 +144,12 @@ int main(void)
 
   const struct CMUnitTest tests[] = {
     cmocka_unit_test(test_rndgen_init),
-    cmocka_unit_test(test_rndgen_init_pseudo),
+    cmocka_unit_test(test_rndgen_exec),
+	cmocka_unit_test(test_rndgen_init_pseudo),
     cmocka_unit_test(test_rndgen_exec),
     cmocka_unit_test(test_rndgen_pseudo_exec),
-    cmocka_unit_test(test_random_seed),
+	cmocka_unit_test(test_random_seed),
     cmocka_unit_test(test_pseudo_reproducability)
-
   };
 
   cmocka_set_message_output(CM_OUTPUT_TAP);

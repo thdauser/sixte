@@ -24,6 +24,8 @@
 // Use a Pseudo RNG for testing
 #include<mt19937ar.h>
 
+/** Random number generator. */
+static double(*random_number_generator)(int* const)=NULL;
 
 
 /** BOOLEAN: 1 if sixt_init_rng was performed, else 0
@@ -40,13 +42,20 @@ unsigned int sixt_use_pseudo_rng() {
 	return USE_PSEUDO_RNG;
 }
 
-double sixt_get_random_number(int* const status){
+
+static double sixt_pseudo_random_number(int* const status){
 
 	// Return a random value out of the interval [0,1).
-	if (USE_PSEUDO_RNG==1){
-		// use the Pseudo RNG (MT19937) in the [0,1) interval
-		return genrand_real2();
-	}
+	assert(USE_PSEUDO_RNG==1);
+	// use the Pseudo RNG (MT19937) in the [0,1) interval
+	return genrand_real2();
+
+	 // Status variable is not needed.
+	(void)(*status);
+}
+
+
+static double sixt_std_random_number(int* const status){
 
 
 #ifdef USE_RCL
@@ -65,12 +74,25 @@ double sixt_get_random_number(int* const status){
 
 #else
 
+  // Check if a random number generator has been set.
+  assert(NULL!=random_number_generator);
+
   // Use the HEAdas random number generator.
   return(HDmtDrand());
 
   // Status variable is not needed.
   (void)(*status);
 #endif
+}
+
+
+double sixt_get_random_number(int* const status){
+	return random_number_generator(status);
+}
+
+
+static void set_sixt_rng(double(*rndgen)(int* const)) {
+	random_number_generator=rndgen;
 }
 
 
@@ -84,17 +106,22 @@ void sixt_init_rng(const unsigned int seed, int* const status) {
 		return;
 	}
 
-	setSimputRndGen( &sixt_get_random_number);
 
 	if(getenv("SIXTE_USE_PSEUDO_RNG")!=NULL) {
 		USE_PSEUDO_RNG = 1;
 		SIXT_WARNING(" using PSEUDO RANDOM NUMBERS (should be only used for testing)!");
 		init_genrand(seed);
+		set_sixt_rng(&sixt_pseudo_random_number);
 		SIXT_RNG_INITIALIZED=1;
+		return;
 	}
 
 	HDmtInit(seed);
+	set_sixt_rng(&sixt_std_random_number);
 	SIXT_RNG_INITIALIZED=1;
+
+	setSimputRndGen( &sixt_get_random_number);
+
 
 #ifdef USE_RCL
 
@@ -121,12 +148,17 @@ void sixt_destroy_rng()
 {
   // Release HEADAS random number generator:
 	if( SIXT_RNG_INITIALIZED==1 ){
-		HDmtFree();
 		SIXT_RNG_INITIALIZED=0;
+
+		if (USE_PSEUDO_RNG==0){
+			HDmtFree();
+		} else {
+			// remove preference to use PSEUDO RNG
+			USE_PSEUDO_RNG = 0;
+		}
 	}
 
-  // remove preference to use PSEUDO RNG
-	USE_PSEUDO_RNG = 0;
+	random_number_generator = NULL;
 }
 
 
