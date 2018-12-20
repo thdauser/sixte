@@ -1,3 +1,5 @@
 unit_test_all
 *.log
 *.trs
+random_number_gen
+test_genpixgrid
