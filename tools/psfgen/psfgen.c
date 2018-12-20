@@ -256,19 +256,19 @@ int psfgen_main()
       // Fill the PSF array with a 2D Gaussian distribution.
       // Determine sigma in unit of [detector pixels].
       double sigma = 
-	hew*M_PI/180.          // [rad]
-	/(2.*sqrt(2.*log(2.))) // HEW -> sigma
-	/atan(psf->data[0][0][0].cdelt1/focallength); // [rad] -> [detector pixels]
+    		  hew*M_PI/180.          // [rad]
+			  /(2.*sqrt(2.*log(2.))) // HEW -> sigma
+			  /atan(psf->data[0][0][0].cdelt1/focallength); // [rad] -> [detector pixels]
       headas_chat(5, "PSF Sigma: %.2lf pixel\n", sigma);
       double x, y;
       for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
-	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
-	  x = (double)(count1-psf->data[0][0][0].naxis1/2);
-	  y = (double)(count2-psf->data[0][0][0].naxis2/2);
-	  psf->data[0][0][0].data[count1][count2] = 
-	    (gsl_sf_erf_Q(x/sigma) - gsl_sf_erf_Q((x+1.)/sigma))* 
-	    (gsl_sf_erf_Q(y/sigma) - gsl_sf_erf_Q((y+1.)/sigma));
-	}
+    	  for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
+    		  x = (double)(count1-psf->data[0][0][0].naxis1*0.5);
+    		  y = (double)(count2-psf->data[0][0][0].naxis2*0.5);
+    		  psf->data[0][0][0].data[count1][count2] =
+    				  (gsl_sf_erf_Q(x/sigma) - gsl_sf_erf_Q((x+1.)/sigma))*
+					  (gsl_sf_erf_Q(y/sigma) - gsl_sf_erf_Q((y+1.)/sigma));
+    	  }
       }
     }
 
