@@ -6,7 +6,7 @@ log_file=run_e2e_test.log
 
 if [ $# -eq 0 ]
 then
-    list_dirs=`ls -d *.e2e`
+    list_dirs=( $(ls -d *.e2e) )
 elif [ $# -eq 1 ]
 then     
      list_dirs=$1
@@ -41,14 +41,20 @@ echo " "
 echo " *****  Performing E2E Testing *****"  |tee $log_file
 echo " "  |tee $log_file
 
+getcwd=`pwd`
+
 n_total=${#list_dirs[@]}
-for name_dir in $list_dirs; do
-    if [ -f $name_dir/$script_name ]
+for name_dir in ${list_dirs[@]}; do
+        
+    if [ -e $name_dir/$script_name ]
     then
 	run_e2e_test_single $name_dir $n_total
     else
 	echo " ** warning: no script called $script_name in $name_dir -> skipping test "
     fi
+
+    # need to get back to base dir
+    cd $getcwd
 done
 
 echo "  "  |tee $log_file
