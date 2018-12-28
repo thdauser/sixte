@@ -65,6 +65,9 @@ int phogen_main()
     // Initialize the random number generator.
     unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
+    if (sixt_use_pseudo_rng()){
+    	headas_chat(3," *** warning *** using PSEUDO random number generator");
+    }
     CHECK_STATUS_BREAK(status);
 
     // Determine the appropriate instrument XML definition file.
@@ -160,9 +163,9 @@ int phogen_main()
       CHECK_STATUS_BREAK(status);
 
       // Program progress output.
-      while ((int)((ph.time-par.TSTART)*1000./par.Exposure)>progress) {
+      while ((int)((ph.time-par.TSTART)*100./par.Exposure)>progress) {
 	progress++;
-	headas_chat(2, "\r%.1lf %%", progress*1./10.);
+	headas_chat(2, "\r%.1lf %%", progress*1.);
 	fflush(NULL);
       }
 
