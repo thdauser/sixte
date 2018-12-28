@@ -16,8 +16,8 @@ static GenInst* get_mock_geninst(int* const status){
 
 	GenInst* inst = loadGenInst(fname_def_xml, default_seed, status);
 
-	assert_int_equal(inst->det->pixgrid->xwidth,5);
-	assert_int_equal(inst->det->pixgrid->ywidth,5);
+	assert_int_equal(inst->det->pixgrid->xwidth,9);
+	assert_int_equal(inst->det->pixgrid->ywidth,9);
 
 
 	return (inst);
