@@ -1,0 +1,30 @@
+#! /usr/bin/env python
+
+import subprocess
+import sys
+sys.path.append('../scripts/')
+import sixte
+
+# initialize default variables
+defvar = sixte.defvar
+dir="data/dummy"
+fout = defvar.fname_pholist
+tool = 'PHOGEN'
+
+file1=f"data/refdata/{defvar.prefix_refdata}{fout}"
+file2=f"{defvar.prefix_dummy}{fout}"
+
+
+print(f'   *** testing {tool}  *** ')
+
+ret_val = sixte.phogen(fout,defvar.xml,defvar.simput,
+                       logfile=defvar.log,
+                       prefix=defvar.prefix_dummy,test=1)
+
+sixte.check_returncode(ret_val,tool)
+
+sixte.check_fdiff(file1,file2,tool)
+
+sixte.clean_output()
+
+
