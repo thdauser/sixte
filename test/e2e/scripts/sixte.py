@@ -37,6 +37,9 @@ class defvar:
         self.prefix_refdata="ref_"
         self.prefix_dummy="dummy_"
 
+        self.mjdref=55000
+        self.tstart=0
+
 
 # initialize one instance of defvar
 defvar = defvar()
@@ -76,6 +79,49 @@ def phogen(phlist,xmlfile,simput,expos=defvar.expos,
     del os.environ['SIXTE_USE_PSEUDO_RNG']
 
     return ret_val
+
+
+def phoimg(phlist,implist,xmlfile,expos=defvar.expos,
+           ra=defvar.RA,dec=defvar.Dec,
+           instrument=defvar.inst,
+           mission=defvar.miss,
+           mode=defvar.mode,
+           seed=defvar.seed,
+           mjdref=defvar.mjdref,
+           tstart=defvar.tstart,
+           clobber="yes",
+           prefix="sim_",
+           logfile=-1,
+           test=-1):
+
+    if (test):
+        os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
+
+    str = f"""phoimg \
+        PhotonList={phlist} \
+        ImpactList={implist} \
+        Instrument={instrument} \
+        Mission={mission} \
+        Mode={mode} \
+        XMLFile={xmlfile} \
+        RA={ra} Dec={dec} \
+        MJDREF={mjdref} \
+        TSTART={tstart} \
+        Exposure={expos} \
+        Seed={seed} \
+        clobber={clobber}"""
+
+    if (logfile!=-1):
+        str = f"{str} > {logfile}"
+
+
+    ret_val = subprocess.run(str,shell=True,
+                             stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
+    del os.environ['SIXTE_USE_PSEUDO_RNG']
+
+    return ret_val
+
 
 
 def check_returncode(ret_val,tool):
