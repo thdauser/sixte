@@ -15,3 +15,5 @@ test_genpixgrid_LDFLAGS = -lcmocka
 
 random_number_gen_LDADD =@top_builddir@/libsixt/libsixt.la
 test_genpixgrid_LDADD =@top_builddir@/libsixt/libsixt.la
+
+EXTRA_DIST = data 
