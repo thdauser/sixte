@@ -35,8 +35,11 @@
 // PHA2PI /** FITS file containing the correction from PHA to PI. */
 typedef struct {
 
-	/** FILE NAME */
+	/** FILE NAME of Pha2Pi correction File*/
 	char* pha2pi_filename;
+
+	/** FILE NAME of PI-RMF for corrected PI values*/
+	char* pirmf_filename;
 
 	/** RANDOM NUMBER SEED */
 	int seed;

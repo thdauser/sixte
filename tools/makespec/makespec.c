@@ -49,7 +49,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.13");
+  set_toolversion("0.14");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -63,10 +63,7 @@ int makespec_main() {
     headas_chat(3, "initialize ...\n");
 
     // Assemble event file name with filter
-    char ucase_buffer[MAXFILENAME];
-    strcpy(ucase_buffer, par.EventFilter);
-    strtoupper(ucase_buffer);
-    if (0==strcmp(ucase_buffer,"NONE")) {
+    if (0==strcasecmp(par.EventFilter,"NONE")) {
       strcpy(evtlistfiltered, par.EvtFile);
     }else{
       if(0>=sprintf(evtlistfiltered, "%s[EVENTS][%s]", par.EvtFile, par.EventFilter)){
@@ -137,6 +134,14 @@ int makespec_main() {
       SIXT_ERROR("could not find keyword 'TIME-END' in event file");
       break;
     }
+    /* Try to obtain optional key "PIRMF" to be used for PI values */
+    char pirmf[MAXMSG];
+    fits_read_key(ef, TSTRING, "PIRMF", pirmf, comment, &status);
+    if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST ){
+    	strcpy(pirmf,"NONE");
+    	fits_clear_errmark();
+    	status = EXIT_SUCCESS;
+    }
 
     // Load the GTI extension in order to be able to determine the
     // exposure time.
@@ -153,7 +158,8 @@ int makespec_main() {
     int coltmp;
 	int usesignal = 0;
 
-
+	char rmffile[MAXMSG];
+	strcpy(rmffile, respfile );
 
 	fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
 	// Print a warning if we find a PHA column in an X-IFU event file.
@@ -186,6 +192,9 @@ int makespec_main() {
 				SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
 				SIXT_WARNING("The spectrum will not be calibrated. ");
 			}
+			// set default rmf file to nominal rmf used for simulation
+			strcpy(rmffile, respfile );
+
 			fits_clear_errmsg();
 			status = EXIT_SUCCESS;
 		} else {
@@ -195,13 +204,22 @@ int makespec_main() {
 			fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, NULL, &status);
 
 			if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST){
-				headas_chat(5," *** warning : 'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...");
+				headas_chat(5," *** warning : 'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...\n");
 				fits_clear_errmsg();
 				status = EXIT_SUCCESS;
 
 			} else {
 				// now we have the PI column and the correction, so we use it
 				csignal = coltmp;
+
+				// set default rmf file to the Monte Carlo PI RMF if PIRMF key is available
+				if( strcasecmp("NONE",pirmf)!=0 ){
+					strcpy( rmffile, pirmf );
+				} else {
+					strcpy( rmffile, respfile );
+					headas_chat(3," *** warning : 'PIRMF' key not found, but analyzing 'PI' column! Using nominal RMF used for simulation instead ...\n");
+					headas_chat(3,"\t\t ... Model deviations expected!\n");
+				}
 			}
 			CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 		}
@@ -224,14 +242,17 @@ int makespec_main() {
     // we first check whether the user demands a different rmf or/and arf:
     // Check the rmf:
     char spcrespfile[MAXFILENAME];
-    if (strcmp("NONE",par.RMFfile)){ // User demands a different rmf
+    if (strcasecmp("NONE",par.RMFfile)){ // User demands a different rmf
       strcpy(spcrespfile,par.RMFfile);
+      if( strcmp(spcrespfile,rmffile)!=0 ){
+          headas_chat(5," *** WARNING: User RMF differs from expected RMF='%s'!\n",rmffile);
+      }
     } else {                         // We use the same rmf as in the simulation
-      strcpy(spcrespfile,respfile);
+      strcpy(spcrespfile,rmffile);
     }
     // Check the arf:
     char spcancrfile[MAXFILENAME];
-    if (strcmp("NONE",par.ARFfile)){ // User demands a different arf
+    if (strcasecmp("NONE",par.ARFfile)){ // User demands a different arf
       strcpy(spcancrfile,par.ARFfile);
     } else {                         // We use the same arf as in the simulation
       strcpy(spcancrfile,ancrfile);
@@ -262,12 +283,12 @@ int makespec_main() {
     //      (TODO: this can be simplified)
     struct RMF* rmf = loadRMF(resppathname,&status);
     CHECK_STATUS_BREAK(status);
-
+    headas_chat(5," *** INFO : Loading RMF='%s'!\n",resppathname);
 
     // If different rmf and/or arf are required, we need to check that the binning
     // is compatible with the ones used for the simulation:
     // Check the RMF:
-    if (strcmp("NONE",par.RMFfile)){
+    if (strcasecmp("NONE",par.RMFfile)){
 
       // Take the path to the rmf used in the simulation
       // we load the rmf used in the simulation:
@@ -280,7 +301,6 @@ int makespec_main() {
       	// The file should be located in the working directory.
       	strcpy(simresppathname, respfile);
       }
-      printf("path to the response file: %s\n", simresppathname);
 
       // Load the EBOUNDS of the RMF.
       struct RMF* simrmf=getRMF(&status);
@@ -298,7 +318,7 @@ int makespec_main() {
       }
     }
     // Check the ARF:
-    if (strcmp("NONE",par.ARFfile)){
+    if (strcasecmp("NONE",par.ARFfile)){
 
       // Take the path to the arf used in the simulation
       // we load the arf used in the simulation:

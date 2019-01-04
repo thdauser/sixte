@@ -28,8 +28,9 @@ Pha2Pi* getPha2Pi(int* const status) {
 
 	// Initialize.
 	p2p->pha2pi_filename = NULL;
-	p2p->seed = -1;
+	p2p->pirmf_filename = NULL;
 	p2p->rmffile = NULL;
+	p2p->seed = -1;
 	p2p->nrows = 0;
 	p2p->ngrades = 0;
 	p2p->pha = NULL;
@@ -45,6 +46,9 @@ void freePha2Pi(Pha2Pi** const p2p) {
 	if (NULL != *p2p) {
 		if (NULL != (*p2p)->pha2pi_filename) {
 			free((*p2p)->pha2pi_filename);
+		}
+		if (NULL != (*p2p)->pirmf_filename) {
+			free((*p2p)->pirmf_filename);
 		}
 		if (NULL != (*p2p)->rmffile) {
 			free((*p2p)->rmffile);
@@ -120,13 +124,28 @@ Pha2Pi* initPha2Pi(const char* const filename, const unsigned int seed, int* con
     // Read the RESPFILE keyword.
 	char comment[MAXMSG];
     char rmffile[MAXMSG];
-    fits_read_key(fptr, TSTRING, "RESPFILE", &rmffile, comment, status);
+    fits_read_key(fptr, TSTRING, "RESPFILE", rmffile, comment, status);
     CHECK_STATUS_RET(*status, p2p);
     p2p->rmffile=(char*)malloc((strlen(rmffile)+1)*sizeof(char));
     CHECK_NULL_RET(p2p->rmffile, *status,
     		"memory allocation for p2p->rmffile failed", p2p);
     strcpy(p2p->rmffile, rmffile);
 
+    // Read the PIRMF keyword if available.
+    char pirmffile[MAXMSG];
+    fits_read_key(fptr, TSTRING, "PIRMF", pirmffile, comment, status);
+    if( *status == KEY_NO_EXIST ){
+		headas_chat(5," ***WARNING: Pha2Pi file '%s' does not contain PIRMF key specifying RMF for further analysis!\n", filename);
+    	fits_clear_errmark();
+    	*status = EXIT_SUCCESS;
+    }
+    else{
+    	CHECK_STATUS_RET(*status, p2p);
+    	p2p->pirmf_filename=(char*)malloc((strlen(pirmffile)+1)*sizeof(char));
+    	CHECK_NULL_RET(p2p->pirmf_filename, *status,
+    			"memory allocation for p2p->pirmf_filename failed", p2p);
+    	strcpy(p2p->pirmf_filename, pirmffile);
+    }
 
 	// Determine the number of rows.
 	fits_get_num_rows(fptr, &p2p->nrows, status);
@@ -205,21 +224,21 @@ void pha2pi_correct_event(Event* const evt, const Pha2Pi* const p2p,
 	}
 	// Determine a PI value for the event's PHA value
 	else{
-		// Find energy range [emin,emax] corresponding to event's pha
-		const long ind = evt->pha - rmf->FirstChannel;
+
 		// Consistency check: Does index point to correct pha channel?
-		if(evt->pha != p2p->pha[ind]){
+		if(evt->pha != p2p->pha[evt->pha]){
 			char msg[MAXMSG];
-			sprintf(msg, "pha2pi: Event PHA (%ld) not equal to PHA (%ld) in Pha2Pi file '%s' ... aborting!\n",
-					evt->pha,p2p->pha[ind],p2p->pha2pi_filename
+			sprintf(msg, "pha2pi: Event PHA (%ld) not equal to PHA (%ld) in row [%ld] in Pha2Pi file '%s' ... aborting!\n",
+					evt->pha,p2p->pha[evt->pha],evt->pha,p2p->pha2pi_filename
 					);
 			SIXT_ERROR(msg);
 			*status = EXIT_FAILURE;
 			return;
 		}
 
-		const double emin = p2p->pilow[ind][evt->type];
-		const double emax = p2p->pihigh[ind][evt->type];
+		// Find energy range [emin,emax] corresponding to event's pha
+		const double emin = p2p->pilow[evt->pha][evt->type];
+		const double emax = p2p->pihigh[evt->pha][evt->type];
 		/* Consistency check:
 		 * Pha2Pi File might contain NaN entries for requested
 		 * PHA-TYPE combination -> Pha2Pi File is invalid!
@@ -265,6 +284,7 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
     fits_read_key(evtfile->fptr, TSTRING, "RESPFILE", &evtrmf, comment, status);
     CHECK_STATUS_VOID(*status);
 
+
     // CHECK if eventfile & Pha2Pi file were created with the same RMF
     if( strcmp(evtrmf,p2p->rmffile) != 0 ){
       	*status=EXIT_FAILURE;
@@ -296,19 +316,20 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 		SIXT_ERROR(msg);
 		*status=EXIT_FAILURE;
 		return;
-	}else if ( strcmp(RESPfile,p2p->rmffile) != 0 ){
+	}else if ( strcmp(respfile,p2p->rmffile) != 0 ){
 		char msg[MAXMSG];
-		sprintf(msg, "pha2pi: Using RMF='%s' for PI binning instead of '%s/%s'!\n",
-				resppathname, RSPPath, p2p->rmffile
+		sprintf(msg, "pha2pi: Using RMF='%s' for PI binning instead of '%s'!\n",
+				respfile, p2p->rmffile
 				);
 		SIXT_WARNING(msg);
 	}
 
     // Load the EBOUNDS of the RMF that will be used in the pi correction.
+    // Some fields, e.g., FirstChannel, will not be loaded!
     struct RMF* rmf=getRMF(status);
-    CHECK_STATUS_VOID(*status);
     loadEbounds(rmf, resppathname, status);
     CHECK_STATUS_VOID(*status);
+
 
 	// Add 'PI' column to evtfile if necessary
 	if( evtfile->cpi == 0 ){
@@ -318,7 +339,7 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 	}
 
     // Loop over all events in the input list.
-    long ii;
+	long ii;
     for (ii=1; ii<=evtfile->nrows; ii++) {
     	// Get event
     	Event* event = getEvent(status);
@@ -326,7 +347,7 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
     	getEventFromFile(evtfile, ii, event, status);
     	CHECK_STATUS_BREAK(*status);
 
-    	// run pi correction on event
+		// run pi correction on event
     	pha2pi_correct_event(event, p2p, rmf, status);
 
     	// Save changes to eventfile
@@ -338,6 +359,9 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
     }
     if( *status == EXIT_SUCCESS ){
     	fits_update_key(evtfile->fptr, TSTRING, "PHA2PI", p2p->pha2pi_filename , "Pha2Pi correction file", status);
+    	if( p2p->pirmf_filename != NULL ){
+    		fits_update_key(evtfile->fptr, TSTRING, "PIRMF", p2p->pirmf_filename , "PI-RMF needed for PI values", status);
+    	}
         return;
     }
     else{
