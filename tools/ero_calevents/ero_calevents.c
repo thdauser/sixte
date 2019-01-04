@@ -46,7 +46,7 @@ int ero_calevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_calevents");
-  set_toolversion("0.15");
+  set_toolversion("0.20");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -548,7 +548,17 @@ int ero_calevents_main()
 	if (event.signals[ii]<=0.0) continue;
 
 	// Raw pixel coordinates.
-	ev.rawx=event.rawx + ii%3;
+
+	/** eROSITA standard is that the CCD is viewed from the bottom
+	 *  (towards the sky), which is the opposite of the Sixte standard
+	 *  (from the mirrors onto the CCD). Need to flip the y-axis to
+	 *  take this change into account
+	 */
+	int ibuffer=384;  // hard coded here, bad style but ero CCDs will not change
+	ev.rawx = ibuffer-1-event.rawx;  // rawx/y defined from 0 to ibuffer
+
+	ev.rawx += ii%3;
+
 	ev.rawy=event.rawy + ii/3;
 
 	// TODO Sub-pixel resolution is not implemented.
