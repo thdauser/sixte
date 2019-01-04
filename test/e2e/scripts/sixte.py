@@ -90,7 +90,6 @@ def phoimg(phlist,implist,xmlfile,expos=defvar.expos,
            mjdref=defvar.mjdref,
            tstart=defvar.tstart,
            clobber="yes",
-           prefix="sim_",
            logfile=-1,
            test=-1):
 
@@ -123,14 +122,63 @@ def phoimg(phlist,implist,xmlfile,expos=defvar.expos,
     return ret_val
 
 
+def gendetsim(implist,rawdata,xmlfile,expos=defvar.expos,
+           instrument=defvar.inst,
+           mission=defvar.miss,
+           mode=defvar.mode,
+           seed=defvar.seed,
+           mjdref=defvar.mjdref,
+           tstart=defvar.tstart,
+           clobber="yes",
+           background="no",
+           logfile=-1,
+           test=-1):
+
+    if (test):
+        os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
+
+    str = f"""gendetsim \
+        ImpactList={implist} \
+        RawData={rawdata} \
+        Instrument={instrument} \
+        Mission={mission} \
+        Mode={mode} \
+        XMLFile={xmlfile} \
+        MJDREF={mjdref} \
+        TSTART={tstart} \
+        Exposure={expos} \
+        Seed={seed} \
+        Background={background} \
+        clobber={clobber}"""
+
+    if (logfile!=-1):
+        str = f"{str} > {logfile}"
+
+    ret_val = subprocess.run(str,shell=True,
+                             stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
+    del os.environ['SIXTE_USE_PSEUDO_RNG']
+
+    return ret_val
+
+
 
 def check_returncode(ret_val,tool):
     if (ret_val.returncode==0):
         print(f"{tool}: run SUCCESSFUL")
     else:
         print('{}: run FAILED with ReturnCode {}'.format(tool,ret_val.returncode))
-        print(ret_val.stdout)
-        print(ret_val.stderr)
+        out = ("{}".format(ret_val.stdout)).replace('\\n','\n')
+        out = out.replace('\'','')
+        out = out.replace('b','')
+
+
+        err = ("{}".format(ret_val.stderr)).replace('\\n','\n')
+        err = err.replace('\'','')
+        err = err.replace('b','')
+
+        print(f"{tool}: stdout: {out}")
+        print(f"{tool}: stderr: {err}")
         exit(ret_val.returncode)
 
 

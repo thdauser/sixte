@@ -8,18 +8,18 @@ import sixte
 # initialize default variables
 defvar = sixte.defvar
 dir="data/dummy"
-tool = 'PHOIMG'
+tool = 'GENDETSIM'
 
-fin=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_pholist}"
-fout = f"{defvar.prefix_dummy}{defvar.fname_implist}"
+fin=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
+fout = f"{defvar.prefix_dummy}{defvar.fname_rawlist}"
 
-file1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
+file1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_rawlist}"
 file2=fout
 
 
 print(f'   *** testing {tool}  *** ')
 
-ret_val = sixte.phoimg(fin,fout,defvar.xml,
+ret_val = sixte.gendetsim(fin,fout,defvar.xml,
                        logfile=defvar.log,
                        test=1)
 
@@ -27,6 +27,6 @@ sixte.check_returncode(ret_val,tool)
 
 sixte.check_fdiff(file1,file2,tool)
 
-sixte.clean_output()
+#sixte.clean_output()
 
 
