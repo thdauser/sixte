@@ -11,6 +11,7 @@ before_script:
   - export SIXTE=`pwd`
   - export HEADASNOQUERY=
   - export HEADASPROMPT=/dev/null
+  - source /data/system/software/python/anaconda.sh
 
 stages:
   - build
