@@ -18,6 +18,7 @@ include_HEADERS=sixteconfig.h
 .PHONY: test
 test:
 	cd test/exec/ && make test
+	cd test/e2e/ && ./run_e2e_test.sh
 
 crit_mac_version=9
 install-exec-hook:
