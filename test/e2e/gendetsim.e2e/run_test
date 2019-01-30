@@ -11,14 +11,13 @@ from astropy.io import fits
 
 # initialize default variables
 defvar = sixte.defvar
-dir="data/dummy"
 tool = 'GENDETSIM'
 
 fin  = f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
 fout = f"{defvar.prefix_dummy}{defvar.fname_rawlist}"
 
-file1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_rawlist}"
-file2=fout
+reffile1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_rawlist}"
+reffile2=f"data/refdata/{defvar.prefix_refdata}raw_eventreadout.fits"
 
 def check_dummy_xml(file,tool):
     with  fits.open(file) as hdul:
@@ -51,17 +50,34 @@ def check_dummy_xml(file,tool):
 
 print(f'   *** testing {tool}  *** ')
 
+# STANDARD TEST: TIME READOUT
+tooltime = tool+" [TIME readout]"
 ret_val = sixte.gendetsim(fin,fout,defvar.xml,
                        logfile=defvar.log,
                        test=1)
 
-sixte.check_returncode(ret_val,tool)
+sixte.check_returncode(ret_val,tooltime)
 
-sixte.check_fdiff(file1,file2,tool)
+sixte.check_fdiff(reffile1,fout,tooltime)
 
-check_dummy_xml(fout,tool)
+check_dummy_xml(fout,tooltime)
 
 sixte.clean_output()
+
+# EVENT READOUT TEST
+toolevent = tool+" [EVENT readout]"
+ret_val = sixte.gendetsim(fin,fout,
+                          defvar.xml_path+"default_eventreadout.xml",
+                          logfile=defvar.log,
+                          test=1)
+
+sixte.check_returncode(ret_val,toolevent)
+
+sixte.check_fdiff(reffile2,fout,toolevent)
+
+sixte.clean_output()
+
+
 
 
 

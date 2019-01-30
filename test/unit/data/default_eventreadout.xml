@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<instrument telescop="test" instrume="test">
+
+<telescope>
+  <fov diameter="1.0"/>
+  <focallength value="1.0"/>
+  <arf filename="dummy.arf"/>
+  <psf filename="ideal_psf.fits"/>
+</telescope>
+
+<detector>
+  <dimensions xwidth="9" ywidth="9"/>
+  <pixelborder x="0." y="0."/>
+  <wcs xrpix="5.0" yrpix="5.0" xrval="0." yrval="0." 
+       xdelt="100.e-6" ydelt="100.e-6" rota="0"/>
+  <rmf filename="dummy.rmf"/>
+  <readout mode="event"/>
+</detector>
+
+</instrument>
