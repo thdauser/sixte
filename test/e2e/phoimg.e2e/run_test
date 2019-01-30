@@ -5,6 +5,8 @@ import sys
 sys.path.append('../scripts/')
 import sixte
 
+sixte.check_pythonversion(3,6)
+
 # initialize default variables
 defvar = sixte.defvar
 dir="data/dummy"

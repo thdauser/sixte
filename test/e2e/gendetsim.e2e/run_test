@@ -4,6 +4,9 @@ import subprocess
 import sys
 sys.path.append('../scripts/')
 import sixte
+
+sixte.check_pythonversion(3,6)
+
 from astropy.io import fits
 
 # initialize default variables
@@ -11,7 +14,7 @@ defvar = sixte.defvar
 dir="data/dummy"
 tool = 'GENDETSIM'
 
-fin=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
+fin  = f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
 fout = f"{defvar.prefix_dummy}{defvar.fname_rawlist}"
 
 file1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_rawlist}"
