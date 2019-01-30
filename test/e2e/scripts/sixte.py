@@ -1,7 +1,21 @@
 import subprocess
+import sys
 import os
-
 import astropy.io.fits as fits
+
+
+# PYTHON Version control
+SYSVERMAJOR_MIN = 3
+SYSVERMINOR_MIN = 6
+
+def check_pythonversion( vmajor=SYSVERMAJOR_MIN,
+                         vminor=SYSVERMINOR_MIN ):
+    if sys.version_info.major < vmajor or sys.version_info.minor < vminor:
+        print( ' *** error : Calling with python version {}.{}, but >= {}.{} is required!'.format(sys.version_info.major,sys.version_info.minor,vmajor,vminor))
+        exit(1)
+
+check_pythonversion()
+
 
 
 class defvar:
@@ -194,3 +208,4 @@ def check_fdiff(file1,file2,tool):
 
 def clean_output():
     subprocess.call('rm -f *.fits', shell=True)
+
