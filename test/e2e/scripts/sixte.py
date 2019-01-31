@@ -10,10 +10,10 @@ SYSVERMINOR_MIN = 6
 
 def check_pythonversion( vmajor=SYSVERMAJOR_MIN,
                          vminor=SYSVERMINOR_MIN ):
-    if sys.version_info.major < vmajor or sys.version_info.minor < vminor:
-        print( ' *** error : Calling with python version {}.{}, but >= {}.{} is required!'.format(sys.version_info.major,sys.version_info.minor,vmajor,vminor))
-        exit(1)
-
+    assert (sys.version_info.major >= vmajor and sys.version_info.minor >= vminor),\
+        ' *** error : Calling with python version {}.{}, but >= {}.{} is required!'\
+        .format(sys.version_info.major,sys.version_info.minor,vmajor,vminor)
+        
 check_pythonversion()
 
 
