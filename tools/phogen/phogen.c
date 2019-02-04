@@ -262,17 +262,17 @@ int phogen_getpar(struct Parameters* par)
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_float("RA", &par->RA);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the right ascension of the telescope pointing");
-    return(status);
-  } 
 
-  status=ape_trad_query_float("Dec", &par->Dec);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the declination of the telescope pointing");
-    return(status);
-  } 
+  // only load RA,Dec if Attitude is not given
+  if (par->Attitude=='\0'){
+	  query_simput_parameter_float("RA",&(par->RA),&status);
+	  query_simput_parameter_float("Dec",&(par->Dec),&status);
+  } else {
+	  // set to default values
+	  par->RA=0.0;
+	  par->Dec=0.0;
+	  headas_chat(3, "using Attiude File: %s \n",par->Attitude);
+  }
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
