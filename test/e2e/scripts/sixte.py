@@ -44,6 +44,8 @@ class defvar:
         self.simput_dir="data/dummy/"
         self.simput=self.simput_dir+self.simput_name
 
+        self.attitude = "data/dummy/dummy_e2e.att"
+
         self.seed=0
 
         self.log="logfile.log"
@@ -58,9 +60,16 @@ class defvar:
 # initialize one instance of defvar
 defvar = defvar()
 
+def get_pointing_string(ra,dec,attitude):
+    if (attitude == 0):
+        return f"RA={ra} Dec={dec}"
+    else:
+        return f"Attitude={attitude}"
+
 def phogen(phlist,xmlfile,simput,expos=defvar.expos,
            ra=defvar.RA,dec=defvar.Dec,
            instrument=defvar.inst,
+           attitude=0,
            mission=defvar.miss,
            mode=defvar.mode,
            seed=defvar.seed,
@@ -72,13 +81,15 @@ def phogen(phlist,xmlfile,simput,expos=defvar.expos,
     if (test):
         os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
 
+    pointing_string = get_pointing_string(ra,dec,attitude)
+
     str = f"""phogen \
         PhotonList={prefix}{phlist} \
         Instrument={instrument} \
         Mission={mission} \
         Mode={mode} \
         XMLFile={xmlfile} \
-        RA={ra} Dec={dec} \
+        {pointing_string} \
         Simput={simput} \
         Exposure={expos} \
         Seed={seed} \
@@ -194,6 +205,14 @@ def check_returncode(ret_val,tool):
         print(f"{tool}: stdout: {out}")
         print(f"{tool}: stderr: {err}")
         exit(ret_val.returncode)
+
+
+def check_returnvalue(ret_val,tool):
+    if (ret_val==0):
+        print(f"{tool}: run SUCCESSFUL")
+    else:
+        print('{}: run FAILED with ReturnCode {}'.format(tool,ret_val))
+        exit(ret_val)
 
 
 def check_fdiff(file1,file2,tool):
