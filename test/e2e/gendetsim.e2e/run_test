@@ -67,7 +67,7 @@ sixte.clean_output()
 # EVENT READOUT TEST
 toolevent = tool+" [EVENT readout]"
 ret_val = sixte.gendetsim(fin,fout,
-                          defvar.xml_path+"default_eventreadout.xml",
+                          defvar.xml_eventmode,
                           logfile=defvar.log,
                           test=1)
 
