@@ -63,4 +63,12 @@ echo "     TOTAL   : $n_tests"  |tee $log_file
 echo "     SUCESS  : $n_succ" |tee $log_file
 echo "     FAILED  : $n_fail" |tee $log_file 
 echo " ***********************************"  |tee $log_file
+
+if (($n_fail>0)) ; then
+echo "  End-to-End test FAILED "  |tee $log_file
+exit 1
+else
+echo "  End-to-End test SUCCESSFUL "  |tee $log_file
+fi
+
 echo "  "  |tee $log_file
