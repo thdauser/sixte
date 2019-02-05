@@ -33,7 +33,10 @@ class defvar:
 
         self.xml_path="data/dummy/"
         self.xml_name="default_inst.xml"
+        self.xml_name_eventmode="default_eventreadout.xml"
+
         self.xml=self.xml_path+self.xml_name
+        self.xml_eventmode=self.xml_path+self.xml_name_eventmode
 
         self.RA=0.0
         self.Dec=0.0
@@ -47,6 +50,8 @@ class defvar:
         self.attitude = "data/dummy/dummy_e2e.att"
 
         self.seed=0
+
+        self.background="no"
 
         self.log="logfile.log"
 
@@ -155,7 +160,7 @@ def gendetsim(implist,rawdata,xmlfile,expos=defvar.expos,
            mjdref=defvar.mjdref,
            tstart=defvar.tstart,
            clobber="yes",
-           background="no",
+           background=defvar.background,
            logfile=-1,
            test=-1):
 
@@ -170,6 +175,60 @@ def gendetsim(implist,rawdata,xmlfile,expos=defvar.expos,
         Mode={mode} \
         XMLFile={xmlfile} \
         MJDREF={mjdref} \
+        TSTART={tstart} \
+        Exposure={expos} \
+        Seed={seed} \
+        Background={background} \
+        clobber={clobber}"""
+
+    if (logfile!=-1):
+        str = f"{str} > {logfile}"
+
+    ret_val = subprocess.run(str,shell=True,
+                             stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
+    del os.environ['SIXTE_USE_PSEUDO_RNG']
+
+    return ret_val
+
+
+def runsixt(xmlfile,
+           expos=defvar.expos,
+           evtfile=defvar.fname_evtlist,
+           prefix=defvar.prefix_dummy,
+           rawdata=defvar.fname_rawlist,
+           ra=defvar.RA, dec=defvar.Dec,
+           instrument=defvar.inst,
+           attitude=0,
+            simput=defvar.simput,
+           mission=defvar.miss,
+           mode=defvar.mode,
+           seed=defvar.seed,
+           mjdref=defvar.mjdref,
+           tstart=defvar.tstart,
+           clobber="yes",
+           background=defvar.background,
+           logfile=-1,
+           test=-1):
+
+    if (test):
+        os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
+
+
+    pointing_string = get_pointing_string(ra,dec,attitude)
+
+
+    str = f"""runsixt \
+        {pointing_string} \
+        Prefix={prefix} \
+        RawData={rawdata} \
+        EvtFile={evtfile}  \
+        Instrument={instrument} \
+        Mission={mission} \
+        Mode={mode} \
+        XMLFile={xmlfile} \
+        MJDREF={mjdref} \
+        Simput={simput}  \
         TSTART={tstart} \
         Exposure={expos} \
         Seed={seed} \
