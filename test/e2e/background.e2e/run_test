@@ -32,8 +32,11 @@ print(f'   *** testing {tool}  *** ')
 
 # STANDARD TEST: TIME READOUT
 tooltime = tool+" -- [TIME readout]"
+
 ret_val = sixte.runsixt(defvar.xml,
                         prefix=prefix_time,
+                        implist=defvar.fname_implist,
+                        rawdata=defvar.fname_rawlist,
                        ra=ra_outside,dec=dec_outside,
                        logfile=defvar.log,
                         expos=exposure,
@@ -50,11 +53,13 @@ sixte.clean_output()
 toolevent = tool+" -- [EVENT readout]"
 ret_val = sixte.runsixt(defvar.xml_eventmode,
                         prefix=prefix_event,
+                        implist=defvar.fname_implist,
+                        rawdata=defvar.fname_rawlist,
                         ra=ra_outside, dec=dec_outside,
                         expos=exposure,
                         logfile=defvar.log,
-                          background=background,
-                          test=1)
+                        background=background,
+                        test=1)
 
 sixte.check_returncode(ret_val,toolevent)
 
