@@ -447,122 +447,122 @@ int runsixt_main()
     int gtibin=0;
     double simtime=0.;
     do {
-      // Currently regarded interval.
-      double t0=gti->start[gtibin];
-      double t1=gti->stop[gtibin];
-      
-      // Set the start time for the instrument model.
-      setGenDetStartTime(inst->det, t0);
+    	// Currently regarded interval.
+    	double t0=gti->start[gtibin];
+    	double t1=gti->stop[gtibin];
 
-      // Loop over photon generation and processing
-      // till the time of the photon exceeds the requested
-      // time interval.
-      do {
+    	// Set the start time for the instrument model.
+    	setGenDetStartTime(inst->det, t0);
 
-	// Photon generation.
-	Photon ph;
-	int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1, par.MJDREF, par.dt, 
-		       inst->tel->fov_diameter, &ph, &status);
-	CHECK_STATUS_BREAK(status);
+    	// Loop over photon generation and processing
+    	// till the time of the photon exceeds the requested
+    	// time interval.
+    	do {
 
-	// If no photon has been generated, break the loop.
-	if (0==isph) break;
+    		// Photon generation.
+    		Photon ph;
+    		int isph=phgen(ac, srccat, MAX_N_SIMPUT, t0, t1, par.MJDREF, par.dt,
+    				inst->tel->fov_diameter, &ph, &status);
+    		CHECK_STATUS_BREAK(status);
 
-	// Check if the photon still is within the requested
-	// exposure time.
-	assert(ph.time<=t1);
+    		// If no photon has been generated, break the loop.
+    		if (0==isph) break;
 
-	// If requested, write the photon to the output file.
-	if (NULL!=plf) {
-	  status=addPhoton2File(plf, &ph);
-	  CHECK_STATUS_BREAK(status);
-	}
+    		// Check if the photon still is within the requested
+    		// exposure time.
+    		assert(ph.time<=t1);
 
-	// Photon imaging.
-	Impact imp;
-	int isimg=phimg(inst->tel, ac, &ph, &imp, &status);
-	CHECK_STATUS_BREAK(status);
+    		// If requested, write the photon to the output file.
+    		if (NULL!=plf) {
+    			status=addPhoton2File(plf, &ph);
+    			CHECK_STATUS_BREAK(status);
+    		}
 
-	// If the photon is not imaged but lost in the optical system,
-	// continue with the next one.
-	if (0==isimg) continue;
+    		// Photon imaging.
+    		Impact imp;
+    		int isimg=phimg(inst->tel, ac, &ph, &imp, &status);
+    		CHECK_STATUS_BREAK(status);
 
-	// If requested, write the impact to the output file.
-	if (NULL!=ilf) {
-	  addImpact2File(ilf, &imp, &status);
-	  CHECK_STATUS_BREAK(status);
-	}
+    		// If the photon is not imaged but lost in the optical system,
+    		// continue with the next one.
+    		if (0==isimg) continue;
 
-	// Photon Detection.
-	phdetGenDet(inst->det, &imp, t1, &status);
-	CHECK_STATUS_BREAK(status);
+    		// If requested, write the impact to the output file.
+    		if (NULL!=ilf) {
+    			addImpact2File(ilf, &imp, &status);
+    			CHECK_STATUS_BREAK(status);
+    		}
 
-	// Program progress output.
-	while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
-	  progress++;
-	  if (NULL==progressfile) {
-	    headas_chat(2, "\r%.0lf %%", progress*1.);
-	    fflush(NULL);
-	  } else {
-	    rewind(progressfile);
-	    fprintf(progressfile, "%.2lf", progress*1./100.);
-	    fflush(progressfile);	
-	  }
-	}
+    		// Photon Detection.
+    		phdetGenDet(inst->det, &imp, t1, &status);
+    		CHECK_STATUS_BREAK(status);
 
-      } while(1);
-      CHECK_STATUS_BREAK(status);
-      // END of photon processing loop for the current interval.
+    		// Program progress output.
+    		while((unsigned int)((ph.time-t0+simtime)*100./totalsimtime)>progress) {
+    			progress++;
+    			if (NULL==progressfile) {
+    				headas_chat(2, "\r%.0lf %%", progress*1.);
+    				fflush(NULL);
+    			} else {
+    				rewind(progressfile);
+    				fprintf(progressfile, "%.2lf", progress*1./100.);
+    				fflush(progressfile);
+    			}
+    		}
 
-      // Clear the detector.
-      phdetGenDet(inst->det, NULL, t1, &status);
-      CHECK_STATUS_BREAK(status);
-      long jj;
-      for(jj=0; jj<inst->det->pixgrid->ywidth; jj++) {
-	GenDetClearLine(inst->det, jj);
-      }
+    	} while(1);
+    	CHECK_STATUS_BREAK(status);
+    	// END of photon processing loop for the current interval.
 
-      // Proceed to the next GTI interval.
-      simtime+=gti->stop[gtibin]-gti->start[gtibin];
-      gtibin++;
-      if (gtibin>=gti->ngti) break;
+    	// Clear the detector.
+    	phdetGenDet(inst->det, NULL, t1, &status);
+    	CHECK_STATUS_BREAK(status);
+    	long jj;
+    	for(jj=0; jj<inst->det->pixgrid->ywidth; jj++) {
+    		GenDetClearLine(inst->det, jj);
+    	}
+
+    	// Proceed to the next GTI interval.
+    	simtime+=gti->stop[gtibin]-gti->start[gtibin];
+    	gtibin++;
+    	if (gtibin>=gti->ngti) break;
 
     } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
-    
-      
+
+
     // Progress output.
     if (NULL==progressfile) {
-      headas_chat(2, "\r%.0lf %%\n", 100.);
-      fflush(NULL);
+    	headas_chat(2, "\r%.0lf %%\n", 100.);
+    	fflush(NULL);
     } else {
-      rewind(progressfile);
-      fprintf(progressfile, "%.2lf", 1.);
-      fflush(progressfile);	
+    	rewind(progressfile);
+    	fprintf(progressfile, "%.2lf", 1.);
+    	fflush(progressfile);
     }
 
     // Perform a pattern analysis, only if split events are simulated.
     if (GS_NONE!=inst->det->split->type) {
-      // Pattern analysis.
-      headas_chat(3, "start event pattern analysis ...\n");
-      phpat(inst->det, elf, patf, par.SkipInvalids, &status);
-      CHECK_STATUS_BREAK(status);
+    	// Pattern analysis.
+    	headas_chat(3, "start event pattern analysis ...\n");
+    	phpat(inst->det, elf, patf, par.SkipInvalids, &status);
+    	CHECK_STATUS_BREAK(status);
 
     } else {
-      // If no split events are simulated, simply copy the event list
-      // to a pattern list.
-      headas_chat(3, "copy events to pattern file ...\n");
-      copyEventFile(elf, patf, 
-		    inst->det->threshold_event_lo_keV,
-		    inst->det->threshold_pattern_up_keV,
-		    &status);
-      CHECK_STATUS_BREAK(status);
-      fits_update_key(patf->fptr, TSTRING, "EVTYPE", "PATTERN", 
-		      "event type", &status);
-      CHECK_STATUS_BREAK(status);
+    	// If no split events are simulated, simply copy the event list
+    	// to a pattern list.
+    	headas_chat(3, "copy events to pattern file ...\n");
+    	copyEventFile(elf, patf,
+    			inst->det->threshold_event_lo_keV,
+				inst->det->threshold_pattern_up_keV,
+				&status);
+    	CHECK_STATUS_BREAK(status);
+    	fits_update_key(patf->fptr, TSTRING, "EVTYPE", "PATTERN",
+    			"event type", &status);
+    	CHECK_STATUS_BREAK(status);
     }
-    
+
     // Store the GTI extension in the event file.
     saveGTIExt(elf->fptr, "STDGTI", gti, &status);
     CHECK_STATUS_BREAK(status);

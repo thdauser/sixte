@@ -196,7 +196,8 @@ def runsixt(xmlfile,
            expos=defvar.expos,
            evtfile=defvar.fname_evtlist,
            prefix=defvar.prefix_dummy,
-           rawdata=defvar.fname_rawlist,
+           rawdata=0,
+           implist=0,
            ra=defvar.RA, dec=defvar.Dec,
            instrument=defvar.inst,
            attitude=0,
@@ -216,24 +217,25 @@ def runsixt(xmlfile,
 
 
     pointing_string = get_pointing_string(ra,dec,attitude)
-
+    impfile_string = ("" if implist==0 else f"ImpactList={implist} ")
+    rawdata_string = ("" if implist==0 else f"RawData={rawdata} ")
 
     str = f"""runsixt \
-        {pointing_string} \
-        Prefix={prefix} \
-        RawData={rawdata} \
-        EvtFile={evtfile}  \
-        Instrument={instrument} \
-        Mission={mission} \
-        Mode={mode} \
-        XMLFile={xmlfile} \
-        MJDREF={mjdref} \
-        Simput={simput}  \
-        TSTART={tstart} \
-        Exposure={expos} \
-        Seed={seed} \
-        Background={background} \
-        clobber={clobber}"""
+    {pointing_string} \
+    Prefix={prefix} \
+    {impfile_string} {rawdata_string} \
+    EvtFile={evtfile}  \
+    Instrument={instrument} \
+    Mission={mission} \
+    Mode={mode} \
+    XMLFile={xmlfile} \
+    MJDREF={mjdref} \
+    Simput={simput}  \
+    TSTART={tstart} \
+    Exposure={expos} \
+    Seed={seed} \
+    Background={background} \
+    clobber={clobber}"""
 
     if (logfile!=-1):
         str = f"{str} > {logfile}"
