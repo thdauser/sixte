@@ -37,7 +37,6 @@ void phdetGenDet(GenDet* const det,
   }
 
   // Call the detector operating clock routine.
-  printf(" tend %.3e", tend);
   operateGenDetClock(det, operation_time, status);
   CHECK_STATUS_VOID(*status);
 
