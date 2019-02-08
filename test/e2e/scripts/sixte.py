@@ -3,6 +3,9 @@ import sys
 import os
 import astropy.io.fits as fits
 
+# TODO: automate output (test and ref) file naming
+# TODO: runsixt sim with off-axis psf and sources, slew, and vignetting
+# TODO: makeref argument for est routines
 
 # PYTHON Version control
 SYSVERMAJOR_MIN = 3
