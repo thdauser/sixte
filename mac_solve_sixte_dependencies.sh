@@ -19,7 +19,7 @@ for tool in bin/athenawfisim bin/comabackpro bin/comadet bin/comaexp bin/comaimg
     bin/tesgenimpacts bin/tesreconstruction bin/tessim bin/tesstream bin/xifupipeline \
     bin/xml2svg bin/xms_pixtemp lib/libsixt.2.dylib lib/libprogressbar.0.dylib
 do
-    for lib in libcfitsio.2.dylib libwcs.4.25.1.dylib
+    for lib in libcfitsio.2.dylib libwcs.5.19.1.dylib libwcs.4.25.1.dylib
     do 
 	install_name_tool -change $lib $install_prefix_simput/lib/$lib $install_prefix_sixte/$tool
     done
