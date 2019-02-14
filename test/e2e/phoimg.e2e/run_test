@@ -7,28 +7,28 @@ import sixte
 
 sixte.check_pythonversion(3,6)
 
-# initialize default variables
-defvar = sixte.defvar
-dir="data/dummy"
-tool = 'PHOIMG'
-
-fin=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_pholist}"
-fout = f"{defvar.prefix_dummy}{defvar.fname_implist}"
-
-file1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
-file2=fout
+# TEST OPTIONS
+fin = sixte.defpath().ref_path + \
+        sixte.defpath(testname='phogen.e2e').refname_pholist
 
 
-print(f'   *** testing {tool}  *** ')
+defpath = sixte.defpath()
+print(f'   *** testing {defpath.testname}  *** ')
 
-ret_val = sixte.phoimg(fin,fout,defvar.xml,
-                       logfile=defvar.log,
+ret_val = sixte.phoimg(fin,
+                       defpath.testname_implist,
+                       defpath.xml,
+                       logfile=defpath.log,
                        test=1)
 
-sixte.check_returncode(ret_val,tool)
+sixte.check_returncode(ret_val,defpath.fullname)
 
-sixte.check_fdiff(file1,file2,tool)
+sixte.check_fdiff( defpath.ref_path + defpath.refname_implist,
+                   defpath.testname_implist,
+                   defpath.fullname)
 
+# clean output
 sixte.clean_output()
+
 
 

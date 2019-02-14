@@ -9,16 +9,6 @@ sixte.check_pythonversion(3,6)
 
 from astropy.io import fits
 
-# initialize default variables
-defvar = sixte.defvar
-tool = 'GENDETSIM'
-
-fin  = f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
-fout = f"{defvar.prefix_dummy}{defvar.fname_rawlist}"
-
-reffile1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_rawlist}"
-reffile2=f"data/refdata/{defvar.prefix_refdata}raw_eventreadout.fits"
-
 def check_dummy_xml(file,tool):
     with  fits.open(file) as hdul:
         data = hdul[1].data
@@ -48,34 +38,58 @@ def check_dummy_xml(file,tool):
         return 0;
 
 
-print(f'   *** testing {tool}  *** ')
 
-# STANDARD TEST: TIME READOUT
-tooltime = tool+" [TIME readout]"
-ret_val = sixte.gendetsim(fin,fout,defvar.xml,
-                       logfile=defvar.log,
-                       test=1)
+# TEST OPTIONS
 
-sixte.check_returncode(ret_val,tooltime)
+xmllist = [sixte.STDTEST.xml,sixte.STDTEST.xml_eventmode]
+testlist = ['timemode','eventmode']
 
-sixte.check_fdiff(reffile1,fout,tooltime)
+implist = sixte.defpath().ref_path + \
+        sixte.defpath(testname='phoimg.e2e').refname_implist
 
-check_dummy_xml(fout,tooltime)
+for ii in range(len(xmllist)):
 
+    defpath = sixte.defpath(subtestname=testlist[ii])
+
+    print(f'   *** testing {defpath.testname}  *** ')
+
+    ret_val = sixte.gendetsim( implist,
+                               defpath.testname_rawlist,
+                               xmllist[ii],
+                               logfile=defpath.log,
+                               test=1)
+
+    sixte.check_returncode(ret_val,defpath.fullname)
+
+    sixte.check_fdiff( defpath.ref_path + defpath.refname_rawlist,
+                       defpath.testname_rawlist,
+                       defpath.fullname)
+    
+    if testlist[ii]=='timemode':
+        check_dummy_xml(defpath.testname_rawlist,defpath.fullname)
+
+
+# clean output
 sixte.clean_output()
 
-# EVENT READOUT TEST
-toolevent = tool+" [EVENT readout]"
-ret_val = sixte.gendetsim(fin,fout,
-                          defvar.xml_eventmode,
-                          logfile=defvar.log,
-                          test=1)
 
-sixte.check_returncode(ret_val,toolevent)
 
-sixte.check_fdiff(reffile2,fout,toolevent)
+# # STANDARD TEST: TIME READOUT
+# ret_val = sixte.gendetsim(fin,fout,defvar.xml,
+#                        logfile=defvar.log,
+#                        test=1)
+# 
+# # initialize default variables
+# defvar = sixte.defvar
+# tool = 'GENDETSIM'
+# 
+# fin  = f"data/refdata/{defvar.prefix_refdata}{defvar.fname_implist}"
+# fout = f"{defvar.prefix_dummy}{defvar.fname_rawlist}"
+# 
+# reffile1=f"data/refdata/{defvar.prefix_refdata}{defvar.fname_rawlist}"
+# reffile2=f"data/refdata/{defvar.prefix_refdata}raw_eventreadout.fits"
 
-sixte.clean_output()
+
 
 
 
