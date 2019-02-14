@@ -9,62 +9,45 @@ sixte.check_pythonversion(3,6)
 
 from astropy.io import fits
 
-# initialize default variables
-defvar = sixte.defvar
-tool = 'BACKGROUND [PHA]'
+# TEST OPTIONS
 
 background = "yes"  ## switch the background on
-## point away from the simput file (RA=0,Dec=0)
-ra_outside = defvar.RA + 3.0
-dec_outside = defvar.Dec + 3.0
+# point away from the simput file (RA=0,Dec=0)
+ra_outside = sixte.STDTEST.RA + 3.0
+dec_outside = sixte.STDTEST.Dec + 3.0
 exposure = 1000
 
-prefix_time  = f"{defvar.prefix_dummy}bgk_"
-prefix_event = f"{defvar.prefix_dummy}bgk_evtmode_"
 
-fout_time = f"{prefix_time}{defvar.fname_evtlist}"
-fout_event = f"{prefix_event}{defvar.fname_evtlist}"
+xmllist = [sixte.STDTEST.xml,sixte.STDTEST.xml_eventmode]
+testlist = ['pha_timemode','pha_eventmode']
 
-reffile_time=f"data/refdata/{defvar.prefix_refdata}bgk_{defvar.fname_evtlist}"
-reffile_event=f"data/refdata/{defvar.prefix_refdata}bgk_evtmode_{defvar.fname_evtlist}"
+for ii in range(len(xmllist)):
 
-print(f'   *** testing {tool}  *** ')
+    defpath = sixte.defpath(subtestname=testlist[ii])
 
-# STANDARD TEST: TIME READOUT
-tooltime = tool+" -- [TIME readout]"
+    print(f'   *** testing {defpath.testname}  *** ')
 
-ret_val = sixte.runsixt(defvar.xml,
-                        prefix=prefix_time,
-                        implist=defvar.fname_implist,
-                        rawdata=defvar.fname_rawlist,
-                       ra=ra_outside,dec=dec_outside,
-                       logfile=defvar.log,
-                        expos=exposure,
-                       background=background,
-                       test=1)
+    ret_val = sixte.runsixt(xmllist[ii],
+                            prefix='',
+                            implist=defpath.testname_implist,
+                            rawdata=defpath.testname_rawlist,
+                            evtfile=defpath.testname_evtlist,
+                            ra=ra_outside,
+                            dec=dec_outside,
+                            logfile=defpath.log,
+                            expos=exposure,
+                            background=background,
+                            test=1)
 
-sixte.check_returncode(ret_val,tooltime)
+    sixte.check_returncode(ret_val,defpath.fullname)
 
-sixte.check_fdiff(reffile_time,fout_time,tooltime)
+    sixte.check_fdiff( defpath.ref_path + defpath.refname_evtlist,
+                       defpath.testname_evtlist,
+                       defpath.fullname)
 
-sixte.clean_output()
 
-# EVENT READOUT TEST
-toolevent = tool+" -- [EVENT readout]"
-ret_val = sixte.runsixt(defvar.xml_eventmode,
-                        prefix=prefix_event,
-                        implist=defvar.fname_implist,
-                        rawdata=defvar.fname_rawlist,
-                        ra=ra_outside, dec=dec_outside,
-                        expos=exposure,
-                        logfile=defvar.log,
-                        background=background,
-                        test=1)
 
-sixte.check_returncode(ret_val,toolevent)
-
-sixte.check_fdiff(reffile_event,fout_event,toolevent)
-
+# clean output
 sixte.clean_output()
 
 

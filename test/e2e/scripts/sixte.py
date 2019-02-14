@@ -5,7 +5,7 @@ import astropy.io.fits as fits
 
 # TODO: automate output (test and ref) file naming
 # TODO: runsixt sim with off-axis psf and sources, slew, and vignetting
-# TODO: makeref argument for est routines
+# TODO: makeref argument for test routines
 
 # PYTHON Version control
 SYSVERMAJOR_MIN = 3
@@ -20,10 +20,10 @@ def check_pythonversion( vmajor=SYSVERMAJOR_MIN,
 check_pythonversion()
 
 
-
 class defvar:
 
     def __init__(self):
+        
         self.fname_pholist="pho.fits"
         self.fname_implist="imp.fits"
         self.fname_rawlist="raw.fits"
@@ -57,30 +57,84 @@ class defvar:
         self.background="no"
 
         self.log="logfile.log"
+        
+        self.ref_path="data/refdata/"
 
-        self.prefix_refdata="ref_"
-        self.prefix_dummy="dummy_"
+        self.prefix_refdata="ref"
+        self.prefix_testdata="test"
+        self.prefix_dummy="dummy"
 
         self.mjdref=55000
         self.tstart=0
 
 
+class defpath(defvar):
+    
+    def __init__(self,subtestname='default',testname=None):
+        
+        defvar.__init__(self)
+        
+        self.log = 'logfile_'+subtestname+'.log'
+        
+        self.subtestname = subtestname
+        if testname is None:
+            self.testname = self.get_testname_from_path()
+        else:
+            self.testname = testname
+        self.fullname = self.testname+"_"+self.subtestname
+
+
+        self.testname_pholist = self.get_testfile_prefix(subtestname)+self.fname_pholist
+        self.testname_implist = self.get_testfile_prefix(subtestname)+self.fname_implist
+        self.testname_rawlist = self.get_testfile_prefix(subtestname)+self.fname_rawlist
+        self.testname_evtlist = self.get_testfile_prefix(subtestname)+self.fname_evtlist
+
+        self.refname_pholist = self.get_reffile_prefix(subtestname)+self.fname_pholist
+        self.refname_implist = self.get_reffile_prefix(subtestname)+self.fname_implist
+        self.refname_rawlist = self.get_reffile_prefix(subtestname)+self.fname_rawlist
+        self.refname_evtlist = self.get_reffile_prefix(subtestname)+self.fname_evtlist
+
+    def get_testname_from_path(self):
+        """
+        Get name of test from last/working directory. Expects
+        that test is run in this directory!
+        """
+        return os.getcwd().split('/')[-1]
+
+    def get_outfile_prefix(self,prefix,subtestname):
+        """
+        """
+        return f"{prefix}_{self.testname}_{subtestname}_"
+    
+    def get_testfile_prefix(self,subtestname=None):
+        """ Return automatically generated prefix for test output files"""
+        if subtestname == None:
+            subtestname = self.subtestname
+        return self.get_outfile_prefix(self.prefix_testdata,subtestname)
+    
+    def get_reffile_prefix(self,subtestname=None):
+        """ Return automatically generated prefix for reference data"""
+        if subtestname == None:
+            subtestname = self.subtestname
+        return self.get_outfile_prefix(self.prefix_refdata,subtestname)
+
+    def get_pointing_string(self,ra,dec,attitude):
+        if (attitude == 0):
+            return f"RA={ra} Dec={dec}"
+        else:
+            return f"Attitude={attitude}"
+
+
 # initialize one instance of defvar
-defvar = defvar()
+STDTEST = defpath()
 
-def get_pointing_string(ra,dec,attitude):
-    if (attitude == 0):
-        return f"RA={ra} Dec={dec}"
-    else:
-        return f"Attitude={attitude}"
-
-def phogen(phlist,xmlfile,simput,expos=defvar.expos,
-           ra=defvar.RA,dec=defvar.Dec,
-           instrument=defvar.inst,
+def phogen(phlist,xmlfile,simput,expos=STDTEST.expos,
+           ra=STDTEST.RA,dec=STDTEST.Dec,
+           instrument=STDTEST.inst,
            attitude=0,
-           mission=defvar.miss,
-           mode=defvar.mode,
-           seed=defvar.seed,
+           mission=STDTEST.miss,
+           mode=STDTEST.mode,
+           seed=STDTEST.seed,
            clobber="yes",
            prefix="sim_",
            logfile=-1,
@@ -89,7 +143,7 @@ def phogen(phlist,xmlfile,simput,expos=defvar.expos,
     if (test):
         os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
 
-    pointing_string = get_pointing_string(ra,dec,attitude)
+    pointing_string = STDTEST.get_pointing_string(ra,dec,attitude)
 
     str = f"""phogen \
         PhotonList={prefix}{phlist} \
@@ -104,8 +158,11 @@ def phogen(phlist,xmlfile,simput,expos=defvar.expos,
         clobber={clobber}"""
 
     if (logfile!=-1):
-        str = f"{str} > {logfile}"
-
+        fp  = open(logfile,'w')
+        fp.write(f" *** RUNNING: '{str}'\n"+"="*80+"\n\n")
+        fp.close()
+        str = f"{str} >> {logfile}"
+        
     ret_val = subprocess.run(str,shell=True,
                              stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 
@@ -114,14 +171,14 @@ def phogen(phlist,xmlfile,simput,expos=defvar.expos,
     return ret_val
 
 
-def phoimg(phlist,implist,xmlfile,expos=defvar.expos,
-           ra=defvar.RA,dec=defvar.Dec,
-           instrument=defvar.inst,
-           mission=defvar.miss,
-           mode=defvar.mode,
-           seed=defvar.seed,
-           mjdref=defvar.mjdref,
-           tstart=defvar.tstart,
+def phoimg(phlist,implist,xmlfile,expos=STDTEST.expos,
+           ra=STDTEST.RA,dec=STDTEST.Dec,
+           instrument=STDTEST.inst,
+           mission=STDTEST.miss,
+           mode=STDTEST.mode,
+           seed=STDTEST.seed,
+           mjdref=STDTEST.mjdref,
+           tstart=STDTEST.tstart,
            clobber="yes",
            logfile=-1,
            test=-1):
@@ -144,8 +201,10 @@ def phoimg(phlist,implist,xmlfile,expos=defvar.expos,
         clobber={clobber}"""
 
     if (logfile!=-1):
-        str = f"{str} > {logfile}"
-
+        fp  = open(logfile,'w')
+        fp.write(f" *** RUNNING: '{str}'\n"+"="*80+"\n\n")
+        fp.close()
+        str = f"{str} >> {logfile}"
 
     ret_val = subprocess.run(str,shell=True,
                              stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -155,15 +214,15 @@ def phoimg(phlist,implist,xmlfile,expos=defvar.expos,
     return ret_val
 
 
-def gendetsim(implist,rawdata,xmlfile,expos=defvar.expos,
-           instrument=defvar.inst,
-           mission=defvar.miss,
-           mode=defvar.mode,
-           seed=defvar.seed,
-           mjdref=defvar.mjdref,
-           tstart=defvar.tstart,
+def gendetsim(implist,rawdata,xmlfile,expos=STDTEST.expos,
+           instrument=STDTEST.inst,
+           mission=STDTEST.miss,
+           mode=STDTEST.mode,
+           seed=STDTEST.seed,
+           mjdref=STDTEST.mjdref,
+           tstart=STDTEST.tstart,
            clobber="yes",
-           background=defvar.background,
+           background=STDTEST.background,
            logfile=-1,
            test=-1):
 
@@ -185,7 +244,10 @@ def gendetsim(implist,rawdata,xmlfile,expos=defvar.expos,
         clobber={clobber}"""
 
     if (logfile!=-1):
-        str = f"{str} > {logfile}"
+        fp  = open(logfile,'w')
+        fp.write(f" *** RUNNING: '{str}'\n"+"="*80+"\n\n")
+        fp.close()
+        str = f"{str} >> {logfile}"
 
     ret_val = subprocess.run(str,shell=True,
                              stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -196,22 +258,22 @@ def gendetsim(implist,rawdata,xmlfile,expos=defvar.expos,
 
 
 def runsixt(xmlfile,
-           expos=defvar.expos,
-           evtfile=defvar.fname_evtlist,
-           prefix=defvar.prefix_dummy,
+           expos=STDTEST.expos,
+           evtfile=STDTEST.fname_evtlist,
+           prefix=STDTEST.prefix_dummy,
            rawdata=0,
            implist=0,
-           ra=defvar.RA, dec=defvar.Dec,
-           instrument=defvar.inst,
+           ra=STDTEST.RA, dec=STDTEST.Dec,
+           instrument=STDTEST.inst,
            attitude=0,
-            simput=defvar.simput,
-           mission=defvar.miss,
-           mode=defvar.mode,
-           seed=defvar.seed,
-           mjdref=defvar.mjdref,
-           tstart=defvar.tstart,
+            simput=STDTEST.simput,
+           mission=STDTEST.miss,
+           mode=STDTEST.mode,
+           seed=STDTEST.seed,
+           mjdref=STDTEST.mjdref,
+           tstart=STDTEST.tstart,
            clobber="yes",
-           background=defvar.background,
+           background=STDTEST.background,
            logfile=-1,
            test=-1):
 
@@ -219,7 +281,7 @@ def runsixt(xmlfile,
         os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
 
 
-    pointing_string = get_pointing_string(ra,dec,attitude)
+    pointing_string = STDTEST.get_pointing_string(ra,dec,attitude)
     impfile_string = ("" if implist==0 else f"ImpactList={implist} ")
     rawdata_string = ("" if implist==0 else f"RawData={rawdata} ")
 
@@ -240,8 +302,12 @@ def runsixt(xmlfile,
     Background={background} \
     clobber={clobber}"""
 
+
     if (logfile!=-1):
-        str = f"{str} > {logfile}"
+        fp  = open(logfile,'w')
+        fp.write(f" *** RUNNING: '{str}'\n"+"="*80+"\n\n")
+        fp.close()
+        str = f"{str} >> {logfile}"
 
     ret_val = subprocess.run(str,shell=True,
                              stdout=subprocess.PIPE,stderr=subprocess.PIPE)

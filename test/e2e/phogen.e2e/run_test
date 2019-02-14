@@ -8,16 +8,6 @@ import sixte
 
 sixte.check_pythonversion(3,6)
 
-# initialize default variables
-defvar = sixte.defvar
-dir="data/dummy"
-fout = defvar.fname_pholist
-tool = 'PHOGEN'
-
-file1=f"data/refdata/{defvar.prefix_refdata}{fout}"
-file2=f"{defvar.prefix_dummy}{fout}"
-
-
 def check_att_fov(fout,expos):
     # check if the criterion: 50% margin on FoV is fulfilled
     prec = 0.01  # be careful, we've only got low number statistics
@@ -36,30 +26,46 @@ def check_att_fov(fout,expos):
         return 0
 
 
-# print(f'   *** testing {tool}  *** ')
+# TEST OPTIONS
+exposure = 4e3
 
-ret_val = sixte.phogen(fout,defvar.xml,defvar.simput,
-                       logfile=defvar.log,
-                       prefix=defvar.prefix_dummy,test=1)
 
-sixte.check_returncode(ret_val,tool)
 
-sixte.check_fdiff(file1,file2,tool)
+defpath = sixte.defpath()
+print(f'   *** testing {defpath.testname}  *** ')
 
-tool = 'PHOGEN + Attitude / FoV Margin'
-# print(f'   *** testing {tool}  *** ')
+ret_val = sixte.phogen(defpath.testname_pholist,
+                       defpath.xml,
+                       defpath.simput,
+                       logfile=defpath.log,
+                       prefix='',
+                       test=1)
 
-expos = 4e3;
-ret_val = sixte.phogen(fout,defvar.xml,defvar.simput,
-                       expos=expos,
-                       attitude=defvar.attitude,
-                       logfile=defvar.log,
-                       prefix=defvar.prefix_dummy,test=1)
+sixte.check_returncode(ret_val,defpath.fullname)
 
-ret_val=check_att_fov(file2,expos)
+sixte.check_fdiff(defpath.ref_path + defpath.refname_pholist,
+                  defpath.testname_pholist,
+                  defpath.fullname)
 
-sixte.check_returnvalue(ret_val,tool)
 
+defpath = sixte.defpath(subtestname='Attitude_FoV-Margin')
+print(f'   *** testing {defpath.testname}  *** ')
+
+ret_val = sixte.phogen(defpath.testname_pholist,
+                       defpath.xml,
+                       defpath.simput,
+                       expos=exposure,
+                       attitude=defpath.attitude,
+                       prefix='',
+                       logfile=defpath.log,
+                       test=1)
+
+ret_val=check_att_fov(defpath.testname_pholist,exposure)
+
+sixte.check_returnvalue(ret_val,defpath.fullname)
+
+
+# clean output
 sixte.clean_output()
 
 
