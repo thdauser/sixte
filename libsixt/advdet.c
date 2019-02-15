@@ -389,8 +389,9 @@ AdvDet* newAdvDet(int* const status){
 void destroyAdvDet(AdvDet **det){
 
 	if(NULL!=(*det)){
-		int gr=(*det)->pix[0].ngrades;
+		int gr=0;
 		if(NULL!=(*det)->pix){
+			gr =(*det)->pix[0].ngrades;
 			for(int i=0;i<(*det)->npix;i++){
 				freeAdvPix(&(*det)->pix[i]);
 			}
