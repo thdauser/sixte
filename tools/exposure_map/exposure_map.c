@@ -253,29 +253,37 @@ static FILE* get_progressout(struct Parameters par,int *status){
 }
 
 static Attitude* get_attitude(struct Parameters par, int *status){
-	char ucase_buffer[MAXFILENAME];
-	strcpy(ucase_buffer, par.Attitude);
-	strtoupper(ucase_buffer);
 	Attitude *ac = NULL;
-	if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
-		// Set up a simple pointing attitude.
-		ac=getPointingAttitude(0., par.TSTART, par.TSTART+par.timespan,
-				par.RA*M_PI/180., par.Dec*M_PI/180., status);
-		CHECK_STATUS_RET(*status,NULL);
+        // Check if we have an attitude
+	if (par.Attitude != NULL) {
+                // Is this "NONE"?
+		char ucase_buffer[MAXFILENAME];
+		strncpy(ucase_buffer, par.Attitude, strlen(par.Attitude));
+		strtoupper(ucase_buffer);
+		ucase_buffer[MAXFILENAME-1] = '\0';
+		if (0!=strcmp(ucase_buffer, "NONE")) {
+			// Load the attitude from the given file.
+			ac=loadAttitude(par.Attitude, status);
+			CHECK_STATUS_RET(*status,NULL);
 
-	} else {
-		// Load the attitude from the given file.
-		ac=loadAttitude(par.Attitude, status);
-		CHECK_STATUS_RET(*status,NULL);
-
-		// Check if the required time interval for the simulation
-		// is a subset of the time described by the attitude file.
-		// Note that MJDREF is assumed as the value from the attitude file.
-		checkAttitudeTimeCoverage(ac, ac->mjdref, par.TSTART,
-				par.TSTART+par.timespan, status);
-		CHECK_STATUS_RET(*status,NULL);
+			// Check if the required time interval for the 
+                        // simulation is a subset of the time described by 
+                        // the attitude file. 
+                        // Note that MJDREF is assumed as the value from 
+                        // the attitude file.
+			checkAttitudeTimeCoverage(ac, ac->mjdref, par.TSTART,
+					par.TSTART+par.timespan, status);
+			CHECK_STATUS_RET(*status,NULL);
+ 		      	CHECK_NULL_RET(ac,*status,"Failed to read Attitudefile",NULL);
+			return ac;
+		}
 	}
-    CHECK_NULL_RET(ac,*status,"Failed to read Attitudefile",NULL);
+        // There is either no file or it's called NONE
+	// So set up a simple pointing attitude.
+	ac=getPointingAttitude(0., par.TSTART, par.TSTART+par.timespan,
+				par.RA*M_PI/180., par.Dec*M_PI/180., status);
+	CHECK_STATUS_RET(*status,NULL);
+ 	CHECK_NULL_RET(ac,*status,"Failed to read Attitudefile",NULL);
 	return ac;
 	// END of setting up the attitude.
 }
