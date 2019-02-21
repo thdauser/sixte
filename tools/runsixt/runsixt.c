@@ -164,7 +164,10 @@ int runsixt_main()
     CHECK_STATUS_BREAK(status);
 
     // Initialize & load Pha2Pi File (NULL if not set)
-    p2p = initPha2Pi(inst->det->pha2pi_filename, seed, &status);
+    char pha2pi_filename[MAXFILENAME];
+    strcpy(pha2pi_filename,inst->filepath);
+    strcat(pha2pi_filename,inst->det->pha2pi_filename);
+    p2p = initPha2Pi(pha2pi_filename, seed, &status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
     // Set the usage of the detector background according to

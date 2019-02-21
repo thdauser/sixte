@@ -282,7 +282,10 @@ int erosim_main()
     	setGenDetIgnoreBkg(subinst[ii]->det, !par.Background);
 
         // Initialize & load Pha2Pi File (NULL if not set)
-        p2p[ii] = initPha2Pi(subinst[ii]->det->pha2pi_filename, seed, &status);
+        char pha2pi_filename[MAXFILENAME];
+        strcpy(pha2pi_filename,subinst[ii]->filepath);
+        strcat(pha2pi_filename,subinst[ii]->det->pha2pi_filename);
+        p2p[ii] = initPha2Pi(pha2pi_filename, seed, &status);
         CHECK_STATUS_BREAK_WITH_FITSERROR(status);
     }
     CHECK_STATUS_BREAK(status);
