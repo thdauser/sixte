@@ -308,12 +308,10 @@ void tes_close_trigger(tesparams *tes,int *status) {
 
   // do we still have something in the trigger?
   if (streamptr->stream != NULL) {
-    // only write valid data from the current trigger
-    unsigned long tmpsize=streamptr->stream->trigger_size;
-    streamptr->stream->trigger_size=streamptr->streamind;
-    writeRecord(streamptr->fptr,streamptr->stream,status);
-    // reset stream length to correct length
-    streamptr->stream->trigger_size=tmpsize;
+    // if the record is full, write it
+    if (streamptr->streamind==streamptr->stream->trigger_size) {
+      writeRecord(streamptr->fptr,streamptr->stream,status);
+    }
     // forget the current record (sets the pointer to NULL)
     freeTesRecord(&(streamptr->stream));
   }
