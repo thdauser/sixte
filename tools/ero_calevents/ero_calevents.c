@@ -46,16 +46,13 @@ int ero_calevents_main()
 
   // Register HEATOOL:
   set_toolname("ero_calevents");
-  set_toolversion("0.21");
+  set_toolversion("0.20");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
 
     // --- Initialization ---
 
-	char vers[1000];
-	get_toolnamev(vers);
-    headas_chat(3, " ** calling %s ** \n",vers);
     headas_chat(3, "initialization ...\n");
 
     // Read parameters using PIL library:
@@ -826,8 +823,8 @@ int ero_calevents_main()
       float ccdrotation;
       fits_read_key(elf->fptr, TFLOAT, "CCDROTA", &ccdrotation, comment, &status);
       if (EXIT_SUCCESS!=status) {
-    	  SIXT_ERROR("failed reading keyword CCDROTA in input file");
-    	  break;
+	SIXT_ERROR("failed reading keyword CCDROTA in input file");
+	break;
       }
 
       // Insert the data.
@@ -872,17 +869,6 @@ int ero_calevents_main()
 	  
 	  // Apply the rotation angle of the CCD.
 	  rollangle+=ccdrotation;
-	  // Important: Rollangle and CCD-Rotation
-	  // for eROSITA is given from below (towards the sky), and sixte from avoce (the mirror)
-	  // -> need to flip the direction in which the angles are defined
-	  rollangle = -rollangle;
-	  if (rollangle > 360.){
-		  rollangle -= 360.;
-	  }
-	  if (rollangle < -360.){
-		  rollangle += 360.;
-	  }
-
 	  
 	  // Store the data in the file.
 	  nrows++;
