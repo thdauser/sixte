@@ -165,8 +165,12 @@ int runsixt_main()
 
     // Initialize & load Pha2Pi File (NULL if not set)
     char pha2pi_filename[MAXFILENAME];
-    strcpy(pha2pi_filename,inst->filepath);
-    strcat(pha2pi_filename,inst->det->pha2pi_filename);
+    if( inst->det->pha2pi_filename == NULL ){
+      *pha2pi_filename = '\0';
+    } else{
+      strcpy(pha2pi_filename,inst->filepath);
+      strcat(pha2pi_filename,inst->det->pha2pi_filename);
+    }
     p2p = initPha2Pi(pha2pi_filename, seed, &status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 

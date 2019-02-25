@@ -212,10 +212,14 @@ int athenapwfisim_main() {
 			setGenDetIgnoreBkg(subinst[ii]->det, !par.Background);
 
 			// Initialize & load Pha2Pi File (NULL if not set)
-			strcpy(pha2pi_filename, subinst[ii]->filepath);
-			strcat(pha2pi_filename, subinst[ii]->det->pha2pi_filename);
-			p2p[ii] = initPha2Pi(pha2pi_filename, seed, &status);
-			CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+		  if( subinst[ii]->det->pha2pi_filename == NULL ){
+		        *pha2pi_filename = '\0';
+		  } else{
+		        strcpy(pha2pi_filename,subinst[ii]->filepath);
+		        strcat(pha2pi_filename,subinst[ii]->det->pha2pi_filename);
+		  }
+		  p2p[ii] = initPha2Pi(pha2pi_filename, seed, &status);
+		  CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 		}
 		CHECK_STATUS_BREAK(status);
 
