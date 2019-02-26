@@ -1,3 +1,9 @@
+version [2.5.6]
+ - ero_calevents: CORRATT Attitude changes reverted, given now
+   in the Sixte system (in accordance with eSASS)
+ - tessim: discard empty records at end ofsimulation
+ - fix pha2pi tool crashing without message
+
 version [2.5.5]
  - fixes bug in lib installation for Mac
 
