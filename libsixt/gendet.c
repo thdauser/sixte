@@ -840,8 +840,11 @@ int makeGenSplitEvents(GenDet* const det, const struct Point2d* const position,
 	// Add signal to all valid pixels of the split event.
 	int ii, nvalidpixels = 0;
 	for (ii = 0; ii < npixels; ii++) {
+
+
 		if ((x[ii] >= 0) && (x[ii] < det->pixgrid->xwidth) && (y[ii] >= 0)
 				&& (y[ii] < det->pixgrid->ywidth)) {
+
 			addGenDetCharge2Pixel(det, x[ii], y[ii], signal * fraction[ii],
 					time, ph_id, src_id);
 			nvalidpixels++;
@@ -870,9 +873,10 @@ void addGenDetCharge2Pixel(GenDet* const det, const int column, const int row,
 	// Check if the pixel is sensitive right now.
 	if ((time < line->deadtime[column]) && (time >= 0.0))
 		return;
-	// Check if pixel is in a readout area
-	if (//GENDET_TIME_TRIGGERED == det->readout_trigger &&
-			(row >= det->rawymin && row <= det->rawymax)) {
+
+	// Check if pixel is in a readout area (todo: why do we need this? )
+	if ((row >= 0 && row < det->pixgrid->ywidth)) {
+
 
 		float oldcharge = line->charge[column];
 
