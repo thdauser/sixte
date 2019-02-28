@@ -5,12 +5,13 @@ LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
                   $(top_srcdir)/build-aux/tap-driver.sh
 
 # Try to do a proper Test setup with cmocka
-check_PROGRAMS = unit_test_all random_number_gen test_genpixgrid
-TESTS = unit_test_all random_number_gen test_genpixgrid
+check_PROGRAMS = unit_test_all random_number_gen test_genpixgrid test_vignetting
+TESTS = unit_test_all random_number_gen test_genpixgrid test_vignetting
 
 unit_test_all_LDFLAGS = -lcmocka
 random_number_gen_LDFLAGS = -lcmocka
 test_genpixgrid_LDFLAGS = -lcmocka
+test_vignetting_LDFLAGS = -lcmocka
 
 
 random_number_gen_LDADD =@top_builddir@/libsixt/libsixt.la

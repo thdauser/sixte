@@ -786,6 +786,10 @@ void fits_close_file_chksum(fitsfile *fptr,int *status) {
   fits_close_file(fptr,status);
 }
 
+/** linear interpolation in 1 dimension **/
+double interp_lin_1d(double ifac_r, double rlo, double rhi){
+	return ifac_r*rhi + (1.0-ifac_r)*rlo;
+}
 
 void sixt_check_obsolete_keyword(int* status){
 

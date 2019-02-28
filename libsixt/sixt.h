@@ -392,5 +392,7 @@ int binary_search_long(double val, double* arr, long n);
 int binary_search_float(float val, float* arr, int n);
 int binary_search_float_long(float val, float* arr, long n);
 
+double interp_lin_1d(double ifac_r, double rlo, double rhi);
+
 #endif /* SIXT_H */
 

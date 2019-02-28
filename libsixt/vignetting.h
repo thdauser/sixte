@@ -38,10 +38,8 @@ typedef struct {
   /** Number of azimuth angles. */
   int nphi; 
 
-  /** Minimum energy of bin in [keV]. */
-  float* energ_lo;
-  /** Maximum energy of bin in [keV]. */ 
-  float* energ_hi;
+  /** Mean energy of bin in [keV] (0.5*(energ_lo+energ_hi). */
+  float* energy;
   /** Off-axis angle in [rad]. */
   float* theta; 
   /** Azimuthal angle in [rad]. */

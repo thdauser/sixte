@@ -45,9 +45,15 @@ Vignetting* newVignetting(const char* const filename, int* const status)
     
     // Determine the column numbers of the individual columns.
     int column_energ_lo=0, column_energ_hi=0, column_theta=0;
+    int column_energy=0;
     int column_phi=0, column_vignet=0;
-    if(fits_get_colnum(fptr, CASEINSEN, "ENERG_LO", &column_energ_lo, status)) break;
-    if(fits_get_colnum(fptr, CASEINSEN, "ENERG_HI", &column_energ_hi, status)) break;
+
+    if(fits_get_colnum(fptr, CASEINSEN, "ENERGY", &column_energy, status)){
+        if(fits_get_colnum(fptr, CASEINSEN, "ENERG_LO", &column_energ_lo, status)) break;
+        if(fits_get_colnum(fptr, CASEINSEN, "ENERG_HI", &column_energ_hi, status)) break;
+    }
+
+
     if(fits_get_colnum(fptr, CASEINSEN, "THETA", &column_theta, status)) break;
     if(fits_get_colnum(fptr, CASEINSEN, "PHI", &column_phi, status)) break;
     if(fits_get_colnum(fptr, CASEINSEN, "VIGNET", &column_vignet, status)) break;
@@ -60,116 +66,127 @@ Vignetting* newVignetting(const char* const filename, int* const status)
 	   &vignetting->ntheta, &vignetting->nphi);
 
     // Allocate memory for the Vignetting data:
-    vignetting->energ_lo=(float*)malloc(vignetting->nenergies*sizeof(float));
-    vignetting->energ_hi=(float*)malloc(vignetting->nenergies*sizeof(float));
+    vignetting->energy  =(float*)malloc(vignetting->nenergies*sizeof(float));
     vignetting->theta   =(float*)malloc(vignetting->ntheta   *sizeof(float));
     vignetting->phi     =(float*)malloc(vignetting->nphi     *sizeof(float));
-    if ((NULL==vignetting->energ_lo) || (NULL==vignetting->energ_hi) ||
-	(NULL==vignetting->theta) || (NULL==vignetting->phi)) {
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("could not allocate memory for storing the vignetting data");
-      break;
+    if ((NULL==vignetting->energy)  || (NULL==vignetting->theta) || (NULL==vignetting->phi)) {
+    	*status=EXIT_FAILURE;
+    	SIXT_ERROR("could not allocate memory for storing the vignetting data");
+    	break;
     } else {
-      for(count1=0; count1<vignetting->nenergies; count1++) {
-	vignetting->energ_lo[count1]=0.;
-	vignetting->energ_hi[count1]=0.;
-      }
-      for(count1=0; count1<vignetting->ntheta; count1++) {
-	vignetting->theta[count1]=0.;
-      }
-      for(count1=0; count1<vignetting->nphi; count1++) {
-	vignetting->phi[count1]=0.;
-      }
+    	for(count1=0; count1<vignetting->nenergies; count1++) {
+    		vignetting->energy[count1]=0.;
+    	}
+    	for(count1=0; count1<vignetting->ntheta; count1++) {
+    		vignetting->theta[count1]=0.;
+    	}
+    	for(count1=0; count1<vignetting->nphi; count1++) {
+    		vignetting->phi[count1]=0.;
+    	}
     }
 
     vignetting->vignet=(float***)malloc(vignetting->nenergies*sizeof(float**));
     if (NULL!=vignetting->vignet) {
-      for(count1=0; count1<vignetting->nenergies; count1++) {
-	vignetting->vignet[count1]=(float**)malloc(vignetting->ntheta*sizeof(float*));
-	if (NULL!=vignetting->vignet[count1]) {
-	  for(count2=0; count2<vignetting->ntheta; count2++) {
-	    vignetting->vignet[count1][count2]=
-	      (float*)malloc(vignetting->nphi*sizeof(float));
-	    if (NULL!=vignetting->vignet[count1][count2]) {
-	      for(count3=0; count3<vignetting->nphi; count3++) {
-		vignetting->vignet[count1][count2][count3]=0.;
-	      }
-	    } else {
-	      *status=EXIT_FAILURE;
-	      SIXT_ERROR("could not allocate memory for storing the vignetting data");
-	      break;
-	    }
-	  }
-	} else {
-	  *status=EXIT_FAILURE;
-	  SIXT_ERROR("could not allocate memory for storing the vignetting data");
-	  break;
-	}
-      }
+    	for(count1=0; count1<vignetting->nenergies; count1++) {
+    		vignetting->vignet[count1]=(float**)malloc(vignetting->ntheta*sizeof(float*));
+    		if (NULL!=vignetting->vignet[count1]) {
+    			for(count2=0; count2<vignetting->ntheta; count2++) {
+    				vignetting->vignet[count1][count2]=
+    						(float*)malloc(vignetting->nphi*sizeof(float));
+    				if (NULL!=vignetting->vignet[count1][count2]) {
+    					for(count3=0; count3<vignetting->nphi; count3++) {
+    						vignetting->vignet[count1][count2][count3]=0.;
+    					}
+    				} else {
+    					*status=EXIT_FAILURE;
+    					SIXT_ERROR("could not allocate memory for storing the vignetting data");
+    					break;
+    				}
+    			}
+    		} else {
+    			*status=EXIT_FAILURE;
+    			SIXT_ERROR("could not allocate memory for storing the vignetting data");
+    			break;
+    		}
+    	}
     } else {
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("could not allocate memory for storing the vignetting data");
-      break;
+    	*status=EXIT_FAILURE;
+    	SIXT_ERROR("could not allocate memory for storing the vignetting data");
+    	break;
     }
     CHECK_STATUS_BREAK(*status);
 
     data_buffer=(float*)malloc(vignetting->nenergies*
-			       vignetting->ntheta*
-			       vignetting->nphi*sizeof(float));
+    		vignetting->ntheta*
+			vignetting->nphi*sizeof(float));
     if (NULL==data_buffer) {
-      *status=EXIT_FAILURE;
-      SIXT_ERROR("could not allocate memory for storing the vignetting data");
-      break;
+    	*status=EXIT_FAILURE;
+    	SIXT_ERROR("could not allocate memory for storing the vignetting data");
+    	break;
     } else {
-      for(count1=0; 
-	  count1<vignetting->nenergies*vignetting->ntheta*vignetting->nphi; 
-	  count1++) {
-	data_buffer[count1]=0.;
-      }
+    	for(count1=0;
+    			count1<vignetting->nenergies*vignetting->ntheta*vignetting->nphi;
+    			count1++) {
+    		data_buffer[count1]=0.;
+    	}
     }
     // Now all memory is allocated successfully!
 
-    
     // READ the data from the FITS table.
     int anynul=0;
-    fits_read_col(fptr, TFLOAT, column_energ_lo, 1, 1, vignetting->nenergies, 
-		  vignetting->energ_lo, vignetting->energ_lo, &anynul, status);
-    fits_read_col(fptr, TFLOAT, column_energ_hi, 1, 1, vignetting->nenergies, 
-		  vignetting->energ_hi, vignetting->energ_hi, &anynul, status);
+    if (column_energy){
+        fits_read_col(fptr, TFLOAT, column_energ_lo, 1, 1, vignetting->nenergies,
+        		vignetting->energy, vignetting->energy, &anynul, status);
+    } else {
+    	// if only ENERG_LO and ENERG_HI is given (old format), we need to calculate ENERGY
+        float* energ_lo=(float*)malloc(vignetting->nenergies*sizeof(float));
+        float* energ_hi=(float*)malloc(vignetting->nenergies*sizeof(float));
+
+        if (energ_lo==NULL || energ_hi==NULL){
+        	*status=EXIT_FAILURE;
+        	SIXT_ERROR("could not allocate memory for storing the vignetting data");
+        	break;
+        }
+
+        fits_read_col(fptr, TFLOAT, column_energ_lo, 1, 1, vignetting->nenergies,
+        		energ_lo, energ_lo, &anynul, status);
+        fits_read_col(fptr, TFLOAT, column_energ_hi, 1, 1, vignetting->nenergies,
+        		energ_hi, energ_hi, &anynul, status);
+
+        for (int ii=0; ii<vignetting->nenergies; ii++){
+        	vignetting->energy[ii] = 0.5*(energ_lo[ii]+energ_hi[ii]);
+        }
+        free(energ_lo);
+        free(energ_hi);
+    }
+
+
     fits_read_col(fptr, TFLOAT, column_theta, 1, 1, vignetting->ntheta, 
-		  vignetting->theta, vignetting->theta, &anynul, status);
+    		vignetting->theta, vignetting->theta, &anynul, status);
     fits_read_col(fptr, TFLOAT, column_phi, 1, 1, vignetting->nphi, 
-		  vignetting->phi, vignetting->phi, &anynul, status);
+    		vignetting->phi, vignetting->phi, &anynul, status);
     fits_read_col(fptr, TFLOAT, column_vignet, 1, 1, 
-		  vignetting->nenergies*vignetting->ntheta*vignetting->nphi, 
-		  data_buffer, data_buffer, &anynul, status);
+    		vignetting->nenergies*vignetting->ntheta*vignetting->nphi,
+			data_buffer, data_buffer, &anynul, status);
 
     // Determine the minimum and maximum available energy:
-    vignetting->Emin=-1.;
-    vignetting->Emax=-1.;
-    for (count1=0; count1<vignetting->nenergies; count1++) {
-      if ((vignetting->energ_lo[count1]<vignetting->Emin) || (vignetting->Emin<0.)) {
-	vignetting->Emin=vignetting->energ_lo[count1];
-      }
-      if (vignetting->energ_hi[count1]>vignetting->Emax) {
-	vignetting->Emax=vignetting->energ_hi[count1];
-      }
-    }						
+    vignetting->Emin=vignetting->energy[0];
+    vignetting->Emax=vignetting->energy[vignetting->nenergies-1];
+
     // Scale from [deg] -> [rad]:
     for (count1=0; count1<vignetting->ntheta; count1++) {
-      vignetting->theta[count1]*=M_PI/180.;
+    	vignetting->theta[count1]*=M_PI/180.;
     }
     for (count1=0; count1<vignetting->nphi; count1++) {
-      vignetting->phi[count1]*=M_PI/180.;
+    	vignetting->phi[count1]*=M_PI/180.;
     }
 
     // Plot debug information about available energies, off-axis
     // angles, and azimuthal angles.
     headas_chat(5, "Vignetting - available energies:\n");
     for (count1=0; count1<vignetting->nenergies; count1++) {
-      headas_chat(5, " %.3lf keV - %.3lf keV\n", 
-		  vignetting->energ_lo[count1],
-		  vignetting->energ_hi[count1]);
+      headas_chat(5, " %.3lf keV  \n",
+          vignetting->energy[count1]);
     }
     headas_chat(5, "Vignetting - available off-axis angles:\n");
     for (count1=0; count1<vignetting->ntheta; count1++) {
@@ -192,9 +209,9 @@ Vignetting* newVignetting(const char* const filename, int* const status)
 
 	  // Output of the vignetting value for this particular parameters.
 	  headas_chat(5, "Vignetting: %.2lf%% for "
-		      "%.1lf keV - %.1lf keV, %.4lf arc min, %.4lf deg, \n", 
+		      "%.1lf keV, %.4lf arc min, %.4lf deg, \n",
 		      vignetting->vignet[count1][count2][count3]*100., 
-		      vignetting->energ_lo[count1], vignetting->energ_hi[count1],
+		      vignetting->energy[count1],
 		      vignetting->theta[count2]/M_PI*180.*60.,
 		      vignetting->phi[count3]/M_PI*180.);
 	}
@@ -216,8 +233,7 @@ Vignetting* newVignetting(const char* const filename, int* const status)
 
 void destroyVignetting(Vignetting** const vi) {
   if (NULL!=*vi) {
-    if (NULL!=(*vi)->energ_lo) free((*vi)->energ_lo);
-    if (NULL!=(*vi)->energ_hi) free((*vi)->energ_hi);
+    if (NULL!=(*vi)->energy) free((*vi)->energy);
     if (NULL!=(*vi)->theta)    free((*vi)->theta);
     if (NULL!=(*vi)->phi)      free((*vi)->phi);
     
@@ -242,7 +258,7 @@ void destroyVignetting(Vignetting** const vi) {
 
 
 // At the moment SIXTE can only handle the cases without phi dependece phi = 0.
-static float get_vign_ener(const float theta, const float* arr_theta, float** arr_vign, const int ntheta){
+static float interpol_vign_theta(const float theta, const float* arr_theta, float** arr_vign, const int ntheta){
 
 
 	// Check if the required angle is larger than the biggest in the
@@ -282,44 +298,27 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
   }
   */
 
-  if ((energy<vi->Emin) || (energy>vi->Emax)) {
-    return(-1.); // Energy is out of range!
-  } 
-  
+  /* if we are above or below the defined energies, we return the vignetting
+   * value at the edge of the grid  */
+  if (energy<=vi->Emin){
+	  return interpol_vign_theta(theta, vi->theta, vi->vignet[0], vi->ntheta);
+  }
+  if (energy>=vi->Emax){
+	  return interpol_vign_theta(theta, vi->theta, vi->vignet[vi->nenergies-1], vi->ntheta);
+  }
+
   // Find the right energy bin.
-  // assume linear interpolation at middle of the bin
-  int ii;
-  int ind_bin = 0;
-  float vign_val[2];
-  for(ii=0; ii<vi->nenergies; ii++) {
-	  if ((energy>=vi->energ_lo[ii])&&(energy<=vi->energ_hi[ii])) {
-		  float ener_mean = 0.5* (vi->energ_lo[ii] + vi->energ_hi[ii]);
+  int ind = binary_search_float(energy,vi->energy,vi->nenergies );
 
-		  // if below first grid point: return first grid point
-		  if (ii==0 && energy < ener_mean ){
-			  return get_vign_ener(theta, vi->theta, vi->vignet[ii], vi->ntheta);
-		  }
+  double vign_val[2];
+  // assume linear interpolation
+  vign_val[0] = interpol_vign_theta(theta, vi->theta, vi->vignet[ind], vi->ntheta);
+  vign_val[1] = interpol_vign_theta(theta, vi->theta, vi->vignet[ind+1], vi->ntheta);
 
 
+  double ifac = (energy-vi->energy[ind]) / ( vi->energy[ind+1] - vi->energy[ind] );
 
-		  // if above last grid point: return last grid point
-		  if (ii==vi->nenergies-1 && energy > ener_mean ){
-			  return get_vign_ener(theta, vi->theta, vi->vignet[ii], vi->ntheta);
-		  }
+  return interp_lin_1d(ifac, vign_val[0], vign_val[1]);
 
-
-		  // we're in the first energy bin
-		  if (energy < 0.5*(e)==0){
-			  vign_val = get_vign_ener(theta, vi->theta, vi->vignet[ii], vi->ntheta);
-
-		  }
-
-		  return vign_val;
-	  }
-  } 
-  // END of loop to find the right energy bin.
-
-  assert(ii<vi->nenergies);
-  return(0.); // (this should never be reached)
 }
 
