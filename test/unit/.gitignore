@@ -3,3 +3,4 @@ unit_test_all
 *.trs
 random_number_gen
 test_genpixgrid
+test_vignetting

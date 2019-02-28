@@ -170,6 +170,8 @@ extern char _fits_err_msg[80];
 			return;\
 		}
 
+
+
 // Warnings.
 #define SIXT_WARNING(msg) (sixt_warning(msg))
 #define SIXT_DEPRECATED(fnc, alt) (sixt_deprecated(fnc, alt))

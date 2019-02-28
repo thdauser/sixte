@@ -29,7 +29,6 @@ Vignetting* newVignetting(const char* const filename, int* const status)
   int count1, count2, count3; 
 
   do {
-
     // Allocate memory for the Vignetting data STRUCTURE:
     vignetting=(Vignetting*)malloc(sizeof(Vignetting));
     if (NULL==vignetting) {
@@ -52,7 +51,6 @@ Vignetting* newVignetting(const char* const filename, int* const status)
         if(fits_get_colnum(fptr, CASEINSEN, "ENERG_LO", &column_energ_lo, status)) break;
         if(fits_get_colnum(fptr, CASEINSEN, "ENERG_HI", &column_energ_hi, status)) break;
     }
-
 
     if(fits_get_colnum(fptr, CASEINSEN, "THETA", &column_theta, status)) break;
     if(fits_get_colnum(fptr, CASEINSEN, "PHI", &column_phi, status)) break;
@@ -135,7 +133,7 @@ Vignetting* newVignetting(const char* const filename, int* const status)
     // READ the data from the FITS table.
     int anynul=0;
     if (column_energy){
-        fits_read_col(fptr, TFLOAT, column_energ_lo, 1, 1, vignetting->nenergies,
+        fits_read_col(fptr, TFLOAT, column_energy, 1, 1, vignetting->nenergies,
         		vignetting->energy, vignetting->energy, &anynul, status);
     } else {
     	// if only ENERG_LO and ENERG_HI is given (old format), we need to calculate ENERGY
@@ -150,8 +148,10 @@ Vignetting* newVignetting(const char* const filename, int* const status)
 
         fits_read_col(fptr, TFLOAT, column_energ_lo, 1, 1, vignetting->nenergies,
         		energ_lo, energ_lo, &anynul, status);
+        CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
         fits_read_col(fptr, TFLOAT, column_energ_hi, 1, 1, vignetting->nenergies,
         		energ_hi, energ_hi, &anynul, status);
+        CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
 
         for (int ii=0; ii<vignetting->nenergies; ii++){
         	vignetting->energy[ii] = 0.5*(energ_lo[ii]+energ_hi[ii]);
@@ -161,10 +161,16 @@ Vignetting* newVignetting(const char* const filename, int* const status)
     }
 
 
+    char msg[1000] = "";
+
     fits_read_col(fptr, TFLOAT, column_theta, 1, 1, vignetting->ntheta, 
     		vignetting->theta, vignetting->theta, &anynul, status);
+    CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
+
+
     fits_read_col(fptr, TFLOAT, column_phi, 1, 1, vignetting->nphi, 
     		vignetting->phi, vignetting->phi, &anynul, status);
+
     fits_read_col(fptr, TFLOAT, column_vignet, 1, 1, 
     		vignetting->nenergies*vignetting->ntheta*vignetting->nphi,
 			data_buffer, data_buffer, &anynul, status);
@@ -197,26 +203,31 @@ Vignetting* newVignetting(const char* const filename, int* const status)
       headas_chat(5, " %.3lf deg\n", vignetting->phi[count1]/M_PI*180.);
     }
 
+
     // Transfer the data from the data buffer to the Vignetting data structure:
     if (EXIT_SUCCESS!=*status) break;
-    for(count1=0; count1<vignetting->nenergies; count1++) {
-      for(count2=0; count2<vignetting->ntheta; count2++) {
-	for(count3=0; count3<vignetting->nphi; count3++) {
-	  vignetting->vignet[count1][count2][count3] = 
-	    data_buffer[count1+
-			count2*vignetting->nenergies+
-			count3*vignetting->nenergies*vignetting->ntheta];
 
-	  // Output of the vignetting value for this particular parameters.
-	  headas_chat(5, "Vignetting: %.2lf%% for "
-		      "%.1lf keV, %.4lf arc min, %.4lf deg, \n",
-		      vignetting->vignet[count1][count2][count3]*100., 
-		      vignetting->energy[count1],
-		      vignetting->theta[count2]/M_PI*180.*60.,
-		      vignetting->phi[count3]/M_PI*180.);
-	}
-      }
+
+    for(count1=0; count1<vignetting->nenergies; count1++) {
+    	for(count2=0; count2<vignetting->ntheta; count2++) {
+    		for(count3=0; count3<vignetting->nphi; count3++) {
+    			vignetting->vignet[count1][count2][count3] =
+    					data_buffer[count1+
+									count2*vignetting->nenergies+
+									count3*vignetting->nenergies*vignetting->ntheta];
+
+    			// Output of the vignetting value for this particular parameters.
+    			headas_chat(5, "Vignetting: %.2lf%% for "
+    					"%.1lf keV, %.4lf arc min, %.4lf deg, \n",
+						vignetting->vignet[count1][count2][count3]*100.,
+						vignetting->energy[count1],
+						vignetting->theta[count2]/M_PI*180.*60.,
+						vignetting->phi[count3]/M_PI*180.);
+    		}
+    	}
     }
+
+
 
   } while(0); // END of Error handling loop
 
@@ -226,7 +237,11 @@ Vignetting* newVignetting(const char* const filename, int* const status)
   
   if (NULL!=fptr) fits_close_file(fptr, status);
 
-  if (EXIT_SUCCESS!=*status) vignetting=NULL;
+  if (EXIT_SUCCESS!=*status){
+	  SIXT_ERROR(" loading Vignetting File failed ");
+	  vignetting=NULL;
+  }
+
   return(vignetting);
 }
 
