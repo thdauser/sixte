@@ -21,7 +21,7 @@ erosim  \
   XMLFile7=${xml}/erosita_7.xml \
   Simput=$indir/simput.fits \
   Exposure=1 \
-  clobber=yes 
+  clobber=yes chatter=5
 
 set num_wc = `ls output/erosim*_evt.fits* | wc -l`
 if ($num_wc != 7) then

@@ -48,6 +48,10 @@ Vignetting* newVignetting(const char* const filename, int* const status)
     int column_phi=0, column_vignet=0;
 
     if(fits_get_colnum(fptr, CASEINSEN, "ENERGY", &column_energy, status)){
+        headas_chat(5, "Column ENERGY in the vignetting file %s doesn't exist, using ENERG_LO and ENERG_HI instead \n", filename);
+        headas_chat(7, "  ... resetting cfitsio error stack\n");
+        fits_clear_errmsg();
+        *status = EXIT_SUCCESS;
         if(fits_get_colnum(fptr, CASEINSEN, "ENERG_LO", &column_energ_lo, status)) break;
         if(fits_get_colnum(fptr, CASEINSEN, "ENERG_HI", &column_energ_hi, status)) break;
     }
