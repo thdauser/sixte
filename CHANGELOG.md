@@ -1,4 +1,4 @@
-version [2.5.6]
+version [2.5.7]
  - updates copyright and license notices
  - fixes bug in reading older vignetting files
  - changes vignetting handling (energies are interpolated linearly)
