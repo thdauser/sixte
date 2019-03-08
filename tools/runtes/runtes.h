@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU, Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef RUNTES_H
@@ -63,14 +65,14 @@ struct Parameters {
   double Threshold;
   double Calfac;
   double SaturationValue;
-  
+
   char writeStreamFile;
   char Reconstruct;
   char WriteRecordFile;
   char Identify;
   char clobber;
   char history;
-  
+
   unsigned long int seed;
 };
 

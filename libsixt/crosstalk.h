@@ -16,6 +16,8 @@
 
 
    Copyright 2016 Thomas Dauser, FAU, Edoardo Cucchetti, IRAP;
+   Copyright 2017-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef CROSSTALK_H
@@ -241,5 +243,3 @@ void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixI
 
 
 #endif /* CROSSTALK_H */
-
-

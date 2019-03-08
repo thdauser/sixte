@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef HTRSTELSTREAM_H
@@ -43,9 +45,9 @@ typedef struct {
   int n_bin_bits;
 
   /** Number of RSP Channels. */
-  int n_channels; 
+  int n_channels;
   /** Number of bins for the spectrum. */
-  int n_bins; 
+  int n_bins;
 
   /** Maximum number of counts per spectral bin. Due to the limited
    * number of bits per spectral bin, the maximum number of counts per
@@ -72,10 +74,10 @@ typedef struct {
    * a new one has to be started. */
   double integration_time;
 
-  /** Lookup table, which RSP channels are binned to which spectrum bins. 
+  /** Lookup table, which RSP channels are binned to which spectrum bins.
    * The array contains n_channels elements. */
-  int* chans2bins; 
-  
+  int* chans2bins;
+
   /** Total number of spectra written to a telemetry packet. */
   int n_spectra;
   /** Total number of generated (maybe incomplete) packets. */
@@ -91,8 +93,8 @@ struct HTRSTelStreamParameters {
   int n_header_bits;
   int n_bin_bits;
 
-  int n_channels; 
-  int n_bins; 
+  int n_channels;
+  int n_bins;
 
   double integration_time;
 
@@ -100,7 +102,7 @@ struct HTRSTelStreamParameters {
   char* output_filename;
 
   /** Lookup table, which RSP channels are binned to which spectrum bins. */
-  int* chans2bins; 
+  int* chans2bins;
 };
 
 
@@ -145,4 +147,3 @@ void HTRSTelStreamPrintStatistics(HTRSTelStream* stream);
 
 
 #endif /* HTRSTELSTREAM_H */
-

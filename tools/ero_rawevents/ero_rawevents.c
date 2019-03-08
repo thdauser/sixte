@@ -16,24 +16,26 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ero_rawevents.h"
 
 
-int ero_rawevents_main() 
+int ero_rawevents_main()
 {
   // Containing all programm parameters read by PIL
-  struct Parameters par; 
+  struct Parameters par;
 
   // Input event file.
   EventFile* elf=NULL;
 
-  // File pointer to the output eROSITA event file. 
+  // File pointer to the output eROSITA event file.
   fitsfile* fptr=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
@@ -191,7 +193,7 @@ int ero_rawevents_main()
 	break;
       }
     }
-    
+
     // Create and open a new FITS file.
     headas_chat(3, "create new eROSITA event list file '%s' ...\n",
 		par.eroEvtFile);
@@ -201,8 +203,8 @@ int ero_rawevents_main()
     // Create the event table.
     char *ttype[]={"OTS", "FRACSEC", "FRAME", "RAWX", "RAWY", "PHA"};
     char *tunit[]={"s", "micros", "", "", "", "ADU"};
-    char *tform[]={"J", "J", "J", "I", "I", "I"}; 
-    fits_create_tbl(fptr, BINARY_TBL, 0, 6, ttype, tform, tunit, 
+    char *tform[]={"J", "J", "J", "I", "I", "I"};
+    fits_create_tbl(fptr, BINARY_TBL, 0, 6, ttype, tform, tunit,
 		    "EVENTS", &status);
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
@@ -221,11 +223,11 @@ int ero_rawevents_main()
 
     // Insert the standard eROSITA header keywords.
     sixt_add_fits_erostdkeywords(fptr, 1, filter, creation_date, date_obs, time_obs,
-				 date_end, time_end, tstart, tstop, 
+				 date_end, time_end, tstart, tstop,
 				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
     sixt_add_fits_erostdkeywords(fptr, 2, filter, creation_date, date_obs, time_obs,
-				 date_end, time_end, tstart, tstop, 
+				 date_end, time_end, tstart, tstop,
 				 mjdref, timezero, par.CCDNr, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -254,15 +256,15 @@ int ero_rawevents_main()
 
     // --- END of Initialization ---
 
-    
+
     // --- Beginning of Copy Process ---
 
     headas_chat(3, "start copy process ...\n");
 
-    // Loop over all events in the input file. 
+    // Loop over all events in the input file.
     long row;
     for (row=0; row<elf->nrows; row++) {
-      
+
       // Read the next event from the input file.
       Event event;
       getEventFromFile(elf, row+1, &event, &status);
@@ -306,7 +308,7 @@ int ero_rawevents_main()
   // Close the files.
   freeEventFile(&elf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
-  
+
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
@@ -334,7 +336,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the input file");
     return(status);
-  } 
+  }
   strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
@@ -342,7 +344,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output file");
     return(status);
-  } 
+  }
   strcpy(par->eroEvtFile, sbuffer);
   free(sbuffer);
 
@@ -360,4 +362,3 @@ int getpar(struct Parameters* const par)
 
   return(status);
 }
-

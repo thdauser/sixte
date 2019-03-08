@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "xms_pixtemp.h"
@@ -63,7 +65,7 @@ int xms_pixtemp_main() {
     // Loop over all events in the event file.
     long row;
     for (row=0; row<elf->nrows; row++) {
-      
+
       // Read the next event from the FITS file.
       Event event;
       getEventFromFile(elf, row+1, &event, &status);
@@ -71,13 +73,13 @@ int xms_pixtemp_main() {
 
       /*      if ((1==event.array) && // Only events from the inner array.
 	      (event.xi == parameters.pixx) && (event.xi == parameters.pixx)) { */
-      fprintf(output_file, " %lf\t%lf\n", event.time, 
+      fprintf(output_file, " %lf\t%lf\n", event.time,
 	      getEBOUNDSEnergy(event.pha, rmf, &status));
       CHECK_STATUS_BREAK(status);
       /* } */
 
     } // End of loop over all events in the event file
-    
+
   } while(0); // End of error handling loop
 
 
@@ -125,4 +127,3 @@ int xms_pixtemp_getpar(struct Parameters* parameters)
 
   return(status);
 }
-

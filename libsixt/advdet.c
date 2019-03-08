@@ -16,6 +16,8 @@
 
 
    Copyright 2014-2016 Thorsten Brand, Thomas Dauser, Philippe Peille, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "advdet.h"
@@ -31,8 +33,8 @@ struct XMLParseData {
 ////////////////////////////////////////////////////////////////////
 
 /** Handler for the start of an XML element. */
-static void AdvDetXMLElementStart(void* parsedata, 
-				   const char* el, 
+static void AdvDetXMLElementStart(void* parsedata,
+				   const char* el,
 				   const char** attr);
 /** Handler for the end of an XML element. */
 static void AdvDetXMLElementEnd(void* parsedata, const char* el);
@@ -42,7 +44,7 @@ static void AdvDetXMLElementEnd(void* parsedata, const char* el);
 ////////////////////////////////////////////////////////////////////
 
 TESNoiseProperties* newTESNoise(int* const status){
-  
+
   // Allocate memory
   TESNoiseProperties* noise=(TESNoiseProperties*)malloc(sizeof(TESNoiseProperties));
   if(NULL==noise){
@@ -50,7 +52,7 @@ TESNoiseProperties* newTESNoise(int* const status){
     SIXT_ERROR("memory allocation for TESNoiseProperties failed");
     return(noise);
   }
-  
+
   // Initialize values and pointers
   noise->WhiteRMS=0.;
   noise->H0=1.;
@@ -60,7 +62,7 @@ TESNoiseProperties* newTESNoise(int* const status){
   noise->Poles=NULL;
   noise->OoFRMS=0.;
   noise->OoFKnee=0.;
-  
+
   return(noise);
 }
 
@@ -91,7 +93,7 @@ AdvPix* newAdvPix(int* const status){
     SIXT_ERROR("Unable to allocate memory for detector pixel");
     return(pix);
   }
-  // Initialize values and pointers 
+  // Initialize values and pointers
   pix->sx=0.;
   pix->sy=0.;
   pix->width=0.;
@@ -321,7 +323,7 @@ void freeCrosstalk(AdvDet* det, int gr){
 }
 
 AdvDet* newAdvDet(int* const status){
-  
+
   // Allocate memory.
   AdvDet* det=(AdvDet*)malloc(sizeof(AdvDet));
   if (NULL==det) {
@@ -415,37 +417,37 @@ void destroyAdvDet(AdvDet **det){
 }
 
 int CheckAdvPixImpact(AdvPix pix, Impact *imp){
-  
-  // Calculate impact coordinates in respect to the 
+
+  // Calculate impact coordinates in respect to the
   // pixel coordinate system
   double u, v;
-  
+
   u = imp->position.x - pix.sx;
   v = imp->position.y - pix.sy;
-  
+
   // Calculate half width and height of the rectangular pixel
   double deltu, deltv;
   deltu=pix.width/2.;
   deltv=pix.height/2.;
- 
+
   // Check if the impact lies in the rectangular pixel.
   // Return 1 if yes, 0 if not.
   if((u >= -deltu) && (u <= deltu) && (v >= -deltv) && (v <= deltv)){
     return 1;
   }else{
     return 0;
-  }  
+  }
 }
 
 void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp){
-  
-  // Calculate impact coordinates in respect to the 
+
+  // Calculate impact coordinates in respect to the
   // pixel coordinate system
   double u, v;
-  
+
   u = imp->position.x - pix.sx;
   v = imp->position.y - pix.sy;
-  
+
   // Fill piximp fields
   piximp->time = imp->time;
   piximp->energy = imp->energy;
@@ -458,23 +460,23 @@ void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp){
 }
 
 int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp){
-  
+
   // Duplicate the impact but transform the coordinates into
   // the detector coordinate system
   Impact detimp;
-  
+
   detimp.time = imp->time;
   detimp.energy = imp->energy;
   detimp.ph_id = imp->ph_id;
   detimp.src_id = imp->src_id;
   detimp.position.x = imp->position.x - det->sx;
   detimp.position.y = imp->position.y - det->sy;
-  
+
   int nimpacts=0;
-  
+
   // loop over all pixels and check for hit
   int ii;
-  
+
   for(ii=0; ii<det->npix; ii++){
     if(CheckAdvPixImpact(det->pix[ii], &detimp)!=0){
       nimpacts++;
@@ -487,12 +489,12 @@ int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp){
 }
 
 
-void parseAdvDetXML(AdvDet* const det, 
+void parseAdvDetXML(AdvDet* const det,
 	       const char* const filename,
 	       int* const status){
 
   headas_chat(5, "read advanced detector setup from XML file '%s' ...\n", filename);
-		 
+
   // Read the XML data from the file.
   // Open the specified file.
   printf("Read file %s\n", filename);
@@ -511,7 +513,7 @@ void parseAdvDetXML(AdvDet* const det,
   struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
   CHECK_STATUS_VOID(*status);
 
-  // Input buffer with an additional byte at the end for the 
+  // Input buffer with an additional byte at the end for the
   // termination of the string.
   const int buffer_size=256;
   char buffer[buffer_size+1];
@@ -554,7 +556,7 @@ void parseAdvDetXML(AdvDet* const det,
     SIXT_ERROR("could not allocate memory for XML parser");
     return;
   }
-  
+
   // Set data that is passed to the handler functions.
   struct XMLParseData xmlparsedata={
     .det  =det,
@@ -571,7 +573,7 @@ void parseAdvDetXML(AdvDet* const det,
     // Parse error.
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "failed parsing XML file '%s':\n%s\n", 
+    sprintf(msg, "failed parsing XML file '%s':\n%s\n",
 	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
     printf("%s", xmlbuffer->text);
     SIXT_ERROR(msg);
@@ -598,9 +600,9 @@ void parseAdvDetXML(AdvDet* const det,
   freeXMLBuffer(&xmlbuffer);
 }
 
-static void AdvDetXMLElementStart(void* parsedata, 
-				   const char* el, 
-				   const char** attr) 
+static void AdvDetXMLElementStart(void* parsedata,
+				   const char* el,
+				   const char** attr)
 {
 	struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
@@ -1073,7 +1075,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 	}
 }
 
-static void AdvDetXMLElementEnd(void* parsedata, const char* el) 
+static void AdvDetXMLElementEnd(void* parsedata, const char* el)
 {
 	struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
@@ -1108,7 +1110,7 @@ AdvDet* loadAdvDet(const char* const filename,
   char filename2[MAXFILENAME];
   char rootname[MAXFILENAME];
   // Make a local copy of the filename variable in order to avoid
-  // compiler warnings due to discarded const qualifier at the 
+  // compiler warnings due to discarded const qualifier at the
   // subsequent function call.
   strcpy(filename2, filename);
   fits_parse_rootname(filename2, rootname, status);
@@ -1118,23 +1120,23 @@ AdvDet* loadAdvDet(const char* const filename,
   char* lastslash=strrchr(rootname, '/');
   if (NULL==lastslash) {
     det->filepath=(char*)malloc(sizeof(char));
-    CHECK_NULL_RET(det->filepath, *status, 
+    CHECK_NULL_RET(det->filepath, *status,
 		   "memory allocation for filepath failed", det);
     det->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(det->filename, *status, 
+    CHECK_NULL_RET(det->filename, *status,
 		   "memory allocation for filename failed", det);
     strcpy(det->filepath, "");
     strcpy(det->filename, rootname);
   } else {
     lastslash++;
     det->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
-    CHECK_NULL_RET(det->filename, *status, 
+    CHECK_NULL_RET(det->filename, *status,
 		   "memory allocation for filename failed", det);
     strcpy(det->filename, lastslash);
-      
+
     *lastslash='\0';
     det->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(det->filepath, *status, 
+    CHECK_NULL_RET(det->filepath, *status,
 		   "memory allocation for filepath failed", det);
     strcpy(det->filepath, rootname);
   }
@@ -1144,7 +1146,7 @@ AdvDet* loadAdvDet(const char* const filename,
   // Read in the XML definition of the detector.
   parseAdvDetXML(det, filename, status);
   CHECK_STATUS_RET(*status, det);
-  
+
   // Remove overlapping pixels with the rule newest survives
   removeOverlapping(det,status);
 
@@ -1553,4 +1555,3 @@ void freeCrosstalkTimedep(CrosstalkTimedep* timedep, int gr){
 		}
 	}
 }
-

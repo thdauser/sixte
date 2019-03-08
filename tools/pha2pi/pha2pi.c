@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "pha2pi.h"
@@ -24,7 +26,7 @@
 int pha2pi_main()
 {
   // Containing all program parameters read by PIL
-  struct Parameters par; 
+  struct Parameters par;
 
   // Pha2PI file
   Pha2Pi* p2p=NULL;
@@ -33,7 +35,7 @@ int pha2pi_main()
   EventFile* evtfile=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Register HEATOOL:
   set_toolname("pha2pi");
@@ -109,5 +111,3 @@ void pha2pi_getpar(struct Parameters* const par, int* const status){
   query_simput_parameter_int("Seed", &par->Seed, status );
   query_simput_parameter_bool("clobber", &par->clobber, status);
 }
-
-

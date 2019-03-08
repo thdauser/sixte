@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef LADEVENTFILE_H 
+#ifndef LADEVENTFILE_H
 #define LADEVENTFILE_H 1
 
 #include "sixt.h"
@@ -73,18 +75,18 @@ LADEventFile* openNewLADEventFile(const char* const filename,
 
 /** Open an existing LADEventFile. */
 LADEventFile* openLADEventFile(const char* const filename,
-			       const int mode, 
+			       const int mode,
 			       int* const status);
 
 /** Append a new event to the event file. */
-void addLADEvent2File(LADEventFile* const file, 
-		      LADEvent* const event, 
+void addLADEvent2File(LADEventFile* const file,
+		      LADEvent* const event,
 		      int* const status);
 
 /** Read the LADEvent at the specified row from the event file. The
     numbering for the rows starts at 1 for the first line. */
 void getLADEventFromFile(const LADEventFile* const file,
-			 const int row, 
+			 const int row,
 			 LADEvent* const event,
 			 int* const status);
 

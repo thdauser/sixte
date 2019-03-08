@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef LADSIGNALFILE_H 
+#ifndef LADSIGNALFILE_H
 #define LADSIGNALFILE_H 1
 
 #include "sixt.h"
@@ -67,18 +69,18 @@ LADSignalFile* openNewLADSignalFile(const char* const filename,
 
 /** Open an existing LADSignalFile. */
 LADSignalFile* openLADSignalFile(const char* const filename,
-				 const int mode, 
+				 const int mode,
 				 int* const status);
 
 /** Append a new event to the event file. */
-void addLADSignal2File(LADSignalFile* const file, 
-		       LADSignal* const event, 
+void addLADSignal2File(LADSignalFile* const file,
+		       LADSignal* const event,
 		       int* const status);
 
 /** Read the LADSignal at the specified row from the event file. The
     numbering for the rows starts at 1 for the first line. */
 void getLADSignalFromFile(const LADSignalFile* const file,
-			  const int row, 
+			  const int row,
 			  LADSignal* const event,
 			  int* const status);
 

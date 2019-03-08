@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "makelc.h"
@@ -25,7 +27,7 @@
 /** Main procedure. */
 int makelc_main() {
   // Program parameters.
-  struct Parameters par; 
+  struct Parameters par;
 
   // Input event file.
   fitsfile* infptr=NULL;
@@ -123,11 +125,11 @@ int makelc_main() {
     headas_chat(5, "create light curve with %ld bins ...\n",
 		nbins);
     counts=(long*)malloc(nbins*sizeof(long));
-    CHECK_NULL_BREAK(counts, status, 
+    CHECK_NULL_BREAK(counts, status,
 		     "memory allocation for light curve failed");
 
     // Initialize the light curve with 0.
-    long ii; 
+    long ii;
     for (ii=0; ii<nbins; ii++) {
       counts[ii]=0;
     }
@@ -140,12 +142,12 @@ int makelc_main() {
 
     // LOOP over all events in the FITS table.
     for (ii=0; ii<nrows; ii++) {
-      
+
       // Read the time of the next event from the file.
       double time;
       double dnull=0.0;
       int anynul=0;
-      fits_read_col(infptr, TDOUBLE, ctime, ii+1, 1, 1, 
+      fits_read_col(infptr, TDOUBLE, ctime, ii+1, 1, 1,
 		    &dnull, &time, &anynul, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -158,11 +160,11 @@ int makelc_main() {
       if (csignal>0) {
 	float signal;
 	float fnull=0.0;
-	fits_read_col(infptr, TFLOAT, csignal, ii+1, 1, 1, 
+	fits_read_col(infptr, TFLOAT, csignal, ii+1, 1, 1,
 		      &fnull, &signal, &anynul, &status);
 	CHECK_STATUS_BREAK(status);
 
-	// Check if the energy of the event lies within the 
+	// Check if the energy of the event lies within the
 	// requested range.
 	if ((signal<par.Emin)||(signal>par.Emax)) continue;
       }
@@ -171,21 +173,21 @@ int makelc_main() {
       if (cpha>0) {
 	long pha;
 	long lnull=0;
-	fits_read_col(infptr, TLONG, cpha, ii+1, 1, 1, 
+	fits_read_col(infptr, TLONG, cpha, ii+1, 1, 1,
 		      &lnull, &pha, &anynul, &status);
 	CHECK_STATUS_BREAK(status);
 
-	// Check if the energy of the event lies within the 
+	// Check if the energy of the event lies within the
 	// requested range.
 	if ((pha<par.Chanmin)||(pha>par.Chanmax)) continue;
       }
-      
+
       // Determine the respective bin in the light curve.
       long bin=((long)((time-par.TSTART)/par.dt+1.0))-1;
-		
+
       // If the event exceeds the end of the light curve, neglect it.
       if (bin>=nbins) continue;
-      
+
       // Add the event to the light curve.
       assert(bin>=0);
       counts[bin]++;
@@ -216,7 +218,7 @@ int makelc_main() {
 
     // Create a new FITS-file.
     char buffer[MAXFILENAME];
-    sprintf(buffer, "%s(%s%s)", par.LightCurve, SIXT_DATA_PATH, 
+    sprintf(buffer, "%s(%s%s)", par.LightCurve, SIXT_DATA_PATH,
 	    "/templates/makelc.tpl");
     fits_create_file(&outfptr, buffer, &status);
     CHECK_STATUS_BREAK(status);
@@ -260,13 +262,13 @@ int makelc_main() {
 		    "high energy for channel (keV)", &status);
     CHECK_STATUS_BREAK(status);
 
-    // The ouput table does not contain a TIME column. The 
-    // beginning (TIMEPIXR=0.0) of the n-th time bin (n>=1) 
+    // The ouput table does not contain a TIME column. The
+    // beginning (TIMEPIXR=0.0) of the n-th time bin (n>=1)
     // is determined as t(n)=TIMEZERO + TIMEDEL*(n-1).
 
     // Write the data into the table.
     for (ii=0; ii<nbins; ii++) {
-      fits_write_col(outfptr, TLONG, ccounts, ii+1, 1, 1, 
+      fits_write_col(outfptr, TLONG, ccounts, ii+1, 1, 1,
 		     &(counts[ii]), &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -300,7 +302,7 @@ int makelc_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -308,7 +310,7 @@ int makelc_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list file");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -316,7 +318,7 @@ int makelc_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output light curve file");
     return(status);
-  } 
+  }
   strcpy(par->LightCurve, sbuffer);
   free(sbuffer);
 
@@ -324,43 +326,43 @@ int makelc_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the start time of the light curve");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("length", &par->length);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the length of the light curve");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the time resolution of the light curve");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Emin", &par->Emin);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the lower boundary of the energy band");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Emax", &par->Emax);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the upper boundary of the energy band");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_long("Chanmin", &par->Chanmin);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the lower boundary of the channel range");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_long("Chanmax", &par->Chanmax);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the upper boundary of the channel range");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
@@ -370,4 +372,3 @@ int makelc_getpar(struct Parameters* par)
 
   return(status);
 }
-

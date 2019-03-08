@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef ATTITUDE_H
@@ -156,4 +158,3 @@ void getCurrentVelocity(const char* const filename, const Attitude* const ac,
 void convert_galLB2RAdec(double* world);
 
 #endif /* ATTITUDE_H */
-

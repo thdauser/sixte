@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tesinitialization.h"
@@ -38,7 +40,7 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
 			     &(init->mjdref),
 			     &(init->timezero),
 			     &(init->tstart),
-			     &(init->tstop), 
+			     &(init->tstop),
 			     status);
   CHECK_STATUS_VOID(*status);
   if(par->check_times){
@@ -58,11 +60,11 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
 	  init->tstart = par->tstart;
 	  init->tstop = par->tstop;
   }
-  
+
   // Load the detector structure
   init->det=loadAdvDet(par->XMLFile,status);
   CHECK_STATUS_VOID(*status);
-    
+
   // construct array of active pixels
   init->activearray=(int*)malloc(init->det->npix*sizeof(int));
   if(init->activearray==NULL){
@@ -91,7 +93,7 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
     SIXT_ERROR(msg);
     CHECK_STATUS_VOID(*status);
   }
-    
+
   // construct array for event numbers
   init->Nevts=(long*)malloc(init->det->npix*sizeof(long));
   if(init->Nevts==NULL){
@@ -102,10 +104,10 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
   for(ii=0; ii<init->det->npix; ii++){
     init->Nevts[ii]=0;
   }
-    
+
   init->profiles=newTESProfiles(status);
   CHECK_STATUS_VOID(*status);
-    
+
   for(ii=0; ii<init->det->npix; ii++){
     // Test if profile is already loaded, if not, load it
     int versionindex=findTESProfileVersionIndex(init->profiles, init->det->pix[ii].version);
@@ -113,8 +115,8 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
       char profilename[MAXFILENAME];
       sprintf(profilename, "%s%s", init->det->filepath, init->det->tesproffilename);
       readTESProfiles(profilename,
-		      init->det->pix[ii].version, 
-		      init->profiles, 
+		      init->det->pix[ii].version,
+		      init->profiles,
 		      status);
       CHECK_STATUS_VOID(*status);
       versionindex=findTESProfileVersionIndex(init->profiles, init->det->pix[ii].version);
@@ -132,7 +134,7 @@ void tesinitialization(TESInitStruct* const init,TESGeneralParameters* const par
     SIXT_ERROR("Failed reading pulse profile templates.");
     CHECK_STATUS_VOID(*status);
   }
-    
+
   //Open output files if needed
   SixtStdKeywords* keywords = buildSixtStdKeywords(init->telescop,init->instrume,init->filter,
 		  init->ancrfile,init->respfile,"NONE",init->mjdref,init->timezero,init->tstart,init->tstop,status);
@@ -165,7 +167,7 @@ TESInitStruct* newInitStruct(int* const status){
   init->Nevts         =NULL;
   init->record_file   =NULL;
   init->event_file    =NULL;
-  
+
   // Initialize values.
   init->mjdref	   =0;
   init->timezero   =0;
@@ -173,11 +175,11 @@ TESInitStruct* newInitStruct(int* const status){
   init->tstop      =0;
 
   return(init);
-   
+
 }
 
 /** Destructor. */
-void freeTESInitStruct(TESInitStruct** const init, int* const status){  
+void freeTESInitStruct(TESInitStruct** const init, int* const status){
   if (NULL!=*init) {
     //Free pointers
     freePixImpFile(&((*init)->impfile), status);
@@ -185,12 +187,12 @@ void freeTESInitStruct(TESInitStruct** const init, int* const status){
     destroyAdvDet(&((*init)->det));
     freeTesTriggerFile(&((*init)->record_file), status);
     freeTesEventFile((*init)->event_file,status);
-    
+
     if((*init)->activearray!=NULL){
       free((*init)->activearray);
       (*init)->activearray=NULL;
     }
-    
+
     if((*init)->Nevts!=NULL){
       free((*init)->Nevts);
       (*init)->Nevts=NULL;

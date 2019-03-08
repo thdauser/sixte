@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef LADIMPACTFILE_H
@@ -34,7 +36,7 @@
 typedef struct {
   /** Pointer to the FITS file. */
   fitsfile* fptr;
-  
+
   /** Total number of rows in the FITS file. */
   long nrows;
 
@@ -75,13 +77,13 @@ LADImpactFile* openNewLADImpactFile(const char* const filename,
     counter by 1 (e.g. if 'row==0' at the beginning of the function
     call, the first row from the FITS table is read and the counter is
     increased to 'row==1'). */
-void getNextLADImpactFromFile(LADImpactFile* const file, 
-			      LADImpact* const impact, 
+void getNextLADImpactFromFile(LADImpactFile* const file,
+			      LADImpact* const impact,
 			      int* const status);
 
 /** Append a new entry to the LADImpactFile. */
-void addLADImpact2File(LADImpactFile* const ilf, 
-		       LADImpact* const impact, 
+void addLADImpact2File(LADImpactFile* const ilf,
+		       LADImpact* const impact,
 		       int* const status);
 
 

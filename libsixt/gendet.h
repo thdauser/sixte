@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef GENDET_H 
+#ifndef GENDET_H
 #define GENDET_H 1
 
 #include "sixt.h"
@@ -87,9 +89,9 @@ typedef struct {
 typedef struct{
 
   /** Flag for DEPFET =1 */
-  int depfetflag; 
+  int depfetflag;
   /** Flag for IS-part of DEPFET =1 */
-  int istorageflag; 
+  int istorageflag;
 
   /** Integration time */
   double t_integration;
@@ -97,7 +99,7 @@ typedef struct{
   double t_clear;
   /** Settling time */
   double t_settling;
-  
+
   /** clear function pointer */
   double (*clear_fcn)(double time, double energy, double *constants);
   /** clear function constants */
@@ -164,7 +166,7 @@ typedef struct {
 
   /** Models for detector background based on PHA spectra. */
   PHABkg* phabkg[2];
-  
+
   /** Flag, whether the detector background models (either
       eROSITA-specific model for the cosmic ray detector background or
       the generic PHA detector background model) should be ignored (if
@@ -202,10 +204,10 @@ typedef struct {
       the GenDet data struct is destroyed. It has to be closed
       manually. */
   EventFile* elf;
-  
+
   /** Properties of the DEPFET sensor. */
   DepfetProp depfet;
-  
+
   /** MIN and MAX indices of readout indices. */
   int rawymin;
   int rawymax;
@@ -230,26 +232,26 @@ void destroyGenDet(GenDet** const det);
 
 /** Function which returns the signal result of a photon impacting
     during the depfet clear. Assumes a linear clear behaviour. */
-double depfet_get_linear_clear_signal(double time, 
+double depfet_get_linear_clear_signal(double time,
 				      double energy,
 				      double *constants);
 
 /** Function which returns the signal result of a photon impacting
     during the depfet clear. Assumes an exponential clear behaviour. */
-double depfet_get_exponential_clear_signal(double time, 
+double depfet_get_exponential_clear_signal(double time,
 					   double energy,
 					   double *constants);
 
 /** Add a new photon impact to the detector. The function return value
     is the number of affected valid detector pixels. */
-int addGenDetPhotonImpact(GenDet* const det, 
-			  const Impact* const impact, 
+int addGenDetPhotonImpact(GenDet* const det,
+			  const Impact* const impact,
 			  int* const status);
 
 /** Operate the time-triggered elements of the GenDet detector up to
     the specified point of time. */
-void operateGenDetClock(GenDet* const det, 
-			const double time, 
+void operateGenDetClock(GenDet* const det,
+			const double time,
 			int* const status);
 
 /** Set the current detector time in the clocklist to the specified
@@ -267,9 +269,9 @@ void GenDetLineShift(GenDet* const det);
 /** Read-out a particular line of the GenDet pixel array and store the
     charges in the output EventFile. After read-out the charges
     in the pixels are deleted. */
-void GenDetReadoutLine(GenDet* const det, 
-		       const int lineindex, 
-		       const int readoutindex, 
+void GenDetReadoutLine(GenDet* const det,
+		       const int lineindex,
+		       const int readoutindex,
 		       int* const status);
 
 /** Clear a particular line of the GenDet pixel array. */
@@ -303,8 +305,8 @@ void addGenDetCharge2Pixel(GenDet* const line,
 			   const long ph_id, const long src_id);
 
 /** Parse the GenDet definition from an XML file. */
-void parseGenDetXML(GenDet* const det, 
-		    const char* const filename, 
+void parseGenDetXML(GenDet* const det,
+		    const char* const filename,
 		    int* const status);
 
 /** Assign an output EventFile. */

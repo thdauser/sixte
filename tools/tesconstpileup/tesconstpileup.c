@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
  */
 
 
@@ -43,7 +45,7 @@ int tesconstpileup_main(){
   set_toolname("tesconstpileup");
   set_toolversion("0.05");
 
-  do { // Beginning of the ERROR handling loop (will at 
+  do { // Beginning of the ERROR handling loop (will at
     // most be run once).
 
     // Read parameters using PIL library.
@@ -129,7 +131,7 @@ int tesconstpileup_main(){
       piximp.pixposition.y=(-0.5)*det->pix[0].height;
       piximp.detposition.x=piximp.pixposition.x+det->pix[0].sx;
       piximp.detposition.y=piximp.pixposition.y+det->pix[0].sy;
-      // save impact      
+      // save impact
       addImpact2PixImpFile(plf, &piximp, &status);
       if (piximp.ph_id==par.nb_offset_values){
 	break;
@@ -151,7 +153,7 @@ int tesconstpileup_main(){
       piximp.pixposition.y=(-0.5)*det->pix[0].height;
       piximp.detposition.x=piximp.pixposition.x+det->pix[0].sx;
       piximp.detposition.y=piximp.pixposition.y+det->pix[0].sy;
-      // save impact      
+      // save impact
       addImpact2PixImpFile(plf, &piximp, &status);
       if (piximp.ph_id==par.nb_offset_values){
       	break;
@@ -174,7 +176,7 @@ int tesconstpileup_main(){
 	piximp.pixposition.y=(-0.5)*det->pix[0].height;
 	piximp.detposition.x=piximp.pixposition.x+det->pix[0].sx;
 	piximp.detposition.y=piximp.pixposition.y+det->pix[0].sy;
-	// save impact      
+	// save impact
 	addImpact2PixImpFile(plf, &piximp, &status);
 	if (piximp.ph_id==par.nb_offset_values){
 	  break;
@@ -195,7 +197,7 @@ int tesconstpileup_main(){
     return(EXIT_SUCCESS);
   } else {
     return(EXIT_FAILURE);
-  }  
+  }
 
 }
 
@@ -205,7 +207,7 @@ int getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -213,7 +215,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pixel impact list");
     return(status);
-  } 
+  }
   strcpy(par->PixImpList, sbuffer);
   free(sbuffer);
 
@@ -221,49 +223,49 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
-  free(sbuffer); 
+  free(sbuffer);
 
   status=ape_trad_query_string("Telescop", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the telescope");
     return(status);
-  } 
+  }
   strcpy(par->telescop, sbuffer);
-  free(sbuffer); 
+  free(sbuffer);
 
   status=ape_trad_query_string("Instrume", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument");
     return(status);
-  } 
+  }
   strcpy(par->instrume, sbuffer);
-  free(sbuffer); 
+  free(sbuffer);
 
   status=ape_trad_query_string("Filter", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the filter");
     return(status);
-  } 
+  }
   strcpy(par->filter, sbuffer);
-  free(sbuffer); 
+  free(sbuffer);
 
   status=ape_trad_query_string("ancrfile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the ancrfile");
     return(status);
-  } 
+  }
   strcpy(par->ancrfile, sbuffer);
-  free(sbuffer); 
+  free(sbuffer);
 
   status=ape_trad_query_string("respfile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the respfile");
     return(status);
-  } 
+  }
   strcpy(par->respfile, sbuffer);
-  free(sbuffer); 
+  free(sbuffer);
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {

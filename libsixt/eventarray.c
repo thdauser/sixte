@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "eventarray.h"
 
 ReadEvent* newEventArray(int* const status)
@@ -43,7 +64,7 @@ ReadEvent* getEventArray(int Size1, int Size2, int* status)
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory to store the "
 			 "EventArray!\n", *status);
-	 
+
 	  return(ea);
 	}
 	//Clear the pixels
@@ -57,7 +78,7 @@ ReadEvent* getEventArray(int Size1, int Size2, int* status)
       HD_ERROR_THROW("Error: could not allocate memory to store the "
 		     "EventArray!\n", *status);
       return(ea);
-  }//end of memory-allocation 
+  }//end of memory-allocation
   return(ea);
   }
 
@@ -73,25 +94,25 @@ int readEventList_nextRow(CoMaEventFile* ef, ReadEvent* ea)
   // Check if there is still a row available.
   if (ef->generic.row > ef->generic.nrows) {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: event list file contains no further entries!\n", 
+    HD_ERROR_THROW("Error: event list file contains no further entries!\n",
 		   status);
     return(status);
   }
 
   // Read in the data.
   ea->rawx = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1,
 		    &ea->rawx, &ea->rawx, &anynul, &status))
     return(status);
 
   ea->rawy = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1,
 		    &ea->rawy, &ea->rawy, &anynul, &status))
     return(status);
 
   ea->charge = 0.;
   if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ccharge, ef->generic.row, 1, 1,
-		    &ea->charge, &ea->charge, &anynul, &status)) 
+		    &ea->charge, &ea->charge, &anynul, &status))
     return(status);
 
   // Check if an error occurred during the reading process.
@@ -116,14 +137,14 @@ double* SaveEventArray1d(ReadEvent* ea, int* status)
     return(EventArray1d);
  }
 
-    //Create the 1D-image from EventArray 
+    //Create the 1D-image from EventArray
   int x, y;
   for (x=0; x<ea->naxis1; x++) {
     for (y=0; y<ea->naxis2; y++) {
       EventArray1d[(x+ ea->naxis1*y)] = ea->EventArray[x][y];
    }
   }
-  return(EventArray1d); 
+  return(EventArray1d);
 }
 
 void FreeEventArray1d(double* EventArray1d)

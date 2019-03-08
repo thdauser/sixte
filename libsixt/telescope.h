@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TELESCOPE_H
@@ -39,9 +41,8 @@ struct Telescope {
       to nz. */
   Vector nx;
   /** Perpendicular to nx and nz */
-  Vector ny; 
+  Vector ny;
 };
 
 
 #endif /* TELESCOPE_H */
-

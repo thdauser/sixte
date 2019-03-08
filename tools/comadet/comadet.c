@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comadet.h"
@@ -33,7 +35,7 @@
 /** Main procedure. */
 int comadet_main() {
   struct Parameters par;
-  
+
   ImpactFile* ilf=NULL;
   CoMaDetector* detector=NULL;
 
@@ -53,11 +55,11 @@ int comadet_main() {
     //Read the program parameters using the PIL library.
     status=comadet_getpar(&par);
     CHECK_STATUS_RET(status, status);
-    
+
     //Open the impact list FITS file.
     ilf=openImpactFile(par.ImpactList, READONLY, &status);
     CHECK_STATUS_RET(status, status);
-    
+
     //Set the event list template file:
     strcpy(par.EventListTemplate, SIXT_DATA_PATH);
     strcat(par.EventListTemplate, "/templates/coma.eventlist.tpl");
@@ -65,14 +67,14 @@ int comadet_main() {
     //DETECTOR setup.
     //initializes from par-file
     struct CoMaDetectorParameters cdp = {
-      .pixels = 
+      .pixels =
       { .xwidth = par.width,          //detector-width [pixel]
 	.ywidth = par.width,
 	.DCU_length = par.DCU_length, //length of DCU [m]
 	.DCU_gap = par.DCU_gap,       //gap between 2 DCU's [m]
 	.DCA_gap = par.DCA_gap,       //gap between 2 DCA's [m]
 	.xpixelwidth = par.pixelwidth,//width of one pixel [m]
-	.ypixelwidth = par.pixelwidth 
+	.ypixelwidth = par.pixelwidth
       },
       .eventfile_filename=par.EventList,
       .eventfile_template=par.EventListTemplate
@@ -81,7 +83,7 @@ int comadet_main() {
     detector=getCoMaDetector(&cdp, &status);
     CHECK_STATUS_RET(status, status);
 
-    //END of DETECTOR CONFIGURATION SETUP    
+    //END of DETECTOR CONFIGURATION SETUP
 
     // --- END of Initialization ---
 
@@ -107,7 +109,7 @@ int comadet_main() {
 	status=addImpact2CoMaDetector(detector, &impact);
 	CHECK_STATUS_RET(status, status);
       }
-      
+
     } //END of scanning the impact list.
     CHECK_STATUS_RET(status, status);
 
@@ -176,6 +178,3 @@ int comadet_getpar(struct Parameters* par)
 
   return(status);
 }
-
-
-

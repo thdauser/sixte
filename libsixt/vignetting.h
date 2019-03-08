@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef VIGNETTING_H
@@ -32,25 +34,25 @@
 /** Data structure containing the mirror vignetting function. */
 typedef struct {
   /** Number of energy bins. */
-  int nenergies; 
+  int nenergies;
   /** Number of off-axis angles. */
-  int ntheta; 
+  int ntheta;
   /** Number of azimuth angles. */
-  int nphi; 
+  int nphi;
 
   /** Mean energy of bin in [keV] (0.5*(energ_lo+energ_hi). */
   float* energy;
   /** Off-axis angle in [rad]. */
-  float* theta; 
+  float* theta;
   /** Azimuthal angle in [rad]. */
-  float* phi; 
+  float* phi;
   /** Vignetting data. Array[energy, theta, phi] */
-  float*** vignet; 
+  float*** vignet;
 
   /** Minimum available energy [keV]. */
-  float Emin; 
+  float Emin;
   /** Maximum available energy [keV]. */
-  float Emax; 
+  float Emax;
 
 } Vignetting;
 
@@ -74,9 +76,9 @@ void destroyVignetting(Vignetting** const vi);
     is NULL, a default value of 1. will be returned. Note that the
     azimuthal dependence is neglected in the current
     implementation. */
-float get_Vignetting_Factor(const Vignetting* const vi, 
-			    const float energy, 
-			    const float theta, 
+float get_Vignetting_Factor(const Vignetting* const vi,
+			    const float energy,
+			    const float theta,
 			    const float phi);
 
 

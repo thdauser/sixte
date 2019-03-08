@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef IMPACTFILE_H
@@ -34,7 +36,7 @@
 typedef struct {
   /** Pointer to the FITS file. */
   fitsfile* fptr;
-  
+
   /** Total number of rows in the FITS file. */
   long nrows;
 
@@ -84,13 +86,13 @@ ImpactFile* openNewImpactFile(const char* const filename,
     counter by 1 (e.g. if 'row==0' at the beginning of the function
     call, the first row from the FITS table is read and the counter is
     increased to 'row==1'). */
-void getNextImpactFromFile(ImpactFile* const file, 
-			   Impact* const impact, 
+void getNextImpactFromFile(ImpactFile* const file,
+			   Impact* const impact,
 			   int* const status);
 
 /** Append a new entry to the ImpactFile. */
-void addImpact2File(ImpactFile* const ilf, 
-		    Impact* const impact, 
+void addImpact2File(ImpactFile* const ilf,
+		    Impact* const impact,
 		    int* const status);
 
 

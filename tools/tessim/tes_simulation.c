@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 // This code generates a continuous stream of x-ray pulses given an
 // input file containing an array of arrival times and photon
 // energies. Depending upon the decimation factor only 1 in x samples
@@ -60,10 +81,10 @@ const double eV=1.602176565e-19 ;  // 1eV [J]
 const double keV=1.602176565e-16 ;  // 1keV [J]
 
 // Differential equations for the TES to solve. This is the simplest
-// calorimeter model assuming a single heat capacity for the 
+// calorimeter model assuming a single heat capacity for the
 // TES and absorber
 
-// time is not used in TES_Tdifferential_NL and TES_JAC. 
+// time is not used in TES_Tdifferential_NL and TES_JAC.
 // Switch off the related warnings
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -87,7 +108,7 @@ int TES_Tdifferential_NL(double time, const double Y[], double eqn[], void *para
   }
 
   // Thermal equation: dT/dt -- dy_1/dt=f_1(t,y_0(t),y_1(t))
-  eqn[1]=(II*II*RT-tes->Pb1 
+  eqn[1]=(II*II*RT-tes->Pb1
 	  -II*(tes->Vdn+tes->Vexc+tes->Vunk)
 	  +tes->Pnb1+tes->En1+tes->pload)/tes->Ce1;
   eqn[1] += (tes->Pcommon)/tes->Ce1; // FDM crosstalk
@@ -101,7 +122,7 @@ double TES_sde_deterministic(double X[], int k, void *params) {
 	double II=X[0];
 	tesparams *tes=(tesparams *) params;
 	double RT=tes->RTI(tes,X);
-	
+
 	if (k == 0) {
 		val = (tes->V0-II*(tes->Reff+RT))/tes->Leff;
 		if (tes->acdc) {
@@ -111,7 +132,7 @@ double TES_sde_deterministic(double X[], int k, void *params) {
 	if (k == 1) {
 		val = (II*II*RT-tes->Pb1+tes->En1+tes->pload+tes->Pcommon)/tes->Ce1;
 	}
-	
+
 	return val;
 }
 
@@ -122,10 +143,10 @@ double TES_sde_noise(double X[], int k, int j, void *params) {
 	double TT=X[1];
 	tesparams *tes=(tesparams *) params;
 	double RT=tes->RTI(tes,X);
-	
+
 	if (k == 0) {
-		if (j == 1) val = sqrt(2.*kBoltz*tes->Tb(tes)*tes->Reff)/tes->Leff; 
-		if (j == 2) val = sqrt(2.*kBoltz*TT*RT)/tes->Leff; 
+		if (j == 1) val = sqrt(2.*kBoltz*tes->Tb(tes)*tes->Reff)/tes->Leff;
+		if (j == 2) val = sqrt(2.*kBoltz*TT*RT)/tes->Leff;
 		if (j == 3) val = 0;
 	}
 	if (k == 1) {
@@ -164,7 +185,7 @@ int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *p
   // J_11 = dt_1(t,y)/dy1
   double J11=II*II*dRdT/tes->Ce1;
 
-  // setup Jacobian matrix per example at 
+  // setup Jacobian matrix per example at
   // https://www.gnu.org/software/gsl/manual/html_node/ODE-Example-programs.html#ODE-Example-programs
   gsl_matrix_view dfdy_mat=gsl_matrix_view_array(dfdy,2,2);
   gsl_matrix *m=&dfdy_mat.matrix;
@@ -184,10 +205,10 @@ int TES_jac (double time, const double Y[], double *dfdy, double dfdt[], void *p
 
 double tnoi(tesparams *tes) {
   // Thermal (phonon) noise terms
- 
+
   double n1=tes->n-1.;
   double G1=tes->Gb1*pow(tes->T1/tes->T_start,n1);
-  
+
   double gamma;
 
   // Irwin, eq. 93
@@ -196,7 +217,7 @@ double tnoi(tesparams *tes) {
   } else {
     gamma=1.;
   }
- 
+
   return(gsl_ran_gaussian(rng, sqrt(4*kBoltz*tes->T1*tes->T1*G1*gamma*tes->bandwidth) ));
 }
 
@@ -210,8 +231,8 @@ double tpow(tesparams *tes) {
   return G1*(pow(tes->T1,tes->n)-pow(tes->Tb(tes),tes->n))/(tes->n*pow(tes->T1,beta_th));
 }
 
-// Add properties of tes to the header of fptr. 
-// 
+// Add properties of tes to the header of fptr.
+//
 // Note: we write all information using SI units (so no conversion to mA etc.!)
 //
 void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
@@ -223,7 +244,7 @@ void tes_fits_write_params(fitsfile *fptr, tesparams *tes,int *status) {
   fits_update_key(fptr,TSTRING,"HDUNAME",tes->type,"Type identifier of TES",status);
   int version=1;
   fits_update_key(fptr,TINT,"EXTVER",&version,"extension version",status);
-  
+
   fits_update_key(fptr,TINT,"TESID",&tes->id,"Pixel ID of this pixel",status);
   fits_update_key(fptr,TDOUBLE,"DELTAT",&tes->timeres,"[s] Output step size",status);
   fits_update_key(fptr,TDOUBLE,"IMIN",&tes->imin,"[A] Current corresponding to 0 ADU",status);
@@ -344,7 +365,7 @@ void tes_print_params(tesparams *tes) {
   //
   // print TES properties to console. If something changes here, do not forget
   // to also edit tes_fits_write_params!
-  
+
   headas_chat(0,"\nStatus of TES Pixel with type: %s\n",tes->type);
   headas_chat(0,"Pixel ID                     : %u\n",tes->id);
   headas_chat(0,"\n");
@@ -404,7 +425,7 @@ void tes_print_params(tesparams *tes) {
   headas_chat(0,"Temperature [mK]                        : %10.5f\n",1000.*tes->T1);
   headas_chat(0,"Current Resistivity [mOhm]              : %10.5f\n",1000.*tes->RT);
   headas_chat(0,"\n");
-    
+
 
   headas_chat(0,"\n**********************************************************\n");
   headas_chat(0,"Derived Properties of the TES\n");
@@ -438,7 +459,7 @@ void tes_print_params(tesparams *tes) {
 
 
   // joule power
-  double Pj=tes->I0_start*tes->I0_start*tes->R0; 
+  double Pj=tes->I0_start*tes->I0_start*tes->R0;
 
   // thermal conductance (I&H, after eq. 6)
   double G=tes->Gb1;
@@ -502,7 +523,7 @@ void tes_print_params(tesparams *tes) {
   if (tsqrt<0.) {
     headas_chat(0,"WARNING: Detector is underdamped\n");
     headas_chat(0,"PROCEED WITH CAUTION AND HOPE JOERN IMPROVES THE DIAGNOSTICS!\n");
-  } 
+  }
   //TODO: we need to be more careful in the next equations and do the
   //      calculation using complex numbers!
   double taum=1./tau_el + 1./tau_I;
@@ -525,7 +546,7 @@ void tes_print_params(tesparams *tes) {
 
   double Lcritp=(Lsum+Lsqrt)*Lfac;
   double Lcritm=(Lsum-Lsqrt)*Lfac;
-  
+
   headas_chat(0,"Inductance at critical damping:\n");
   headas_chat(0,"    L_plus [nH]                                   : %10.5f\n",1e9*Lcritp);
   headas_chat(0,"    L_minus[nH]                                   : %10.5f\n",1e9*Lcritm);
@@ -681,7 +702,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   tes->R0=par->R0;        // Operating point resistance [Ohm]
   tes->RL=par->RL;     // Shunt / load resistor value
-  tes->Rpara=par->Rpara; // Parasitic 
+  tes->Rpara=par->Rpara; // Parasitic
   tes->TTR=par->TTR;	// Transformer turn ratio
   tes->bias=par->bias;  //Rn percentage bias (<1)
   tes->pload=par->Pload; //Pload [W], generally pW or less
@@ -725,12 +746,12 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   //JW STILL NEED TO CHECK THIS EQUATION!!!!!!!!!!!!
   // see discussion in I&H around eq 112
-  // tes->Gb1=220e-12*pow(tes->T_start/0.1,tes->n-1.); 
+  // tes->Gb1=220e-12*pow(tes->T_start/0.1,tes->n-1.);
   tes->Gb1=par->Gb1;
-  tes->therm=1.0; // absorber thermalization time (in units of the step size h). 
+  tes->therm=1.0; // absorber thermalization time (in units of the step size h).
                   // set to 1 for a delta function
 
-  // If the parameter thermal_bias is set, calculate initial 
+  // If the parameter thermal_bias is set, calculate initial
   // bias current from thermal power balance
   if (par->thermal_bias) {
     tes->I0_start=sqrt(tes->Gb1/(tes->n*pow(tes->T_start,tes->n-1.))*
@@ -746,7 +767,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   tes->dRdT=&get_dRdT;
   tes->dRdI=&get_dRdI;
- 
+
   // level of SQUID readout and electronics noise
   //JW WE STILL NEED TO MAKE THIS MORE CONSISTENT AS
   //WE UNDERSTAND THINGS BETTER...
@@ -768,9 +789,9 @@ tesparams *tes_init(tespxlparams *par,int *status) {
 
   // set-up initial input conditions
   tes->I0=tes->I0_start;
-  // if the effective voltage bias is negative (typically if not given at command line), compute it                                                                  
+  // if the effective voltage bias is negative (typically if not given at command line), compute it
   if ((par->V0<0) || par->thermal_bias){
-    tes->V0=tes->I0*(tes->R0+tes->Reff); // Effective bias voltage                                                                                                                
+    tes->V0=tes->I0*(tes->R0+tes->Reff); // Effective bias voltage
   } else {
     tes->V0 = par->V0;
   }
@@ -779,7 +800,7 @@ tesparams *tes_init(tespxlparams *par,int *status) {
   tes->T1=tes->T_start;
 
   // power flow
-  tes->Pb1=tpow(tes); 
+  tes->Pb1=tpow(tes);
 
   // noise terms
   tes->Pnb1=0.;
@@ -828,7 +849,7 @@ void tes_free(tesparams *tes) {
 
   freeLinkedFrameImpacts(&tes->frame_hits);
   tes->frame_hits=NULL;
-  
+
   if (tes->frame_hit!=0) {
 	  free(tes->frame_hit_shape);
 	  free(tes->frame_hit_time_dep);
@@ -960,7 +981,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
           tes->write_photon(tes,tes->impact->time,tes->impact->ph_id,status);
         }
 
-        // get the next photon 
+        // get the next photon
         int success=tes->get_photon(tes->impact,tes->photoninfo,status);
         CHECK_STATUS_RET(*status,-1);
         if (success==0) {
@@ -972,7 +993,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
       int s = GSL_SUCCESS;
       if (tes->stochastic_integrator) {
 		  // number of noise terms included in the stochastic differential equation system
-		  int noise_terms = 0; 
+		  int noise_terms = 0;
 		  if (tes->simnoise) {
 			  noise_terms = 3;
 		  }
@@ -982,7 +1003,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
 	  }
       samples[ii]++;
       step_nb[ii]++;
-	  
+
       tes->time=tes->tstart+step_nb[ii]*tes->delta_t;
       if (s!=GSL_SUCCESS) {
         fprintf(stderr,"Driver error: %d\n",s);
@@ -995,12 +1016,12 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
 
       // Update system properties
 
-      // New resistance value assuming a simple 
+      // New resistance value assuming a simple
       // linear transition with alpha and beta dependence
       tes->RT=tes->RTI(tes, Y);//tes->R0+tes->dRdT(tes)*(tes->T1-tes->T_start)+tes->dRdI(tes)*(tes->I0-tes->I0_start);
 
       // thermal power flow
-      tes->Pb1=tpow(tes); 
+      tes->Pb1=tpow(tes);
     }
 
     // Calculate FDM Crosstalk.
@@ -1027,7 +1048,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
     	tes->decimation_buffer[samples[ii]-1] = bbfb_output;
       }
 
-      // put the pulse data and the time data into arrays 
+      // put the pulse data and the time data into arrays
       // if the decimation condition is met
       if (samples[ii]==tes->decimate_factor) {
 
@@ -1086,5 +1107,3 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
   }
   return(0);
 }
-
-

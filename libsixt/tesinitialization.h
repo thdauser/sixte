@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESINITIALIZATION_H
@@ -43,7 +45,7 @@ typedef struct {
   char streamname[MAXFILENAME];
   char tesTriggerFile[MAXFILENAME];
   char TesEventFile[MAXFILENAME];
-  
+
   char activePixels[9];
   int Nactive;
   int Npix;
@@ -51,10 +53,10 @@ typedef struct {
   int nhi;
   int triggerSize;
   int preBufferSize;
-  
+
   double tstart;
   double tstop;
-  
+
   char writeStreamFile;
   char clobber;
   char history;
@@ -65,7 +67,7 @@ typedef struct {
   unsigned long int seed;
 
   double tstart_stream;
-  
+
 } TESGeneralParameters;
 
 /** Structure containing all the pointers and values necessary to run a
@@ -86,13 +88,13 @@ typedef struct {
 
   /** Event File */
   TesEventFile* event_file;
-  
+
   /** Array of active pixels */
   int *activearray;
-  
+
   /** Array of event numbers */
   long *Nevts;
-  
+
   //Keywords
   char telescop[MAXMSG];
   char instrume[MAXMSG];
@@ -103,7 +105,7 @@ typedef struct {
   double timezero;
   double tstart;
   double tstop;
-  
+
 
 } TESInitStruct;
 

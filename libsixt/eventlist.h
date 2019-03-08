@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef EVENTLIST_H
@@ -31,11 +33,11 @@
 typedef struct {
   fitsfile *fptr; /**< Pointer to the FITS file containing the event list. */
 
-  /** Current row in the table (starting at 0). 
+  /** Current row in the table (starting at 0).
    * If row is equal to 0, that means that so far no line has been read from the
    * event list file. The next line to read is the first line. After the reading
    * process row will have the value 1. */
-  long row; 
+  long row;
 
   long nrows; /**< Total number of rows in the table. */
 } EventList;

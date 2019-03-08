@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef COMAEVENTFILE_H
@@ -34,7 +36,7 @@
 typedef struct {
 
   /** Generic EventFile data structure. */
-  EventList generic; 
+  EventList generic;
 
   /* Column numbers of the individual Coded mask specific event list
       entries. The numbers start at 1. The number 0 means, that there
@@ -54,8 +56,8 @@ typedef struct {
     of rows in the FITS table and initializes the CoMaEventFile data
     structure. The access_mode parameter can be either READONLY or
     READWRITE. */
-CoMaEventFile* openCoMaEventFile(char* const filename, 
-				 const int access_mode, 
+CoMaEventFile* openCoMaEventFile(char* const filename,
+				 const int access_mode,
 				 int* const status);
 
 /** Create and open a new FITS event file for the HTRS detector from a
@@ -64,8 +66,8 @@ CoMaEventFile* openCoMaEventFile(char* const filename,
     file the function also initializes the CoMaEventFile data
     structure by calling openCoMaEventFile(). The access_mode
     parameter is always READWRITE. */
-CoMaEventFile* openNewCoMaEventFile(char* const filename, 
-				    char* const template, 
+CoMaEventFile* openNewCoMaEventFile(char* const filename,
+				    char* const template,
 				    int* const status);
 
 /** Close an open Coded Mask event list FITS file. */
@@ -87,4 +89,3 @@ int CoMaEventFile_getNextRow(CoMaEventFile* ef, CoMaEvent* event);
 
 
 #endif /* COMAEVENTFILE */
-

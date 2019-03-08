@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sixt.h"
@@ -39,7 +41,7 @@ struct Parameters {
   float crval1, crval2;
   float crpix1, crpix2;
   float cdelt1, cdelt2;
-  
+
   char clobber;
 };
 
@@ -51,7 +53,7 @@ static int imgev_getpar(struct Parameters *par);
 /** Main procedure. */
 int imgev_main() {
   // Program parameters.
-  struct Parameters par; 
+  struct Parameters par;
 
   // Input event file.
   EventFile* elf=NULL;
@@ -72,7 +74,7 @@ int imgev_main() {
   fitsfile* imgfptr=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS;   
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
@@ -94,7 +96,7 @@ int imgev_main() {
       SIXT_ERROR("invalid selection for coordinate system");
       break;
     }
-    
+
     headas_chat(3, "initialize ...\n");
 
     // Set the event file.
@@ -117,7 +119,7 @@ int imgev_main() {
     // Allocate memory for the output image.
     img=(long**)malloc(par.naxis1*sizeof(long*));
     CHECK_NULL_BREAK(img, status, "memory allocation failed");
-    long ii; 
+    long ii;
     for (ii=0; ii<par.naxis1; ii++) {
       img[ii]=(long*)malloc(par.naxis2*sizeof(long));
       CHECK_NULL_BREAK(img[ii], status, "memory allocation failed");
@@ -185,7 +187,7 @@ int imgev_main() {
     int anynul=0;
     double dnull=0.;
     for (row=0; row<nrows; row++) {
-      
+
       if (elf!=NULL){
 	// Read the next event from the file.
 	Event event;
@@ -228,7 +230,7 @@ int imgev_main() {
       double phi, theta;
       int status2=0;
       wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &status2);
-      if (3==status2) { 
+      if (3==status2) {
 	// Pixel does not correspond to valid world coordinates.
 	continue;
       } else if (0!=status2) {
@@ -236,7 +238,7 @@ int imgev_main() {
 	status=EXIT_FAILURE;
 	break;
       }
-      
+
       // Increase the image value at the event position.
       long xx=((long)(pixcrd[0]+0.5))-1;
       long yy=((long)(pixcrd[1]+0.5))-1;
@@ -301,7 +303,7 @@ int imgev_main() {
     long fpixel[2]={1, 1}; // Lower left corner.
     //                |--|--> FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
-    long lpixel[2]={par.naxis1, par.naxis2}; 
+    long lpixel[2]={par.naxis1, par.naxis2};
     fits_write_subset(imgfptr, TLONG, fpixel, lpixel, img1d, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -350,7 +352,7 @@ static int imgev_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -358,7 +360,7 @@ static int imgev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event file");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -366,7 +368,7 @@ static int imgev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output image file");
     return(status);
-  } 
+  }
   strcpy(par->Image, sbuffer);
   free(sbuffer);
 
@@ -374,13 +376,13 @@ static int imgev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading coordinate system");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_string("Projection", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading projection type");
     return(status);
-  } 
+  }
   strcpy(par->projection, sbuffer);
   free(sbuffer);
 
@@ -388,19 +390,19 @@ static int imgev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading NAXIS1");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_long("NAXIS2", &par->naxis2);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading NAXIS2");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_string("CUNIT1", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CUNIT1");
     return(status);
-  } 
+  }
   strcpy(par->cunit1, sbuffer);
   free(sbuffer);
 
@@ -408,7 +410,7 @@ static int imgev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CUNIT2");
     return(status);
-  } 
+  }
   strcpy(par->cunit2, sbuffer);
   free(sbuffer);
 
@@ -416,37 +418,37 @@ static int imgev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CRVAL1");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("CRVAL2", &par->crval2);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CRVAL2");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("CRPIX1", &par->crpix1);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CRPIX1");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("CRPIX2", &par->crpix2);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CRPIX2");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("CDELT1", &par->cdelt1);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CDELT1");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("CDELT2", &par->cdelt2);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading CDELT2");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
@@ -456,6 +458,3 @@ static int imgev_getpar(struct Parameters* par)
 
   return(status);
 }
-
-
-

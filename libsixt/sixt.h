@@ -16,6 +16,9 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
+
 */
 
 #ifndef SIXT_H
@@ -253,7 +256,7 @@ void sixt_get_XMLFile(char* const filename,
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);
 
-/** Determine the eROSITA XMLFilename if different 
+/** Determine the eROSITA XMLFilename if different
  *telescopes are used. */
 void sixt_get_eroXMLFile(char *filename,
 			const int telescop_index,
@@ -291,12 +294,12 @@ void sixt_read_fits_stdkeywords_obsolete(fitsfile* const ifptr,
 			       double *mjdref,
 			       double *timezero,
 			       double *tstart,
-			       double *tstop, 
+			       double *tstop,
 			       int* const status);
 
 /** Add eROSITA-specific standard FITS header keywords to the
     specified file. */
-void sixt_add_fits_erostdkeywords(fitsfile* const fptr, 
+void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 				  const int hdunum,
 				  char* const filter,
 				  char* const creation_date,
@@ -335,7 +338,7 @@ void verifyTIMEZERO(const double timezero,
     boundary and is given in the same units as the EBOUNDS, (usually
     [keV]). */
 float getEBOUNDSEnergy(const long channel,
-		       const struct RMF* const rmf, 
+		       const struct RMF* const rmf,
 		       int* const status);
 
 /** Add standard FITS header keywords to the specified file using info
@@ -397,4 +400,3 @@ int binary_search_float_long(float val, float* arr, long n);
 double interp_lin_1d(double ifac_r, double rlo, double rhi);
 
 #endif /* SIXT_H */
-

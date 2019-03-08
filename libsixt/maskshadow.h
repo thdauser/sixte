@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #ifndef MASKSHADOW_H
 #define MASKSHADOW_H 1
 
@@ -13,8 +34,8 @@
 // Type Declarations.
 ////////////////////////////////////////////////////////////////////////
 typedef struct {
-  double** map;    /**whole map of re-pixeled mask derived from ReconArray (values betw 0...1)*/ 
-  double** shadow; /**part of re-pixeled mask corresponding to current source */ 
+  double** map;    /**whole map of re-pixeled mask derived from ReconArray (values betw 0...1)*/
+  double** shadow; /**part of re-pixeled mask corresponding to current source */
 } MaskShadow;
 
 /////////////////////////////////////////////////////////////////////
@@ -23,7 +44,7 @@ typedef struct {
 
 MaskShadow* getEmptyMaskShadowElement(int* const status);
 
-MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int const Size1_shadow, 
+MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int const Size1_shadow,
 				 int const Size2_shadow, int* const status);
 
 void getMaskRepix(ReconArray* recon, MaskShadow* ms, int shift);

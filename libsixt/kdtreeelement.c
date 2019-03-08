@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "kdtreeelement.h"
@@ -24,7 +26,7 @@
 KDTreeElement* newKDTreeElement(int* const status)
 {
   KDTreeElement* el = (KDTreeElement*)malloc(sizeof(KDTreeElement));
-  CHECK_NULL(el, *status, 
+  CHECK_NULL(el, *status,
 	     "memory allocation for KDTreeElement failed");
 
   // Initalize pointers with NULL.
@@ -57,7 +59,7 @@ void freeKDTreeElement(KDTreeElement** el)
 }
 
 
-KDTreeElement* buildKDTree2(Source* const list, 
+KDTreeElement* buildKDTree2(Source* const list,
 			    const long nelements,
 			    const int depth,
 			    int* const status)
@@ -87,8 +89,8 @@ KDTreeElement* buildKDTree2(Source* const list,
   }
 
   if (median<nelements-1) {
-    node->right=buildKDTree2(&list[median+1], 
-			     nelements-median-1, 
+    node->right=buildKDTree2(&list[median+1],
+			     nelements-median-1,
 			     depth+1, status);
   }
 
@@ -96,10 +98,10 @@ KDTreeElement* buildKDTree2(Source* const list,
 }
 
 
-LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node, 
+LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
 					const int depth,
-					const Vector* const ref, 
-					const double min_align, 
+					const Vector* const ref,
+					const double min_align,
 					const double t0, const double t1,
 					const double mjdref,
 					SimputCtlg* const simputcat,
@@ -107,7 +109,7 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
 {
   // Check if the kd-Tree exists.
   if (NULL==node) return(NULL);
-  
+
   LinkedPhoListElement* list=NULL;
 
   // Check if the current node lies within the search radius.
@@ -142,12 +144,12 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
   // against current node.
   if (NULL!=near) {
     LinkedPhoListElement* near_list=
-      KDTreeRangeSearch(near, depth+1, ref, min_align, 
+      KDTreeRangeSearch(near, depth+1, ref, min_align,
 			t0, t1, mjdref, simputcat, status);
 
     // Merge the new photons into the existing list.
     list=mergeLinkedPhoLists(list, near_list);
-  } 
+  }
   // END of (NULL!=near)
 
   // Check whether we have to look into the far tree.
@@ -158,8 +160,8 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
     if (cos(distance2edge) > min_align) {
       // Move to the end of the linked list.
       // Append newly found entries.
-      LinkedPhoListElement* far_list = 
-	KDTreeRangeSearch(far, depth+1, ref, min_align, 
+      LinkedPhoListElement* far_list =
+	KDTreeRangeSearch(far, depth+1, ref, min_align,
 			  t0, t1, mjdref, simputcat, status);
 
       // Merge the new photons into the existing list.
@@ -170,4 +172,3 @@ LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
 
   return(list);
 }
-

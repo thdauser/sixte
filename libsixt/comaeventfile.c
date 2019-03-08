@@ -16,13 +16,15 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comaeventfile.h"
 
 
-CoMaEventFile* openCoMaEventFile(char* const filename, 
-				 const int access_mode, 
+CoMaEventFile* openCoMaEventFile(char* const filename,
+				 const int access_mode,
 				 int* const status)
 {
   //Memory-allocation
@@ -42,7 +44,7 @@ CoMaEventFile* openCoMaEventFile(char* const filename,
   //REQUIRED columns:
   fits_get_colnum(ef->generic.fptr, CASEINSEN, "TIME", &ef->ctime, status);
   fits_get_colnum(ef->generic.fptr, CASEINSEN, "CHARGE", &ef->ccharge, status);
-  fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWX", &ef->crawx, status); 
+  fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWX", &ef->crawx, status);
   fits_get_colnum(ef->generic.fptr, CASEINSEN, "RAWY", &ef->crawy, status);
   CHECK_STATUS_RET(*status, ef);
 
@@ -50,8 +52,8 @@ CoMaEventFile* openCoMaEventFile(char* const filename,
 }
 
 
-CoMaEventFile* openNewCoMaEventFile(char* const filename, 
-				    char* const template, 
+CoMaEventFile* openNewCoMaEventFile(char* const filename,
+				    char* const template,
 				    int* const status)
 {
   printf("*** %s\n\n", template);
@@ -71,7 +73,7 @@ CoMaEventFile* openNewCoMaEventFile(char* const filename,
   int timeref;
   fits_get_system_time(datestr, &timeref, status);
   CHECK_STATUS_RET(*status, NULL);
-  fits_update_key(fptr, TSTRING, "DATE", datestr, 
+  fits_update_key(fptr, TSTRING, "DATE", datestr,
 		  "File creation date", status);
   CHECK_STATUS_RET(*status, NULL);
 
@@ -97,20 +99,20 @@ int addCoMaEvent2File(CoMaEventFile* ef, CoMaEvent* event)
   int status=EXIT_SUCCESS;
 
   // Insert a new, empty row to the table:
-  if (fits_insert_rows(ef->generic.fptr, ef->generic.row, 1, &status)) 
+  if (fits_insert_rows(ef->generic.fptr, ef->generic.row, 1, &status))
     return(status);
   //set internal row counter one element further
   ef->generic.row++;
   //increase number of data-sets in the event-file
   ef->generic.nrows++;
 
-  if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 
+  if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row,
 		     1, 1, &event->time, &status)) return(status);
-  if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ccharge, ef->generic.row, 
+  if (fits_write_col(ef->generic.fptr, TDOUBLE, ef->ccharge, ef->generic.row,
 		     1, 1, &event->charge, &status)) return(status);
-  if (fits_write_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 
+  if (fits_write_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row,
 		     1, 1, &event->rawx, &status)) return(status);
-  if (fits_write_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 
+  if (fits_write_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row,
 		     1, 1, &event->rawy, &status)) return(status);
 
   return(status);
@@ -128,27 +130,27 @@ int CoMaEventFile_getNextRow(CoMaEventFile* ef, CoMaEvent* event)
   // Check if there is still a row available.
   if (ef->generic.row > ef->generic.nrows) {
     status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: event list file contains no further entries!\n", 
+    HD_ERROR_THROW("Error: event list file contains no further entries!\n",
 		   status);
     return(status);
   }
 
   // Read in the data.
   event->time = 0.;
-  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 1, 
-		    1, &event->time, &event->time, &anynul, &status)) 
+  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ctime, ef->generic.row, 1,
+		    1, &event->time, &event->time, &anynul, &status))
     return(status);
   event->charge = 0.;
-  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ccharge, ef->generic.row, 1, 
-		    1, &event->charge, &event->charge, &anynul, &status)) 
+  if (fits_read_col(ef->generic.fptr, TDOUBLE, ef->ccharge, ef->generic.row, 1,
+		    1, &event->charge, &event->charge, &anynul, &status))
     return(status);
   event->rawx = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawx, ef->generic.row, 1, 1,
 		    &event->rawx, &event->rawx, &anynul, &status)) return(status);
   event->rawy = 0;
-  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1, 
+  if (fits_read_col(ef->generic.fptr, TINT, ef->crawy, ef->generic.row, 1, 1,
 		    &event->rawy, &event->rawy, &anynul, &status)) return(status);
-  
+
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     status = EXIT_FAILURE;
@@ -158,5 +160,3 @@ int CoMaEventFile_getNextRow(CoMaEventFile* ef, CoMaEvent* event)
 
   return(status);
 }
-
-

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "erosim.h"
@@ -81,11 +83,11 @@ void free_cumulARF(float** arf, long nener){
 	}
 }
 
-int erosim_main() 
+int erosim_main()
 {
   // Program parameters.
   struct Parameters par;
-  
+
   // Individual sub-instruments.
   GenInst* subinst[NUM_TELS]={NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
@@ -93,7 +95,7 @@ int erosim_main()
   // 7 sub-telescopes. This is used for the photon generation
   // from the SIMPUT catalog.
   struct ARF* arf7=NULL;
-  
+
   // FoV of the combined 7 telescopes. If there is not misalignment,
   // it corresponds to the FoV of a single sub-telescope.
   float fov7;
@@ -133,7 +135,7 @@ int erosim_main()
   float** cumulARF = NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
@@ -144,7 +146,7 @@ int erosim_main()
   do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-    
+
     // Read the parameters using PIL.
     status=erosim_getpar(&par);
     CHECK_STATUS_BREAK(status);
@@ -182,7 +184,7 @@ int erosim_main()
       strcat(impactlist_filename_template, "tel%d_");
       strcat(impactlist_filename_template, par.ImpactList);
     }
-    
+
     // Determine the event list output file.
     char rawdata_filename_template[MAXFILENAME];
     strcpy(ucase_buffer, par.RawData);
@@ -293,7 +295,7 @@ int erosim_main()
         CHECK_STATUS_BREAK_WITH_FITSERROR(status);
     }
     CHECK_STATUS_BREAK(status);
-    
+
     // Determine a fake ARF with the combined effective area of
     // all seven sub-telescopes.
     arf7=(struct ARF*)malloc(sizeof(struct ARF));
@@ -321,7 +323,7 @@ int erosim_main()
     strcpy(arf7->Detector  , subinst[0]->tel->arf->Detector  );
     strcpy(arf7->Filter    , subinst[0]->tel->arf->Filter    );
     strcpy(arf7->ARFExtensionName, subinst[0]->tel->arf->ARFExtensionName);
-    
+
     // for later we need a cumulative ARF
     float** cumulARF = new_cumulARF(arf7->NumberEnergyBins,NUM_TELS,&status);
     CHECK_STATUS_BREAK(status);
@@ -340,7 +342,7 @@ int erosim_main()
     // We ignore any misalignment for the moment.
     fov7=subinst[0]->tel->fov_diameter;
 
-    
+
     // Get a GTI.
     gti=getGTIFromFileOrContinuous(par.GTIFile,
 				   par.TSTART, par.TSTART+par.Exposure,
@@ -363,7 +365,7 @@ int erosim_main()
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
-      
+
       // Check if the required time interval for the simulation
       // is a subset of the period covered by the attitude file.
       checkAttitudeTimeCoverage(ac, mjdref, tstart, tstop,
@@ -501,7 +503,7 @@ int erosim_main()
       elf[ii]=openNewEventFile(rawdata_filename,
 			       telescop, instrume,
 				   subinst[ii]->tel->arf->Filter,
-			       subinst[ii]->tel->arf_filename, 
+			       subinst[ii]->tel->arf_filename,
 			       subinst[ii]->det->rmf_filename,
 			       mjdref, 0.0, tstart, tstop,
 			       subinst[ii]->det->pixgrid->xwidth,
@@ -525,13 +527,13 @@ int erosim_main()
       if (NULL!=subinst[ii]->instrume) {
 	strcpy(instrume, subinst[ii]->instrume);
       }
-      
+
       char evtfile_filename[MAXFILENAME];
       sprintf(evtfile_filename, evtfile_filename_template, ii+1);
       patf[ii]=openNewEventFile(evtfile_filename,
 				telescop, instrume,
 				subinst[ii]->tel->arf->Filter,
-				subinst[ii]->tel->arf_filename, 
+				subinst[ii]->tel->arf_filename,
 				subinst[ii]->det->rmf_filename,
 				mjdref, 0.0, tstart, tstop,
 				subinst[ii]->det->pixgrid->xwidth,
@@ -548,11 +550,11 @@ int erosim_main()
       // Determine the telescope pointing direction and roll angle.
       Vector pointing=getTelescopeNz(ac, tstart, &status);
       CHECK_STATUS_BREAK(status);
-    
+
       // Direction.
       double ra, dec;
       calculate_ra_dec(pointing, &ra, &dec);
-    
+
       // Roll angle.
       float rollangle=getRollAngle(ac, tstart, &status);
       CHECK_STATUS_BREAK(status);
@@ -573,7 +575,7 @@ int erosim_main()
 			  "Roll angle [deg]", &status);
 	  CHECK_STATUS_BREAK(status);
 	}
-	
+
 	// Impact list file.
 	if (NULL!=ilf[ii]) {
 	  fits_update_key(ilf[ii]->fptr, TDOUBLE, "RA_PNT", &ra,
@@ -593,7 +595,7 @@ int erosim_main()
 	fits_update_key(elf[ii]->fptr, TFLOAT, "PA_PNT", &rollangle,
 			"Roll angle [deg]", &status);
 	CHECK_STATUS_BREAK(status);
-	
+
 	// Pattern list file.
 	fits_update_key(patf[ii]->fptr, TDOUBLE, "RA_PNT", &ra,
 			"RA of pointing direction [deg]", &status);
@@ -604,7 +606,7 @@ int erosim_main()
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
-	
+
     } else {
       // An explicit attitude file is given.
       for (ii=0; ii<7; ii++) {
@@ -630,7 +632,7 @@ int erosim_main()
 		      "event type", &status);
       CHECK_STATUS_BREAK(status);
     }
-    CHECK_STATUS_BREAK(status);  
+    CHECK_STATUS_BREAK(status);
 
     // TLMIN and TLMAX of PI column.
     for (ii=0; ii<7; ii++) {
@@ -643,7 +645,7 @@ int erosim_main()
       value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
       fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);
-    
+
       sprintf(keystr, "TLMIN%d", patf[ii]->cpha);
       value=subinst[ii]->det->rmf->FirstChannel;
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
@@ -652,7 +654,7 @@ int erosim_main()
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);
     }
-    CHECK_STATUS_BREAK(status);  
+    CHECK_STATUS_BREAK(status);
 
     // CCD rotation angle.
     for (ii=0; ii<7; ii++) {
@@ -661,21 +663,21 @@ int erosim_main()
       fits_update_key(patf[ii]->fptr, TFLOAT, "CCDROTA", &rotation_angle, "", &status);
       CHECK_STATUS_BREAK(status);
     }
-    CHECK_STATUS_BREAK(status);  
+    CHECK_STATUS_BREAK(status);
 
     // Split event threshold.
     for (ii=0; ii<7; ii++) {
       if (subinst[ii]->det->threshold_split_lo_fraction>0.0) {
 	fits_update_key(elf[ii]->fptr, TFLOAT, "SPLTTHR",
-			&subinst[ii]->det->threshold_split_lo_fraction, 
+			&subinst[ii]->det->threshold_split_lo_fraction,
 			"Relative search level for split events", &status);
-	fits_update_key(patf[ii]->fptr, TFLOAT, "SPLTTHR", 
-			&subinst[ii]->det->threshold_split_lo_fraction, 
+	fits_update_key(patf[ii]->fptr, TFLOAT, "SPLTTHR",
+			&subinst[ii]->det->threshold_split_lo_fraction,
 			"Relative search level for split events", &status);
 	CHECK_STATUS_BREAK(status);
       }
     }
-    CHECK_STATUS_BREAK(status);  
+    CHECK_STATUS_BREAK(status);
 
     // --- End of opening files ---
 
@@ -1189,5 +1191,3 @@ int erosim_getpar(struct Parameters* const par)
 
   return(status);
 }
-
-

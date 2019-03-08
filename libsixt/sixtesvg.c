@@ -16,19 +16,21 @@
 
 
    Copyright 2015 Thorsten Brand, FAU
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sixtesvg.h"
 
 SixteSVGObj* getSixteSVGObj(int* const status){
-  
+
   SixteSVGObj *svg=(SixteSVGObj*)malloc(sizeof(SixteSVGObj));
   if(svg==NULL){
     *status=EXIT_FAILURE;
     SIXT_ERROR("memory allocation for SixteSVGObj failed.");
     return(svg);
   }
-  
+
   svg->canvaswidth=0.;
   svg->canvasheight=0.;
   svg->scalefactor=0.;
@@ -41,17 +43,17 @@ SixteSVGObj* getSixteSVGObj(int* const status){
   svg->path_open=0;
   svg->text_open=0;
   svg->file=NULL;
-  
+
   return svg;
 }
 
-void SixteSVG_init(SixteSVGObj *svg, 
+void SixteSVG_init(SixteSVGObj *svg,
 		   char *svgfilename,
 		   double worldx0,
 		   double worldy0,
-		   double worldwidth, 
-		   double worldheight, 
-		   double svgwidth, 
+		   double worldwidth,
+		   double worldheight,
+		   double svgwidth,
 		   int* const status){
 
   if(svg->Init!=0){
@@ -81,7 +83,7 @@ void SixteSVG_close(SixteSVGObj *svg,
   }
   fprintf(svg->file, "\n</svg>");
   fclose(svg->file);
-  
+
   svg->Init=0;
   svg->Head=0;
   svg->path_open=0;
@@ -96,22 +98,22 @@ void SixteSVG_makeHeader(SixteSVGObj *svg,
     SIXT_ERROR("SixteSVG Header can not be written to uninitialized file.");
     return;
   }
-  fprintf(svg->file, "<svg version=\"1.1\"\n"); 
+  fprintf(svg->file, "<svg version=\"1.1\"\n");
   fprintf(svg->file, "     baseProfile=\"full\"\n");
-  fprintf(svg->file, "     width=\"%.0lfpx\" height=\"%.0lfpx\"\n", svg->canvaswidth, svg->canvasheight); 
+  fprintf(svg->file, "     width=\"%.0lfpx\" height=\"%.0lfpx\"\n", svg->canvaswidth, svg->canvasheight);
   fprintf(svg->file, "     xmlns=\"http://www.w3.org/2000/svg\">\n");
   svg->Head=1;
 
 }
 
 
-void SixteSVG_draw_line(SixteSVGObj *svg, 
-			double x1, 
-			double y1, 
-			double x2, 
-			double y2, 
-			double linewidth, 
-			char* color, 
+void SixteSVG_draw_line(SixteSVGObj *svg,
+			double x1,
+			double y1,
+			double x2,
+			double y2,
+			double linewidth,
+			char* color,
 			int* const status){
 
   if(svg->Init==0||svg->Head==0||svg->path_open==1||svg->text_open==1){
@@ -125,21 +127,21 @@ void SixteSVG_draw_line(SixteSVGObj *svg,
   r2[0]=svg->scalefactor*(x2-svg->x0);
   r2[1]=svg->canvasheight-svg->scalefactor*(y2-svg->y0);
 
-  fprintf(svg->file, "<line x1=\"%.3lf\" y1=\"%.3lf\" x2=\"%.3lf\" y2=\"%.3lf\"\n  stroke=\"%s\" stroke-width=\"%.2lfpx\"/>\n", 
+  fprintf(svg->file, "<line x1=\"%.3lf\" y1=\"%.3lf\" x2=\"%.3lf\" y2=\"%.3lf\"\n  stroke=\"%s\" stroke-width=\"%.2lfpx\"/>\n",
 	  r1[0], r1[1], r2[0], r2[1], color, linewidth);
 
 }
 
-void SixteSVG_draw_circle(SixteSVGObj *svg, 
-			  double cx, 
-			  double cy, 
-			  double R, 
-			  double linewidth, 
-			  char* linecolor, 
-			  char* fillcolor, 
-			  int fill, 
+void SixteSVG_draw_circle(SixteSVGObj *svg,
+			  double cx,
+			  double cy,
+			  double R,
+			  double linewidth,
+			  char* linecolor,
+			  char* fillcolor,
+			  int fill,
 			  int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==1||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG circle can not be written to uninitialized file.");
@@ -148,8 +150,8 @@ void SixteSVG_draw_circle(SixteSVGObj *svg,
   double r, x, y;
   r=svg->scalefactor*R;
   x=svg->scalefactor*(cx-svg->x0);
-  y=svg->canvasheight-svg->scalefactor*(cy-svg->y0);   
-     
+  y=svg->canvasheight-svg->scalefactor*(cy-svg->y0);
+
   fprintf(svg->file, "<circle cx=\"%.3lf\" cy=\"%.3lf\" r=\"%.3lf\"\n        ", x, y, r);
   if(fill!=0){
     fprintf(svg->file, "style=\"fill:%s ;", fillcolor);
@@ -157,14 +159,14 @@ void SixteSVG_draw_circle(SixteSVGObj *svg,
     fprintf(svg->file, " fill:none; ");
   }
   fprintf(svg->file, "stroke:%s; stroke-width:%.2lfpx \"/>\n", linecolor, linewidth);
-     
+
 }
 
-void SixteSVG_begin_path(SixteSVGObj *svg, 
-			 double sx, 
-			 double sy, 
+void SixteSVG_begin_path(SixteSVGObj *svg,
+			 double sx,
+			 double sy,
 			 int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==1||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG path can not be created in uninitialized file or if another path is already opened.");
@@ -174,17 +176,17 @@ void SixteSVG_begin_path(SixteSVGObj *svg,
   x=svg->scalefactor*(sx-svg->x0);
   y=svg->canvasheight-svg->scalefactor*(sy-svg->y0);
   fprintf(svg->file, "<path d=\"M %.3lf %.3lf ", x, y );
-  svg->path_open=1;   
-     
+  svg->path_open=1;
+
 }
 
-void SixteSVG_close_path(SixteSVGObj *svg, 
-			 char* linecolor, 
-			 char* fillcolor, 
-			 double linewidth, 
-			 int fill, 
+void SixteSVG_close_path(SixteSVGObj *svg,
+			 char* linecolor,
+			 char* fillcolor,
+			 double linewidth,
+			 int fill,
 			 int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==0||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG path can not be closed in uninitialized file or if another path is already opened.");
@@ -197,16 +199,16 @@ void SixteSVG_close_path(SixteSVGObj *svg,
     fprintf(svg->file, " fill:none");
   }
   fprintf(svg->file, "\" />\n");
-  
+
   svg->path_open=0;
-     
+
 }
 
-void SixteSVG_path_line(SixteSVGObj *svg, 
-			double x, 
-			double y, 
+void SixteSVG_path_line(SixteSVGObj *svg,
+			double x,
+			double y,
 			int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==0||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG path can not be drawn in uninitialized file or if no path is open.");
@@ -214,17 +216,17 @@ void SixteSVG_path_line(SixteSVGObj *svg,
   }
   double rx, ry;
   rx=svg->scalefactor*(x-svg->x0);
-  ry=svg->canvasheight-svg->scalefactor*(y-svg->y0);   
-  
+  ry=svg->canvasheight-svg->scalefactor*(y-svg->y0);
+
   fprintf(svg->file, "\n      L %.3lf %.3lf ", rx, ry);
-     
+
 }
 
-void SixteSVG_path_line_rel(SixteSVGObj *svg, 
-			    double dx, 
-			    double dy, 
+void SixteSVG_path_line_rel(SixteSVGObj *svg,
+			    double dx,
+			    double dy,
 			    int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==0||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG path can not be drawn in uninitialized file or if no path is open.");
@@ -232,17 +234,17 @@ void SixteSVG_path_line_rel(SixteSVGObj *svg,
   }
   double rx, ry;
   rx=svg->scalefactor*dx;
-  ry=svg->scalefactor*dy;   
-  
+  ry=svg->scalefactor*dy;
+
   fprintf(svg->file, "\n      l %.3lf %.3lf ", rx, ry);
-     
+
 }
 
-void SixteSVG_path_line_angle(SixteSVGObj *svg, 
-			      double r, 
-			      double ang, 
+void SixteSVG_path_line_angle(SixteSVGObj *svg,
+			      double r,
+			      double ang,
 			      int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==0||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG path can not be drawn in uninitialized file or if no path is open.");
@@ -250,18 +252,18 @@ void SixteSVG_path_line_angle(SixteSVGObj *svg,
   }
   double rx, ry;
   rx=svg->scalefactor*r*cos(2*M_PI*ang/360.);
-  ry=-svg->scalefactor*r*sin(2*M_PI*ang/360.);   
-  
+  ry=-svg->scalefactor*r*sin(2*M_PI*ang/360.);
+
   fprintf(svg->file, "\n      l %.3lf %.3lf ", rx, ry);
-     
+
 }
 
-void SixteSVG_path_arc(SixteSVGObj *svg, 
-		       double r, 
-		       double ang0, 
-		       double ang1, 
+void SixteSVG_path_arc(SixteSVGObj *svg,
+		       double r,
+		       double ang0,
+		       double ang1,
 		       int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==0||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG path can not be drawn in uninitialized file or if no path is open.");
@@ -282,7 +284,7 @@ void SixteSVG_path_arc(SixteSVGObj *svg,
   a1=ang1*2.*M_PI/360.;
   if(a1-a0>M_PI){
     laf=1;
-  }else{ 
+  }else{
     laf=0;
   }
   if(reverse==1){
@@ -290,42 +292,42 @@ void SixteSVG_path_arc(SixteSVGObj *svg,
   }else{
     sf=0;
   }
-  
+
   s[0]=R*cos(a0);
   s[1]=-R*sin(a0);
   e[0]=(R*cos(a1)-s[0]);
   e[1]=(-R*sin(a1)-s[1]);
   if(reverse==1){
     e[0]*=-1.;
-    e[1]*=-1.;             
+    e[1]*=-1.;
   }
-  
+
   fprintf(svg->file, "\n      a %.3lf,%.3lf 0 %d,%d %.3lf,%.3lf ", R, R, laf, sf, e[0], e[1]);
-     
+
 }
 
 void SixteSVG_draw_polygon(SixteSVGObj *svg,
 			   int npoints,
-			   double *x, 
-			   double *y, 
-			   char* linecolor, 
-			   char* fillcolor, 
-			   double linewidth, 
-			   int fill, 
+			   double *x,
+			   double *y,
+			   char* linecolor,
+			   char* fillcolor,
+			   double linewidth,
+			   int fill,
 			   int* const status){
-			     
-  
+
+
   int ii;
   if(*status!=EXIT_SUCCESS){
     return;
   }
-  
+
   SixteSVG_begin_path(svg, x[0], y[0], status);
   if(*status!=EXIT_SUCCESS){
     SIXT_ERROR("SixteSVG failed to draw polygon.");
     return;
   }
-  
+
   for(ii=1; ii<npoints; ii++){
     SixteSVG_path_line(svg, x[ii], y[ii], status);
     if(*status!=EXIT_SUCCESS){
@@ -333,35 +335,35 @@ void SixteSVG_draw_polygon(SixteSVGObj *svg,
       return;
     }
   }
-  
-  SixteSVG_close_path(svg, 
-		      linecolor, 
-		      fillcolor, 
-		      linewidth, 
-		      fill, 
+
+  SixteSVG_close_path(svg,
+		      linecolor,
+		      fillcolor,
+		      linewidth,
+		      fill,
 		      status);
-  
+
   if(*status!=EXIT_SUCCESS){
     SIXT_ERROR("SixteSVG failed to draw polygon (close path).");
     return;
   }
-  
+
 }
 
-void SixteSVG_open_text(SixteSVGObj *svg, 
-			double x, 
-			double y, 
-			double size, 
+void SixteSVG_open_text(SixteSVGObj *svg,
+			double x,
+			double y,
+			double size,
 			int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==1||svg->text_open==1){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG text can not be written in uninitialized file or if another instance is open.");
     return;
-  }  
-     
+  }
+
   double r[2];
-  
+
   r[0]=svg->scalefactor*(x-svg->x0);
   r[1]=svg->canvasheight-svg->scalefactor*(y-svg->y0);
 
@@ -369,57 +371,57 @@ void SixteSVG_open_text(SixteSVGObj *svg,
   svg->text_open=1;
 }
 
-void SixteSVG_close_text(SixteSVGObj *svg, 
+void SixteSVG_close_text(SixteSVGObj *svg,
 			 int* const status){
-  
+
   if(svg->Init==0||svg->Head==0||svg->path_open==1||svg->text_open==0){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG text can not be closed at this point.");
     return;
-  } 
-     
+  }
+
   fprintf(svg->file, "\n</text>\n");
   svg->text_open=0;
-     
+
 }
 
-void SixteSVG_write_text(SixteSVGObj *svg, 
-			 char* text, 
+void SixteSVG_write_text(SixteSVGObj *svg,
+			 char* text,
 			 int* const status){
-     
+
   if(svg->Init==0||svg->Head==0||svg->path_open==1||svg->text_open==0){
     *status=EXIT_FAILURE;
     SIXT_ERROR("SixteSVG text can not be written in uninitialized file or if another instance is open.");
     return;
   }
-  
-  fprintf(svg->file, "\n%s", text);  
-     
+
+  fprintf(svg->file, "\n%s", text);
+
 }
 
-void SixteSVG_write_centered_text(SixteSVGObj *svg, 
-			     char* text, 
+void SixteSVG_write_centered_text(SixteSVGObj *svg,
+			     char* text,
 			     double cx,
 			     double cy,
 			     double textsize,
 			     int* const status){
-			       
+
   if(*status!=EXIT_SUCCESS){
     return;
   }
-  
+
   SixteSVG_open_text(svg, cx, cy, textsize, status);
   if(*status!=EXIT_SUCCESS){
     SIXT_ERROR("SixteSVG failed to open text object.");
     return;
   }
-  
+
   SixteSVG_write_text(svg, text, status);
   if(*status!=EXIT_SUCCESS){
     SIXT_ERROR("SixteSVG failed to write text object.");
     return;
   }
-  
+
   SixteSVG_close_text(svg, status);
   if(*status!=EXIT_SUCCESS){
     SIXT_ERROR("SixteSVG failed to close text object.");

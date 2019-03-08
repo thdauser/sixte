@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "hexagonalpixels.h"
@@ -35,18 +37,18 @@ static void clearHexagonalPixels(HexagonalPixels*);
     cartesian coordinates of the photon impact position.  The zero
     line k = 0 with t_k = 0 goes through the center of the
     detector. */
-static inline void getHexagonalPixelLineIndex(struct Point2d position, 
+static inline void getHexagonalPixelLineIndex(struct Point2d position,
 					      double m, double dt, int* l);
 
 /** Determine the 3 lines that define the sub-triangle of the
     hexagonal pixel where the impact position is located. */
-static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, 
+static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp,
 						struct Point2d position,
 						int* l0, int* l1, int* l2);
 
 /** Set up the auxiliary array that is used to convert line indices to
     the corresponding pixel index. The pixel indices start at 0. */
-static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2, 
+static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2,
 					   HexagonalPixelLineIndexInformation information);
 
 /** Determine the pixel that corresponds to the 3 given line indices.
@@ -64,7 +66,7 @@ static inline HexagonalPixelLineIndexInformation getLineIndexInformation
 ////////////////////////////////////////////////////////////////////
 
 
-static inline void getHexagonalPixelLineIndex(struct Point2d position, 
+static inline void getHexagonalPixelLineIndex(struct Point2d position,
 					      double m, double dt, int* l)
 {
   // Distance from the zero line of this band of parallel lines.
@@ -87,7 +89,7 @@ static inline void getHexagonalPixelLineIndices(HexagonalPixels* hp, struct Poin
 
 
 
-static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2, 
+static inline void setLineIndexInformation(HexagonalPixels* hp, int l0, int l1, int l2,
 					   HexagonalPixelLineIndexInformation information)
 {
   hp->lineIndexInformation
@@ -116,7 +118,7 @@ static inline HexagonalPixelLineIndexInformation getLineIndexInformation
 
 
 
-int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* parameters) 
+int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* parameters)
 {
   int status = EXIT_SUCCESS;
 
@@ -146,7 +148,7 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
   struct Point2d centers[HTRS_N_PIXELS];
 
   centers[0].x  =  0.; // Pixel number 1
-  centers[0].y  =  0.; 
+  centers[0].y  =  0.;
   //
   centers[1].x  =  1.  * hp->h;
   centers[1].y  = -1.5 * hp->a;
@@ -263,14 +265,14 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
   for (l0=0; l0<2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET+1; l0++) {
     for (l1=0; l1<2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET+1; l1++) {
       for (l2=0; l2<2*HEXAGONAL_PIXELS_LINE_INDEX_OFFSET+1; l2++) {
-	HexagonalPixelLineIndexInformation lineIndexInformation = 
+	HexagonalPixelLineIndexInformation lineIndexInformation =
 	  { .pixelindex = INVALID_PIXEL };
 	hp->lineIndexInformation[l0][l1][l2] = lineIndexInformation;
       }
     }
   }
 
-  // Now determine for each pixel the 6 valid combinations of line indices 
+  // Now determine for each pixel the 6 valid combinations of line indices
   // corresponding to the 6 individual sub-triangles of this hexagonal pixel.
   int pixel, direction;
   struct Point2d point;
@@ -280,11 +282,11 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
     // For each pixel choose 6 points located around the center and
     // determine the line indices which define this pixel section.
     for (direction=0; direction<6; direction++) {
-      HexagonalPixelLineIndexInformation lineIndexInformation = 
+      HexagonalPixelLineIndexInformation lineIndexInformation =
 	{ .pixelindex = pixel };
 
       point = centers[pixel];
-	
+
       switch(direction) {
       case 0: // right from center
 	point.x += hp->h/2;
@@ -327,7 +329,7 @@ int initHexagonalPixels(HexagonalPixels* hp, struct HexagonalPixelsParameters* p
 
 
 
-void cleanupHexagonalPixels(HexagonalPixels* hp) 
+void cleanupHexagonalPixels(HexagonalPixels* hp)
 {
   if (NULL!=hp->array) {
     free(hp->array);
@@ -364,15 +366,15 @@ void getHexagonalPixel(HexagonalPixels* hp, struct Point2d position, int* pixel)
   getHexagonalPixelLineIndices(hp, position, &l0, &l1, &l2);
 
   // From these 3 line indices now determine the pixel.
-  HexagonalPixelLineIndexInformation lineIndexInformation = 
+  HexagonalPixelLineIndexInformation lineIndexInformation =
     getLineIndexInformation(hp, l0, l1, l2);
   *pixel = lineIndexInformation.pixelindex;
 }
 
 
 
-int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd, 
-			    struct Point2d position, 
+int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
+			    struct Point2d position,
 			    int* pixel, double* fraction)
 {
   // Determine the 3 lines that define the sub-triangle of the pixel
@@ -381,7 +383,7 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
   getHexagonalPixelLineIndices(hp, position, &l0, &l1, &l2);
 
   // From these 3 line indices now determine the pixel.
-  HexagonalPixelLineIndexInformation lineIndexInformation = 
+  HexagonalPixelLineIndexInformation lineIndexInformation =
     getLineIndexInformation(hp, l0, l1, l2);
   pixel[0] = lineIndexInformation.pixelindex;
 
@@ -441,9 +443,7 @@ int getHexagonalPixelSplits(HexagonalPixels* hp, GenericDetector* gd,
     double mindistgauss = gaussint(distance/gd->gcc.ccsigma);
     fraction[0] = 1. - mindistgauss;
     fraction[1] =      mindistgauss;
-    
+
     return(2);
   }
 }
-
-

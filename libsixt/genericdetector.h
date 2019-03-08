@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef GENERICDETECTOR_H 
+#ifndef GENERICDETECTOR_H
 #define GENERICDETECTOR_H 1
 
 #include "sixt.h"
@@ -62,7 +64,7 @@ typedef struct {
   /** Lower detector energy threshold [keV]. Events with a lower
       energy / pixel charge are dismissed. This value is only
       regarded if the pha_threshold is set to "-1". */
-  float energy_threshold; 
+  float energy_threshold;
 
   /** Detector response matrix. The RSP file that is originally loaded
       may also contain ARF contributions. But as they already have

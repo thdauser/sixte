@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef EVENTFILE_H 
+#ifndef EVENTFILE_H
 #define EVENTFILE_H 1
 
 #include "sixt.h"
@@ -90,8 +92,8 @@ void addCol2EventFile(EventFile* const file,
 		int* const status);
 
 /** Append a new event to the event file. */
-void addEvent2File(EventFile* const file, 
-		   Event* const event, 
+void addEvent2File(EventFile* const file,
+		   Event* const event,
 		   int* const status);
 
 /** Read the Event at the specified row from the file. The

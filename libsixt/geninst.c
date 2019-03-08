@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "geninst.h"
@@ -50,7 +52,7 @@ static int auxBkgInitialized=0;
 
 
 /** Handler for the start of an XML element. */
-static void GenInstXMLElementStart(void* data, const char* el, 
+static void GenInstXMLElementStart(void* data, const char* el,
 				   const char** attr);
 /** Handler for the end of an XML element. */
 static void GenInstXMLElementEnd(void* data, const char* el);
@@ -61,7 +63,7 @@ static void GenInstXMLElementEnd(void* data, const char* el);
 ////////////////////////////////////////////////////////////////////
 
 
-GenInst* newGenInst(int* const status) 
+GenInst* newGenInst(int* const status)
 {
   // Allocate memory.
   GenInst* inst=(GenInst*)malloc(sizeof(GenInst));
@@ -144,7 +146,7 @@ void parseGenInstXML(GenInst* const inst,
   struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
   CHECK_STATUS_VOID(*status);
 
-  // Input buffer with an additional byte at the end for the 
+  // Input buffer with an additional byte at the end for the
   // termination of the string.
   const int buffer_size=256;
   char buffer[buffer_size+1];
@@ -167,7 +169,7 @@ void parseGenInstXML(GenInst* const inst,
   expandIncludesXML(xmlbuffer, filename, status);
   CHECK_STATUS_VOID(*status);
 
-  // Before actually parsing the XML code, expand the loops and 
+  // Before actually parsing the XML code, expand the loops and
   // arithmetic operations in the GenDet XML description.
   // The expansion algorithm repeatedly scans the XML code and
   // searches for loop tags. It replaces the loop tags by repeating
@@ -202,7 +204,7 @@ void parseGenInstXML(GenInst* const inst,
     // Parse error.
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "failed parsing XML file '%s':\n%s\n", 
+    sprintf(msg, "failed parsing XML file '%s':\n%s\n",
 	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
     printf("%s", xmlbuffer->text);
     SIXT_ERROR(msg);
@@ -220,50 +222,50 @@ void parseGenInstXML(GenInst* const inst,
   // Remove the XML string buffer.
   freeXMLBuffer(&xmlbuffer);
 
-  // Check if all required parameters have been read successfully from 
+  // Check if all required parameters have been read successfully from
   // the XML file.
   if (INT_MAX==inst->det->pixgrid->xwidth) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("no specification of x-width of pixel array");
-    return;    
-  }  
+    return;
+  }
   if (INT_MAX==inst->det->pixgrid->ywidth) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("no specification of y-width of pixel array");
-    return;    
+    return;
   }
 
   if (isnan(inst->det->pixgrid->xrpix)) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("no specification of x reference pixel");
-    return;    
+    return;
   }
   if (isnan(inst->det->pixgrid->yrpix)) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("no specification of y reference pixel");
-    return;    
+    return;
   }
 
   if (isnan(inst->det->pixgrid->xdelt)) {
     *status=EXIT_FAILURE;
     SIXT_WARNING("no specification of pixel x-width");
-    return;    
+    return;
   }
   if (isnan(inst->det->pixgrid->ydelt)) {
     *status=EXIT_FAILURE;
     SIXT_WARNING("no specification of pixel y-width");
-    return;    
+    return;
   }
-  
+
   if (inst->det->pixgrid->xborder<0.) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("invalid specification of x-border of pixels");
-    return;    
+    return;
   }
   if (inst->det->pixgrid->yborder<0.) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("invalid specification of y-border of pixels");
-    return;    
+    return;
   }
 
   if (NULL==inst->det->rmf) {
@@ -292,7 +294,7 @@ void parseGenInstXML(GenInst* const inst,
     if (inst->det->split->par1==0.) {
       *status=EXIT_FAILURE;
       SIXT_ERROR("no valid split model parameters in the XML file");
-      return;    
+      return;
     }
   }
 
@@ -300,20 +302,20 @@ void parseGenInstXML(GenInst* const inst,
     if ((inst->det->split->par1==0.)&&(inst->det->split->par2==0.)) {
       *status=EXIT_FAILURE;
       SIXT_ERROR("no valid split model parameters in the XML file");
-      return;    
+      return;
     }
   }
-  
-  
-    
+
+
+
   // change borders for event driven detectors
-    
+
   if(GENDET_TIME_TRIGGERED!=inst->det->readout_trigger){
-    inst->det->rawymin=0;	
+    inst->det->rawymin=0;
     inst->det->rawymax=inst->det->pixgrid->ywidth-1;
   }
-    
-  // END of checking, if all detector parameters have successfully been 
+
+  // END of checking, if all detector parameters have successfully been
   // read from the XML file.
 }
 
@@ -332,7 +334,7 @@ GenInst* loadGenInst(const char* const filename,
   char filename2[MAXFILENAME];
   char rootname[MAXFILENAME];
   // Make a local copy of the filename variable in order to avoid
-  // compiler warnings due to discarded const qualifier at the 
+  // compiler warnings due to discarded const qualifier at the
   // subsequent function call.
   strcpy(filename2, filename);
   fits_parse_rootname(filename2, rootname, status);
@@ -342,23 +344,23 @@ GenInst* loadGenInst(const char* const filename,
   char* lastslash=strrchr(rootname, '/');
   if (NULL==lastslash) {
     inst->filepath=(char*)malloc(sizeof(char));
-    CHECK_NULL_RET(inst->filepath, *status, 
+    CHECK_NULL_RET(inst->filepath, *status,
 		   "memory allocation for filepath failed", inst);
     inst->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filename, *status, 
+    CHECK_NULL_RET(inst->filename, *status,
 		   "memory allocation for filename failed", inst);
     strcpy(inst->filepath, "");
     strcpy(inst->filename, rootname);
   } else {
     lastslash++;
     inst->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filename, *status, 
+    CHECK_NULL_RET(inst->filename, *status,
 		   "memory allocation for filename failed", inst);
     strcpy(inst->filename, lastslash);
-      
+
     *lastslash='\0';
     inst->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filepath, *status, 
+    CHECK_NULL_RET(inst->filepath, *status,
 		   "memory allocation for filepath failed", inst);
     strcpy(inst->filepath, rootname);
   }
@@ -389,9 +391,9 @@ GenInst* loadGenInst(const char* const filename,
 }
 
 
-static void GenInstXMLElementStart(void* parsedata, 
-				   const char* el, 
-				   const char** attr) 
+static void GenInstXMLElementStart(void* parsedata,
+				   const char* el,
+				   const char** attr)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
@@ -410,7 +412,7 @@ static void GenInstXMLElementStart(void* parsedata,
     getXMLAttributeString(attr, "TELESCOP", telescop);
     xmlparsedata->inst->telescop=
       (char*)malloc((strlen(telescop)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->telescop, 
+    CHECK_NULL_VOID(xmlparsedata->inst->telescop,
 		    xmlparsedata->status,
 		    "memory allocation for TELESCOP failed");
     strcpy(xmlparsedata->inst->telescop, telescop);
@@ -419,7 +421,7 @@ static void GenInstXMLElementStart(void* parsedata,
     getXMLAttributeString(attr, "INSTRUME", instrume);
     xmlparsedata->inst->instrume=
       (char*)malloc((strlen(instrume)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->instrume, 
+    CHECK_NULL_VOID(xmlparsedata->inst->instrume,
 		    xmlparsedata->status,
 		    "memory allocation for INSTRUME failed");
     strcpy(xmlparsedata->inst->instrume, instrume);
@@ -427,14 +429,14 @@ static void GenInstXMLElementStart(void* parsedata,
   } else if (!strcmp(Uelement, "LINESHIFT")) {
     CLLineShift* cllineshift=newCLLineShift(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    append2ClockList(xmlparsedata->inst->det->clocklist, CL_LINESHIFT, 
+    append2ClockList(xmlparsedata->inst->det->clocklist, CL_LINESHIFT,
 		     cllineshift, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "NEWFRAME")) {
     CLNewFrame* clnewframe=newCLNewFrame(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    append2ClockList(xmlparsedata->inst->det->clocklist, CL_NEWFRAME, 
+    append2ClockList(xmlparsedata->inst->det->clocklist, CL_NEWFRAME,
 		     clnewframe, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
@@ -460,16 +462,16 @@ static void GenInstXMLElementStart(void* parsedata,
     }
     CLReadoutLine* clreadoutline=
       newCLReadoutLine(lineindex, readoutindex, &xmlparsedata->status);
-    append2ClockList(xmlparsedata->inst->det->clocklist, CL_READOUTLINE, 
+    append2ClockList(xmlparsedata->inst->det->clocklist, CL_READOUTLINE,
 		     clreadoutline, &xmlparsedata->status);
-      
+
   } else if (!strcmp(Uelement, "DIMENSIONS")) {
 
     xmlparsedata->inst->det->pixgrid->xwidth=
       getXMLAttributeInt(attr, "XWIDTH");
     xmlparsedata->inst->det->pixgrid->ywidth=
       getXMLAttributeInt(attr, "YWIDTH");
-      
+
   } else if (!strcmp(Uelement, "WCS")) {
 
     xmlparsedata->inst->det->pixgrid->xrpix=
@@ -486,12 +488,12 @@ static void GenInstXMLElementStart(void* parsedata,
       getXMLAttributeFloat(attr, "YDELT");
     xmlparsedata->inst->det->pixgrid->rota=
       getXMLAttributeFloat(attr, "ROTA")*M_PI/180.;
-	
+
   } else if (!strcmp(Uelement, "PIXELBORDER")) {
 
     xmlparsedata->inst->det->pixgrid->xborder=getXMLAttributeFloat(attr, "X");
     xmlparsedata->inst->det->pixgrid->yborder=getXMLAttributeFloat(attr, "Y");
-    
+
   } else if (!strcmp(Uelement, "ARF")) {
 
     // Check if the ARF has been defined previously.
@@ -514,7 +516,7 @@ static void GenInstXMLElementStart(void* parsedata,
     // Store the file name of the ARF.
     xmlparsedata->inst->tel->arf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->tel->arf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->inst->tel->arf_filename,
 		    xmlparsedata->status,
 		    "memory allocation for ARF file name failed");
     strcpy(xmlparsedata->inst->tel->arf_filename, filename);
@@ -596,13 +598,13 @@ static void GenInstXMLElementStart(void* parsedata,
     // Store the file name of the RSP.
     xmlparsedata->inst->tel->arf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->tel->arf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->inst->tel->arf_filename,
 		    xmlparsedata->status,
 		    "memory allocation for ARF file name failed");
     strcpy(xmlparsedata->inst->tel->arf_filename, filename);
     xmlparsedata->inst->det->rmf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->det->rmf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->inst->det->rmf_filename,
 		    xmlparsedata->status,
 		    "memory allocation for RMF file name failed");
     strcpy(xmlparsedata->inst->det->rmf_filename, filename);
@@ -611,14 +613,14 @@ static void GenInstXMLElementStart(void* parsedata,
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    loadArfRmfFromRsp(filepathname, 
+    loadArfRmfFromRsp(filepathname,
 		      &xmlparsedata->inst->tel->arf,
 		      &xmlparsedata->inst->det->rmf,
 		      &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "PSF")) {
-    
+
     // The focal length must be specified before load the PSF.
     // Check if this is the case.
     if (xmlparsedata->inst->tel->focal_length<=0.) {
@@ -640,8 +642,8 @@ static void GenInstXMLElementStart(void* parsedata,
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->inst->tel->psf= 
-      newPSF(filepathname, xmlparsedata->inst->tel->focal_length, 
+    xmlparsedata->inst->tel->psf=
+      newPSF(filepathname, xmlparsedata->inst->tel->focal_length,
 	     &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
@@ -672,11 +674,11 @@ static void GenInstXMLElementStart(void* parsedata,
 
     xmlparsedata->inst->tel->fov_diameter=
       getXMLAttributeFloat(attr, "DIAMETER")*M_PI/180.;
-    
+
   } else if (!strcmp(Uelement, "CTE")) {
 
     xmlparsedata->inst->det->cte=getXMLAttributeFloat(attr, "VALUE");
-	
+
   } else if (!strcmp(Uelement, "BADPIXMAP")) {
 
     char filename[MAXFILENAME];
@@ -692,7 +694,7 @@ static void GenInstXMLElementStart(void* parsedata,
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->inst->filepath);
     strcat(filepathname, filename);
-    xmlparsedata->inst->det->badpixmap = 
+    xmlparsedata->inst->det->badpixmap =
       loadBadPixMap(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
@@ -714,10 +716,10 @@ static void GenInstXMLElementStart(void* parsedata,
       char filepathname[MAXFILENAME];
       strcpy(filepathname, xmlparsedata->inst->filepath);
       strcat(filepathname, filename);
-      
+
       bkgAux rateinfo;
       rateinfo.rate=getXMLAttributeDouble(attr, "RATE");
-      
+
       bkgInitializeAux(filepathname, xmlparsedata->seed, &rateinfo, &xmlparsedata->status);
       CHECK_STATUS_VOID(xmlparsedata->status);
       auxBkgInitialized=1;
@@ -812,19 +814,19 @@ static void GenInstXMLElementStart(void* parsedata,
 
 	  xmlparsedata->inst->det->depfet.t_integration=
 			    getXMLAttributeDouble(attr, "INTEGRATION");
-      
+
     xmlparsedata->inst->det->depfet.t_clear=
 			    getXMLAttributeDouble(attr, "CLEAR");
-      
+
     xmlparsedata->inst->det->depfet.t_settling=
 			    getXMLAttributeDouble(attr, "SETTLING");
-    
+
     char type[MAXMSG];
     getXMLAttributeString(attr, "CLEAR_FCN", type);
     strtoupper(type);
-    
+
     if(!strcmp(type, "EXPONENTIAL")){
-      
+
       xmlparsedata->inst->det->depfet.clear_const=(double*)malloc(sizeof(double));
       if(xmlparsedata->inst->det->depfet.clear_const==NULL){
 	xmlparsedata->status=EXIT_FAILURE;
@@ -835,7 +837,7 @@ static void GenInstXMLElementStart(void* parsedata,
 			    getXMLAttributeDouble(attr, "CLEAR_TAU");
       xmlparsedata->inst->det->depfet.clear_fcn=&depfet_get_exponential_clear_signal;
     }else{
-      
+
       xmlparsedata->inst->det->depfet.clear_const=(double*)malloc(sizeof(double));
       if(xmlparsedata->inst->det->depfet.clear_const==NULL){
 	xmlparsedata->status=EXIT_FAILURE;
@@ -843,22 +845,22 @@ static void GenInstXMLElementStart(void* parsedata,
 	return;
       }
       xmlparsedata->inst->det->depfet.clear_const[0]=xmlparsedata->inst->det->depfet.t_clear;
-      
+
       xmlparsedata->inst->det->depfet.clear_fcn=&depfet_get_linear_clear_signal;
     }
-    
+
     getXMLAttributeString(attr, "TYPE", type);
     strtoupper(type);
     if(!strcmp(type, "NORMAL")) {
       xmlparsedata->inst->det->depfet.istorageflag=0;
-      
+
     }else if(!strcmp(type, "IS")) {
       xmlparsedata->inst->det->depfet.istorageflag=1;
-      
+
       xmlparsedata->inst->det->depfet.t_transfer=
 			    getXMLAttributeDouble(attr, "TRANSFER");
     }
-    
+
   } else if (!strcmp(Uelement, "READOUT")) {
 
     char mode[MAXMSG];
@@ -868,25 +870,25 @@ static void GenInstXMLElementStart(void* parsedata,
       xmlparsedata->inst->det->readout_trigger=GENDET_TIME_TRIGGERED;
     } else if (!strcmp(mode, "EVENT")) {
       xmlparsedata->inst->det->readout_trigger=GENDET_EVENT_TRIGGERED;
-    }    
+    }
     xmlparsedata->inst->det->deadtime=getXMLAttributeDouble(attr, "DEADTIME");
 
   } else if (!strcmp(Uelement, "WAIT")) {
-    
+
     float waittime=getXMLAttributeFloat(attr, "TIME");
     CLWait* clwait=newCLWait(waittime, &xmlparsedata->status);
-    append2ClockList(xmlparsedata->inst->det->clocklist, CL_WAIT, 
+    append2ClockList(xmlparsedata->inst->det->clocklist, CL_WAIT,
 		     clwait, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
     // Accumulate the amount of time required for one read-out frame.
     xmlparsedata->inst->det->frametime+=waittime;
-	
+
   } else if (!strcmp(Uelement, "CLEARLINE")) {
 
     int lineindex=getXMLAttributeInt(attr, "LINEINDEX");
     CLClearLine* clclearline=newCLClearLine(lineindex, &xmlparsedata->status);
-    append2ClockList(xmlparsedata->inst->det->clocklist, CL_CLEARLINE, 
+    append2ClockList(xmlparsedata->inst->det->clocklist, CL_CLEARLINE,
 		     clclearline, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
@@ -896,7 +898,7 @@ static void GenInstXMLElementStart(void* parsedata,
       getXMLAttributeFloat(attr, "VALUE");
     headas_chat(5, "lower readout threshold: %.3lf keV\n",
 		xmlparsedata->inst->det->threshold_readout_lo_keV);
-	
+
   } else if (!strcmp(Uelement, "THRESHOLD_PATTERN_UP_KEV")) {
 
     xmlparsedata->inst->det->threshold_pattern_up_keV=
@@ -927,15 +929,15 @@ static void GenInstXMLElementStart(void* parsedata,
 
 
   } else if (!strcmp(Uelement, "TELESCOPE")) {
-    
+
     // Nothing to do here. Do not remove this selection! Otherwise
     // the tag <telescope> will be regarded as unknown.
 
   } else if (!strcmp(Uelement, "DETECTOR")) {
-    
+
     // Nothing to do here. Do not remove this selection! Otherwise
     // the tag <detector> will be regarded as unknown.
-    
+
   } else {
     // Unknown tag, display warning.
     char msg[MAXMSG];
@@ -945,7 +947,7 @@ static void GenInstXMLElementStart(void* parsedata,
 }
 
 
-static void GenInstXMLElementEnd(void* parsedata, const char* el) 
+static void GenInstXMLElementEnd(void* parsedata, const char* el)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
@@ -954,4 +956,3 @@ static void GenInstXMLElementEnd(void* parsedata, const char* el)
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
 }
-

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 //////////////////////////////////////////////////////////////////////
@@ -121,22 +123,22 @@ int orbatt_main()
     char* ttype[] = { "TIME", "X", "Y", "Z", "VX", "VY", "VZ" };
     char* tform[] = { "D"   , "D", "D", "D", "D" , "D" , "D"  };
     char* tunit[] = { "s"   , "m", "m", "m", "m/s","m/s","m/s"};
-    fits_create_tbl(fptr, BINARY_TBL, 0, 7, ttype, tform, tunit, 
+    fits_create_tbl(fptr, BINARY_TBL, 0, 7, ttype, tform, tunit,
 		    "ORBIT", &status);
     CHECK_STATUS_BREAK(status);;
     HDpar_stamp(fptr, 2, &status);
     CHECK_STATUS_BREAK(status);;
     long nrows=0;
-    
+
     // Set the timing keywords.
-    fits_update_key(fptr, TDOUBLE, "TSTART", &par.TSTART, 
+    fits_update_key(fptr, TDOUBLE, "TSTART", &par.TSTART,
 		    "start time", &status);
     double dbuffer=0.0;
-    fits_update_key(fptr, TDOUBLE, "TIMEZERO", &dbuffer, 
+    fits_update_key(fptr, TDOUBLE, "TIMEZERO", &dbuffer,
 		    "zero time", &status);
-    fits_update_key(fptr, TDOUBLE, "MJDREF", &par.MJDREF, 
+    fits_update_key(fptr, TDOUBLE, "MJDREF", &par.MJDREF,
 		    "MJD for reference time", &status);
-    fits_update_key(fptr, TSTRING, "TIMEUNIT", "s", 
+    fits_update_key(fptr, TSTRING, "TIMEUNIT", "s",
 		    "Unit for TSTART, TSTOP, TIMEZERO", &status);
     CHECK_STATUS_BREAK(status);;
 
@@ -151,11 +153,11 @@ int orbatt_main()
     const double J2  = 1082.6268e-6;
     const double prefactor = -1.5*J2*n*powl(R_e/p,2.);
 
-    // Determine the orbit period (for a Kepler orbit) an print 
+    // Determine the orbit period (for a Kepler orbit) an print
     // it to the screen.
     double T = 2*M_PI/n;
     headas_printf("orbit period: %.1lf min\n", T/60.);
-    headas_printf("orbit precession period: %.1lf d\n", 
+    headas_printf("orbit precession period: %.1lf d\n",
 		  2*M_PI/fabs(prefactor*cos(i))/(3600.*24.));
 
     // Loop over the requested time interval.
@@ -181,7 +183,7 @@ int orbatt_main()
 	omega -= 2.*M_PI;
       }
       // Mean eccentric anomaly.
-      double M = par.M0 + 
+      double M = par.M0 +
 	(n - prefactor*0.5*sqrt(1.-pow(e,2.))*(3.*pow(cos(i),2.)-1.)) * time;
       while (M < 0.) {
 	M += 2.*M_PI;
@@ -191,24 +193,24 @@ int orbatt_main()
       }
       // End of secular perturbation terms.
 
-      // Determine the eccentric anomaly E(t) by solving the Kepler 
+      // Determine the eccentric anomaly E(t) by solving the Kepler
       // equation (Flury p. 18).
       double E = kepler_equation(M, e);
 
       // Calculate the true anomaly from the eccentric anomaly (Flury p. 16).
       double f = 2.*atan(sqrt((1.+e)/(1.-e))*tan(E/2.));
 
-      // Now we know the argument of latitude and can calculate 
+      // Now we know the argument of latitude and can calculate
       // its cosine and sine.
       double cosu = cos(omega+f);
       double sinu = sin(omega+f);
-  
-      // Now we can determine the position and velocity of the 
+
+      // Now we can determine the position and velocity of the
       // satellite (Flury p. 38).
       double rl = p/(1.+e*cos(f));
       double vr = sqrt(mu/p)*e*sin(f);
       double vf = sqrt(mu*p)/rl;
-  
+
       // Position and velocity in Carteesian coordinates.
       Vector position = {
 	.x = rl*(cos(Omega)*cosu-sin(Omega)*cos(i)*sinu),
@@ -218,7 +220,7 @@ int orbatt_main()
       Vector velocity = {
 	.x = vr*(cos(Omega)*cosu-sin(Omega)*cos(i)*sinu) -
 	vf*(cos(Omega)*sinu+sin(Omega)*cosu*cos(i)),
-	.y = vr*(sin(Omega)*cosu+cos(Omega)*cos(i)*sinu) - 
+	.y = vr*(sin(Omega)*cosu+cos(Omega)*cos(i)*sinu) -
 	vf*(sin(Omega)*sinu-cos(Omega)*cosu*cos(i)),
 	.z = vr*sin(i)*sinu + vf*cosu*sin(i)
       };
@@ -241,7 +243,7 @@ int orbatt_main()
 
     // Update the TSTOP header keyword.
     dbuffer=par.TSTART+time;
-    fits_update_key(fptr, TDOUBLE, "TSTOP", &dbuffer, 
+    fits_update_key(fptr, TDOUBLE, "TSTOP", &dbuffer,
 		    "stop time", &status);
     CHECK_STATUS_BREAK(status);;
 
@@ -271,69 +273,69 @@ static int orbatt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'a0' parameter");
     return(status);
-  } 
-    
+  }
+
   // Read the eccentricity of the Kepler orbit.
   status=ape_trad_query_double("e0", &par->e0);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'e0' parameter");
     return(status);
-  } 
-   
+  }
+
   // Read the inclination.
   status=ape_trad_query_double("i0", &par->i0);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'i0' parameter");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("gOmega0", &par->Omega0);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'Omega0' parameter");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("komega0", &par->omega0);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'omega0' parameter");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("M0", &par->M0);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'M0' parameter");
     return(status);
-  } 
-   
+  }
+
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'TSTART' parameter");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("timespan", &par->timespan);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'timespan' parameter");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the 'dt' parameter");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_string("orbit_filename", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the orbit file");
     return(status);
-  } 
+  }
   strcpy(par->orbit_filename, sbuffer);
   free(sbuffer);
 
@@ -353,7 +355,7 @@ static int orbatt_getpar(struct Parameters* const par)
 }
 
 
-static double kepler_equation(const double M, const double e) 
+static double kepler_equation(const double M, const double e)
 {
   double E=M;
   double dE;
@@ -366,4 +368,3 @@ static double kepler_equation(const double M, const double e)
 
   return(E);
 }
-

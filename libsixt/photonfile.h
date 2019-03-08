@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PHOTONFILE_H
@@ -33,7 +35,7 @@
 typedef struct {
   /** Pointer to the FITS file. */
   fitsfile* fptr;
-  
+
   /** Total number of rows in the FITS file. */
   long nrows;
 
@@ -63,7 +65,7 @@ void freePhotonFile(PhotonFile** const plf, int* const status);
 /** Open an existing photon list FITS file and return the
     corresponding PhotonFile object. The access_mode parameter can
     be either READONLY or READWRITE. */
-PhotonFile* openPhotonFile(const char* const filename, 
+PhotonFile* openPhotonFile(const char* const filename,
 			   const int access_mode,
 			   int* const status);
 
@@ -72,7 +74,7 @@ PhotonFile* openPhotonFile(const char* const filename,
     return the PhotonFile object for the open file. If the clobber
     parameter has a value different from 0, any existing files will be
     overwritten. */
-PhotonFile* openNewPhotonFile(const char* const filename, 
+PhotonFile* openNewPhotonFile(const char* const filename,
 			      char* const telescop,
 			      char* const instrume,
 			      char* const filter,
@@ -94,7 +96,7 @@ int PhotonFile_getNextRow(PhotonFile* const plf, Photon* const ph);
     increase the internal counter of the PhotonFile data
     structure. The return value of the function is the error
     status. */
-int PhotonFile_getRow(PhotonFile* const plf, 
+int PhotonFile_getRow(PhotonFile* const plf,
 		      Photon* const ph, const long row);
 
 /** Append a new photon to the to PhotonFile. */

@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #ifndef SKYIMAGE_H
 #define SKYIMAGE_H 1
 
@@ -13,10 +34,10 @@ typedef struct{
   double** ra;      //corresponding RA-value
   double** dec;     //corresponding dec-value
 
-  int naxis1, naxis2;   // Width of the image [pixel] 
-  float cdelt1, cdelt2; // Width of one pixel [deg] 
+  int naxis1, naxis2;   // Width of the image [pixel]
+  float cdelt1, cdelt2; // Width of one pixel [deg]
   float crpix1, crpix2; // [pixel]
-  float crval1, crval2; // [deg] 
+  float crval1, crval2; // [deg]
 
   float minra, maxra;   // Maximum right ascension covered by the image [deg]
   float mindec, maxdec; // Maximum declination covered by the image [deg]

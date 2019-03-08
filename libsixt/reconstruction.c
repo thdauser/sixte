@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "reconstruction.h"
 
 ReconArray* newReconArray(int* const status)
@@ -122,14 +143,14 @@ double* SaveReconArray1d(ReconArray* recon, int* status)
     return(ReconArray1d);
  }
 
-    //Create the 1D-image from ReconArray 
+    //Create the 1D-image from ReconArray
   int x, y;
   for (x=0; x<recon->naxis1; x++) {
     for (y=0; y<recon->naxis2; y++) {
 	ReconArray1d[(x+ recon->naxis1*y)] = recon->Rmap[x][y];
    }
   }
- return(ReconArray1d);  
+ return(ReconArray1d);
 }
 
 
@@ -155,7 +176,3 @@ void FreeReconArray(ReconArray** const recon)
     *recon=NULL;
   }
 }
-
-
-
- 

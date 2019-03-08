@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "phabkg.h"
@@ -28,7 +30,7 @@
 ////////////////////////////////////////////////////////////////////
 
 
-PHABkg* newPHABkg(const char* const filename, int* const status) 
+PHABkg* newPHABkg(const char* const filename, int* const status)
 {
   // Allocate memory.
   PHABkg* phabkg=(PHABkg*)malloc(sizeof(PHABkg));
@@ -68,7 +70,7 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
     if (IMAGE_HDU==hdutype) {
       *status=EXIT_FAILURE;
       char msg[MAXMSG];
-      sprintf(msg, "no table extension available in FITS file '%s'", 
+      sprintf(msg, "no table extension available in FITS file '%s'",
 	      filename);
       SIXT_ERROR(msg);
       break;
@@ -80,10 +82,10 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
 
     // Allocate memory.
     phabkg->channel=(long*)malloc(phabkg->nbins*sizeof(long));
-    CHECK_NULL_BREAK(phabkg->channel, *status, 
+    CHECK_NULL_BREAK(phabkg->channel, *status,
 		     "memory allocation for PHA background spectrum failed");
     phabkg->distribution=(float*)malloc(phabkg->nbins*sizeof(float));
-    CHECK_NULL_BREAK(phabkg->distribution, *status, 
+    CHECK_NULL_BREAK(phabkg->distribution, *status,
 		     "memory allocation for PHA background spectrum failed");
 
     // Determine the column numbers.
@@ -94,9 +96,9 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
 
     // Read the data.
     int anynul=0;
-    fits_read_col(fptr, TLONG, cchannel, 1, 1, phabkg->nbins, 
+    fits_read_col(fptr, TLONG, cchannel, 1, 1, phabkg->nbins,
 		  0, phabkg->channel, &anynul, status);
-    fits_read_col(fptr, TFLOAT, crate, 1, 1, phabkg->nbins, 
+    fits_read_col(fptr, TFLOAT, crate, 1, 1, phabkg->nbins,
 		  0, phabkg->distribution, &anynul, status);
     CHECK_STATUS_BREAK(*status);
 
@@ -106,7 +108,7 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
       phabkg->distribution[ii]+=phabkg->distribution[ii-1];
     }
 
-  } while (0); // END of error handling loop  
+  } while (0); // END of error handling loop
 
   // Clean up:
   if (fptr) fits_close_file(fptr, status);
@@ -303,5 +305,3 @@ int phabkggen(PHABkg* const phabkg[2], AdvDet* det, const float scaling, const d
 	  return(1);
 
 }
-
-

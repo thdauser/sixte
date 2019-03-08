@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "lad.h"
@@ -26,7 +28,7 @@
 ////////////////////////////////////////////////////////////////////
 
 
-LAD* newLAD(int* const status) 
+LAD* newLAD(int* const status)
 {
   // Allocate memory.
   LAD* lad=(LAD*)malloc(sizeof(LAD));
@@ -104,7 +106,7 @@ void freeLAD(LAD** const lad, int* const status)
 }
 
 
-LADPanel* newLADPanel(int* const status) 
+LADPanel* newLADPanel(int* const status)
 {
   // Allocate memory.
   LADPanel* panel=(LADPanel*)malloc(sizeof(LADPanel));
@@ -144,7 +146,7 @@ void freeLADPanel(LADPanel** const panel)
 }
 
 
-LADModule* newLADModule(int* const status) 
+LADModule* newLADModule(int* const status)
 {
   // Allocate memory.
   LADModule* module=(LADModule*)malloc(sizeof(LADModule));
@@ -184,7 +186,7 @@ void freeLADModule(LADModule** const module)
 }
 
 
-LADElement* newLADElement(int* const status) 
+LADElement* newLADElement(int* const status)
 {
   // Allocate memory.
   LADElement* element=(LADElement*)malloc(sizeof(LADElement));
@@ -230,7 +232,7 @@ void LADCollimatorHoleIdx(const struct Point2d position,
 #ifdef LAD_COLLIMATOR_SQUARE_HOLES
   const double porewidth=83.e-6; // [m]
   const double wallthickness=16.e-6; // [m]
-  
+
   const double cellsize=porewidth+wallthickness;
   long xi=(long)(position.x/cellsize);
   long yi=(long)(position.y/cellsize);
@@ -265,11 +267,11 @@ void LADCollimatorHoleIdx(const struct Point2d position,
 
   // Center indices of the circles that have to be taken into account.
   long c[2], r[2];
-  
+
   // Check if row is an even or an odd number.
   if (rowidx % 2==1) {
     // Odd (as first row).
-    
+
     // Check if column is an even or an odd number.
     if (colidx % 2==1) {
       c[0]=colidx;
@@ -303,7 +305,7 @@ void LADCollimatorHoleIdx(const struct Point2d position,
   }
   // END of row is odd or even.
 
-  // Calculate the distances to the 2 circles that might contain 
+  // Calculate the distances to the 2 circles that might contain
   // the specified position.
   int ii;
   for (ii=0; ii<2; ii++) {
@@ -314,7 +316,7 @@ void LADCollimatorHoleIdx(const struct Point2d position,
     if (pow(position.x-center.x, 2.)+pow(position.y-center.y, 2.) < radius2) {
       *col=c[ii];
       *row=r[ii];
-      return;  
+      return;
     }
   }
 
@@ -323,4 +325,3 @@ void LADCollimatorHoleIdx(const struct Point2d position,
   *row=-1;
 #endif
 }
-

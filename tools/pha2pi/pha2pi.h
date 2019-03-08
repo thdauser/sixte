@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PHA2PI_H
@@ -59,4 +61,3 @@ void pha2pi_getpar(struct Parameters* const par, int* const status);
 
 
 #endif /* pha2pi_H */
-

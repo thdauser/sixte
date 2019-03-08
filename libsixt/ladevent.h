@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef LADEVENT_H 
+#ifndef LADEVENT_H
 #define LADEVENT_H 1
 
 #include "sixt.h"
@@ -38,7 +40,7 @@
 
 /** Generic event on a pixelized X-ray detector. */
 typedef struct {
-  
+
   /** Panel ID. */
   long panel;
 

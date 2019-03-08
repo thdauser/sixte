@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladimpact.h"
@@ -24,9 +26,9 @@
 LADImpact* getLADImpact(int* const status)
 {
   LADImpact* imp=(LADImpact*)malloc(sizeof(LADImpact));
-  CHECK_NULL_RET(imp, *status, 
+  CHECK_NULL_RET(imp, *status,
 		 "memory allocation for LADImpact failed", imp);
-  
+
   // Initalize.
   imp->panel  =0;
   imp->module =0;
@@ -49,4 +51,3 @@ void freeLADImpact(LADImpact** const impact)
     *impact=NULL;
   }
 }
-

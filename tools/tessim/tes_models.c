@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 // This code contains all the models for the TES tranistion shapes
 // as well as the assumptions for frame hits, readout etc...
 // Code by J. Wilms, Stephen J. Smith, T. Dauser, P. Peill
@@ -82,7 +103,7 @@ double get_RTI(tesparams *tes, const double Y[]){
 }
 
 double get_dRdI(tesparams *tes, const double Y[]){
-	
+
 	double II=Y[0];
 	double TT=Y[1];
 	//Computes the value of dR/dI as a function of the current TES values
@@ -101,7 +122,7 @@ double get_dRdI(tesparams *tes, const double Y[]){
 }
 
 double get_dRdT(tesparams *tes, const double Y[]){
-	
+
 	double II=Y[0];
 	double TT=Y[1];
 	//Computes the value of dR/dT as a function of the current TES values

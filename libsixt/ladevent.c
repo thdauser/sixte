@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladevent.h"
@@ -24,9 +26,9 @@
 LADEvent* getLADEvent(int* const status)
 {
   LADEvent* ev = (LADEvent*)malloc(sizeof(LADEvent));
-  CHECK_NULL_RET(ev, *status, 
+  CHECK_NULL_RET(ev, *status,
 		 "memory allocation for LADEvent failed", ev);
-  
+
   // Initalize.
   ev->panel  =0;
   ev->module =0;
@@ -69,4 +71,3 @@ void copyLADEvent(LADEvent* const dest, const LADEvent* const src)
     dest->src_id[ii] = src->src_id[ii];
   }
 }
-

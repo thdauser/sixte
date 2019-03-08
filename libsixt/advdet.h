@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef ADVDET_H
@@ -56,7 +58,7 @@ typedef struct MatrixDerCrossTalk MatrixDerCrossTalk;
 typedef struct Channel Channel;
 typedef struct IntermodulationCrossTalk IntermodulationCrossTalk;
 typedef struct ReadoutChannels ReadoutChannels;
-typedef struct FDMSystem FDMSystem; 
+typedef struct FDMSystem FDMSystem;
 
 /** Data structure describing the noise properties of calorimeter
  pixels */
@@ -113,25 +115,25 @@ typedef struct{
     Current implementation: only rectangulars, parallel to detector
     coordinate system. */
 struct AdvPix{
-  
+
   /** x-shift of pixel in respect to the detector reference point */
   double sx;
-  
+
   /** y-shift of pixel in respect to the detector reference point */
-  double sy;  
+  double sy;
 
   /** Width of the pixel [m], centered around pixel reference point. */
   double width;
 
   /** Height of the pixel [m], centered around pixel reference point. */
   double height;
-  
+
   /** Index of pixel in detector structure. */
   int pindex;
-  
+
   /** Version of pulse template. */
   char version[10];
-  
+
   /** Version index of pulse template */
   int profVersionID;
 
@@ -286,16 +288,16 @@ typedef struct{
 /** Data structure describing the geometry of a pixel detector with
     arbitrary pixel geometry. */
 typedef struct{
-  
+
   /** x-shift of detector in respect to the focal point */
   double sx;
-  
+
   /** y-shift of detector in respect to the focal point */
   double sy;
- 
+
   /** Number of pixels. */
   int npix;
-  
+
   /** Counter for operations on pixels */
   int cpix;
 
@@ -308,7 +310,7 @@ typedef struct{
 
   /** Path to the FITS file containing the XML detector definition. */
   char* filepath;
-  
+
   /** Name of file of pulse templates. */
   char tesproffilename[MAXFILENAME];
 
@@ -476,8 +478,8 @@ struct IntermodulationCrossTalk{
 /** Structure containing linear equations system for FDM Crosstalk **/
 struct FDMSystem{
         int num_pixels;
-        double* omega_array; // angular frequencies for pixels, length = num_pixels 
-        double* res_omega_array; // angular resonance frequencies for pixels, length = num_pixels 
+        double* omega_array; // angular frequencies for pixels, length = num_pixels
+        double* res_omega_array; // angular resonance frequencies for pixels, length = num_pixels
         double** Z_array; // complex impedances (saved as doubles, since they are imaginary), size = num_pixels x num_pixels
         double L_Common; // common impedance [H]
         double C_Common; // common capacitance [F]
@@ -515,7 +517,7 @@ struct ReadoutChannels{
 // Function Declarations.
 /////////////////////////////////////////////////////////////////////
 
-/** Constructor. Allocates memory for a new TESNoiseProperties data 
+/** Constructor. Allocates memory for a new TESNoiseProperties data
     structure. */
 TESNoiseProperties* newTESNoise(int* const status);
 
@@ -547,7 +549,7 @@ void freeReadoutChannels(ReadoutChannels* rc);
 void freeFDMSystem(FDMSystem* fdm_sys);
 
 /** Read the advanced detector syntax from the specified XML */
-void parseAdvDetXML(AdvDet* const det, 
+void parseAdvDetXML(AdvDet* const det,
 	       const char* const filename,
 	       int* const status);
 
@@ -569,7 +571,7 @@ int CheckAdvPixImpact(AdvPix pix, Impact *imp);
     pixel coordinates. */
 void CalcAdvPixImpact(AdvPix pix, Impact *imp, PixImpact *piximp);
 
-/** Function determining the pixel indices which have an impact from one 
+/** Function determining the pixel indices which have an impact from one
     event. Gives the number of pixels that were hit.*/
 int AdvImpactList(AdvDet *det, Impact *imp, PixImpact **piximp);
 

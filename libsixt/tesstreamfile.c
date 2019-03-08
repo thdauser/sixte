@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tesstreamfile.h"
@@ -47,7 +49,7 @@ TesStreamFile* newTesStreamFile(int* const status) {
 }
 
 /** Destructor. */
-void freeTesStreamFile(TesStreamFile** const file, int* const status){  
+void freeTesStreamFile(TesStreamFile** const file, int* const status){
   if (NULL!=*file) {
     if((*file)->columnNumber!=NULL){
       free((*file)->columnNumber);
@@ -65,7 +67,7 @@ void freeTesStreamFile(TesStreamFile** const file, int* const status){
 
     if (NULL!=(*file)->fptr) {
       fits_close_file((*file)->fptr, status);
-      headas_chat(5, "closed TesStream list file (containing %ld rows).\n", 
+      headas_chat(5, "closed TesStream list file (containing %ld rows).\n",
 		  (*file)->nrows);
     }
     free(*file);
@@ -78,9 +80,9 @@ TesStreamFile* openTesStreamFile(const char* const filename,int pixlow,int pixhi
 				 const int mode, int* const status){
   TesStreamFile* file=newTesStreamFile(status);
   CHECK_STATUS_RET(*status, file);
-  
+
   headas_chat(5, "open tesstream file '%s' ...\n", filename);
-  
+
   /////////////////////////////////////////////////////////
   //Iterate over the pixel IDs and check whether they are available
   /////////////////////////////////////////////////////////
@@ -97,7 +99,7 @@ TesStreamFile* openTesStreamFile(const char* const filename,int pixlow,int pixhi
   // Allocate memory for array countaining extension numbers and column numbers
   file->extNumber = (int*)malloc(Npix*sizeof(int));
   file->columnNumber = (int*)malloc(Npix*sizeof(int));
-  
+
   //Initialize iteration
   int currentExtensionNumber = 2;
   int hdu_type=0;
@@ -116,7 +118,7 @@ TesStreamFile* openTesStreamFile(const char* const filename,int pixlow,int pixhi
 	if (currentExtensionNumber>nhdus) {
 	  *status=EXIT_FAILURE;
 	  char msg[MAXMSG];
-	  sprintf(msg, "No data available for pixel %d in file '%s'",pixlow+pixNumber+1, 
+	  sprintf(msg, "No data available for pixel %d in file '%s'",pixlow+pixNumber+1,
 		  filename);
 	  SIXT_ERROR(msg);
 	  return(file);
@@ -136,7 +138,7 @@ TesStreamFile* openTesStreamFile(const char* const filename,int pixlow,int pixhi
 /** Generate a TESDataStream from tesstreamfile. */
 TESDataStream* generateTESDataStreamFromFile(TESDataStream* stream,TesStreamFile* file,double tstart_stream,
 					     double tstart,double tstop, double sampleFreq,int* const status){
-  
+
   // Set internal row counter to the beginning correct row in the file.
   file->row = (long)((tstart-tstart_stream)*sampleFreq);
   // Set the number of rows to read
@@ -148,7 +150,7 @@ TESDataStream* generateTESDataStreamFromFile(TESDataStream* stream,TesStreamFile
   ///////////////////////////
   //Populate TESDataStream
   ///////////////////////////
-  
+
   //Populate adc_value
   int currentExtensionNumber = file->extNumber[0];
   int anynul=0;
@@ -163,15 +165,15 @@ TESDataStream* generateTESDataStreamFromFile(TESDataStream* stream,TesStreamFile
     }
     anynul=0;
     for (tstep=0;tstep<file->nrows;tstep++){
-      fits_read_col(file->fptr, TUSHORT, file->columnNumber[pixNumber], file->row+tstep+1,1,1, 
+      fits_read_col(file->fptr, TUSHORT, file->columnNumber[pixNumber], file->row+tstep+1,1,1,
 		    NULL, &(stream->adc_value[tstep][pixNumber]), &anynul, status);
       fflush(stdout);
     }
   }
-  
+
   //Populate time
   anynul=0;
-  fits_read_col(file->fptr, TDOUBLE, file->timeColumnNumber, file->row+1, 1, file->nrows, 
+  fits_read_col(file->fptr, TDOUBLE, file->timeColumnNumber, file->row+1, 1, file->nrows,
 		NULL, (stream->time), &anynul, status);
 
   CHECK_STATUS_RET(*status, stream);

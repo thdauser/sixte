@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Thorsten Brand, FAU
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef DET2OBJ2D_H
@@ -41,7 +43,7 @@ Obj2D_instance *getObj2DFromGendet(GenDet *det, int* const status);
 Obj2D_instance *getObj2DFromXML(char *XMLName, int* const status);
 
 /** Draw an Obj2D to a SVG file. */
-void Obj2D_DrawObjectSVG(Obj2D *obj, 
+void Obj2D_DrawObjectSVG(Obj2D *obj,
 			 SixteSVGObj *svg,
 			 double linewidth,
 			 char *linecolor,
@@ -53,7 +55,7 @@ void Obj2D_DrawObjectSVG(Obj2D *obj,
 			 int* const status);
 
 /** Draw an Obj2D_instance recursively to a SVG file. */
-void Obj2D_DrawInstanceSVG(Obj2D_instance *obj, 
+void Obj2D_DrawInstanceSVG(Obj2D_instance *obj,
 			   SixteSVGObj *svg,
 			   char **linecolor,
 			   double *linewidth,

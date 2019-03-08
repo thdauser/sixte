@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sourcecatalog.h"
@@ -53,7 +55,7 @@ void freeSourceCatalog(SourceCatalog** const cat, int* const status)
     }
     free(*cat);
     *cat=NULL;
-  }    
+  }
 }
 
 
@@ -77,7 +79,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   // Set reference to ARF for SIMPUT library.
   setSimputARF(cat->simput, arf);
 
-  // Determine the number of point-like and the number of 
+  // Determine the number of point-like and the number of
   // extended sources.
   unsigned long nextended =0;
   unsigned long npointlike=0;
@@ -100,7 +102,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   }
   CHECK_STATUS_RET(*status, cat);
 
-  // Allocate memory for an array of the point-like sources, 
+  // Allocate memory for an array of the point-like sources,
   // which will be converted into a KDTree afterwards.
   Source* list=(Source*)malloc(npointlike*sizeof(Source));
   CHECK_NULL_RET(list, *status,
@@ -146,7 +148,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
       list[cpointlike-1].dec = src->dec;
       list[cpointlike-1].row = ii+1;
     }
-  } 
+  }
   CHECK_STATUS_RET(*status, cat);
   // END of loop over all entries in the FITS table.
 
@@ -154,13 +156,13 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   cat->tree=buildKDTree2(list, npointlike, 0, status);
   CHECK_STATUS_RET(*status, cat);
 
-  // In a later development stage this could be directly stored in 
+  // In a later development stage this could be directly stored in
   // a memory-mapped space.
 
   // Load spectra into the internal cache used by the SIMPUT library.
   // This works only if all spectra are contained as mission-independent
-  // spectra in a single binary-table FITS file HDU, which can be found 
-  // be tracing the location of the spectrum assigned to the first source 
+  // spectra in a single binary-table FITS file HDU, which can be found
+  // be tracing the location of the spectrum assigned to the first source
   // in the catalog.
   SimputSrc* src=getSimputSrc(cat->simput, 1, status);
   CHECK_STATUS_RET(*status, cat);
@@ -177,7 +179,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
     headas_chat(3, "try to load all spectra ('%s') into cache ...\n", specref);
     loadCacheAllSimputMIdpSpec(cat->simput, specref, status);
     CHECK_STATUS_RET(*status, cat);
-  }  
+  }
 
   // Release memory.
   if (templatesrc) free(templatesrc);
@@ -187,8 +189,8 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
 }
 
 
-LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat, 
-					const Vector* const pointing, 
+LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
+					const Vector* const pointing,
 					const float fov,
 					const double t0, const double t1,
 					const double mjdref,
@@ -199,20 +201,20 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
   // Minimum cos-value for point sources close to the FOV (in the direct
   // neighborhood).
   const double close_mult=1.5;
-  const double close_fov_min_align=cos(close_mult*fov/2.); 
+  const double close_fov_min_align=cos(close_mult*fov/2.);
 
-  // Perform a range search over all sources in the KDTree and 
+  // Perform a range search over all sources in the KDTree and
   // generate new photons for the sources within the FoV.
   // The kdTree only contains point-like sources.
   LinkedPhoListElement* list=
-    KDTreeRangeSearch(cat->tree, 0, pointing, close_fov_min_align, 
+    KDTreeRangeSearch(cat->tree, 0, pointing, close_fov_min_align,
 		      t0, t1, mjdref, cat->simput, status);
 
   // Loop over all extended sources.
   long ii;
   for (ii=0; ii<cat->nextsources; ii++) {
     // Check if at least a part of the source lies within the FoV.
-    Vector location=unit_vector(cat->extsources[ii].ra, 
+    Vector location=unit_vector(cat->extsources[ii].ra,
 				cat->extsources[ii].dec);
     double min_align = close_mult*(fov*0.5 + cat->extsources[ii].extension);
     if (min_align > M_PI){
@@ -221,7 +223,7 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
     if (0==check_fov(&location, pointing,min_align)) {
       // Generate photons for this particular source.
       LinkedPhoListElement* newlist=
-	getXRayPhotons(&(cat->extsources[ii]), cat->simput, 
+	getXRayPhotons(&(cat->extsources[ii]), cat->simput,
 		       t0, t1, mjdref, status);
       CHECK_STATUS_RET(*status, list);
 
@@ -232,5 +234,3 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
 
   return(list);
 }
-
-

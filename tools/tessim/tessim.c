@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include <assert.h>
 #include <parinput.h>
 #include "tessim.h"
@@ -19,11 +40,11 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
 int tessim_main() {
   // error status
   int status=EXIT_SUCCESS;
-  
+
   // register HEATOOL
   set_toolname("tessim");
   set_toolversion("0.02");
-  
+
   do { // start of error handling loop
     // read parameters using PIL
     tespxlparams par;
@@ -31,7 +52,7 @@ int tessim_main() {
 
     // advanced detector structure
     AdvDet* det=NULL;
-    
+
     tessim_getpar(&par,&det,&properties,&status);
     CHECK_STATUS_BREAK(status);
 
@@ -55,11 +76,11 @@ int tessim_main() {
         // output information about simulation
         tes_print_params(tes);
 
-        // only for npix=1 
+        // only for npix=1
         if (properties) {
           if (strcmp(par.streamfile,"none")!=0) {
             fitsfile *fptr;
-            fits_create_file_clobber(&fptr,par.streamfile,par.clobber,&status); 
+            fits_create_file_clobber(&fptr,par.streamfile,par.clobber,&status);
             fits_create_tbl(fptr,BINARY_TBL,0,0,NULL,NULL,NULL,"TESDATASTREAM",&status);
             tes_fits_write_params(fptr,tes,&status);
             fits_close_file(fptr,&status);
@@ -92,7 +113,7 @@ int tessim_main() {
         loop_par.stochastic_integrator = par.stochastic_integrator;
         loop_par.frame_hit=0; //Setting to default false //TODO add to multi-tessim
         loop_par.dobbfb=0; // Disabled for now in multitessim
- 
+
         // assign the actual pixid, input and output filename
         loop_par.id = det->pix[ii].pindex + 1; // id's start with 0 in advdet, but not in tessim...
         // turn the pixid into a string
@@ -122,7 +143,7 @@ int tessim_main() {
         det->pix[ii].tes=tes_init(&loop_par,&status);
         CHECK_STATUS_BREAK(status);
       }
-      
+
       tesparams *tes = det->pix[ii].tes;
       // initialize photon provider
       tes->photoninfo=tes_init_impactlist(loop_par.impactlist,&status);
@@ -148,7 +169,7 @@ int tessim_main() {
           int strategy=-1;
           if (strncmp(par.trigger,"movavg:",7)==0) {
             strategy=TRIGGER_MOVAVG;
-            
+
             // threshold is float after movavg
             sscanf(par.trigger,"movavg:%u:%lf:%u",&npts,&threshold,&suppress);
 
@@ -157,10 +178,10 @@ int tessim_main() {
               printf("\nChoosing movavg trigger strategy: %u points with threshold %f\n",npts,threshold);
               printf("Trigger suppression interval: %u\n\n",suppress);
             }
-            
+
             assert(npts<20);
             assert(threshold>0.0);
-            
+
           } else {
             if (strncmp(par.trigger,"diff:",5)==0) {
               strategy=TRIGGER_DIFF;
@@ -173,7 +194,7 @@ int tessim_main() {
                 printf("Trigger suppression interval: %u\n\n",suppress);
               }
               assert(threshold>0.0);
-              
+
               unsigned int points[]={2,3,4,5,6,7,8,9,10};
               int found=0;
               for (int i=0; i<9; i++) {
@@ -239,7 +260,7 @@ int tessim_main() {
         		par.bias_leakage*tes->I0_start,par.bias_leakage_phase,par.fb_leakage,par.fb_leakage_lag,tes->I0_start,&status);
         tes->apply_bbfb = &run_timedomain_bbfb_loop;
       }
-      
+
     }
     /** LOOP FOR MULTI TESSIM END */
 
@@ -279,7 +300,7 @@ int tessim_main() {
       headas_chat(0,"Initialized FDM Crosstalk\n");
     }
 
-    
+
 
     // set up the progress bar, but only for one pixel
     if (par.showprogress) {
@@ -315,7 +336,7 @@ int tessim_main() {
     }
 
     /** LOOP FOR MULTI TESSIM END */
-    
+
     destroyAdvDet(&det);
     free(par.type);
     free(par.impactlist);
@@ -327,7 +348,7 @@ int tessim_main() {
       free(loop_par.streamfile);
     }
 //    freeSixtStdKeywords(keywords);
-    
+
   } while(0); // end of error handling loop
 
   if (EXIT_SUCCESS==status) {
@@ -484,7 +505,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
   query_simput_parameter_string("PixType", &(par->type), status);
 
   int fromcmd=1;
-  
+
   query_simput_parameter_file_name("PixImpList", &(par->impactlist), status);
   query_simput_parameter_file_name("Streamfile", &(par->streamfile), status);
   query_simput_parameter_double("tstart", &(par->tstart), status);
@@ -558,11 +579,11 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     par->preBufferSize=(unsigned long) dummy;
     assert(par->triggerSize > par->preBufferSize);
     query_simput_parameter_bool("write_doubles", &par->write_doubles, status);
-  } 
+  }
 
   long seed; // needed because par->seed is an unsigned long
   query_simput_parameter_long("seed", &seed, status);
-  par->seed=labs(seed); 
+  par->seed=labs(seed);
 
   query_simput_parameter_bool("propertiesonly",properties,status);
 
@@ -584,22 +605,22 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
       par->Gb1*=1e-12; // pW/K -> W/K
     }
     assert(par->Gb1>0);
-    
+
     if (cmd_query_simput_parameter_double(fromcmd,"T_start", &(par->T_start), status) ) {
       par->T_start*=1e-3; // mK -> K
     }
     assert(par->T_start>0);
-    
+
     if (cmd_query_simput_parameter_double(fromcmd,"Tb", &(par->Tb), status) ) {
       par->Tb*=1e-3; // mK->K
     }
     assert(par->Tb>0);
-    
+
     if (cmd_query_simput_parameter_double(fromcmd,"R0", &(par->R0), status) ) {
       par->R0*=1e-3; // mOhm->Ohm
     }
     assert(par->R0>0);
-    
+
     if (cmd_query_simput_parameter_double(fromcmd, "bias", &(par->bias), status)){
         par->bias*=1e-2; // %->decimal
     }
@@ -618,7 +639,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
         SIXT_ERROR("Conflict: I0 is both given as parameter and should be automatically calculated");
         *status=EXIT_FAILURE;
         return;
-      } 
+      }
       par->I0*=1e-6; // muA->A
     }
     assert(par->I0>0);
@@ -633,7 +654,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
       }
       par->V0*=1e-6; // muV->V
     }
-    
+
     if (par->acdc) {
       if (cmd_query_simput_parameter_double(fromcmd,"Rparasitic", &(par->Rpara), status)) {
         par->Rpara*=1e-3; // mOhm->Ohm
@@ -649,7 +670,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     }
 
     if (par->acdc) {
-      cmd_query_simput_parameter_double(fromcmd,"TTR", &(par->TTR), status); 
+      cmd_query_simput_parameter_double(fromcmd,"TTR", &(par->TTR), status);
       assert(par->TTR>=0);
     } else {
       par->TTR=0.;
@@ -658,7 +679,7 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
     cmd_query_simput_parameter_double(fromcmd,"alpha", &(par->alpha), status);
     assert(par->alpha>0);
     cmd_query_simput_parameter_double(fromcmd,"beta", &(par->beta), status);
-    
+
     if (par->acdc) {
       if (cmd_query_simput_parameter_double(fromcmd,"Lfilter", &(par->Lfilter), status)){
         par->Lfilter*=1e-6;
@@ -759,5 +780,5 @@ void tessim_getpar(tespxlparams *par, AdvDet **det, int *properties, int *status
 
 
   sixt_free_query_commandline();
-  
+
 }

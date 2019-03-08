@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef HTRSSIM_H
@@ -43,7 +45,7 @@ struct Parameters {
   char eventlist_template[MAXFILENAME];
   double TSTART;
   double timespan;
-  
+
   double ccsigma;
   long pha_threshold;
   float energy_threshold;
@@ -69,4 +71,3 @@ static int getpar(struct Parameters* parameters);
 
 
 #endif /* HTRSSIM_H */
-

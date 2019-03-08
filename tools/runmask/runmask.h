@@ -19,6 +19,8 @@
    Manuel Castro, National Institute for Space Research (INPE),
 		 Brazil; under grant #2017/00968-6,
 		 São Paulo Research Foundation (FAPESP).
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
 */
 
 
@@ -96,7 +98,7 @@ struct Parameters {
   double Sigma;
 
   int Seed;
- 
+
   char clobber;
 };
 
@@ -111,5 +113,5 @@ int photogen(struct Parameters* parameters, GenInst* inst);
 int comaimg(struct Parameters* parameters, MaskSystem* mask_setup);
 int comadet(struct Parameters* parameters, MaskSystem* mask_setup);
 int comarecon(struct Parameters* parameters, MaskSystem* mask_setup);
- 
+
 #endif /* */

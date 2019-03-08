@@ -16,13 +16,15 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "genericdetector.h"
 
 
-int initGenericDetector(GenericDetector* gd, 
-			struct GenericDetectorParameters* parameters) 
+int initGenericDetector(GenericDetector* gd,
+			struct GenericDetectorParameters* parameters)
 {
   int status = EXIT_SUCCESS;
 
@@ -31,16 +33,16 @@ int initGenericDetector(GenericDetector* gd,
   gd->gcc.ccsigma =    parameters->ccsigma;
   gd->gcc.ccsize  = 3.*parameters->ccsigma;
   headas_chat(5, "Split events: assuming Gaussian Charge Cloud model:\n");
-  headas_chat(5, " charge cloud size: %lf mum (3 sigma)\n", 
+  headas_chat(5, " charge cloud size: %lf mum (3 sigma)\n",
 	      gd->gcc.ccsize*1.e6);
   // Exponential model for eROSITA according to Konrad Dennerl:
   gd->ecc.parameter = 0.355;
-  
+
   // Set the event thresholds:
   gd->pha_threshold = parameters->pha_threshold;
   gd->energy_threshold = parameters->energy_threshold;
 
-  // Read the detector RMF and EBOUNDS from the specified file and 
+  // Read the detector RMF and EBOUNDS from the specified file and
   // assign them to the Detector data structure.
   gd->rmf = loadRMF(parameters->rmf_filename, &status);
   if(EXIT_SUCCESS!=status) return(status);
@@ -66,8 +68,7 @@ void cleanupGenericDetector(GenericDetector* gd)
 }
 
 
-double gaussint(const double x) 
+double gaussint(const double x)
 {
   return(gsl_sf_erf_Q(x));
 }
-

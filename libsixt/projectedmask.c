@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "projectedmask.h"
 
 ProjectedMask* newProjectedMask(int* const status)
@@ -74,7 +95,7 @@ ProjectedMask* getEmptyProjectedMask(int Size1, int Size2, double pixelsize1, do
 void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
 {
   int x,y;                   //counts
-  int xcount, ycount;        //counts 
+  int xcount, ycount;        //counts
 
   //scanning over whole mask and fill in the ProjectedMask-pixels
     //equivalent to former mask pixels
@@ -85,7 +106,7 @@ void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
       proj->map[xcount][ycount]=(double)mask->map[x][y];
      }
    }
-  
+
   //scanning over all ProjectedMask-pixels and fill in the new intermediate ones
   /*
   for(y=1; y<(proj->naxis2-1); y+=2){ //all middle odd rows -> contains former mask-pix (each odd col in this row)
@@ -102,7 +123,7 @@ void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
 	  if(proj->map[proj->naxis2-2][y] == 0){proj->map[proj->naxis2-1][y]=0.;}
 	  else{proj->map[proj->naxis2-1][y]=0.5;}
   }
- 
+
 
   for(y=2; y<(proj->naxis2-1); y+=2){ //all middle even rows -> only new intermediate pixels
 
@@ -118,10 +139,10 @@ void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
 	  }
 
 	  //last pix
-	  proj->map[proj->naxis2-1][y]=(proj->map[proj->naxis2-1][y-1]+proj->map[proj->naxis2-1][y+1])/2; 
+	  proj->map[proj->naxis2-1][y]=(proj->map[proj->naxis2-1][y-1]+proj->map[proj->naxis2-1][y+1])/2;
   }
 
-  
+
   //special case: 1st row (bottom)
    //1st pix
   proj->map[0][0]=(proj->map[1][0]+proj->map[0][1])/2;
@@ -141,7 +162,7 @@ void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
    //last pix
   proj->map[proj->naxis1-1][0]=(proj->map[proj->naxis1-2][0]+proj->map[proj->naxis1-1][1])/2;
 
-  
+
   //special case: last row (top)
    //1st pix
   proj->map[0][proj->naxis1-1]=(proj->map[0][proj->naxis1-2]+proj->map[1][proj->naxis1-1])/2;
@@ -157,7 +178,7 @@ void getProjectedMask(const CodedMask* const mask, ProjectedMask* proj)
    for(x=2; x<(proj->naxis1-1); x+=2){ //even cols -> intermediate values
       proj->map[x][proj->naxis1-1]=(proj->map[x-1][proj->naxis1-1]+proj->map[x+1][proj->naxis1-1])/2;
     }
- 
+
 
   //last pix
   proj->map[proj->naxis1-1][proj->naxis1-1]=(proj->map[proj->naxis1-2][proj->naxis1-1]+

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sixt.h"
@@ -46,7 +48,7 @@ struct Parameters {
   double Exposure;
 
   int Seed;
-  
+
   char clobber;
   char ProjCenter;
 };
@@ -76,7 +78,7 @@ int projev_main() {
   AdvDet* adv_det=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS;   
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
@@ -101,7 +103,7 @@ int projev_main() {
 
     // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
@@ -127,7 +129,7 @@ int projev_main() {
 
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
-      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
 				par.TSTART+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -177,7 +179,7 @@ int projev_main() {
 
   // Destroy the GenInst data structure.
   destroyGenInst(&inst, &status);
-  
+
   // Destroy the AdvDet data structure
   destroyAdvDet(&adv_det);
 
@@ -203,7 +205,7 @@ int projev_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // check if any obsolete keywords are given
   sixt_check_obsolete_keyword(&status);
@@ -216,7 +218,7 @@ int projev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event file");
     return(status);
-  } 
+  }
   strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
@@ -224,7 +226,7 @@ int projev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the mission");
     return(status);
-  } 
+  }
   strcpy(par->Mission, sbuffer);
   free(sbuffer);
 
@@ -232,7 +234,7 @@ int projev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument");
     return(status);
-  } 
+  }
   strcpy(par->Instrument, sbuffer);
   free(sbuffer);
 
@@ -240,7 +242,7 @@ int projev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
-  } 
+  }
   strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
@@ -248,7 +250,7 @@ int projev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -264,7 +266,7 @@ int projev_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -273,31 +275,31 @@ int projev_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the right ascension of the telescope "
 		   "pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
@@ -321,5 +323,3 @@ int projev_getpar(struct Parameters* par)
   return(status);
 
 }
-
-

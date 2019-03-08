@@ -16,6 +16,8 @@
 
 
    Copyright 2016 Christian Kirsch, FAU
+   Copyright 2017-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESCROSSTALK_H

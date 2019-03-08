@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 //
 // output routines for the Tes simulator based on the tesrecord
 // data structure
@@ -7,7 +28,7 @@
 
 void tes_write_tesrecord(tesparams *tes,int *status);
 
-// initialize the internal TESDataStream based memory management 
+// initialize the internal TESDataStream based memory management
 tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes, int buffersize,
 				    char *streamfile, char *impactfile, int clobber,int write_error,
 				    SixtStdKeywords *keywords, int *status) {
@@ -21,7 +42,7 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
   data->imin=tes->imin;
   data->imax=tes->imax;
   data->aducnv=tes->aducnv;
-  
+
   data->stream=newTesRecord(status);
   allocateTesRecord(data->stream,(int) data->Nt, 1./tes->sample_rate, 0, status);
   CHECK_STATUS_RET(*status,NULL);
@@ -55,7 +76,7 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
 // write a pulse to the stream
 // this routine executes the trigger
 void tes_append_tesrecord(tesparams *tes,double time,double pulse, int *status) {
-  CHECK_STATUS_VOID(*status); 
+  CHECK_STATUS_VOID(*status);
   tes_record_info *data=(tes_record_info *) (tes->streaminfo);
 
   if (data->streamind==-1) {
@@ -102,7 +123,7 @@ void tes_write_tesrecord(tesparams *tes,int *status) {
   if (dataptr->fptr==NULL) {
     fits_create_file_clobber(&fptr,dataptr->streamfile,dataptr->clobber,status);
     CHECK_STATUS_VOID(*status);
-    dataptr->fptr=fptr; 
+    dataptr->fptr=fptr;
 
     //
     int logic=(int)'T';

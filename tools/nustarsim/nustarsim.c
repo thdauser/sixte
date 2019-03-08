@@ -16,16 +16,18 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "nustarsim.h"
 
 
-int nustarsim_main() 
+int nustarsim_main()
 {
   // Program parameters.
   struct Parameters par;
-  
+
   // Individual sub-instruments.
   GenInst* subinst[2]={NULL, NULL};
 
@@ -33,7 +35,7 @@ int nustarsim_main()
   // sub-telescopes. This is used for the photon generation
   // from the SIMPUT catalog.
   struct ARF* arf2=NULL;
-  
+
   // FoV of the two telescopes combined. If there is not misalignment,
   // it corresponds to the FoV of a single sub-telescope.
   float fov2;
@@ -67,7 +69,7 @@ int nustarsim_main()
   FILE* progressfile=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
@@ -78,7 +80,7 @@ int nustarsim_main()
   do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-    
+
     // Read the parameters using PIL.
     status=nustarsim_getpar(&par);
     CHECK_STATUS_BREAK(status);
@@ -116,7 +118,7 @@ int nustarsim_main()
       strcat(impactlist_filename_template, "tel%d_");
       strcat(impactlist_filename_template, par.ImpactList);
     }
-    
+
     // Determine the event list output file.
     char rawdata_filename_template[MAXFILENAME];
     strcpy(ucase_buffer, par.RawData);
@@ -161,13 +163,13 @@ int nustarsim_main()
 
     // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     "NUSTAR", "NUSTAR", "", &status);
     CHECK_STATUS_BREAK(status);
 
     // Load the configurations of both sub-instruments.
     for (ii=0; ii<2; ii++) {
-      // Check if a particular XML file is given for this 
+      // Check if a particular XML file is given for this
       // sub-instrument. If not, use the default XML file.
       char buffer[MAXFILENAME];
       char ubuffer[MAXFILENAME];
@@ -202,7 +204,7 @@ int nustarsim_main()
       assert(GS_NONE==subinst[ii]->det->split->type);
     }
     CHECK_STATUS_BREAK(status);
-    
+
     // Determine a fake ARF with the combined effective area of
     // both sub-telescopes.
     arf2=(struct ARF*)malloc(sizeof(struct ARF));
@@ -223,11 +225,11 @@ int nustarsim_main()
     strcpy(arf2->Detector  , subinst[0]->tel->arf->Detector  );
     strcpy(arf2->Filter    , subinst[0]->tel->arf->Filter    );
     strcpy(arf2->ARFExtensionName, subinst[0]->tel->arf->ARFExtensionName);
-    
+
     // The FoV is the same as for an individual sub-telescope.
     // We ignore any misalignment for the moment.
     fov2=subinst[0]->tel->fov_diameter;
-    
+
     // Set up the Attitude.
     strcpy(ucase_buffer, par.Attitude);
     strtoupper(ucase_buffer);
@@ -241,7 +243,7 @@ int nustarsim_main()
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
-      
+
       // Check if the required time interval for the simulation
       // is a subset of the period covered by the attitude file.
       checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
@@ -251,7 +253,7 @@ int nustarsim_main()
     // END of setting up the attitude.
 
     // Get a GTI.
-    gti=getGTIFromFileOrContinuous(par.GTIfile, 
+    gti=getGTIFromFileOrContinuous(par.GTIfile,
 				   par.TSTART, par.TSTART+par.Exposure,
 				   par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
@@ -328,10 +330,10 @@ int nustarsim_main()
 	if (NULL!=subinst[ii]->instrume) {
 	  strcpy(instrume, subinst[ii]->instrume);
 	}
-    
+
 	char photonlist_filename[MAXFILENAME];
 	sprintf(photonlist_filename, photonlist_filename_template, ii);
-	plf[ii]=openNewPhotonFile(photonlist_filename, 
+	plf[ii]=openNewPhotonFile(photonlist_filename,
 				  telescop, instrume,
 				  subinst[ii]->tel->arf->Filter,
 				  subinst[ii]->tel->arf_filename,
@@ -354,10 +356,10 @@ int nustarsim_main()
 	if (NULL!=subinst[ii]->instrume) {
 	  strcpy(instrume, subinst[ii]->instrume);
 	}
-    
+
 	char impactlist_filename[MAXFILENAME];
 	sprintf(impactlist_filename, impactlist_filename_template, ii);
-	ilf[ii]=openNewImpactFile(impactlist_filename, 
+	ilf[ii]=openNewImpactFile(impactlist_filename,
 				  telescop, instrume,
 				  subinst[ii]->tel->arf->Filter,
 				  subinst[ii]->tel->arf_filename,
@@ -379,7 +381,7 @@ int nustarsim_main()
       if (NULL!=subinst[ii]->instrume) {
 	strcpy(instrume, subinst[ii]->instrume);
       }
-    
+
       char rawdata_filename[MAXFILENAME];
       sprintf(rawdata_filename, rawdata_filename_template, ii);
       elf[ii]=openNewEventFile(rawdata_filename,
@@ -409,7 +411,7 @@ int nustarsim_main()
       if (NULL!=subinst[ii]->instrume) {
 	strcpy(instrume, subinst[ii]->instrume);
       }
-      
+
       char evtfile_filename[MAXFILENAME];
       sprintf(evtfile_filename, evtfile_filename_template, ii);
       patf[ii]=openNewEventFile(evtfile_filename,
@@ -433,11 +435,11 @@ int nustarsim_main()
       // Determine the telescope pointing direction and roll angle.
       Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
-    
+
       // Direction.
       double ra, dec;
       calculate_ra_dec(pointing, &ra, &dec);
-    
+
       // Roll angle.
       float rollangle=getRollAngle(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
@@ -458,7 +460,7 @@ int nustarsim_main()
 			  "Roll angle [deg]", &status);
 	  CHECK_STATUS_BREAK(status);
 	}
-	
+
 	// Impact list file.
 	if (NULL!=ilf[ii]) {
 	  fits_update_key(ilf[ii]->fptr, TDOUBLE, "RA_PNT", &ra,
@@ -478,7 +480,7 @@ int nustarsim_main()
 	fits_update_key(elf[ii]->fptr, TFLOAT, "PA_PNT", &rollangle,
 			"Roll angle [deg]", &status);
 	CHECK_STATUS_BREAK(status);
-	
+
 	// Pattern list file.
 	fits_update_key(patf[ii]->fptr, TDOUBLE, "RA_PNT", &ra,
 			"RA of pointing direction [deg]", &status);
@@ -489,7 +491,7 @@ int nustarsim_main()
 	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
-	
+
     } else {
       // An explicit attitude file is given.
       for (ii=0; ii<2; ii++) {
@@ -515,7 +517,7 @@ int nustarsim_main()
 		      "event type", &status);
       CHECK_STATUS_BREAK(status);
     }
-    CHECK_STATUS_BREAK(status);  
+    CHECK_STATUS_BREAK(status);
 
     // TLMIN and TLMAX of PI column.
     for (ii=0; ii<2; ii++) {
@@ -528,16 +530,16 @@ int nustarsim_main()
       value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
       fits_update_key(elf[ii]->fptr, TLONG, keystr, &value, "", &status);
       CHECK_STATUS_BREAK(status);
-    
+
       sprintf(keystr, "TLMIN%d", patf[ii]->cpha);
       value=subinst[ii]->det->rmf->FirstChannel;
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
       sprintf(keystr, "TLMAX%d", patf[ii]->cpha);
       value=subinst[ii]->det->rmf->FirstChannel+subinst[ii]->det->rmf->NumberChannels-1;
       fits_update_key(patf[ii]->fptr, TLONG, keystr, &value, "", &status);
-      CHECK_STATUS_BREAK(status);  
+      CHECK_STATUS_BREAK(status);
     }
-    
+
     // --- End of opening files ---
 
 
@@ -553,7 +555,7 @@ int nustarsim_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 0.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
 
     // Determine the total length of the time interval to
@@ -573,7 +575,7 @@ int nustarsim_main()
       // Currently regarded interval.
       double t0=gti->start[gtibin];
       double t1=gti->stop[gtibin];
-      
+
       // Set the start time for the detector models.
       for (ii=0; ii<2; ii++) {
 	setGenDetStartTime(subinst[ii]->det, t0);
@@ -586,14 +588,14 @@ int nustarsim_main()
 
 	// Photon generation.
 	Photon ph;
-	int isph=phgen(ac, srccat, MAX_N_SIMPUT, 
-		       t0, t1, par.MJDREF, par.dt, 
+	int isph=phgen(ac, srccat, MAX_N_SIMPUT,
+		       t0, t1, par.MJDREF, par.dt,
 		       fov2, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
 	// If no photon has been generated, break the loop.
 	if (0==isph) break;
-	
+
 	// Check if the photon still is within the requested
 	// exposre time.
 	assert(ph.time<=t1);
@@ -618,7 +620,7 @@ int nustarsim_main()
 	// continue with the next one.
 	if (0==isimg) continue;
 
-	// Skip if the impact position is located in the gap of 
+	// Skip if the impact position is located in the gap of
 	// the 2x2 module. Note that this approach does not work
 	// properly if split events between neighboring pixels are
 	// enabled. In this case there needs to be a particular
@@ -650,7 +652,7 @@ int nustarsim_main()
 	  } else {
 	    rewind(progressfile);
 	    fprintf(progressfile, "%.2lf", progress*1./100.);
-	    fflush(progressfile);	
+	    fflush(progressfile);
 	  }
 	}
 
@@ -677,8 +679,8 @@ int nustarsim_main()
     } while (1);
     CHECK_STATUS_BREAK(status);
     // End of loop over the individual GTI intervals.
-    
-      
+
+
     // Progress output.
     if (NULL==progressfile) {
       headas_chat(2, "\r%.0lf %%\n", 100.);
@@ -686,7 +688,7 @@ int nustarsim_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 1.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
 
 
@@ -694,8 +696,8 @@ int nustarsim_main()
     for (ii=0; ii<2; ii++) {
       status=EXIT_SUCCESS;
 
-      // Apply dead time, charge pump reset, and shield anticoincidence 
-      // intervals. The event list contains all events neglecting 
+      // Apply dead time, charge pump reset, and shield anticoincidence
+      // intervals. The event list contains all events neglecting
       // dead time, charge pump resets, and shield vetos, while the
       // pattern list contains only events after the dead time application.
       headas_chat(3, "apply dead time ...\n");
@@ -710,18 +712,18 @@ int nustarsim_main()
       for (row=0; row<elf[ii]->nrows; row++) {
 	// Buffers.
 	Event event;
-	
+
 	// Read an event from the input list.
 	getEventFromFile(elf[ii], row+1, &event, &status);
 	CHECK_STATUS_BREAK(status);
-    
+
 	// Make sure that the event is not located in the gap
 	// between the 2x2 hybrids.
 	assert((event.rawx<160)||(event.rawx>164));
 	assert((event.rawy<160)||(event.rawy>164));
-	
+
 	// Check if the event falls within an interval of charge
-	// pump reset. Resets take place every millisecond and 
+	// pump reset. Resets take place every millisecond and
 	// last for 20mus.
 	double dt=event.time-((long)(event.time*1000.))*0.001;
 	if (dt<0.02e-3) continue;
@@ -732,7 +734,7 @@ int nustarsim_main()
 	  CHECK_STATUS_BREAK(status);
 	}
 	CHECK_STATUS_BREAK(status);
-	
+
 	if ((event.time-veto_time>=0.) &&
 	    (event.time-veto_time<=veto_interval)) {
 	  continue;
@@ -747,21 +749,21 @@ int nustarsim_main()
 
 	// The event is detected.
 	last_time=event.time;
-	
+
 	// Add the event to the output file.
-	addEvent2File(patf[ii], &event, &status);	  
+	addEvent2File(patf[ii], &event, &status);
 	CHECK_STATUS_BREAK(status);
       }
       //CHECK_STATUS_BREAK(status);
       // END of loop over all events in the list.
 
-      fits_update_key(patf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL", 
+      fits_update_key(patf[ii]->fptr, TSTRING, "EVTYPE", "PIXEL",
 		      "event type", &status);
       //CHECK_STATUS_BREAK(status);
 
     }
     CHECK_STATUS_BREAK(status);
-    
+
     // Store the GTI extension in the event files.
     for (ii=0; ii<2; ii++) {
       saveGTIExt(elf[ii]->fptr, "STDGTI", gti, &status);
@@ -809,7 +811,7 @@ int nustarsim_main()
 
 
   // --- Clean up ---
-  
+
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
@@ -849,7 +851,7 @@ int nustarsim_getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // check if any obsolete keywords are given
   sixt_check_obsolete_keyword(&status);
@@ -869,7 +871,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the photon list");
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -877,7 +879,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the impact list");
     return(status);
-  } 
+  }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
@@ -885,7 +887,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
-  } 
+  }
   strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
@@ -893,7 +895,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -901,7 +903,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -909,7 +911,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 1");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile1, sbuffer);
   free(sbuffer);
 
@@ -917,7 +919,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file 2");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile2, sbuffer);
   free(sbuffer);
 
@@ -931,7 +933,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -940,20 +942,20 @@ int nustarsim_getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the right ascension of the telescope "
 	       "pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope "
 	       "pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput, sbuffer);
   free(sbuffer);
 
@@ -961,7 +963,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the second SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput2, sbuffer);
   free(sbuffer);
 
@@ -969,7 +971,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the third SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput3, sbuffer);
   free(sbuffer);
 
@@ -977,7 +979,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the forth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput4, sbuffer);
   free(sbuffer);
 
@@ -985,7 +987,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the fifth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput5, sbuffer);
   free(sbuffer);
 
@@ -1001,7 +1003,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the GTI file");
     return(status);
-  } 
+  }
   strcpy(par->GTIfile, sbuffer);
   free(sbuffer);
 
@@ -1009,25 +1011,25 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading dt");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_bool("SkipInvalids", &par->SkipInvalids);
   if (EXIT_SUCCESS!=status) {
@@ -1045,7 +1047,7 @@ int nustarsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the progress status file");
     return(status);
-  } 
+  }
   strcpy(par->ProgressFile, sbuffer);
   free(sbuffer);
 
@@ -1057,4 +1059,3 @@ int nustarsim_getpar(struct Parameters* const par)
 
   return(status);
 }
-

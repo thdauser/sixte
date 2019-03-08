@@ -16,12 +16,14 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sourceimage.h"
 
 
-SourceImage* get_SourceImage() 
+SourceImage* get_SourceImage()
 {
   SourceImage* si=NULL;
 
@@ -93,8 +95,8 @@ SourceImage* getEmptySourceImage(struct SourceImageParameters* sip, int* status)
       si->pixel[xcount][ycount] = 0.;
     }
   }
- 
-  
+
+
   // Set the properties of the pixel array.
   si->cdelt1 = sip->cdelt1;
   si->cdelt2 = sip->cdelt2;
@@ -117,7 +119,7 @@ SourceImage* get_SourceImage_fromFile(char* filename, int* status)
     // Open image FITS file
     headas_chat(5, "open extended SourceImage FITS file '%s' ...\n", filename);
     if (fits_open_image(&fptr, filename, READONLY, status)) break;
-    
+
     // Load the image using a different constructor which accepts FITS file pointers.
     si = get_SourceImage_fromHDU(fptr, status);
 
@@ -142,7 +144,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
 
     headas_chat(5, "load SourceImage from FITS file HDU ...\n");
 
-    // Get an empty SourceImage using the standard Constructor without 
+    // Get an empty SourceImage using the standard Constructor without
     // any arguments:
     si = get_SourceImage();
     if(si==NULL) {
@@ -213,8 +215,8 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
       HD_ERROR_THROW("Error: could not allocate memory for storing the "
 		     "extended SourceImage!\n", *status);
       break;
-    } 
-    
+    }
+
     // Allocate memory for input buffer (1D array):
     input_buffer=(double*)malloc(si->naxis1*si->naxis2*sizeof(double));
     if(input_buffer==NULL) {
@@ -224,7 +226,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
       break;
     }
     // END of memory allocation
-    
+
 
     // READ the FITS image:
     int anynul;
@@ -233,10 +235,10 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     //                |--|--> FITS coordinates start at (1,1)
     long lpixel[2] = {si->naxis1, si->naxis2}; // upper right corner
     long inc[2] = {1, 1};
-    if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value, 
+    if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value,
 			 input_buffer, &anynul, status)) break;
 
-    
+
     // Transfer the image from the 1D input buffer to the 2D pixel array in
     // the data structure and generate a probability distribution function,
     // i.e., sum up the pixels.
@@ -252,7 +254,7 @@ SourceImage* get_SourceImage_fromHDU(fitsfile* fptr, int* status)
     }
 
     // Normalization of the SourceImage such that the sum
-    // of all pixel values is 1 and create a probability 
+    // of all pixel values is 1 and create a probability
     // distribution.
     /*for(x=0; x<si->naxis1; x++) {
       for(y=0; y<si->naxis2; y++) {
@@ -283,13 +285,13 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
   char msg[MAXMSG];
   sprintf(msg, "Store SourceImage in file '%s' ...\n", filename);
   headas_chat(5, msg);
- 
+
   do { // ERROR handling loop
 
 
     // If the specified file already exists, remove the old version.
     remove(filename);
- 
+
     // Create a new FITS-file:
     if (fits_create_file(&fptr, filename, status)) break;
 
@@ -309,7 +311,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
       exit(0);
     }
 
-    // Store the source image in the 1-dimensional buffer to handle it 
+    // Store the source image in the 1-dimensional buffer to handle it
     // to the FITS routine.
     int x, y;
     for (x=0; x<si->naxis1; x++) {
@@ -317,7 +319,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
 	image1d[(x+ si->naxis1*y)] = si->pixel[x][y];
       }
     }
-    
+
     // Create an image in the FITS-file (primary HDU):
     long naxes[2] = {(long)(si->naxis1), (long)(si->naxis2)};
     if (fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status)) break;
@@ -332,28 +334,28 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
 		       "sky coordinate system", status)) break;
     if (fits_write_key(fptr, TSTRING, "CTYPE2", "DEC--TAN",
 		       "sky coordinate system", status)) break;
-      
+
     if (fits_write_key(fptr, TSTRING, "CUNIT1", "degree", "", status)) break;
     if (fits_write_key(fptr, TSTRING, "CUNIT2", "degree", "", status)) break;
-    if (fits_write_key(fptr, TFLOAT, "CRPIX1", &si->crpix1, 
+    if (fits_write_key(fptr, TFLOAT, "CRPIX1", &si->crpix1,
                        "X axis reference pixel", status)) break;
-    if (fits_write_key(fptr, TFLOAT, "CRPIX2", &si->crpix2, 
+    if (fits_write_key(fptr, TFLOAT, "CRPIX2", &si->crpix2,
     		       "Y axis reference pixel", status)) break;
 
     float fbuffer;
     fbuffer = si->crval1 *180./M_PI;
-    if (fits_write_key(fptr, TFLOAT, "CRVAL1", &fbuffer, 
+    if (fits_write_key(fptr, TFLOAT, "CRVAL1", &fbuffer,
 		       "coord of X ref pixel", status)) break;
     fbuffer = si->crval2 *180./M_PI;
-    if (fits_write_key(fptr, TFLOAT, "CRVAL2", &fbuffer, 
+    if (fits_write_key(fptr, TFLOAT, "CRVAL2", &fbuffer,
     		       "coord of Y ref pixel", status)) break;
     fbuffer = si->cdelt1 *180./M_PI;
-    if (fits_write_key(fptr, TFLOAT, "CDELT1", &fbuffer, 
+    if (fits_write_key(fptr, TFLOAT, "CDELT1", &fbuffer,
 		       "X axis increment", status)) break;
     fbuffer = si->cdelt2 *180./M_PI;
-    if (fits_write_key(fptr, TFLOAT, "CDELT2", &fbuffer, 
+    if (fits_write_key(fptr, TFLOAT, "CDELT2", &fbuffer,
 		       "Y axis increment", status)) break;
-    
+
     HDpar_stamp(fptr, 1, status);
     if (EXIT_SUCCESS!=*status) break;
     // END of writing header keywords.
@@ -363,7 +365,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
     long fpixel[2] = {1, 1};  // Lower left corner.
     //                |--|--> FITS coordinates start at (1,1)
     // Upper right corner.
-    long lpixel[2] = {si->naxis1, si->naxis2}; 
+    long lpixel[2] = {si->naxis1, si->naxis2};
     fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, image1d, status);
 
   } while (0); // END of ERROR handling loop
@@ -375,7 +377,7 @@ void saveSourceImage(SourceImage* si, char* filename, int* status)
 }
 
 
-void free_SourceImage(SourceImage* si) 
+void free_SourceImage(SourceImage* si)
 {
   if(si != NULL) {
     if((si->naxis1 > 0)&&(NULL!=si->pixel)) {
@@ -390,7 +392,7 @@ void free_SourceImage(SourceImage* si)
 }
 
 
-SourceImageCatalog* get_SourceImageCatalog() 
+SourceImageCatalog* get_SourceImageCatalog()
 {
   SourceImageCatalog* sic = NULL;
 
@@ -405,7 +407,7 @@ SourceImageCatalog* get_SourceImageCatalog()
 }
 
 
-void free_SourceImageCatalog(SourceImageCatalog* sic) 
+void free_SourceImageCatalog(SourceImageCatalog* sic)
 {
   if (sic!=NULL) {
     if (sic->nimages > 0) {
@@ -422,7 +424,7 @@ void free_SourceImageCatalog(SourceImageCatalog* sic)
 }
 
 
-int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr) 
+int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr)
 {
   int status=EXIT_SUCCESS;
 
@@ -434,19 +436,19 @@ int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr)
     sic->images = (SourceImage**)malloc(sizeof(SourceImage*));
     if (NULL==sic->images) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", 
+      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n",
 		     status);
       return(status);
     }
     sic->nimages=1; // Initial value.
-	
+
   } else { // SourceImageCatalog already contains SourceImage objects.
     // Resize the formerly allocated memory.
-    sic->images = (SourceImage**)realloc(sic->images, 
+    sic->images = (SourceImage**)realloc(sic->images,
 					 (sic->nimages+1)*sizeof(SourceImage*));
     if (NULL==sic->images) {
       status=EXIT_FAILURE;
-      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n", 
+      HD_ERROR_THROW("Error: memory allocation for ClusterImageCatalog failed!\n",
 		     status);
       return(status);
     }
@@ -460,8 +462,8 @@ int addSourceImage2Catalog(SourceImageCatalog* sic, fitsfile* fptr)
 }
 
 
-void getRandomSourceImagePixel(SourceImage* si, int* x, int* y, 
-			       int* const status) 
+void getRandomSourceImagePixel(SourceImage* si, int* x, int* y,
+			       int* const status)
 {
   double rnd=sixt_get_random_number(status);
   CHECK_STATUS_VOID(*status);
@@ -495,4 +497,3 @@ void getRandomSourceImagePixel(SourceImage* si, int* x, int* y,
   *y = low;
   // Now x and y have pixel positions [integer pixel].
 }
-

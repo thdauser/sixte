@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Thorsten Brand, FAU
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef XML2SVG_H
@@ -49,9 +51,9 @@ int parse_xmlnames(char *xmlnames, int *nxmls, char ***xmls);
 
 void get_collist(char *filename, int *ncols, char ***cols, int *status);
 
-int xml2svg_getpar(struct Parameters* const par, 
-		   int *nxmls, 
-		   char ***xmls, 
+int xml2svg_getpar(struct Parameters* const par,
+		   int *nxmls,
+		   char ***xmls,
 		   Obj2D_instance ***obj);
 
 #endif /* XML2SVG_H */

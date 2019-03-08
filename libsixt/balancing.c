@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "balancing.h"
 
 BalancingArray* newBalancingArray(int* const status)
@@ -27,7 +48,7 @@ BalancingArray* getBalancingArray(ReconArray* recon, SquarePixels* detector_pixe
   BalancingArray* balance=NULL;
   int x,y;                          //count for memory allocation
   int xcount, ycount;               //count for getting Rmap in case1:same pixel size
-  
+
 
   //Get empty balancing array-object
   balance=newBalancingArray(status);
@@ -86,14 +107,14 @@ double* SaveBalancingArray1d(BalancingArray* balance, int* status)
     return(BalancingArray1d);
  }
 
-    //Create the 1D-image from BalancingArray 
+    //Create the 1D-image from BalancingArray
   int x, y;
   for (x=0; x<balance->naxis1; x++) {
     for (y=0; y<balance->naxis2; y++) {
 	BalancingArray1d[(x+ balance->naxis1*y)] = balance->Bmap[x][y];
    }
   }
- return(BalancingArray1d);  
+ return(BalancingArray1d);
 }
 
 

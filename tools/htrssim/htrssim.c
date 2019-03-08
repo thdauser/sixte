@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "htrssim.h"
@@ -25,7 +27,7 @@
 int htrssim_main() {
 
   // Containing all programm parameters read by PIL
-  struct Parameters parameters; 
+  struct Parameters parameters;
 
   // HTRSDetector data structure.
   // This is the main object for the simulation of the HTRS. It contains all
@@ -50,26 +52,26 @@ int htrssim_main() {
 
     // Read parameters using PIL library:
     if ((status=getpar(&parameters))) break;
-    
+
     // Initialize the random number generator.
     sixt_init_rng((int)time(NULL), &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the impact list FITS file.
-    impactlistfile=openImpactFile(parameters.impactlist_filename, 
+    impactlistfile=openImpactFile(parameters.impactlist_filename,
 				  READONLY, &status);
     CHECK_STATUS_BREAK(status);
 
 
     // Detector settings.
-    // Store the settings for the HTRSDetector in the corresponding 
-    // data structure and call the initialization routine in order 
+    // Store the settings for the HTRSDetector in the corresponding
+    // data structure and call the initialization routine in order
     // to allocate memory etc.
 #ifdef HTRS_HEXPIXELS
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .npixels = 37,
 		  .pixelwidth = parameters.pixelwidth },
-      .generic = { .ccsigma = parameters.ccsigma, 
+      .generic = { .ccsigma = parameters.ccsigma,
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
 		   .arf_filename = parameters.arf_filename,
@@ -84,19 +86,19 @@ int htrssim_main() {
 #ifdef HTRS_ARCPIXELS
     int nrings = 4;
     // Out-of-focus distance 12 cm (detector radius 14.15 mm)
-    
+
     // Configuration with 31 pixels with each pixel having the same area.
     int npixels[4] = { 1, 6, 12, 12 };
     double radii[4] = { 2.16e-3, 5.70e-3, 9.39e-3, 12.0e-3 };
     double offset_angles[4] = { 0., 0., 0., 0. };
-    
+
     struct HTRSDetectorParameters hdparameters = {
       .pixels = { .nrings = nrings,
 		  .npixels = npixels,
 		  .radius = radii,
 		  .offset_angle = offset_angles,
 		  .mask_spoke_width = parameters.mask_spoke_width },
-      .generic = { .ccsigma = parameters.ccsigma, 
+      .generic = { .ccsigma = parameters.ccsigma,
 		   .pha_threshold = parameters.pha_threshold,
 		   .energy_threshold = parameters.energy_threshold,
 		   .arf_filename = parameters.arf_filename,
@@ -109,7 +111,7 @@ int htrssim_main() {
     };
 #endif
     if(EXIT_SUCCESS!=(status=initHTRSDetector(&detector, &hdparameters))) break;
-    // END of DETECTOR CONFIGURATION SETUP    
+    // END of DETECTOR CONFIGURATION SETUP
 
     // --- END of Initialization ---
 
@@ -131,9 +133,9 @@ int htrssim_main() {
 
       // Call the photon detection routine that generates the right charge
       // and stores it in the detector pixels.
-      // Before generating and adding the charge to the detector the routine also 
-      // checks, whether the integration time is exceeded and performs the readout 
-      // in that case. 
+      // Before generating and adding the charge to the detector the routine also
+      // checks, whether the integration time is exceeded and performs the readout
+      // in that case.
       status=addImpact2HTRSDetector(&detector, &impact);
       if (EXIT_SUCCESS!=status) break;
 
@@ -144,7 +146,7 @@ int htrssim_main() {
     // Assign event grades to the detected events.
     status=HTRSassignEventGrades(detector);
     if (EXIT_SUCCESS!=status) break;
-    
+
   } while(0); // END of the error handling loop.
 
   // --- END of Detection process ---
@@ -211,7 +213,7 @@ static int getpar(struct Parameters* parameters)
   }
   if (status) return(status);
 
-  
+
   // Read the detector thresholds (either integer PHA or float energy):
   int pha_threshold;
   if ((status = PILGetInt("pha_threshold", &pha_threshold))) {
@@ -231,7 +233,7 @@ static int getpar(struct Parameters* parameters)
 
   // Get the name of the detector redistribution file (FITS file)
   if ((status = PILGetFname("rmf_filename", parameters->rmf_filename))) {
-    HD_ERROR_THROW("Error reading the name of the detector" 
+    HD_ERROR_THROW("Error reading the name of the detector"
 		   "redistribution matrix file (RMF)!\n", status);
   }
 
@@ -264,7 +266,7 @@ static int getpar(struct Parameters* parameters)
   else if ((status = PILGetReal("mask_spoke_width", &parameters->mask_spoke_width))) {
     HD_ERROR_THROW("Error reading the spoke width of the HTRS mask!\n", status);
   }
-#endif  
+#endif
 
   if (EXIT_SUCCESS!=status) return(status);
 
@@ -274,5 +276,3 @@ static int getpar(struct Parameters* parameters)
 
   return(status);
 }
-
-

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef COMADETECTOR_H
@@ -39,7 +41,7 @@ typedef struct {
   SquarePixels* pixels;
 
   /** Event list FITS file for the eROSITA-specific events. */
-  CoMaEventFile* eventfile; 
+  CoMaEventFile* eventfile;
 
 } CoMaDetector;
 
@@ -48,7 +50,7 @@ struct CoMaDetectorParameters {
   struct SquarePixelsParameters pixels;
 
   char* eventfile_filename;
-  char* eventfile_template;  
+  char* eventfile_template;
 };
 
 
@@ -60,7 +62,7 @@ struct CoMaDetectorParameters {
 /** Constructor for CoMaDetector. Get memory and set up the
     configuration of a CoMaDetector object. The routine also calls the
     init routines of the underlying data structures. */
-CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters, 
+CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
 			      int* status);
 
 /** Destructor of the CoMaDetector data structure. Release allocated
@@ -79,4 +81,3 @@ int addImpact2CoMaDetector_protoMirax(CoMaDetector* det, Impact* impact);
 
 
 #endif /* COMADETECTOR_H */
-

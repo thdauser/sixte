@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "sixt.h"
 #include "headas_rand.h"
 
@@ -36,7 +57,7 @@ unsigned int getSeed(int seed)
 }
 
 
-void strtoupper(char* const string) 
+void strtoupper(char* const string)
 {
   int count=0;
   while (string[count]!='\0') {
@@ -102,7 +123,7 @@ void sixt_get_XMLFile(char* const filename,
     strcpy(filename,xmlfile);
     return;
   }
-    
+
 
   // Determine the base directory containing the XML
   // definition files.
@@ -121,7 +142,7 @@ void sixt_get_XMLFile(char* const filename,
     }
     return;
   }
- 
+
   if (0==strcmp(Mission, "IXO")) {
     strcat(filename, "/ixo");
     if (0==strcmp(Instrument, "WFI")) {
@@ -139,7 +160,7 @@ void sixt_get_XMLFile(char* const filename,
     return;
   }
 
-  
+
   if (0==strcmp(Mission, "ATHENA")) {
     strcat(filename, "/athena");
     if (0==strcmp(Instrument, "WFI")) {
@@ -167,7 +188,7 @@ void sixt_get_XMLFile(char* const filename,
     }
     return;
   }
-    
+
   if (0==strcmp(Mission, "NUSTAR")) {
     strcat(filename, "/nustar");
     if (0==strcmp(Instrument, "NUSTAR")) {
@@ -178,7 +199,7 @@ void sixt_get_XMLFile(char* const filename,
     }
     return;
   }
-  
+
   *status=EXIT_FAILURE;
   char msg[MAXMSG];
   sprintf(msg, "selected mission ('%s') is not supported", Mission);
@@ -198,7 +219,7 @@ void sixt_get_LADXMLFile(char* const filename,
     // Set default LAD XML file.
     strcpy(filename, SIXT_DATA_PATH);
     strcat(filename, "/instruments/loft/lad.xml");
-    
+
   } else {
     // The XML filename has been given explicitly.
     strcpy(filename, xmlfile);
@@ -210,9 +231,9 @@ void sixt_get_LADXMLFile(char* const filename,
 void sixt_get_eroXMLFile(char *filename,
 			const int telescop_index,
 			int* const status){
-  
+
   sprintf(filename, "%s/instruments/srg/erosita_%d.xml", SIXT_DATA_PATH, telescop_index+1);
-  
+
 }
 #pragma GCC diagnostic pop
 
@@ -288,14 +309,14 @@ void sixt_add_fits_stdkeywords_obsolete(fitsfile* const fptr,
   CHECK_STATUS_VOID(*status);
 
   // Set the names of the response files used for the simulation.
-  fits_update_key(fptr, TSTRING, "ANCRFILE", ancrfile, 
+  fits_update_key(fptr, TSTRING, "ANCRFILE", ancrfile,
 		  "ancillary response file", status);
-  fits_update_key(fptr, TSTRING, "RESPFILE", respfile, 
+  fits_update_key(fptr, TSTRING, "RESPFILE", respfile,
 		  "response file", status);
   CHECK_STATUS_VOID(*status);
 
   // Set the timing keywords.
-  // Determine the current date and time (Stevens, "Advanced Programming 
+  // Determine the current date and time (Stevens, "Advanced Programming
   // in the UNIX environment", p. 155 ff.).
   time_t current_time;
   if (0==time(&current_time)) {
@@ -308,15 +329,15 @@ void sixt_add_fits_stdkeywords_obsolete(fitsfile* const fptr,
     *status=EXIT_FAILURE;
     SIXT_ERROR("could not determine current UTC time");
     return;
-  }   
+  }
   char current_datetimestr[MAXMSG];
-  if (19!=strftime(current_datetimestr, MAXMSG, "%Y-%m-%dT%H:%M:%S", 
+  if (19!=strftime(current_datetimestr, MAXMSG, "%Y-%m-%dT%H:%M:%S",
 		   current_time_utc)) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("failed formatting date-time string");
     return;
   }
-  fits_update_key(fptr, TSTRING, "DATE", current_datetimestr, 
+  fits_update_key(fptr, TSTRING, "DATE", current_datetimestr,
 		  "file creation date", status);
   CHECK_STATUS_VOID(*status);
 
@@ -324,23 +345,23 @@ void sixt_add_fits_stdkeywords_obsolete(fitsfile* const fptr,
   char datestr[MAXMSG], timestr[MAXMSG];
   sixt_get_date_time(mjdref, tstart, datestr, timestr, status);
   CHECK_STATUS_VOID(*status);
-  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr, 
+  fits_update_key(fptr, TSTRING, "DATE-OBS", datestr,
 		  "UT date of observation start", status);
-  fits_update_key(fptr, TSTRING, "TIME-OBS", timestr, 
+  fits_update_key(fptr, TSTRING, "TIME-OBS", timestr,
 		  "UT time of observation start", status);
   CHECK_STATUS_VOID(*status);
 
   // Determine the stop date and time.
   sixt_get_date_time(mjdref, tstop, datestr, timestr, status);
   CHECK_STATUS_VOID(*status);
-  fits_update_key(fptr, TSTRING, "DATE-END", datestr, 
+  fits_update_key(fptr, TSTRING, "DATE-END", datestr,
 		  "UT date of observation end", status);
-  fits_update_key(fptr, TSTRING, "TIME-END", timestr, 
+  fits_update_key(fptr, TSTRING, "TIME-END", timestr,
 		  "UT time of observation end", status);
   CHECK_STATUS_VOID(*status);
 
   // MJDREF, TSTART, TSTOP.
-  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, 
+  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref,
 		  "reference MJD", status);
   fits_update_key(fptr, TDOUBLE, "TIMEZERO", &timezero,
 		  "time offset", status);
@@ -376,12 +397,12 @@ void sixt_read_fits_stdkeywords_obsolete(fitsfile* const ifptr,
 			       double *mjdref,
 			       double *timezero,
 			       double *tstart,
-			       double *tstop, 
+			       double *tstop,
 				int* const status)
 {
-  
+
   char comment[MAXMSG];
-  
+
   fits_read_key(ifptr, TSTRING, "TELESCOP", telescop, comment, status);
   fits_read_key(ifptr, TSTRING, "INSTRUME", instrume, comment, status);
   fits_read_key(ifptr, TSTRING, "FILTER", filter, comment, status);
@@ -443,10 +464,10 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   fits_update_key(fptr, TSTRING, "OBS_MODE", obsmode, "", status);
   char datamode[MAXMSG]="";
   fits_update_key(fptr, TSTRING, "DATAMODE", datamode, "", status);
-  
+
   float frametim=50.0;
   fits_update_key(fptr, TFLOAT, "FRAMETIM", &frametim, "[ms] nominal frame time", status);
-  
+
   fits_update_key(fptr, TSTRING, "FILTER", filter, "", status);
 
   long obs_id=0;
@@ -477,7 +498,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
 
   fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, "[d]", status);
   fits_update_key(fptr, TDOUBLE, "TIMEZERO", &timezero, "Time offset", status);
-  
+
   char timeunit[MAXMSG]="s";
   fits_update_key(fptr, TSTRING, "TIMEUNIT", timeunit, "Time unit", status);
   char timesys[MAXMSG]="TT";
@@ -489,7 +510,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   fits_update_key(fptr, TDOUBLE, "DEC_PNT", &dec_pnt, "[deg] actual pointing DEC J2000", status);
   double pa_pnt=0.0;
   fits_update_key(fptr, TDOUBLE, "PA_PNT", &pa_pnt, "[deg] mean/median position angle of pointing", status);
-  
+
   char radecsys[MAXMSG]="FK5";
   fits_update_key(fptr, TSTRING, "RADECSYS", radecsys, "Stellar reference frame", status);
   double equinox=2000.0;
@@ -504,7 +525,7 @@ void sixt_add_fits_erostdkeywords(fitsfile* const fptr,
   float fbuffer=75.0;
   fits_update_key(fptr, TFLOAT, "PIXLEN_X", &fbuffer, "[micron]", status);
   fits_update_key(fptr, TFLOAT, "PIXLEN_Y", &fbuffer, "[micron]", status);
-  
+
   CHECK_STATUS_VOID(*status);
 
   // Move back to the original HDU.
@@ -531,7 +552,7 @@ void verifyMJDREF(const double refmjdref,
       strcat(insertmsg, " ");
     }
     char msg[MAXMSG];
-    sprintf(msg, "MJDREF %sdoes not match required value of '%.4lf'", 
+    sprintf(msg, "MJDREF %sdoes not match required value of '%.4lf'",
 	    insertmsg, refmjdref);
     SIXT_ERROR(msg);
   }
@@ -549,7 +570,7 @@ void verifyTIMEZERO(const double timezero,
 
 
 float getEBOUNDSEnergy(const long channel,
-		       const struct RMF* const rmf, 
+		       const struct RMF* const rmf,
 		       int* const status)
 {
   float lo, hi;
@@ -571,10 +592,10 @@ void sixt_add_fits_stdkeywords(fitsfile* const fptr,
 				     keyword_struct->ancrfile,keyword_struct->respfile,keyword_struct->mjdref,keyword_struct->timezero,
 				     keyword_struct->tstart,keyword_struct->tstop,status);
   CHECK_STATUS_VOID(*status);
-  
+
   // Add extname keyword if we are:
   //   * not on the primary header,
-  //   * if the extname is non-NULL, and 
+  //   * if the extname is non-NULL, and
   //   * if no EXTNAME has been set
   if((hdunum>1) && (keyword_struct->extname!=NULL)){
     char keyval[FLEN_VALUE];
@@ -900,4 +921,3 @@ int binary_search_float_long(float val, float* arr, long n){
 	}
 	return low-1;
 }
-

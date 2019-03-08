@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef MAKELC_H
@@ -34,12 +36,12 @@ struct Parameters {
 
   /** Start time [s]. */
   double TSTART;
-  
+
   /** Length of the light curve [s]. */
-  double length; 
+  double length;
 
   /** Time resolution [s]. */
-  double dt; 
+  double dt;
 
   /** Lower and upper boundary of the regarded energy band [keV]. */
   float Emin, Emax;
@@ -55,4 +57,3 @@ int makelc_getpar(struct Parameters *par);
 
 
 #endif /* MAKELC_H */
-

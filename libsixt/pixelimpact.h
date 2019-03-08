@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PIXIMPACT_H
@@ -32,19 +34,19 @@
 
 /** Impact of a photon on the detector plane. */
 typedef struct {
-  
+
   /** ID of pixel. */
   long pixID;
-  
+
   /** Arrival time of the photon on the detector [s]. */
   double time;
-  
+
   /** Photon energy [keV]. */
   float energy;
-  
+
   /** Impact position of the photon on the detector [m]. */
   struct Point2d detposition;
-  
+
   /** Impact position of the photon on the pixel [m]. */
   struct Point2d pixposition;
 

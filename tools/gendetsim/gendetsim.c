@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "gendetsim.h"
@@ -27,7 +29,7 @@ int gendetsim_main() {
   const double timezero=0.0;
 
   // Containing all programm parameters read by PIL
-  struct Parameters par; 
+  struct Parameters par;
 
   // Instrument data structure (containing the pixel array, its width, ...).
   GenInst* inst=NULL;
@@ -70,7 +72,7 @@ int gendetsim_main() {
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
     strcpy(impactlist_filename, par.ImpactList);
-    
+
     // Determine the event list output file.
     char rawdata_filename[MAXFILENAME];
     strcpy(rawdata_filename, par.RawData);
@@ -79,7 +81,7 @@ int gendetsim_main() {
     unsigned int seed=getSeed(par.Seed);
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Load the instrument configuration.
     inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
@@ -89,7 +91,7 @@ int gendetsim_main() {
 
     // Set the start time for the simulation.
     setGenDetStartTime(inst->det, par.TSTART);
-    
+
     // --- END of Initialization ---
 
 
@@ -116,8 +118,8 @@ int gendetsim_main() {
 			 inst->tel->arf_filename,
 			 inst->det->rmf_filename,
 			 par.MJDREF, 0.0, par.TSTART, par.TSTART+par.Exposure,
-			 inst->det->pixgrid->xwidth, 
-			 inst->det->pixgrid->ywidth, 
+			 inst->det->pixgrid->xwidth,
+			 inst->det->pixgrid->ywidth,
 			 par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -131,11 +133,11 @@ int gendetsim_main() {
     value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
     fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Store the number of simulated input photons in the FITS header
     // of the output event file.
-    fits_update_key(elf->fptr, TLONG, "NPHOTONS", 
-		    &ilf->nrows, "number of input photons", 
+    fits_update_key(elf->fptr, TLONG, "NPHOTONS",
+		    &ilf->nrows, "number of input photons",
 		    &status);
     CHECK_STATUS_BREAK(status);
 
@@ -212,7 +214,7 @@ int getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // check if any obsolete keywords are given
   sixt_check_obsolete_keyword(&status);
@@ -224,7 +226,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the impact list");
     return(status);
-  } 
+  }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
@@ -232,7 +234,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
-  } 
+  }
   strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
@@ -240,7 +242,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the mission");
     return(status);
-  } 
+  }
   strcpy(par->Mission, sbuffer);
   free(sbuffer);
 
@@ -248,7 +250,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument");
     return(status);
-  } 
+  }
   strcpy(par->Instrument, sbuffer);
   free(sbuffer);
 
@@ -256,7 +258,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
-  } 
+  }
   strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
@@ -264,7 +266,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -272,19 +274,19 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
@@ -306,5 +308,3 @@ int getpar(struct Parameters* const par)
 
   return(status);
 }
-
-

@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef CLOCKLIST_H 
+#ifndef CLOCKLIST_H
 #define CLOCKLIST_H 1
 
 #include "sixt.h"
@@ -46,7 +48,7 @@ typedef enum {
 
 /** ClockList for the operation of time-triggered detectors. */
 typedef struct {
-  
+
   /** Number of elements in the ClockList. */
   int nelements;
 
@@ -97,7 +99,7 @@ typedef struct {
   /** Detector line to be read out. In CCDs usually this is the 0th
       line. */
   int lineindex;
-  
+
   /** Y-index assigned to the read-out line. Due to the line shifts in
       CCD detectors this value in general is different from
       lineidx. */
@@ -129,7 +131,7 @@ void destroyClockList(ClockList** const list);
 
 
 /** Append a new element at the end of the ClockList. */
-void append2ClockList(ClockList* const list, const CLType type, 
+void append2ClockList(ClockList* const list, const CLType type,
 		      void* const element, int* const status);
 
 /** Get the next ClockList element. If the specified list is empty, an
@@ -161,7 +163,7 @@ void destroyCLNewFrame(CLNewFrame** const clnewframe);
 
 
 /** Constructor for CLReadoutLine. */
-CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex, 
+CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
 				int* const status);
 /** Destructor for CLReadoutLine. */
 void destroyCLReadoutLine(CLReadoutLine** const clreadoutline);

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef SOURCECATALOG_H
@@ -73,8 +75,8 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
     time interval. Only sources within the FoV (diameter given in
     [rad]) around the telescope pointing direction are taken into
     account. */
-LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat, 
-					const Vector* const pointing, 
+LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
+					const Vector* const pointing,
 					const float fov,
 					const double t0, const double t1,
 					const double mjdref,

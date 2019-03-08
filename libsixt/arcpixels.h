@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef ARCPIXELS_H
@@ -38,7 +40,7 @@ typedef struct {
       because its output voltage exceeds the input range of the
       subsequent electronics. Actually the variable contains not the
       electrical charge but the corresponding energy in [keV]. */
-  float charge; 
+  float charge;
 
   /** Time of the last photon impact in this pixel. This time is
       required in order to determine for the next photon impact,
@@ -63,9 +65,9 @@ typedef struct {
   /** 2-dimensional pixel array with nrings rows of different lengths
       (each has the length npixels[ring]) .*/
   ArcPixel** array;
-  
+
   /** Number of pixel rings. */
-  int nrings; 
+  int nrings;
   /** Number of pixels in each individual ring. The array has nrings
       elements. */
   int* npixels;
@@ -121,7 +123,7 @@ void cleanupArcPixels(ArcPixels* ap);
     a mask on top, this has to be given as a parameter. Otherwise the
     parameter can also be set to NULL. */
 int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
-		      struct Point2d position, 
+		      struct Point2d position,
 		      int* ring, int* number);
 
 /** Determine the ArcPixel that contains the specified position given
@@ -146,7 +148,7 @@ int getArcPixelIndex(ArcPixels* ap, int ring, int number);
     position in 2-dimensional carteesian coordinates. The return
     values are within the following margins: radius [0; infinity),
     angle[0:2pi). */
-void getPolarCoordinates(struct Point2d position, 
+void getPolarCoordinates(struct Point2d position,
 			 double* radius, double* angle);
 
 /** Check if the specified impact position lies on the mask of the
@@ -157,4 +159,3 @@ int HTRSisPositionOnMask(ArcPixels* ap, int pixel, int number,
 
 
 #endif /* ARCPIXELS_H */
-

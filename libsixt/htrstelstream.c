@@ -16,12 +16,14 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "htrstelstream.h"
 
 
-HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters, 
+HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters,
 				int* status)
 {
   HTRSTelStream* htstream = (HTRSTelStream*)malloc(sizeof(HTRSTelStream));
@@ -31,7 +33,7 @@ HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters,
 		   *status);
     return(htstream);
   }
-  
+
   // Set the object properties.
   htstream->n_header_bits = parameters->n_header_bits;
   htstream->n_bin_bits    = parameters->n_bin_bits;
@@ -68,7 +70,7 @@ HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters,
   htstream->spectrum=(int*)malloc(htstream->n_bins*sizeof(int));
   if (NULL==htstream->spectrum) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: Could not allocate memory for HTRSTelStream!\n", 
+    HD_ERROR_THROW("Error: Could not allocate memory for HTRSTelStream!\n",
 		   *status);
     return(htstream);
   }
@@ -82,12 +84,12 @@ HTRSTelStream* getHTRSTelStream(struct HTRSTelStreamParameters* parameters,
   if (NULL==htstream->output_file) {
     char msg[MAXMSG];
     *status=EXIT_FAILURE;
-    sprintf(msg, "Error: output file '%s' could not be opened!\n", 
+    sprintf(msg, "Error: output file '%s' could not be opened!\n",
 	    parameters->output_filename);
     HD_ERROR_THROW(msg, *status);
     return(htstream);
   }
-  
+
   return(htstream);
 }
 
@@ -153,7 +155,7 @@ int finalizeHTRSTelStream(HTRSTelStream* stream)
   int status=HTRSTelStreamAddSpec2Packet(stream);
   if (EXIT_SUCCESS!=status) return(status);
 
-  // If the current TelemetryPacket contains some data 
+  // If the current TelemetryPacket contains some data
   // (except for the header), write it to the output file.
   if (stream->tp->current_bit > stream->n_header_bits) {
     // Write the content of the packet to the binary output file.
@@ -161,7 +163,7 @@ int finalizeHTRSTelStream(HTRSTelStream* stream)
     if (EXIT_SUCCESS!=status) return(status);
     stream->n_written_packets++;
   }
-  
+
   return(status);
 }
 
@@ -176,19 +178,19 @@ int HTRSTelStreamAddSpec2Packet(HTRSTelStream* stream)
 
     // Check whether the TelemetryPacket is full. In that case write the
     // content to the binary output file and start a new TelemetryPacket.
-    if (availableBitsInTelemetryPacket(stream->tp) < 
+    if (availableBitsInTelemetryPacket(stream->tp) <
 	stream->n_bin_bits*stream->n_bins) {
-      
+
       // Write the content of the packet to the binary output file.
       status = writeTelemetryPacket2File(stream->tp, stream->output_file);
       if (EXIT_SUCCESS!=status) break;
       stream->n_written_packets++;
-	
+
       // Start a new packet.
       status=newHTRSTelStreamPacket(stream);
       if (EXIT_SUCCESS!=status) break;
     }
-      
+
     // Add the binned spectrum to the TelemetryPacket.
     int n_bytes = (stream->n_bins*stream->n_bin_bits)/8;
     if (0!=(stream->n_bins*stream->n_bin_bits)%8) {
@@ -216,21 +218,21 @@ int HTRSTelStreamAddSpec2Packet(HTRSTelStream* stream)
       index = (count*stream->n_bin_bits)/8;
       modulus = (count*stream->n_bin_bits)%8;
       if (modulus+stream->n_bin_bits<=8) {
-	byte_buffer[index]   = byte_buffer[index]   | 
+	byte_buffer[index]   = byte_buffer[index]   |
 	  (byte<<(8-stream->n_bin_bits-modulus));
       } else {
-	byte_buffer[index]   = byte_buffer[index]   | 
+	byte_buffer[index]   = byte_buffer[index]   |
 	  (byte>>(stream->n_bin_bits+modulus-8));
-	byte_buffer[index+1] = byte_buffer[index+1] | 
+	byte_buffer[index+1] = byte_buffer[index+1] |
 	  (byte<<(16-stream->n_bin_bits-modulus));
       }
     }
     // Insert the byte buffer to the TelemtryPacket.
-    status = addData2TelemetryPacket(stream->tp, byte_buffer, 
+    status = addData2TelemetryPacket(stream->tp, byte_buffer,
 				     stream->n_bins*stream->n_bin_bits);
     if (EXIT_SUCCESS!=status) break;
     stream->n_spectra++;
-    
+
     // Clear the spectrum.
     for (count=0; count<stream->n_bins; count++) {
       stream->spectrum[count] = 0;
@@ -295,13 +297,11 @@ void HTRSTelStreamPrintStatistics(HTRSTelStream* stream)
   headas_printf(" integration time: %lf\n", stream->integration_time);
   headas_printf(" spectrum rate: %lf\n", stream->n_spectra/
 		(stream->spectrum_time-stream->integration_time));
-  headas_printf(" data rate: %lf Mbit/s\n", 
+  headas_printf(" data rate: %lf Mbit/s\n",
 		stream->n_packets*stream->tp->nbits/
 		(stream->spectrum_time-stream->integration_time)/
 		(1024*1024));
-  headas_printf(" written vs. total number of packets: %d/%d\n", 
+  headas_printf(" written vs. total number of packets: %d/%d\n",
 		stream->n_written_packets, stream->n_packets);
   headas_printf("\n");
 }
-
-

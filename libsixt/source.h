@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef SOURCE_H
@@ -65,9 +67,9 @@ void freeSource(Source** const src);
 
 /** Create photons for a particular source in the specified time
     interval. */
-LinkedPhoListElement* getXRayPhotons(Source* const src, 
+LinkedPhoListElement* getXRayPhotons(Source* const src,
 				     SimputCtlg* const simput,
-				     const double t0, 
+				     const double t0,
 				     const double t1,
 				     const double mjdref,
 				     int* const status);
@@ -75,9 +77,9 @@ LinkedPhoListElement* getXRayPhotons(Source* const src,
 /** Sort the list of Source objects with the specified number of
     entries with respect to the requested coordinate axis using a
     quick sort algorithm. */
-void quicksortSources(Source* const list, 
-		      const long left, 
-		      const long right, 
+void quicksortSources(Source* const list,
+		      const long left,
+		      const long right,
 		      const int axis);
 
 

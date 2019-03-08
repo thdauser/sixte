@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESRECONSTRUCTION_H
@@ -74,49 +76,49 @@ struct Parameters {
 
 	//Reconstruction Method (PP or SIRENA)
 	char Rcmethod[7];
-	
+
 	//
 	// SIRENA parameters
 	//
 	//File containing the library
 	char LibraryFile[MAXFILENAME];
-	
+
 	//Scale Factor for initial filtering
 	double scaleFactor;
-	
+
 	//Number of samples for threshold trespassing
 	double samplesUp;
-        
+
         //Number of samples below the threshold to look for other pulse
 	double samplesDown;
-	
+
 	//Number of standard deviations in the kappa-clipping process for threshold estimation
 	double nSgms;
-        
+
         //Detect secondary pulses or not
         int detectSP;
 
 	//Calibration run (0) or energy reconstruction run (1)?
 	int mode;
-        
+
         //DetectionMode: Adjusted Derivative(AD) or Alternative1(A1)
 	char detectionMode[3];
 
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
-	
+
 	//Boolean to choose whether to add the PRECALWN HDU in the library file
 	char hduPRECALWN;
-	
+
 	//Boolean to choose whether to add the PRCLOFWM HDU in the library file
 	char hduPRCLOFWM;
-	
+
 	/** Length of the longest fixed filter for library creation **/
 	int largeFilter;
-	
+
 	/** Running sum length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LrsT;
-	
+
 	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
 	double LbT;
 
@@ -128,13 +130,13 @@ struct Parameters {
 
 	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
 	char FilterMethod[3];
-	
+
 	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA **/
 	char EnergyMethod[10];
-        
+
         //Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RALL, I2RNOL and I2RFITTED)
         double filtEev;
-	
+
 	//Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
 	char OFNoise[8];
 
@@ -146,34 +148,34 @@ struct Parameters {
 
 	//Boolean to choose whether to use a library with optimal filters or calculate the optimal filter to each pulse
 	char OFLib;
-	
+
 	//Optimal Filter by using the Matched Filter (MF) or the DAB as matched filter (MF, DAB) **/
         char OFInterp[4];
-	
+
 	//Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
 	char OFStrategy[8];
 
 	//Optimal Filter length (taken into account if OFStrategy=FIXED) **/
 	int OFLength;
-	
+
 	//Write intermediate files (Yes:1, No:0)
 	int intermediate;
-	
-	// File with the output detections 
+
+	// File with the output detections
 	char detectFile[256];
-	
+
 	// File with the output filter (only in calibration)
 	char filterFile[256];
-	
+
 	// Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0)
 	int tstartPulse1;
 	int tstartPulse2;
 	int tstartPulse3;
-	
+
 	/** Energies for PCA **/
 	double energyPCA1;
 	double energyPCA2;
-	
+
 	// XML file with instrument definition
 	char XMLFile[MAXFILENAME];
 

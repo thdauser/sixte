@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "lad.h"
@@ -55,7 +57,7 @@ static void calcModuleXYDim(LADModule* const module)
   // Loop over all columns.
   module->xdim=0.;
   for (ii=0; ii<module->nx; ii++) {
-    // Determine the element with the maximum extension in x-direction 
+    // Determine the element with the maximum extension in x-direction
     // (within the current column).
     float xmax=0.;
     long jj;
@@ -71,7 +73,7 @@ static void calcModuleXYDim(LADModule* const module)
   // Loop over all rows.
   module->ydim=0.;
   for (ii=0; ii<module->ny; ii++) {
-    // Determine the element with the maximum extension in y-direction 
+    // Determine the element with the maximum extension in y-direction
     // (within the current row).
     float ymax=0.;
     long jj;
@@ -82,7 +84,7 @@ static void calcModuleXYDim(LADModule* const module)
     }
     // Add the extension of the biggest element in this row.
     module->ydim+=ymax;
-  }  
+  }
 }
 
 
@@ -94,7 +96,7 @@ static void calcPanelXYDim(LADPanel* const panel)
   // Loop over all columns.
   panel->xdim=0.;
   for (ii=0; ii<panel->nx; ii++) {
-    // Determine the module with the maximum extension in x-direction 
+    // Determine the module with the maximum extension in x-direction
     // (within the current column).
     float xmax=0.;
     long jj;
@@ -113,7 +115,7 @@ static void calcPanelXYDim(LADPanel* const panel)
   // Loop over all rows.
   panel->ydim=0.;
   for (ii=0; ii<panel->ny; ii++) {
-    // Determine the module with the maximum extension in y-direction 
+    // Determine the module with the maximum extension in y-direction
     // (within the current row).
     float ymax=0.;
     long jj;
@@ -124,7 +126,7 @@ static void calcPanelXYDim(LADPanel* const panel)
     }
     // Add the extension of the biggest module in this row.
     panel->ydim+=ymax;
-  }  
+  }
 }
 
 
@@ -144,7 +146,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
     CHECK_NULL_VOID(lad->panel[ii], *status, "panel is not defined");
 
     // Check if the panel contains any modules.
-    CHECK_NULL_VOID(lad->panel[ii]->module, *status, 
+    CHECK_NULL_VOID(lad->panel[ii]->module, *status,
 		    "panel contains no modules");
 
     // Check if the number of modules is consistent with the
@@ -155,18 +157,18 @@ static void checkLADConsistency(LAD* const lad, int* const status)
       return;
     }
 
-    headas_chat(5, " panel %ld contains %ld modules\n", 
+    headas_chat(5, " panel %ld contains %ld modules\n",
 		lad->panel[ii]->id, lad->panel[ii]->nmodules);
 
     // Loop over all modules.
     long jj;
     for (jj=0; jj<lad->panel[ii]->nmodules; jj++) {
       // Check if the the module exists.
-      CHECK_NULL_VOID(lad->panel[ii]->module[jj], *status, 
+      CHECK_NULL_VOID(lad->panel[ii]->module[jj], *status,
 		      "module is not defined");
 
       // Check if the module contains any elements.
-      CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element, *status, 
+      CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element, *status,
 		      "module contains no elements");
 
       // Check if the number of elements is consistent with the
@@ -178,15 +180,15 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	return;
       }
 
-      headas_chat(5, "  module %ld contains %ld elements\n", 
-		  lad->panel[ii]->module[jj]->id, 
+      headas_chat(5, "  module %ld contains %ld elements\n",
+		  lad->panel[ii]->module[jj]->id,
 		  lad->panel[ii]->module[jj]->nelements);
 
       // Loop over all elements.
       long kk;
       for (kk=0; kk<lad->panel[ii]->module[jj]->nelements; kk++) {
 	// Check if the the element exists.
-	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk], 
+	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk],
 			*status, "element is not defined");
 
 	// Check if the element contains any anodes.
@@ -205,7 +207,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 
 	// Set up the FEE ASICs.
 	// Determine the required number of ASICs.
-	if (lad->panel[ii]->module[jj]->element[kk]->nanodes/2 % 
+	if (lad->panel[ii]->module[jj]->element[kk]->nanodes/2 %
 	    lad->asic_channels != 0) {
 	  SIXT_ERROR("number of anodes must be a multiple of ASIC channels");
 	  *status=EXIT_FAILURE;
@@ -219,7 +221,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	  (double*)malloc(lad->panel[ii]->module[jj]->element[kk]->nasics*
 			  sizeof(double));
 	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk]->
-			asic_readout_time, *status, 
+			asic_readout_time, *status,
 			"cannot allocate memory for ASIC read-out times");
 	int ll;
 	for (ll=0; ll<lad->panel[ii]->module[jj]->element[kk]->nasics; ll++) {
@@ -231,7 +233,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	  (double*)malloc(lad->panel[ii]->module[jj]->element[kk]->nasics*
 			  sizeof(double));
 	CHECK_NULL_VOID(lad->panel[ii]->module[jj]->element[kk]->
-			asic_deadtime, *status, 
+			asic_deadtime, *status,
 			"cannot allocate memory for ASIC dead times");
 	for (ll=0; ll<lad->panel[ii]->module[jj]->element[kk]->nasics; ll++) {
 	  double grand1, grand2;
@@ -240,8 +242,8 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 	  lad->panel[ii]->module[jj]->element[kk]->asic_deadtime[ll]=
 	    lad->deadtime + lad->edeadtime*grand1;
 	}
-	
-	headas_chat(5, "   element %ld has %ld anodes and %d ASICs \n", 
+
+	headas_chat(5, "   element %ld has %ld anodes and %d ASICs \n",
 		    lad->panel[ii]->module[jj]->element[kk]->id,
 		    lad->panel[ii]->module[jj]->element[kk]->nanodes,
 		    lad->panel[ii]->module[jj]->element[kk]->nasics);
@@ -251,7 +253,7 @@ static void checkLADConsistency(LAD* const lad, int* const status)
     // END of loop over all modules.
 
 
-    // Calculate the dimensions of the panels from bottom up 
+    // Calculate the dimensions of the panels from bottom up
     // (elements -> modules -> panels).
     calcPanelXYDim(lad->panel[ii]);
 
@@ -260,8 +262,8 @@ static void checkLADConsistency(LAD* const lad, int* const status)
 }
 
 
-static void addPanel2LAD(LAD* const lad, 
-			 LADPanel* const panel, 
+static void addPanel2LAD(LAD* const lad,
+			 LADPanel* const panel,
 			 int* const status)
 {
   // Check if the LAD is defined.
@@ -271,7 +273,7 @@ static void addPanel2LAD(LAD* const lad,
   CHECK_NULL_VOID(panel, *status, "NULL pointer to LADPanel data structure");
 
   // Extend the LAD panel array.
-  lad->panel = 
+  lad->panel =
     (LADPanel**)realloc(lad->panel, (lad->npanels+1)*sizeof(LADPanel*));
   CHECK_NULL_VOID(lad->panel, *status, "memory allocation for new LADPanel failed");
   lad->npanels++;
@@ -281,8 +283,8 @@ static void addPanel2LAD(LAD* const lad,
 }
 
 
-static void addModule2Panel(LADPanel* const panel, 
-			    LADModule* const module, 
+static void addModule2Panel(LADPanel* const panel,
+			    LADModule* const module,
 			    int* const status)
 {
   // Check if the panel is defined.
@@ -294,7 +296,7 @@ static void addModule2Panel(LADPanel* const panel,
   // Extend the LAD module array.
   panel->module=
     (LADModule**)realloc(panel->module, (panel->nmodules+1)*sizeof(LADModule*));
-  CHECK_NULL_VOID(panel->module, *status, 
+  CHECK_NULL_VOID(panel->module, *status,
 		  "memory allocation for new LADModule failed");
   panel->nmodules++;
 
@@ -303,8 +305,8 @@ static void addModule2Panel(LADPanel* const panel,
 }
 
 
-static void addElement2Module(LADModule* const module, 
-			      LADElement* const element, 
+static void addElement2Module(LADModule* const module,
+			      LADElement* const element,
 			      int* const status)
 {
   // Check if the module is defined.
@@ -315,9 +317,9 @@ static void addElement2Module(LADModule* const module,
 
   // Extend the LAD element array.
   module->element=
-    (LADElement**)realloc(module->element, 
+    (LADElement**)realloc(module->element,
 			  (module->nelements+1)*sizeof(LADElement*));
-  CHECK_NULL_VOID(module->element, *status, 
+  CHECK_NULL_VOID(module->element, *status,
 		  "memory allocation for new LADElement failed");
   module->nelements++;
 
@@ -326,7 +328,7 @@ static void addElement2Module(LADModule* const module,
 }
 
 
-static void XMLElementStart(void* parsedata, const char* el, const char** attr) 
+static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
   char Uelement[MAXMSG]; // Upper case version of XML element.
@@ -344,16 +346,16 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Create a new Panel.
     LADPanel* panel=newLADPanel(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    
+
     // Set the properties.
     panel->id=getXMLAttributeLong(attr, "ID");
     panel->nx=getXMLAttributeLong(attr, "NX");
     panel->ny=getXMLAttributeLong(attr, "NY");
-    
+
     // Add the new panel to the LAD.
     addPanel2LAD(xmlparsedata->lad, panel, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    
+
     // Store the pointer to the currently open panel.
     xmlparsedata->panel=panel;
 
@@ -362,7 +364,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Create a new Module.
     LADModule* module=newLADModule(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    
+
     // Set the properties.
     module->id=getXMLAttributeLong(attr, "ID");
     module->nx=getXMLAttributeLong(attr, "NX");
@@ -371,7 +373,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Add the new module to the LAD.
     addModule2Panel(xmlparsedata->panel, module, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    
+
     // Store the pointer to the currently open module.
     xmlparsedata->module=module;
 
@@ -380,7 +382,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Create a new Element.
     LADElement* element=newLADElement(&xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    
+
     // Set the properties.
     element->id=getXMLAttributeLong(attr, "ID");
     element->xdim=getXMLAttributeFloat(attr, "XDIM");
@@ -388,11 +390,11 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     element->xborder=getXMLAttributeFloat(attr, "XBORDER");
     element->yborder=getXMLAttributeFloat(attr, "YBORDER");
     element->nanodes=getXMLAttributeLong(attr, "NANODES");
-    
+
     // Add the new element to the LAD.
     addElement2Module(xmlparsedata->module, element, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-    
+
     // Store the pointer to the currently open element.
     xmlparsedata->element=element;
 
@@ -401,17 +403,17 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the diameter of the FOV.
     xmlparsedata->lad->fov_diameter=
       getXMLAttributeFloat(attr, "DIAMETER")*M_PI/180.;
-   
+
   } else if (!strcmp(Uelement, "TEMPERATURE")) {
 
     // Determine the value of the temperature.
     xmlparsedata->lad->temperature=getXMLAttributeFloat(attr, "VALUE");
-   
+
   } else if (!strcmp(Uelement, "EFIELD")) {
 
     // Determine the electric field.
     xmlparsedata->lad->efield=getXMLAttributeFloat(attr, "VALUE");
-   
+
   } else if (!strcmp(Uelement, "MOBILITY")) {
 
     // Determine the mobility.
@@ -439,11 +441,11 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
       getXMLAttributeFloat(attr, "READOUT_LO_KEV");
     float threshold_readout_up_keV=
       getXMLAttributeFloat(attr, "READOUT_UP_KEV");
-    
+
     if (0.<threshold_readout_lo_keV) {
       xmlparsedata->lad->threshold_readout_lo_keV=
 	(float*)malloc(sizeof(float));
-      CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_lo_keV, 
+      CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_lo_keV,
 		      xmlparsedata->status,
 		      "memory allocation for threshold failed");
       *(xmlparsedata->lad->threshold_readout_lo_keV)=threshold_readout_lo_keV;
@@ -452,14 +454,14 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     if (0.<threshold_readout_up_keV) {
       xmlparsedata->lad->threshold_readout_up_keV=
 	(float*)malloc(sizeof(float));
-      CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_up_keV, 
+      CHECK_NULL_VOID(xmlparsedata->lad->threshold_readout_up_keV,
 		      xmlparsedata->status,
 		      "memory allocation for threshold failed");
       *(xmlparsedata->lad->threshold_readout_up_keV)=threshold_readout_up_keV;
     }
 
   } else if (!strcmp(Uelement, "ARF")) {
-    
+
     // Check if the ARF has been defined previously.
     if (NULL!=xmlparsedata->lad->arf) {
       xmlparsedata->status=EXIT_FAILURE;
@@ -481,7 +483,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Store the file name of the ARF.
     xmlparsedata->lad->arf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->lad->arf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->lad->arf_filename,
 		    xmlparsedata->status,
 		    "memory allocation for ARF file name failed");
     strcpy(xmlparsedata->lad->arf_filename, filename);
@@ -494,7 +496,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "RMF")) {
-    
+
     // Check if the RMF has been defined previously.
     if (NULL!=xmlparsedata->lad->rmf) {
       SIXT_ERROR("RMF already defined (cannot be loaded twice)");
@@ -505,7 +507,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the file name of the RMF.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
-    
+
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
       SIXT_ERROR("no file specified for RMF");
@@ -516,7 +518,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Store the file name of the RMF.
     xmlparsedata->lad->rmf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename,
 		    xmlparsedata->status,
 		    "memory allocation for RMF file name failed");
     strcpy(xmlparsedata->lad->rmf_filename, filename);
@@ -529,7 +531,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "RSP")) {
-    
+
     // Check if the ARF or RMF have been defined previously.
     if ((NULL!=xmlparsedata->lad->arf)||(NULL!=xmlparsedata->lad->rmf)) {
       SIXT_ERROR("ARF or RMF already defined (cannot be loaded twice)");
@@ -540,7 +542,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Determine the file name of the RSP.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
-    
+
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
       SIXT_ERROR("no file specified for RSP");
@@ -551,13 +553,13 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     // Store the file name of the RSP.
     xmlparsedata->lad->arf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->lad->arf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->lad->arf_filename,
 		    xmlparsedata->status,
 		    "memory allocation for ARF file name failed");
     strcpy(xmlparsedata->lad->arf_filename, filename);
     xmlparsedata->lad->rmf_filename=
       (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename, 
+    CHECK_NULL_VOID(xmlparsedata->lad->rmf_filename,
 		    xmlparsedata->status,
 		    "memory allocation for RMF file name failed");
     strcpy(xmlparsedata->lad->rmf_filename, filename);
@@ -566,18 +568,18 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     char filepathname[MAXFILENAME];
     strcpy(filepathname, xmlparsedata->lad->filepath);
     strcat(filepathname, filename);
-    loadArfRmfFromRsp(filepathname, 
+    loadArfRmfFromRsp(filepathname,
 		      &xmlparsedata->lad->arf,
 		      &xmlparsedata->lad->rmf,
 		      &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
 
   } else if (!strcmp(Uelement, "BACKGROUND")) {
-    
+
     // Determine the file name of the background catalog.
     char filename[MAXFILENAME];
     getXMLAttributeString(attr, "FILENAME", filename);
-    
+
     // Check if a file name has been specified.
     if (strlen(filename)==0) {
       SIXT_ERROR("no file specified for detector background");
@@ -612,7 +614,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
     xmlparsedata->lad->vignetting=
       newVignetting(filepathname, &xmlparsedata->status);
     CHECK_STATUS_VOID(xmlparsedata->status);
-  
+
   } else {
     char msg[MAXMSG];
     sprintf(msg, "unknown XML element '%s'", Uelement);
@@ -621,7 +623,7 @@ static void XMLElementStart(void* parsedata, const char* el, const char** attr)
 }
 
 
-static void XMLElementEnd(void* parsedata, const char* el) 
+static void XMLElementEnd(void* parsedata, const char* el)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
   char Uelement[MAXMSG]; // Upper case version of XML element
@@ -646,7 +648,7 @@ static void XMLElementEnd(void* parsedata, const char* el)
 }
 
 
-LAD* getLADfromXML(const char* const filename, 
+LAD* getLADfromXML(const char* const filename,
 		   int* const status)
 {
   LAD* lad=NULL;
@@ -662,7 +664,7 @@ LAD* getLADfromXML(const char* const filename,
   char filename2[MAXFILENAME];
   char rootname[MAXFILENAME];
   // Make a local copy of the filename variable in order to avoid
-  // compiler warnings due to discarded const qualifier at the 
+  // compiler warnings due to discarded const qualifier at the
   // subsequent function call.
   strcpy(filename2, filename);
   fits_parse_rootname(filename2, rootname, status);
@@ -672,23 +674,23 @@ LAD* getLADfromXML(const char* const filename,
   char* lastslash = strrchr(rootname, '/');
   if (NULL==lastslash) {
     lad->filepath=(char*)malloc(sizeof(char));
-    CHECK_NULL_RET(lad->filepath, *status, 
+    CHECK_NULL_RET(lad->filepath, *status,
 		   "memory allocation for filepath failed", lad);
     lad->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(lad->filename, *status, 
+    CHECK_NULL_RET(lad->filename, *status,
 		   "memory allocation for filename failed", lad);
     strcpy(lad->filepath, "");
     strcpy(lad->filename, rootname);
   } else {
     lastslash++;
     lad->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
-    CHECK_NULL_RET(lad->filename, *status, 
+    CHECK_NULL_RET(lad->filename, *status,
 		   "memory allocation for filename failed", lad);
     strcpy(lad->filename, lastslash);
-      
+
     *lastslash='\0';
     lad->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(lad->filepath, *status, 
+    CHECK_NULL_RET(lad->filepath, *status,
 		   "memory allocation for filepath failed", lad);
     strcpy(lad->filepath, rootname);
   }
@@ -712,7 +714,7 @@ LAD* getLADfromXML(const char* const filename,
   struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
   CHECK_STATUS_RET(*status, lad);
 
-  // Input buffer with an additional byte at the end for the 
+  // Input buffer with an additional byte at the end for the
   // termination of the string.
   char buffer[MAXMSG+1];
   // Number of chars in buffer.
@@ -738,7 +740,7 @@ LAD* getLADfromXML(const char* const filename,
 
   // Preprocess the XML code (expand loops, perform mathematical
   // operations).
-  // Before acutally parsing the XML code, expand the loops and 
+  // Before acutally parsing the XML code, expand the loops and
   // arithmetic operations in the XML description.
   // The expansion algorithm repeatetly scans the XML code and
   // searches for loop tags. It replaces the loop tags by repeating
@@ -777,7 +779,7 @@ LAD* getLADfromXML(const char* const filename,
     // Parse error.
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "Error: Parsing XML file '%s' failed:\n%s\n", 
+    sprintf(msg, "Error: Parsing XML file '%s' failed:\n%s\n",
 	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
     printf("%s", xmlbuffer->text);
     SIXT_ERROR(msg);
@@ -801,4 +803,3 @@ LAD* getLADfromXML(const char* const filename,
 
   return(lad);
 }
-

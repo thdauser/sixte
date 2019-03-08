@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef MAKESPEC_H
@@ -40,12 +42,12 @@ struct Parameters {
   char EvtFile[MAXFILENAME];
   char Spectrum[MAXFILENAME];
   char RSPPath[MAXFILENAME];
-  char EventFilter[MAXFILENAME];  
+  char EventFilter[MAXFILENAME];
   char ARFfile[MAXFILENAME];
   char RMFfile[MAXFILENAME];
 
   int Seed;
-  
+
   char clobber;
   int usepha;
 };
@@ -55,4 +57,3 @@ int makespec_getpar(struct Parameters *par);
 
 
 #endif /* MAKESPEC_H */
-

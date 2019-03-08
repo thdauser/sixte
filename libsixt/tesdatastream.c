@@ -16,35 +16,37 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tesdatastream.h"
 
 TESDataStream* newTESDataStream(int* const status){
-  
+
   TESDataStream* stream=(TESDataStream*)malloc(sizeof(TESDataStream));
   if(stream==NULL){
     *status=EXIT_FAILURE;
     SIXT_ERROR("memory allocation for TESDataStream failed");
     return(stream);
   }
-  
+
   stream->Npix=0;
   stream->Ntime=0;
   stream->time=NULL;
   stream->adc_value=NULL;
-  
+
   return stream;
 }
 
-void allocateTESDataStream(TESDataStream* stream, 
-			   long Nt, 
-			   int Npix, 
+void allocateTESDataStream(TESDataStream* stream,
+			   long Nt,
+			   int Npix,
 			   int* const status)
 {
   stream->Npix=Npix;
   stream->Ntime=Nt;
-  
+
   stream->time=(double*)malloc(Nt*sizeof(double));
   if(stream->time==NULL){
     *status=EXIT_FAILURE;
@@ -93,24 +95,24 @@ void destroyTESDataStream(TESDataStream* stream){
 }
 
 TESPulseProperties* newTESPulseProperties(int* const status){
-  
+
   TESPulseProperties* prop=(TESPulseProperties*)malloc(sizeof(TESPulseProperties));
   if(prop==NULL){
     *status=EXIT_FAILURE;
     SIXT_ERROR("memory allocation for TESPulseProperties failed");
     return(prop);
   }
-  
+
   prop->Npix=0;
   prop->pixID=NULL;
   prop->versionID=NULL;
   prop->templates=NULL;
-  
+
   return prop;
 }
 
 void destroyTESPulseProperties(TESPulseProperties* prop){
-  
+
   if(prop->pixID!=NULL){
     free(prop->pixID);
     prop->pixID=NULL;
@@ -126,26 +128,26 @@ void destroyTESPulseProperties(TESPulseProperties* prop){
 }
 
 TESFitsStream* newTESFitsStream(int* const status){
-  
+
   TESFitsStream* stream=(TESFitsStream*)malloc(sizeof(TESFitsStream));
   if(stream==NULL){
     *status=EXIT_FAILURE;
     SIXT_ERROR("memory allocation for TESFitsStream failed");
     return(stream);
   }
-  
+
   stream->Npix=0;
   stream->Ntime=0;
   stream->time=NULL;
   stream->pixID=NULL;
   stream->adc_value=NULL;
   stream->name[0]='\0';
-  
+
   return stream;
 }
 
 void destroyTESFitsStream(TESFitsStream* stream){
-  
+
   if(stream->pixID!=NULL){
     free(stream->pixID);
     stream->pixID=NULL;
@@ -171,7 +173,7 @@ void destroyTESFitsStream(TESFitsStream* stream){
   stream->Ntime=0;
 }
 
-void createTESFitsStreamFile(fitsfile **fptr, 
+void createTESFitsStreamFile(fitsfile **fptr,
 			     char *filename,
 			     char* const telescop,
 			     char* const instrume,
@@ -184,7 +186,7 @@ void createTESFitsStreamFile(fitsfile **fptr,
 			     const double timezero,
 			     const double tstart,
 			     const double tstop,
-			     const char clobber, 
+			     const char clobber,
 			     int* const status)
 {
   fits_create_file_clobber(fptr,filename,clobber,status);
@@ -195,12 +197,12 @@ void createTESFitsStreamFile(fitsfile **fptr,
   fits_update_key(*fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
   fits_update_key(*fptr, TINT, "BITPIX", &(bitpix), NULL, status);
   fits_update_key(*fptr, TINT, "NAXIS", &(naxis), NULL, status);
-  
+
   sixt_add_fits_stdkeywords_obsolete(*fptr, 1, telescop, instrume, filter,
-			    ancrfile, respfile, mjdref, timezero, 
+			    ancrfile, respfile, mjdref, timezero,
 			    tstart, tstop, status);
   CHECK_STATUS_VOID(*status);
-  
+
   //Write XML and pixel impact file info into header
   fits_update_key(*fptr,TSTRING,"XMLFILE",xmlfile,"detector XML description",status);
   fits_update_key(*fptr,TSTRING,"PIXFILE",impactlist,"Pixel impact file for this stream",status);
@@ -208,22 +210,22 @@ void createTESFitsStreamFile(fitsfile **fptr,
   CHECK_STATUS_VOID(*status);
 }
 
-void allocateTESFitsStream(TESFitsStream* stream, 
-			   long Nt, 
-			   int Npix, 
+void allocateTESFitsStream(TESFitsStream* stream,
+			   long Nt,
+			   int Npix,
 			   int* const status)
 {
   stream->Npix=Npix;
   stream->Ntime=Nt;
-  
+
   stream->pixID=(int*)malloc(Npix*sizeof(int));
   CHECK_NULL_VOID(stream->pixID,*status,
 		  "Memory allocation failed for TESFitsStream: pixID");
-  
+
   stream->time=(double*)malloc(Nt*sizeof(double));
   CHECK_NULL_VOID(stream->time,*status,
 		  "Memory allocation failed for TESFitsStream: time");
-  
+
   stream->adc_value=(uint16_t**)malloc(Npix*sizeof(uint16_t*));
   CHECK_NULL_VOID(stream->adc_value,*status,
 		  "Memory allocation failed for TESFitsStream: adc_value");
@@ -236,7 +238,7 @@ void allocateTESFitsStream(TESFitsStream* stream,
   }
 }
 
-void writeTESFitsStream(fitsfile *fptr, 
+void writeTESFitsStream(fitsfile *fptr,
 			TESFitsStream *stream,
 			double tstart,
 			double tstop,
@@ -246,18 +248,18 @@ void writeTESFitsStream(fitsfile *fptr,
 			float monoen,
 			int* const status)
 {
-  
+
   // Create table
   long nrows=(long)stream->Ntime;
   int ncolumns=1+stream->Npix;
   int tlen=9;
-  
+
   char *ttype[ncolumns];
   char *tform[ncolumns];
   char *tunit[ncolumns];
-  
+
   int ii;
-  
+
   for(ii=0; ii<ncolumns; ii++){
     ttype[ii]=(char*)malloc(tlen*sizeof(char));
     if(ttype[ii]==NULL){
@@ -279,28 +281,28 @@ void writeTESFitsStream(fitsfile *fptr,
     }
   }
   CHECK_STATUS_VOID(*status);
-  
+
   ttype[0]="TIME";
   tform[0]="1D";
   tunit[0]="s";
-  
+
   for(ii=0; ii<stream->Npix; ii++){
     sprintf(ttype[ii+1], "PXL%05d", stream->pixID[ii]+1);
     sprintf(tform[ii+1], "1U");
     sprintf(tunit[ii+1], "ADC");
   }
-  
+
   fits_create_tbl(fptr, BINARY_TBL, 0, ncolumns,
 	ttype, tform, tunit, "TESDATASTREAM", status);
   CHECK_STATUS_VOID(*status);
-  
+
   // Write columns
   fits_write_col(fptr, TDOUBLE, 1, 1, 1, nrows, stream->time, status);
   CHECK_STATUS_VOID(*status);
   for(ii=0; ii<stream->Npix; ii++){
     fits_write_col(fptr, TUSHORT, 2+ii, 1, 1, nrows, stream->adc_value[ii], status);
     CHECK_STATUS_VOID(*status);
-    
+
     char nev[tlen];
     sprintf(nev, "NES%05d", stream->pixID[ii]+1);
     fits_update_key(fptr, TLONG, nev, &Nevts[stream->pixID[ii]],
@@ -308,9 +310,9 @@ void writeTESFitsStream(fitsfile *fptr,
     CHECK_STATUS_VOID(*status);
   }
   CHECK_STATUS_VOID(*status);
-  
+
   int firstpix, lastpix;
-  
+
   // Write header keywords
   fits_update_key(fptr, TDOUBLE, "TSTART",
         &tstart, "Start time of data stream", status);
@@ -327,14 +329,14 @@ void writeTESFitsStream(fitsfile *fptr,
   fits_update_key(fptr, TINT, "LASTPIX",
         &(lastpix), "ID of last pixel in extension", status);
   CHECK_STATUS_VOID(*status);
-  
-  if(ismonoen==1){    
+
+  if(ismonoen==1){
     fits_update_key(fptr, TFLOAT, "MONOEN",
         &monoen, "Monochromatic energy of photons [keV]", status);
     CHECK_STATUS_VOID(*status);
   }
   CHECK_STATUS_VOID(*status);
-  
+
   // free allocated memory
   for (ii=0; ii<ncolumns; ii++) {
     free(ttype[ii]);
@@ -344,21 +346,21 @@ void writeTESFitsStream(fitsfile *fptr,
 
 }
 
-void appendTESFitsStream(fitsfile *fptr, 
+void appendTESFitsStream(fitsfile *fptr,
 			TESFitsStream *stream,
 			double tstart,
 			double tstop,
 			long *Nevts,
 			int* const status)
 {
-  
+
   // append to a table
   //
-  // NOTE: THIS FUNCTION IS NOT WELL TESTED YET - USE WITH CAUTION 
+  // NOTE: THIS FUNCTION IS NOT WELL TESTED YET - USE WITH CAUTION
   //
   long nrows=(long)stream->Ntime;
   int ncolumns=1+stream->Npix;
-  
+
   fits_movnam_hdu(fptr,BINARY_TBL,"TESDATASTREAM",0,status);
   CHECK_STATUS_VOID(*status);
 
@@ -369,7 +371,7 @@ void appendTESFitsStream(fitsfile *fptr,
   fits_update_key(fptr, TDOUBLE, "TSTOP",
         &tstop, "Stop time of data stream", status);
   CHECK_STATUS_VOID(*status);
-  
+
   // get the required column numbers
   int timecol;
   fits_get_colnum(fptr,CASESEN,"TIME",&timecol,status);
@@ -391,7 +393,7 @@ void appendTESFitsStream(fitsfile *fptr,
       "Number of simulated events in pixel stream", status);
     CHECK_STATUS_VOID(*status);
   }
-  
+
   // get number of rows in the table
   LONGLONG tablenrows;
   fits_get_num_rowsll(fptr, &tablenrows, status);
@@ -408,7 +410,7 @@ void appendTESFitsStream(fitsfile *fptr,
 
 }
 
-void getTESDataStream(TESDataStream* TESData, 
+void getTESDataStream(TESDataStream* TESData,
 		PixImpFile* PixFile,
 		TESProfiles* TESProf,
 		AdvDet* det,
@@ -641,18 +643,18 @@ EvtNode** newEventNodes(int *NPixel, int* const status) {
   return ActPulses;
 }
 
-int addEventToNode(EvtNode** ActPulses, 
-		   TESProfiles* Pulses, 
+int addEventToNode(EvtNode** ActPulses,
+		   TESProfiles* Pulses,
                    PixImpact* impact,
 		   int pixno,
 		   int versionID,
 		   int EnID,
-		   int* const status) 
+		   int* const status)
 {
    int i;
-   
+
    EvtNode *current=NULL, *end;
-   
+
    /* Allocate space for the new node */
    current = (EvtNode*)malloc(sizeof(EvtNode));
    if(current==NULL){
@@ -661,7 +663,7 @@ int addEventToNode(EvtNode** ActPulses,
       return(EXIT_FAILURE);
    }
    current->next=NULL;
-   
+
    current->time=(double*)malloc(Pulses->profiles[versionID].Nt*sizeof(double));
    if(current->time==NULL){
       *status=EXIT_FAILURE;
@@ -674,14 +676,14 @@ int addEventToNode(EvtNode** ActPulses,
       SIXT_ERROR("memory allocation for current->adcpulse failed");
       return(EXIT_FAILURE);
    }
-   
+
    for (i=0;i<Pulses->profiles[versionID].Nt;i++) {
-     current->time[i]=Pulses->profiles[versionID].time[i]; 
+     current->time[i]=Pulses->profiles[versionID].time[i];
      current->adcpulse[i]=impact->energy * Pulses->profiles[versionID].adc_value[EnID][i];
    }
    current->count=0.;
    current->Nt=Pulses->profiles[versionID].Nt;
-   
+
    if(ActPulses[pixno]==NULL){
      ActPulses[pixno]=current;
    }else{
@@ -691,28 +693,28 @@ int addEventToNode(EvtNode** ActPulses,
      }
      end->next=current;
    }
-   
+
    return EXIT_SUCCESS;
 }
 
 
-void removeEventFromNode(EvtNode** ActPulses, 
-			int* pixel) 
+void removeEventFromNode(EvtNode** ActPulses,
+			int* pixel)
 {
-   
+
    /* Set temporary pointers for pop-node and shift-node */
    EvtNode *pop, *shift;
-   
+
    /* Pointer to node that needs to go (pop) and it's replacement (shift) */
    pop = ActPulses[*pixel];
    shift = ActPulses[*pixel]->next;
    ActPulses[*pixel] = shift;
-   
+
    /* Release memory of the node */
    free(pop->time);
    free(pop->adcpulse);
    free(pop);
-}  
+}
 
 void destroyEventNode(EvtNode* node) {
   if (node!=NULL) {

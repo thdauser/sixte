@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "teseventlist.h"
@@ -538,7 +540,7 @@ void addEmptyEvent(TesEventFile* file,PixImpact* impact, int* const status){
 
 /** Update signal and grading columns of an event */
 //void updateSignal(TesEventFile* file,long row,double energy,double avg_4samplesDerivative,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ //BEA
-void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ 
+void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){
 	//Save energy column
 	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
 			row, 1, 1, &energy, status);

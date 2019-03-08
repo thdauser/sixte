@@ -16,16 +16,18 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "psf.h"
 
 
-int get_psf_pos(struct Point2d* const position, 
-		const Photon photon, 
-		const struct Telescope telescope, 
+int get_psf_pos(struct Point2d* const position,
+		const Photon photon,
+		const struct Telescope telescope,
 		const float focal_length,
-		const Vignetting* const vignetting, 
+		const Vignetting* const vignetting,
 		const PSF* const psf,
 		int* const status)
 {
@@ -34,7 +36,7 @@ int get_psf_pos(struct Point2d* const position,
 
   // Determine the direction of origin of the photon.
   Vector photon_direction=unit_vector(photon.ra, photon.dec);
-  
+
   // Calculate the off-axis angle ([rad]).
   double cos_theta=scalar_product(&telescope.nz, &photon_direction);
   // Avoid numerical problems with numbers slightly larger than 1.
@@ -45,7 +47,7 @@ int get_psf_pos(struct Point2d* const position,
   double theta=acos(cos_theta);
 
   // Calculate the azimuthal angle ([rad]) of the source position.
-  double phi=atan2(scalar_product(&telescope.ny, &photon_direction), 
+  double phi=atan2(scalar_product(&telescope.ny, &photon_direction),
 		   scalar_product(&telescope.nx, &photon_direction));
 
   // Get a random number to determine a random hitting position.
@@ -57,7 +59,7 @@ int get_psf_pos(struct Point2d* const position,
   }
   // Otherwise the photon hits the detector.
 
-  // Determine, which PSF should be used for that particular source 
+  // Determine, which PSF should be used for that particular source
   // direction and photon energy.
   int index1, index2, index3;
   for (index1=0; index1<psf->nenergies-1; index1++) {
@@ -109,7 +111,7 @@ int get_psf_pos(struct Point2d* const position,
   CHECK_STATUS_RET(*status, 0);
 
   // This section is only necessary for PSFs that are not normalized to 1,
-  // i.e., contain some vignetting effects. According to the OGIP recommmendation 
+  // i.e., contain some vignetting effects. According to the OGIP recommmendation
   // for PSF images, this should not be the case. So this part of code can be removed,
   // if only proper PSFs are used.
   if (rnd > psf_item->data[psf_item->naxis1-1][psf_item->naxis2-1]) {
@@ -119,7 +121,7 @@ int get_psf_pos(struct Point2d* const position,
   }
 
   // PSF coordinates [pixel] of the position obtained from the best fitting PSF image.
-  int x1, y1;   
+  int x1, y1;
 
   // Perform a binary search to obtain the x-coordinate.
   int high=psf_item->naxis1-1;
@@ -150,7 +152,7 @@ int get_psf_pos(struct Point2d* const position,
   y1=low;
   // Now x1 and y1 have pixel positions [integer pixel].
 
-  // Determine the distance ([m]) of the central reference position 
+  // Determine the distance ([m]) of the central reference position
   // from the optical axis according to the off-axis angle theta.
   double distance=focal_length * tan(theta); // TODO *(-1) ???
 
@@ -164,16 +166,16 @@ int get_psf_pos(struct Point2d* const position,
   position->x=cosp*distance;
   position->y=sinp*distance;
 
-  // Add the relative position obtained from the PSF image (randomized pixel 
+  // Add the relative position obtained from the PSF image (randomized pixel
   // indices x1 and y1).
-  double x2=position->x + 
-    ((double)x1 -psf_item->crpix1 +0.5 
-     +sixt_get_random_number(status))*psf_item->cdelt1 
+  double x2=position->x +
+    ((double)x1 -psf_item->crpix1 +0.5
+     +sixt_get_random_number(status))*psf_item->cdelt1
     + psf_item->crval1; // [m]
   CHECK_STATUS_RET(*status, 0);
-  double y2=position->y + 
-    ((double)y1 -psf_item->crpix2 +0.5 
-     +sixt_get_random_number(status))*psf_item->cdelt2 
+  double y2=position->y +
+    ((double)y1 -psf_item->crpix2 +0.5
+     +sixt_get_random_number(status))*psf_item->cdelt2
     + psf_item->crval2; // [m]
   CHECK_STATUS_RET(*status, 0);
 
@@ -186,7 +188,7 @@ int get_psf_pos(struct Point2d* const position,
   position->x=cosp*x2 - sinp*y2;
   position->y=sinp*x2 + cosp*y2;
 
-  return(1);  
+  return(1);
 }
 
 
@@ -231,9 +233,9 @@ void destroyPSF(PSF** const psf)
 /** Add a double value to a list. Before adding the value, check
     whether it is already in the list. In that case it doesn't have to
     be added. The number of list entries is modified appropriately. */
-static void addDValue2List(const double value, 
-			   double** const list, 
-			   int* const nvalues, 
+static void addDValue2List(const double value,
+			   double** const list,
+			   int* const nvalues,
 			   int* const status)
 {
   // Check whether the value is already in the list.
@@ -264,7 +266,7 @@ static void sortDList(double* const list, const int nvalues)
   int count, index;
   double buffer;
   // Flag if 2 elements have been exchanged during one loop cycle.
-  int exchanged; 
+  int exchanged;
   for (count=0; count<nvalues-1; count++) {
     exchanged=0;
     for (index=0; index<nvalues-1-count; index++) {
@@ -280,19 +282,19 @@ static void sortDList(double* const list, const int nvalues)
     // In this loop run no elements have been exchanged, so we can
     // break the loop here.
     if (0==exchanged) break;
-  }  
+  }
 }
 
 
-PSF* newPSF(const char* const filename, 
-	    const float focal_length, 
+PSF* newPSF(const char* const filename,
+	    const float focal_length,
 	    int* const status)
 {
   PSF* psf=NULL;
   fitsfile* fptr=NULL;   // FITSfile-pointer to PSF file
   double* data=NULL;     // Input buffer (1D array)
   long count, count2, count3;
-  
+
   do { // Beginning of ERROR handling loop.
 
     // Allocate memory for PSF data structure:
@@ -329,20 +331,20 @@ PSF* newPSF(const char* const filename,
       // Check if the HDU is an image extension.
       if (IMAGE_HDU==hdu_type) {
 	// Get the header keywords specifying the energy, off-axis angle,
-	// on azimuthal angle. 
+	// on azimuthal angle.
 	double energy=0., theta=0., phi=0.;
 	char comment[MAXMSG];
-	if (fits_read_key(fptr, TDOUBLE, "ENERGY", &energy, comment, 
+	if (fits_read_key(fptr, TDOUBLE, "ENERGY", &energy, comment,
 			  status)) break; // [eV]
-	if (fits_read_key(fptr, TDOUBLE, "THETA", &theta, comment, 
+	if (fits_read_key(fptr, TDOUBLE, "THETA", &theta, comment,
 			  status)) break; // [arc min]
-	if (fits_read_key(fptr, TDOUBLE, "PHI", &phi, comment, 
+	if (fits_read_key(fptr, TDOUBLE, "PHI", &phi, comment,
 			  status)) break; // [deg]
 	// Convert to appropriate units.
 	energy*=1.e-3;         // [eV] -> [keV];
 	theta *=M_PI/180./60.; // [arc min] -> [rad]
 	phi   *=M_PI/180.;     // [deg] -> [rad]
-	
+
 	// Add value to the list of available values.
 	addDValue2List(energy, &(psf->energies), &psf->nenergies, status);
 	if (EXIT_SUCCESS!=*status) break;
@@ -354,7 +356,7 @@ PSF* newPSF(const char* const filename,
     }
     if (EXIT_SUCCESS!=*status) break;
 
-    // Sort the lists. 
+    // Sort the lists.
     sortDList(psf->energies, psf->nenergies);
     sortDList(psf->thetas  , psf->nthetas  );
     sortDList(psf->phis    , psf->nphis    );
@@ -405,7 +407,7 @@ PSF* newPSF(const char* const filename,
       if (EXIT_SUCCESS!=*status) break;
     }
     if (EXIT_SUCCESS!=*status) break;
-    
+
     // Loop over all HDUs. Read the data and add PSF to the
     // 3-dimensional array.
     for (hdu=0; hdu<nhdus; hdu++) {
@@ -414,14 +416,14 @@ PSF* newPSF(const char* const filename,
       // Check if the HDU is an image extension.
       if (IMAGE_HDU==hdu_type) {
 	// Get the header keywords specifying the energy, off-axis angle,
-	// on azimuthal angle. 
+	// on azimuthal angle.
 	double energy=0., theta=0., phi=0.;
 	char comment[MAXMSG];
-	if (fits_read_key(fptr, TDOUBLE, "ENERGY", &energy, comment, 
+	if (fits_read_key(fptr, TDOUBLE, "ENERGY", &energy, comment,
 			  status)) break; // [eV]
-	if (fits_read_key(fptr, TDOUBLE, "THETA", &theta, comment, 
+	if (fits_read_key(fptr, TDOUBLE, "THETA", &theta, comment,
 			  status)) break; // [arc min]
-	if (fits_read_key(fptr, TDOUBLE, "PHI", &phi, comment, 
+	if (fits_read_key(fptr, TDOUBLE, "PHI", &phi, comment,
 			  status)) break; // [deg]
 	// Convert to appropriate units.
 	energy *= 1.e-3;         // [eV] -> [keV];
@@ -439,7 +441,7 @@ PSF* newPSF(const char* const filename,
 	  break;
 	}
 	for (index2=0; index2<psf->nthetas; index2++) {
-	  if (fabs(theta-psf->thetas[index2]) <= fabs(theta*1.e-6)) break;	
+	  if (fabs(theta-psf->thetas[index2]) <= fabs(theta*1.e-6)) break;
 	}
 	if (index2==psf->nthetas) {
 	  *status=EXIT_FAILURE;
@@ -462,32 +464,32 @@ PSF* newPSF(const char* const filename,
 	psf->data[index1][index2][index3].naxis2 = (int)naxes[1];
 
 	// Determine the WCS keywords of the PSF array from the header.
-	if (fits_read_key(fptr, TDOUBLE, "CDELT1", &(psf->data[index1][index2][index3].cdelt1), 
+	if (fits_read_key(fptr, TDOUBLE, "CDELT1", &(psf->data[index1][index2][index3].cdelt1),
 			  comment, status)){
 		SIXT_ERROR("could not find the CDELT1 keyword in the PSF");
 		break;
 	}
-	if (fits_read_key(fptr, TDOUBLE, "CDELT2", &(psf->data[index1][index2][index3].cdelt2), 
+	if (fits_read_key(fptr, TDOUBLE, "CDELT2", &(psf->data[index1][index2][index3].cdelt2),
 			  comment, status)){
 		SIXT_ERROR("could not find the CDELT2 keyword in the PSF");
 		break;
 	}
-	if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &(psf->data[index1][index2][index3].crpix1), 
+	if (fits_read_key(fptr, TDOUBLE, "CRPIX1", &(psf->data[index1][index2][index3].crpix1),
 			  comment, status)){
 		SIXT_ERROR("could not find the CRPIX1 keyword in the PSF");
 		break;
 	}
-	if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &(psf->data[index1][index2][index3].crpix2), 
+	if (fits_read_key(fptr, TDOUBLE, "CRPIX2", &(psf->data[index1][index2][index3].crpix2),
 			  comment, status)){
 		SIXT_ERROR("could not find the CRPIX2 keyword in the PSF");
 		break;
 	}
-	if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &(psf->data[index1][index2][index3].crval1), 
+	if (fits_read_key(fptr, TDOUBLE, "CRVAL1", &(psf->data[index1][index2][index3].crval1),
 			  comment, status)){
 		SIXT_ERROR("could not find the CRVAL1 keyword in the PSF");
 		break;
 	}
-	if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &(psf->data[index1][index2][index3].crval2), 
+	if (fits_read_key(fptr, TDOUBLE, "CRVAL2", &(psf->data[index1][index2][index3].crval2),
 			  comment, status)){
 		SIXT_ERROR("could not find the CRVAL2 keyword in the PSF");
 		break;
@@ -524,12 +526,12 @@ PSF* newPSF(const char* const filename,
 	      malloc(psf->data[index1][index2][index3].naxis2*sizeof(double));
 	    if (NULL==psf->data[index1][index2][index3].data[count]) {
 	      *status=EXIT_FAILURE;
-	      SIXT_ERROR("not enough memory to store PSF data");  
+	      SIXT_ERROR("not enough memory to store PSF data");
 	      break;
 	    }
 	  }
-	} else { 
-	  *status=EXIT_FAILURE; 
+	} else {
+	  *status=EXIT_FAILURE;
 	  SIXT_ERROR("not enough memory to store PSF data");
 	  break;
 	}
@@ -538,7 +540,7 @@ PSF* newPSF(const char* const filename,
 
 
 	// Allocate memory for input buffer (1D array)
-	data=(double*)realloc(data, psf->data[index1][index2][index3].naxis1 
+	data=(double*)realloc(data, psf->data[index1][index2][index3].naxis1
 			      *psf->data[index1][index2][index3].naxis2
 			      *sizeof(double));
 	if (NULL==data) {
@@ -553,23 +555,23 @@ PSF* newPSF(const char* const filename,
 	long fpixel[2]={1, 1};   // lower left corner
 	//              |--|--> FITS coordinates start at (1,1)
 	// upper right corner
-	long lpixel[2]={psf->data[index1][index2][index3].naxis1, 
-	  psf->data[index1][index2][index3].naxis2};  
+	long lpixel[2]={psf->data[index1][index2][index3].naxis1,
+	  psf->data[index1][index2][index3].naxis2};
 	long inc[2]={1, 1};
-	
+
 	int anynul;
-	if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value, 
+	if (fits_read_subset(fptr, TDOUBLE, fpixel, lpixel, inc, &null_value,
 			     data, &anynul, status)) break;
 
 	// Create a partition function from the 1D PSF data array,
 	// i.e., sum up the individual probabilites.
-	// The partition function is more adequate for determining 
+	// The partition function is more adequate for determining
 	// a random photon impact position on the detector.
 	double sum=0.;
 	for (count=0; count<psf->data[index1][index2][index3].naxis1; count++) {
 	  for (count2=0; count2<psf->data[index1][index2][index3].naxis2; count2++) {
 	    // Take care of choosing x- and y-axis properly!
-	    sum += data[count2*psf->data[index1][index2][index3].naxis1+count];  
+	    sum += data[count2*psf->data[index1][index2][index3].naxis1+count];
 	    psf->data[index1][index2][index3].data[count][count2]=sum;
 	  }
 	}
@@ -584,15 +586,15 @@ PSF* newPSF(const char* const filename,
 
 	// Plot normalization of PSF for current off-axis angle and energy
 	headas_chat(5, "PSF: images %.2lf%% of incident photons for "
-		    "%.1lf keV, %.4lf arc min, %.4lf deg, \n", 
-		    sum/sum * 100., 
-		    psf->energies[index1], 
+		    "%.1lf keV, %.4lf arc min, %.4lf deg, \n",
+		    sum/sum * 100.,
+		    psf->energies[index1],
 		    psf->thetas[index2]/M_PI*180.*60.,
 		    psf->phis[index3]/M_PI*180.);
 
-      } 
+      }
       // END of check if IMAGE_HDU.
-    } 
+    }
     // END of loop over all HDUs.
     if (EXIT_SUCCESS!=*status) break;
   } while(0);  // END of error handling loop
@@ -601,7 +603,7 @@ PSF* newPSF(const char* const filename,
   if (NULL!=fptr) fits_close_file(fptr, status);
 
   // Free memory of input buffer.
-  if (NULL!=data) free(data);  
+  if (NULL!=data) free(data);
 
   return(psf);
 }
@@ -621,13 +623,13 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 
     // Loop over the different PSFs in the storage.
     // Counters for energies, off-axis angles, and azimuthal angles.
-    int index1, index2, index3; 
+    int index1, index2, index3;
     for (index1=0; index1<psf->nenergies; index1++) {
       for (index2=0; index2<psf->nthetas; index2++) {
 	for (index3=0; index3<psf->nphis; index3++) {
-	  
-	  // Determine size of PSF sub-rectangles (don't save entire PSF but only 
-	  // the relevant region around the central peak, which has a probability 
+
+	  // Determine size of PSF sub-rectangles (don't save entire PSF but only
+	  // the relevant region around the central peak, which has a probability
 	  // greater than 0).
 	  int n=0;     // width and
 	  int m=0;     // height of sub-rectangle
@@ -649,10 +651,10 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	      sub_psf[((x-x0)*n+y-y0)]=psf->data[index1][index2][index3].data[x][y];
 	    }
 	  }
-    
+
 
 	  // Create an image in the FITS-file (primary HDU):
-	  long naxes[2]={(long)(psf->data[index1][index2][index3].naxis1), 
+	  long naxes[2]={(long)(psf->data[index1][index2][index3].naxis1),
 	                 (long)(psf->data[index1][index2][index3].naxis2)};
 	  fits_create_img(fptr, DOUBLE_IMG, 2, naxes, status);
 	  //                                |-> naxis
@@ -668,7 +670,7 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 			 "detector coordinate system", status);
 	  fits_write_key(fptr, TSTRING, "CTYPE2", "DETY",
 			 "detector coordinate system", status);
-	  
+
 	  fits_write_key(fptr, TSTRING, "HDUCLASS", "OGIP",
 			 "Extension is OGIP defined", status);
 	  fits_write_key(fptr, TSTRING, "HDUDOC", "CAL/GEN/92-020",
@@ -679,29 +681,29 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  fits_write_key(fptr, TSTRING, "HDUCLAS2", "PSF", "", status);
 	  fits_write_key(fptr, TSTRING, "HDUCLAS3", "PREDICTED", "", status);
 	  fits_write_key(fptr, TSTRING, "HDUCLAS4", "NET", "", status);
-      
+
 	  fits_write_key(fptr, TSTRING, "CUNIT1", "m", "", status);
 	  fits_write_key(fptr, TSTRING, "CUNIT2", "m", "", status);
 	  double dbuffer=psf->data[index1][index2][index3].naxis1*0.5+0.5;
-	  fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "CRPIX1", &dbuffer,
 			 "X axis reference pixel", status);
 	  dbuffer=psf->data[index1][index2][index3].naxis2*0.5+0.5;
-	  fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "CRPIX2", &dbuffer,
 			 "Y axis reference pixel", status);
 	  dbuffer=0.;
-	  fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "CRVAL1", &dbuffer,
 			 "coord of X ref pixel", status);
-	  fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "CRVAL2", &dbuffer,
 			 "coord of Y ref pixel", status);
-	  fits_write_key(fptr, TDOUBLE, "CDELT1", 
+	  fits_write_key(fptr, TDOUBLE, "CDELT1",
 			 &psf->data[index1][index2][index3].cdelt1, // [m]
 			 "X axis increment", status);
-	  fits_write_key(fptr, TDOUBLE, "CDELT2", 
+	  fits_write_key(fptr, TDOUBLE, "CDELT2",
 			 &psf->data[index1][index2][index3].cdelt2, // [m]
 			 "Y axis increment", status);
-	  
+
 	  dbuffer=0.0;
-	  fits_write_key(fptr, TDOUBLE, "BACKGRND", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "BACKGRND", &dbuffer,
 			 "background count rate per pixel", status);
 
 	  // Mission
@@ -713,16 +715,16 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  fits_write_key(fptr, TSTRING, "ORIGIN", "ECAP", "", status);
 
 	  // Write the ENERGY, THETA, and PHI for this particular PSF set.
-	  // This information is used to find the appropriate PSF for 
+	  // This information is used to find the appropriate PSF for
 	  // an incident photon with particular energy and off-axis angle.
 	  dbuffer=psf->energies[index1]*1000.;
-	  fits_write_key(fptr, TDOUBLE, "ENERGY", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "ENERGY", &dbuffer,
 			 "photon energy for the PSF generation in [eV]", status);
 	  dbuffer=psf->thetas[index2]*180.*60./M_PI;
-	  fits_write_key(fptr, TDOUBLE, "THETA", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "THETA", &dbuffer,
 			 "off-axis angle in [arc min]", status);
 	  dbuffer=psf->phis[index3]*180./M_PI;
-	  fits_write_key(fptr, TDOUBLE, "PHI", &dbuffer, 
+	  fits_write_key(fptr, TDOUBLE, "PHI", &dbuffer,
 			 "azimuthal angle in [degree]", status);
 
 	  fits_write_key(fptr, TDOUBLE, "ENERG_LO", &psf->energies[index1],
@@ -738,7 +740,7 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  fits_write_key(fptr, TSTRING, "CCLS0001", "BCF", "", status);
 	  fits_write_key(fptr, TSTRING, "CDTP0001", "TASK", "", status);
 	  fits_write_key(fptr, TSTRING, "CCNM0001", "2D_PSF", "", status);
-	  
+
 	  char sbuffer[MAXMSG];
 	  sprintf(sbuffer, "ENERGY( %.1f)keV", psf->energies[index1]);
 	  fits_write_key(fptr, TSTRING, "CBD10001", sbuffer, "", status);
@@ -748,7 +750,7 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  fits_write_key(fptr, TSTRING, "CBD30001", sbuffer, "", status);
 	  fits_write_key(fptr, TSTRING, "CVSD0001", "2000-01-01", "", status);
 	  fits_write_key(fptr, TSTRING, "CVST0001", "00:00:00", "", status);
-	  fits_write_key(fptr, TSTRING, "CDES0001", "Theoretical images", 
+	  fits_write_key(fptr, TSTRING, "CDES0001", "Theoretical images",
 			 "", status);
 
 	  HDpar_stamp(fptr, nhdus, status);
@@ -760,11 +762,11 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	  long fpixel[2]={x0+1, y0+1};  // Lower left corner.
 	  //                 |-----|--> FITS coordinates start at (1,1)
 	  // Upper right corner.
-	  long lpixel[2]={psf->data[index1][index2][index3].naxis1, 
-			  psf->data[index1][index2][index3].naxis2}; 
+	  long lpixel[2]={psf->data[index1][index2][index3].naxis1,
+			  psf->data[index1][index2][index3].naxis2};
 	  fits_write_subset(fptr, TDOUBLE, fpixel, lpixel, sub_psf, status);
 	  CHECK_STATUS_BREAK(*status);
-      
+
 	  // Add a checksum for this HDU.
 	  fits_write_chksum(fptr, status);
 	  CHECK_STATUS_BREAK(*status);
@@ -772,7 +774,7 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 	CHECK_STATUS_BREAK(*status);
       }
       CHECK_STATUS_BREAK(*status);
-    } 
+    }
     CHECK_STATUS_BREAK(*status);
     // END of loops over individual PSF items in the storage.
 
@@ -787,4 +789,3 @@ int savePSFImage(const PSF* const psf, const char* const filename, int* const st
 
   return(*status);
 }
-

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "phpat.h"
@@ -107,23 +109,23 @@ void phpat(GenDet* const det,
     }
 
     // Set the event type in the output file to 'PATTERN'.
-    fits_update_key(dest->fptr, TSTRING, "EVTYPE", "PATTERN", 
+    fits_update_key(dest->fptr, TSTRING, "EVTYPE", "PATTERN",
 		    "event type", status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
 
     // Allocate memory.
     framelist=(Event**)malloc(maxnframelist*sizeof(Event*));
-    CHECK_NULL_BREAK(framelist, *status, 
+    CHECK_NULL_BREAK(framelist, *status,
 		     "memory allocation for frame list failed");
     neighborlist=(Event**)malloc(maxnneighborlist*sizeof(Event*));
-    CHECK_NULL_BREAK(neighborlist, *status, 
+    CHECK_NULL_BREAK(neighborlist, *status,
 		     "memory allocation for neighbor list failed");
 
     // Determine the name of the instrument.
     // Particular instruments require a special pattern
     // recombination scheme (e.g. eROSITA).
     char telescope[MAXMSG];
-    fits_read_key(src->fptr, TSTRING, "TELESCOP", 
+    fits_read_key(src->fptr, TSTRING, "TELESCOP",
 		  telescope, comment, status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
     strtoupper(telescope);
@@ -132,11 +134,11 @@ void phpat(GenDet* const det,
     } else {
       iseROSITA=0;
     }
-    
+
 
     // Loop over all events in the input list.
     for (ii=0; ii<=src->nrows; ii++) {
-      
+
       // Read the next event from the file, if the end has not been
       // reached so far.
       Event* event=NULL;
@@ -147,7 +149,7 @@ void phpat(GenDet* const det,
 	CHECK_STATUS_BREAK(*status);
       }
 
-      // Check if the new event belongs to a different frame than 
+      // Check if the new event belongs to a different frame than
       // the previous ones.
       int newframe=0;
       if ((nframelist>0) && (NULL!=event)) {
@@ -165,15 +167,15 @@ void phpat(GenDet* const det,
 	long jj;
 	for (jj=0; jj<nframelist; jj++) {
 	  if (NULL!=framelist[jj]) {
-	    
+
 	    // Check if the event is below the threshold.
 	    if ((framelist[jj]->signal*framelist[jj]->signal)<(det->threshold_event_lo_keV*det->threshold_event_lo_keV)) continue;
-  
+
 	    // Start a new neighbor list.
 	    neighborlist[0]=framelist[jj];
 	    nneighborlist=1;
 	    framelist[jj]=NULL;
-	    
+
 	    // Find the signal maximum in the neighboring pixels.
 	    Event* maxsignalev=neighborlist[0];
 	    int updated=0;
@@ -231,7 +233,7 @@ void phpat(GenDet* const det,
 	    // END of determine the split threshold.
 
 	    // Check if the split threshold is above the event threshold.
-	    if ((split_threshold > det->threshold_event_lo_keV) && 
+	    if ((split_threshold > det->threshold_event_lo_keV) &&
 		(0==threshold_warning_printed)) {
 	      char msg[MAXMSG];
 	      sprintf(msg, "split threshold (%.1feV) is above event threshold (%.1feV) "
@@ -253,7 +255,7 @@ void phpat(GenDet* const det,
 		    if (framelist[ll]->signal<split_threshold) {
 		      continue;
 		    }
-		    
+
 		    // Add the event to the neighbor list.
 		    if (nneighborlist>=maxnneighborlist) {
 		      SIXT_ERROR("too many events in the same pattern");
@@ -270,7 +272,7 @@ void phpat(GenDet* const det,
 	    }
 	    CHECK_STATUS_BREAK(*status);
 	    // END of finding all neighbors.
-	    
+
 	    // Search the pixel with the maximum signal.
 	    long maxidx=0;
 	    for (kk=1; kk<nneighborlist; kk++) {
@@ -283,7 +285,7 @@ void phpat(GenDet* const det,
 	    // Get a new event.
 	    Event* event=getEvent(status);
 	    CHECK_STATUS_BREAK(*status);
-	    
+
 	    // Set basic properties.
 	    event->rawx   =neighborlist[maxidx]->rawx;
 	    event->rawy   =neighborlist[maxidx]->rawy;
@@ -299,11 +301,11 @@ void phpat(GenDet* const det,
 	    // Flag whether event touches the border of the detector.
 	    int border=0;
 	    for (kk=0; kk<nneighborlist; kk++) {
-	      
+
 	      // Determine the total signal.
 	      event->signal+=neighborlist[kk]->signal;
-	      // If a contribution was negative, flag as invalid 
-	      // (-2, such that it doesn't collide with definition afterwards. 
+	      // If a contribution was negative, flag as invalid
+	      // (-2, such that it doesn't collide with definition afterwards.
 	      // Is changed to -1 at the end of the process.)
 	      if(neighborlist[kk]->signal<0.){
 		event->type=-2;
@@ -392,13 +394,13 @@ void phpat(GenDet* const det,
 	      event->type=-1;
 	    }else{
 	      // First assume that the event is invalid.
-	      event->type=-1; 
+	      event->type=-1;
 	      // Border events are declared as invalid.
 	      if (0==border) {
 	        if (1==nneighborlist) {
 	  	  // Single event.
 	  	  event->type=0;
-          
+
 	        } else if (2==nneighborlist) {
 	  	  // Check for double types.
 	  	  if (event->signals[1]>0.) {
@@ -409,8 +411,8 @@ void phpat(GenDet* const det,
 	  	    event->type=1; // top
 	  	  } else if (event->signals[5]>0.) {
 	  	    event->type=2; // right
-	  	  } 
-          
+	  	  }
+
 	        } else if (3==nneighborlist) {
 	  	  // Check for triple types.
 	  	  if (event->signals[1]>0.) {
@@ -428,14 +430,14 @@ void phpat(GenDet* const det,
 	  	      event->type=5; // top-right
 	  	    }
 	  	}
-          
+
 	        } else if (4==nneighborlist) {
 	  	  // Check for quadruple types.
 	  	  if (event->signals[0]>0.) { // bottom-left
 	  	    if ((event->signals[1]>event->signals[0])&&
 	  	        (event->signals[3]>event->signals[0])) {
-	  	      event->type=11; 
-	  	    } 
+	  	      event->type=11;
+	  	    }
 	  	  } else if (event->signals[2]>0.) { // bottom-right
 	  	    if ((event->signals[1]>event->signals[2])&&
 	  	        (event->signals[5]>event->signals[2])) {
@@ -444,14 +446,14 @@ void phpat(GenDet* const det,
 	  	  } else if (event->signals[6]>0.) { // top-left
 	  	    if ((event->signals[7]>event->signals[6])&&
 	  	        (event->signals[3]>event->signals[6])) {
-	  	      event->type=12; 
+	  	      event->type=12;
 	  	    }
 	  	  } else if (event->signals[8]>0.) { // top-right
 	  	    if ((event->signals[7]>event->signals[8])&&
 	  	        (event->signals[5]>event->signals[8])) {
-	  	      event->type=9; 
+	  	      event->type=9;
 	  	    }
-	  	  } 
+	  	  }
 	        }
 	      }
 	    }
@@ -464,7 +466,7 @@ void phpat(GenDet* const det,
 	    }
 	    nneighborlist=0;
 
-	    // Check if the total signal of the event is below 
+	    // Check if the total signal of the event is below
 	    // the upper event threshold.
 	    if ((det->threshold_pattern_up_keV==0.) ||
 		(event->signal<=det->threshold_pattern_up_keV) ) {
@@ -482,13 +484,13 @@ void phpat(GenDet* const det,
 		  statistics.npvalids++;
 		  statistics.npgrade[event->type]++;
 		}
-	      }	      
+	      }
 
 	      // If the event is invalid, check if it should be
 	      // added to the output file or not.
 	      if ((0==skip_invalids) || (event->type>=0)) {
 		// Add the new event to the output file.
-		addEvent2File(dest, event, status);	  
+		addEvent2File(dest, event, status);
 		CHECK_STATUS_BREAK(*status);
 	      }
 	    } // End of application of upper threshold.
@@ -523,24 +525,24 @@ void phpat(GenDet* const det,
 	nframelist++;
       }
 
-    }    
+    }
     CHECK_STATUS_BREAK(*status);
     // END of loop over all events in the input file.
 
     // Store pattern statistics in the output file.
     // Valids.
-    fits_update_key(dest->fptr, TLONG, "NVALID", 
-		    &statistics.nvalids, 
+    fits_update_key(dest->fptr, TLONG, "NVALID",
+		    &statistics.nvalids,
 		    "number of valid patterns", status);
-    fits_update_key(dest->fptr, TLONG, "NPVALID", 
-		    &statistics.npvalids, 
+    fits_update_key(dest->fptr, TLONG, "NPVALID",
+		    &statistics.npvalids,
 		    "number of piled up valid patterns", status);
     // Invalids.
-    fits_update_key(dest->fptr, TLONG, "NINVALID", 
-		    &statistics.ninvalids, 
+    fits_update_key(dest->fptr, TLONG, "NINVALID",
+		    &statistics.ninvalids,
 		    "number of invalid patterns", status);
-    fits_update_key(dest->fptr, TLONG, "NPINVALI", 
-		    &statistics.npinvalids, 
+    fits_update_key(dest->fptr, TLONG, "NPINVALI",
+		    &statistics.npinvalids,
 		    "number of piled up invalid patterns", status);
     // Numbered grades.
     for (ii=0; ii<13; ii++) {
@@ -548,17 +550,17 @@ void phpat(GenDet* const det,
       char comment[MAXMSG];
       sprintf(keyword, "NGRAD%ld", ii);
       sprintf(comment, "number of patterns with grade %ld", ii);
-      fits_update_key(dest->fptr, TLONG, keyword, 
+      fits_update_key(dest->fptr, TLONG, keyword,
 		      &statistics.ngrade[ii], comment, status);
       sprintf(keyword, "NPGRA%ld", ii);
       sprintf(comment, "number of piled up patterns with grade %ld", ii);
-      fits_update_key(dest->fptr, TLONG, keyword, 
-		      &statistics.npgrade[ii], comment, status);    
+      fits_update_key(dest->fptr, TLONG, keyword,
+		      &statistics.npgrade[ii], comment, status);
     }
     CHECK_STATUS_BREAK(*status);
-    
+
   } while(0); // End of error handling loop.
-  
+
 
   // Release memory.
   if (NULL!=framelist) {
@@ -578,4 +580,3 @@ void phpat(GenDet* const det,
     free(neighborlist);
   }
 }
-

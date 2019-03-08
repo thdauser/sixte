@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "find_position.h"
 
 PixPosition* getPixPosition()
@@ -12,7 +33,7 @@ PixPosition* getPixPosition()
     pp->posX=0.;
     pp->posY=0.;
     pp->posRA=0.;
-    pp->posDEC=0.;   
+    pp->posDEC=0.;
     pp->pixval=0.;
   }
 
@@ -36,7 +57,7 @@ PixPositionList* getPixPositionList(SourceImage* sky_pixels)
 
   //allocate memory for the entry-pointer-array
   //size 2 is arbitrary chosen
- 
+
   ppl->entry=(PixPosition**)malloc(2*sizeof(PixPosition*));
   ppl->neighbors=(SourceNeighbors**)malloc(2*sizeof(SourceNeighbors*));
 
@@ -52,7 +73,7 @@ PixPositionList* getPixPositionList(SourceImage* sky_pixels)
 	}
       }
   }
- 
+
   return(ppl);
 }
 
@@ -107,7 +128,7 @@ double findBrightestPix(int threshold, int PixAmount, SourceImage* sky_pixels, d
 	}else{//source below threshold
 
 	     //find next brightest pix
-	  if(sky_pixels->pixel[ii][jj] > pix && sky_pixels->pixel[ii][jj] < pixval){       
+	  if(sky_pixels->pixel[ii][jj] > pix && sky_pixels->pixel[ii][jj] < pixval){
 	       if(ppl->found_pos[ii][jj]==0.){  //which is the case if the pixel is not identified yet
 	       //reset value of 'pix'
 	       pix=sky_pixels->pixel[ii][jj];
@@ -156,7 +177,7 @@ double findBrightestPix(int threshold, int PixAmount, SourceImage* sky_pixels, d
 
 void findNeighbors(int x, int y, int PixAmount, PixPositionList* ppl, SourceImage* sky_pixels,
 		   struct wcsprm* wcs, int* const status)
-{ 
+{
   int ii, jj; //counts
   double sum_all=0.; //sum of all pixel-values of the sky image
   double src_x=0.,src_y=0.; //weighted mean in x/y direction of all pix
@@ -176,7 +197,7 @@ void findNeighbors(int x, int y, int PixAmount, PixPositionList* ppl, SourceImag
 	   snl[ii][jj]=0.;
 	}
       }
-    }  
+    }
 
 
    if(PixAmount == 4){ //default case for comarecon with only mask repix -> different patterns
@@ -304,7 +325,7 @@ void findNeighbors(int x, int y, int PixAmount, PixPositionList* ppl, SourceImag
     HD_ERROR_THROW("wcs projection failed!\n", *status);
   }
 
-  ppl->entry[ppl->entryCount]->posRA=world[0]; 
+  ppl->entry[ppl->entryCount]->posRA=world[0];
   ppl->entry[ppl->entryCount]->posDEC=world[1];
 }
 
@@ -315,8 +336,8 @@ int getThresholdForSources(double pix, PixPositionList* ppl, SourceImage* sky_pi
   int th;
   int ii,jj;
   double median=0., sigma=0.;
-  long unsigned int median_list_count=0; 
- 
+  long unsigned int median_list_count=0;
+
   for(ii=0; ii<sky_pixels->naxis1; ii++){
     for(jj=0; jj<sky_pixels->naxis2; jj++){
       if((ii+sky_pixels->naxis1*jj)!=ppl->found_pos[ii][jj]){  //which is the case if the pixel is not identified yet
@@ -325,7 +346,7 @@ int getThresholdForSources(double pix, PixPositionList* ppl, SourceImage* sky_pi
       }
     }
     }
-  
+
   //median value of all pixels except already found sources
   //median=torben(median_list, median_list_count); //TODO: use other method (quick select?!)
   median=getMean(median_list, median_list_count);
@@ -334,7 +355,7 @@ int getThresholdForSources(double pix, PixPositionList* ppl, SourceImage* sky_pi
   sigma=getSdev(median_list, median_list_count); //standard deviation
   //printf("%f\n",sigma);
   if((pix!=0.) && ((pix-median) > factorOfSigma*sigma))
-    { 
+    {
      th=1;
     }else{
      th=2;
@@ -408,7 +429,7 @@ double torben(double* m,long unsigned int n)
                 if (m[i]<mingtguess) mingtguess = m[i] ;
             } else equal++;
         }
-        if (less <= (n+1)/2 && greater <= (n+1)/2) break ; 
+        if (less <= (n+1)/2 && greater <= (n+1)/2) break ;
         else if (less>greater) max = maxltguess ;
         else min = mingtguess;
     }
@@ -431,12 +452,12 @@ void savePositionList(PixPositionList* ppl, char* filename, int* status)
 
   do{
     long unsigned int count;
-    
+
     //remove old version
     remove(filename);
-    
+
     //number of columns
-    int tfields=5; 
+    int tfields=5;
     //names of columns
     char* ttype[]={"X", "Y", "RA", "DEC", "val"};
     //datatypes of columns
@@ -451,7 +472,7 @@ void savePositionList(PixPositionList* ppl, char* filename, int* status)
     double x_array[nelem-1];
     double y_array[nelem-1];
     double ra_array[nelem-1];
-    double dec_array[nelem-1]; 
+    double dec_array[nelem-1];
     double val_array[nelem-1];
 
     //fill in the arrays
@@ -493,12 +514,12 @@ void SaveSkyImage3Columns(SourceImage* si,char* filename,int* status)
      long unsigned int count=0;
      long unsigned int x;
      int ii, jj;
-     
+
      //remove old version
     remove(filename);
-    
+
     //number of columns
-    int tfields=3; 
+    int tfields=3;
     //names of columns
     char* ttype[]={"X", "Y", "val"};
      //datatypes of columns
@@ -517,7 +538,7 @@ void SaveSkyImage3Columns(SourceImage* si,char* filename,int* status)
       x_array[x]=0;
       y_array[x]=0;
       z_array[x]=0.;
-    }    
+    }
 
 
     //fill in the arrays
@@ -570,7 +591,7 @@ void FreePixPositionList(PixPositionList* ppl)
       }
       free(ppl->entry);
     }
-    
+
 
     if(ppl->neighbors!=NULL){
       for(count=0; count<ppl->entryCount; count++){

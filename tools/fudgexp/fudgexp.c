@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "fudgexp.h"
@@ -31,7 +33,7 @@ int fudgexp_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of photon list!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -39,7 +41,7 @@ int fudgexp_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the exposure map!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->ExposureMap, sbuffer);
   free(sbuffer);
 
@@ -69,9 +71,9 @@ int fudgexp_main() {
   float** map=NULL;
   long naxes[2];
   struct wcsprm* wcs;
-  
+
   // FITS file-pointer to exposure map.
-  fitsfile* fptr=NULL;   
+  fitsfile* fptr=NULL;
   // String buffer for FITS header.
   char* headerstr=NULL;
   // 1-dimensional image buffer.
@@ -134,19 +136,19 @@ int fudgexp_main() {
 
     // Allocate memory for the image.
     map = (float**)malloc(naxes[0]*sizeof(float*));
-    CHECK_NULL_BREAK(map, status, 
+    CHECK_NULL_BREAK(map, status,
 		     "memory allocation for exposure map failed");
     long ii;
     for (ii=0; ii<naxes[0]; ii++) {
       map[ii] = (float*)malloc(naxes[1]*sizeof(float));
-      CHECK_NULL_BREAK(map[ii], status, 
+      CHECK_NULL_BREAK(map[ii], status,
 		       "memory allocation for exposure map failed");
     }
     CHECK_STATUS_BREAK(status);
 
     // Allocate memory for the image input buffer.
     image1d=(float*)malloc(naxes[0]*naxes[1]*sizeof(float));
-    CHECK_NULL_BREAK(image1d, status, 
+    CHECK_NULL_BREAK(image1d, status,
 		     "memory allocation for exposure map buffer failed");
 
     // Read the image from the file.
@@ -156,10 +158,10 @@ int fudgexp_main() {
     //                |--|--> FITS coordinates start at (1,1).
     long lpixel[2] = {naxes[0], naxes[1]}; // Upper right corner.
     long inc[2]    = {1, 1};
-    fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value, 
+    fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value,
 		     image1d, &anynul, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Transfer the image from the 1D input buffer to the 2D pixel array in
     // the data structure and generate a probability distribution function,
     // i.e., sum up the pixels.
@@ -170,8 +172,8 @@ int fudgexp_main() {
       }
     }
     // END of loading the exposure map.
-    
-    
+
+
     // Loop over all photons in the list.
     long row=1;
     for (ii=0; ii<plf->nrows; ii++) {
@@ -189,7 +191,7 @@ int fudgexp_main() {
       double phi, theta;
       int status2=0;
       wcss2p(wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &status2);
-      if (3==status2) { 
+      if (3==status2) {
 	// Pixel does not correspond to valid world coordinates.
 	continue;
       } else if (0!=status2) {
@@ -197,13 +199,13 @@ int fudgexp_main() {
 	status=EXIT_FAILURE;
 	break;
       }
-      
+
       // Determine whether the photon should be discarded.
       double p=sixt_get_random_number(&status);
       CHECK_STATUS_BREAK(status);
       long xx = (long)(pixcrd[0]-0.5);
       long yy = (long)(pixcrd[1]-0.5);
-      if ((xx<0)||(xx>=naxes[0]) || (yy<0)||(yy>=naxes[1]) || 
+      if ((xx<0)||(xx>=naxes[0]) || (yy<0)||(yy>=naxes[1]) ||
 	  (p > map[xx][yy]/par.ExposureTime)) {
 	// Delete the photon from the list.
 	fits_delete_rows(plf->fptr, row, 1, &status);
@@ -215,14 +217,14 @@ int fudgexp_main() {
     }
     CHECK_STATUS_BREAK(status);
     // END loop over all photons.
-        
+
   } while(0); // End of error handling loop
 
   // --- Clean Up ---
 
   if (NULL!=fptr) fits_close_file(fptr, &status);
 
-  if (NULL!=headerstr) free(headerstr);  
+  if (NULL!=headerstr) free(headerstr);
   freePhotonFile(&plf, &status);
 
   if (NULL!=map) {
@@ -248,4 +250,3 @@ int fudgexp_main() {
     return(EXIT_FAILURE);
   }
 }
-

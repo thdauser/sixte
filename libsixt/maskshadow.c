@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "maskshadow.h"
 
 MaskShadow* getEmptyMaskShadowElement(int* const status)
@@ -17,7 +38,7 @@ MaskShadow* getEmptyMaskShadowElement(int* const status)
   return(ms);
 }
 
-MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int const Size1_shadow, 
+MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int const Size1_shadow,
 				 int const Size2_shadow, int* const status)
 {
   MaskShadow* ms=NULL;
@@ -36,7 +57,7 @@ MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int c
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory to store the "
 			 "MaskShadow map!\n", *status);
-	 
+
 	  return(ms);
 	}
 	//Clear the pixels
@@ -61,7 +82,7 @@ MaskShadow* getMaskShadowElement(int const Size1_map, int const Size2_map, int c
 	  *status=EXIT_FAILURE;
 	  HD_ERROR_THROW("Error: could not allocate memory to store the "
 			 "MaskShadow shadow!\n", *status);
-	 
+
 	  return(ms);
 	}
 	//Clear the pixels
@@ -98,7 +119,7 @@ void getMaskRepix(ReconArray* recon, MaskShadow* ms, int shift)
 
 void getMaskShadow(MaskShadow* ms, PixPositionList* ppl, SourceImage* sky_pixels, SquarePixels* det_pix,
 		    ReconArray* r, const Vector* const nx, const Vector* const ny, double const distance)
-{  
+{
   int ii,jj;
   int x,y;
   double* posD=NULL;
@@ -124,13 +145,13 @@ void getMaskShadow(MaskShadow* ms, PixPositionList* ppl, SourceImage* sky_pixels
 
   for(ii=1; ii<r->naxis1/2; ii++){
     for(jj=1; jj<r->naxis2/2; jj++){
-      
+
       posD[0]=(ii-sky_pixels->crpix1/2+0.5)*det_pix->xpixelwidth
 	-radius*distance*cos(alpha)+det_pix->xwidth/2*det_pix->xpixelwidth;
       posD[1]=(jj-sky_pixels->crpix2/2+0.5)*det_pix->ypixelwidth
 	-radius*distance*sin(alpha)+det_pix->ywidth/2*det_pix->ypixelwidth;
 
-      if(posD[0]<0. || posD[0]>(det_pix->xwidth*det_pix->xpixelwidth) || posD[1]<0. 
+      if(posD[0]<0. || posD[0]>(det_pix->xwidth*det_pix->xpixelwidth) || posD[1]<0.
 	 || posD[1]>(det_pix->ywidth*det_pix->ypixelwidth)){
       }else{
 
@@ -141,31 +162,31 @@ void getMaskShadow(MaskShadow* ms, PixPositionList* ppl, SourceImage* sky_pixels
 
 	  int ratio_x=(int)(posD[0]/DCA);
 	  int ratio_y=(int)(posD[1]/DCA);
-	  
+
 	  x=-1;y=-1;
 
-	  if(posD[0] < (ratio_x*DCA+det_pix->DCU_length)) 
+	  if(posD[0] < (ratio_x*DCA+det_pix->DCU_length))
 	    {x = (int)(posD[0]/det_pix->xpixelwidth +1.)-1;}
 	  else{if(posD[0] > (ratio_x*DCA+det_pix->DCU_length+det_pix->DCU_gap)
 		  && posD[0] < (ratio_x*DCA+DCA_length))
 	      {x = (int)(posD[0]/det_pix->xpixelwidth +1.)-1;}
 	    else{ }
 	  }
-	  if(posD[1] < (ratio_y*DCA+det_pix->DCU_length)) 
+	  if(posD[1] < (ratio_y*DCA+det_pix->DCU_length))
 	    {y = (int)(posD[1]/det_pix->ypixelwidth +1.)-1;}
 	  else{if(posD[1]> (ratio_y*DCA+det_pix->DCU_length+det_pix->DCU_gap)
 		  && posD[1]< (ratio_y*DCA+DCA_length))
 	      {y = (int)(posD[1]/det_pix->ypixelwidth +1.)-1;}
 	    else{ }
 	  }
-	  
+
 	  if(x>=0 && y>=0){
 	    ms->shadow[x][y]=ms->map[ii][jj]; //-1 for testing source at 0/0
 	    //TODO: CHECK whether really needed?? (also change appropriately at memory allocation)
 	  }
 
 	}else{//detector without gaps
-	
+
 	  x=(int)(posD[0]/det_pix->xpixelwidth+1.)-1;
 	  y=(int)(posD[1]/det_pix->ypixelwidth+1.)-1;
 	  ms->shadow[x][y]=ms->map[ii][jj];
@@ -202,12 +223,12 @@ void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, f
 
   for(ii=0+shift; ii<Size1+shift; ii++){
     for(jj=0+shift; jj<Size2+shift; jj++){
-      
+
       //in meters
       posD[0]=(ii-sky_crpix1/2+0.5)*det_pix->xpixelwidth+(double)(pixcrd[0]*det_pix->xpixelwidth);
       posD[1]=(jj-sky_crpix2/2+0.5)*det_pix->ypixelwidth+(double)(pixcrd[1]*det_pix->ypixelwidth);
 
-      if(posD[0]<0. || posD[0]>(det_pix->xwidth*det_pix->xpixelwidth) || posD[1]<0. 
+      if(posD[0]<0. || posD[0]>(det_pix->xwidth*det_pix->xpixelwidth) || posD[1]<0.
 	 || posD[1]>(det_pix->ywidth*det_pix->ypixelwidth)){
       }else{
 
@@ -218,31 +239,31 @@ void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, f
 
 	  int ratio_x=(int)(posD[0]/DCA);
 	  int ratio_y=(int)(posD[1]/DCA);
-	  
+
 	  x=-1;y=-1;
 
-	  if(posD[0] < (ratio_x*DCA+det_pix->DCU_length)) 
+	  if(posD[0] < (ratio_x*DCA+det_pix->DCU_length))
 	    {x = (int)(posD[0]/det_pix->xpixelwidth +1.)-1;}
 	  else{if(posD[0] > (ratio_x*DCA+det_pix->DCU_length+det_pix->DCU_gap)
 		  && posD[0] < (ratio_x*DCA+DCA_length))
 	      {x = (int)(posD[0]/det_pix->xpixelwidth +1.)-1;}
 	    else{ }
 	  }
-	  if(posD[1] < (ratio_y*DCA+det_pix->DCU_length)) 
+	  if(posD[1] < (ratio_y*DCA+det_pix->DCU_length))
 	    {y = (int)(posD[1]/det_pix->ypixelwidth +1.)-1;}
 	  else{if(posD[1]> (ratio_y*DCA+det_pix->DCU_length+det_pix->DCU_gap)
 		  && posD[1]< (ratio_y*DCA+DCA_length))
 	      {y = (int)(posD[1]/det_pix->ypixelwidth +1.)-1;}
 	    else{ }
 	  }
-	  
+
 	  if(x>=0 && y>=0){
 	    ms->shadow[x][y]=ms->map[ii-1][jj-1]; //-1 maybe because of wcs starts counting at 1? or at pixcrd?
 	    //TODO: CHECK whether really needed?? (also change appropriately at memory allocation)
 	  }
 
 	}else{//detector without gaps
-	
+
 	  x=(int)(posD[0]/det_pix->xpixelwidth+1.)-1;
 	  y=(int)(posD[1]/det_pix->ypixelwidth+1.)-1;
 	  ms->shadow[x][y]=ms->map[ii][jj];
@@ -255,7 +276,7 @@ void getMaskShadow2(MaskShadow* ms, struct wcsprm* wcs2, PixPositionList* ppl, f
 
   if(posD!=NULL){
     free(posD);
-  } 
+  }
 }
 
 double getNormalization1(MaskShadow* ms, ReadEvent* ea, SquarePixels* det_pix, int const xdiff, int const ydiff)
@@ -272,8 +293,8 @@ double getNormalization1(MaskShadow* ms, ReadEvent* ea, SquarePixels* det_pix, i
 	if(ms->shadow[ii][jj]<1 && ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff] != 0.){
 	  count+=(1-ms->shadow[ii][jj]);
 	  sum+=(1-ms->shadow[ii][jj])*(ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]);
-	}	
-      }    
+	}
+      }
     }
   }
 

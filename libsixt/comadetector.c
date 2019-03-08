@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comadetector.h"
@@ -50,7 +52,7 @@ CoMaDetector* getCoMaDetector(struct CoMaDetectorParameters* parameters,
 }
 
 
-void freeCoMaDetector(CoMaDetector* det) 
+void freeCoMaDetector(CoMaDetector* det)
 {
   if (NULL!=det) {
     // Call the clean-up routines of the underlying data structures.

@@ -16,17 +16,19 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "vignetting.h"
 
 
-Vignetting* newVignetting(const char* const filename, int* const status) 
+Vignetting* newVignetting(const char* const filename, int* const status)
 {
   Vignetting* vignetting=NULL;
   fitsfile* fptr=NULL;
   float* data_buffer=NULL;
-  int count1, count2, count3; 
+  int count1, count2, count3;
 
   do {
     // Allocate memory for the Vignetting data STRUCTURE:
@@ -41,7 +43,7 @@ Vignetting* newVignetting(const char* const filename, int* const status)
     // Open the FITS file for reading the vignetting function.
     headas_chat(5, "open Vignetting FITS file '%s' ...\n", filename);
     if (fits_open_table(&fptr, filename, READONLY, status)) break;
-    
+
     // Determine the column numbers of the individual columns.
     int column_energ_lo=0, column_energ_hi=0, column_theta=0;
     int column_energy=0;
@@ -64,7 +66,7 @@ Vignetting* newVignetting(const char* const filename, int* const status)
     char tdim_name[MAXMSG], tdim_value[MAXMSG], comment[MAXMSG];
     sprintf(tdim_name, "TDIM%d", column_vignet);
     if (fits_read_key(fptr, TSTRING, tdim_name, tdim_value, comment, status)) break;
-    sscanf(tdim_value, "(%d,%d,%d)", &vignetting->nenergies, 
+    sscanf(tdim_value, "(%d,%d,%d)", &vignetting->nenergies,
 	   &vignetting->ntheta, &vignetting->nphi);
 
     // Allocate memory for the Vignetting data:
@@ -167,15 +169,15 @@ Vignetting* newVignetting(const char* const filename, int* const status)
 
     char msg[1000] = "";
 
-    fits_read_col(fptr, TFLOAT, column_theta, 1, 1, vignetting->ntheta, 
+    fits_read_col(fptr, TFLOAT, column_theta, 1, 1, vignetting->ntheta,
     		vignetting->theta, vignetting->theta, &anynul, status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
 
 
-    fits_read_col(fptr, TFLOAT, column_phi, 1, 1, vignetting->nphi, 
+    fits_read_col(fptr, TFLOAT, column_phi, 1, 1, vignetting->nphi,
     		vignetting->phi, vignetting->phi, &anynul, status);
 
-    fits_read_col(fptr, TFLOAT, column_vignet, 1, 1, 
+    fits_read_col(fptr, TFLOAT, column_vignet, 1, 1,
     		vignetting->nenergies*vignetting->ntheta*vignetting->nphi,
 			data_buffer, data_buffer, &anynul, status);
 
@@ -238,7 +240,7 @@ Vignetting* newVignetting(const char* const filename, int* const status)
   // --- Clean up ---
 
   if (NULL!=data_buffer) free(data_buffer);
-  
+
   if (NULL!=fptr) fits_close_file(fptr, status);
 
   if (EXIT_SUCCESS!=*status){
@@ -255,7 +257,7 @@ void destroyVignetting(Vignetting** const vi) {
     if (NULL!=(*vi)->energy) free((*vi)->energy);
     if (NULL!=(*vi)->theta)    free((*vi)->theta);
     if (NULL!=(*vi)->phi)      free((*vi)->phi);
-    
+
     if (NULL!=(*vi)->vignet) {
       int count1, count2;
       for (count1=0; count1<(*vi)->nenergies; count1++) {
@@ -300,15 +302,15 @@ static float interpol_vign_theta(const float theta, const float* arr_theta, floa
 	return 1.;
 }
 
-float get_Vignetting_Factor(const Vignetting* const vi, const float energy, 
-			    const float theta, const float phi) 
+float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
+			    const float theta, const float phi)
 {
-  // Check if any vignetting is specified. 
+  // Check if any vignetting is specified.
   // If not, return a default value of 1.
   if (NULL==vi) return(1.);
 
   (void)phi;
-  
+
   /*
   // At the moment this routine can only handle the case with phi = 0.
   if (phi!=0.) {
@@ -340,4 +342,3 @@ float get_Vignetting_Factor(const Vignetting* const vi, const float energy,
   return interp_lin_1d(ifac, vign_val[0], vign_val[1]);
 
 }
-

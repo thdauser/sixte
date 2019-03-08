@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "clocklist.h"
@@ -90,7 +92,7 @@ void destroyClockList(ClockList** const list)
 }
 
 
-void append2ClockList(ClockList* const list, const CLType type, 
+void append2ClockList(ClockList* const list, const CLType type,
 		      void* const element, int* const status)
 {
   // Allocate memory for a new element.
@@ -107,7 +109,7 @@ void append2ClockList(ClockList* const list, const CLType type,
     return;
   }
   list->nelements++;
-  
+
   // Setup the values of the last, newly appended element.
   list->type[list->nelements-1]=type;
   list->list[list->nelements-1]=element;
@@ -152,13 +154,13 @@ void getClockListElement(ClockList* const list, const double time,
       // The wait period is finished.
       list->time+=clwait->time;
     }
-    
+
   } else if (CL_NEWFRAME==list->type[list->element]) {
     // Start a new frame.
     list->frame++;
     list->readout_time=list->time;
-  } 
-  
+  }
+
   *type   =list->type[list->element];
   *element=list->list[list->element];
   moveClockList2NextElement(list);
@@ -206,7 +208,7 @@ CLLineShift* newCLLineShift(int* const status) {
     SIXT_ERROR("memory allocation for CLLineShift element failed");
     return(cllineshift);
   }
-  
+
   return(cllineshift);
 }
 
@@ -230,7 +232,7 @@ CLNewFrame* newCLNewFrame(int* const status) {
     SIXT_ERROR("memory allocation for CLNewFrame element failed");
     return(clnewframe);
   }
-  
+
   return(clnewframe);
 }
 
@@ -244,10 +246,10 @@ void destroyCLNewFrame(CLNewFrame** const clnewframe)
 }
 
 
-CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex, 
+CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
 				int* const status)
 {
-  headas_chat(5, "new CLReadoutLine element (lineindex=%d, readoutindex=%d)\n", 
+  headas_chat(5, "new CLReadoutLine element (lineindex=%d, readoutindex=%d)\n",
 	      lineindex, readoutindex);
 
   // Allocate memory.
@@ -257,7 +259,7 @@ CLReadoutLine* newCLReadoutLine(const int lineindex, const int readoutindex,
     SIXT_ERROR("memory allocation for CLReadoutLine element failed");
     return(clreadoutline);
   }
-  
+
   // Initialize.
   clreadoutline->lineindex    = lineindex;
   clreadoutline->readoutindex = readoutindex;
@@ -277,7 +279,7 @@ void destroyCLReadoutLine(CLReadoutLine** const clreadoutline)
 
 CLClearLine* newCLClearLine(const int lineindex, int* const status)
 {
-  headas_chat(5, "new CLClearLine element (lineindex=%d)\n", 
+  headas_chat(5, "new CLClearLine element (lineindex=%d)\n",
 	      lineindex);
 
   // Allocate memory.
@@ -287,7 +289,7 @@ CLClearLine* newCLClearLine(const int lineindex, int* const status)
     SIXT_ERROR("memory allocation for CLClearLine element failed");
     return(clclearline);
   }
-  
+
   // Initialize.
   clclearline->lineindex=lineindex;
 
@@ -303,4 +305,3 @@ void destroyCLClearLine(CLClearLine** const clclearline)
     *clclearline=NULL;
   }
 }
-

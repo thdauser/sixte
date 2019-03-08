@@ -1,5 +1,26 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 //
-// output routines for the Tes simulator that include 
+// output routines for the Tes simulator that include
 // various trigger strategies
 //
 
@@ -7,8 +28,8 @@
 
 #include <assert.h>
 
-// initialize the internal TESDataStream based memory management 
-tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes, 
+// initialize the internal TESDataStream based memory management
+tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes,
 				   int strategy,unsigned long preBufferSize,
 				   unsigned long triggerSize,
 				   double threshold,unsigned int npts,unsigned int suppress,
@@ -18,7 +39,7 @@ tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes,
   tes_trigger_info *data=(tes_trigger_info *)malloc(sizeof(tes_trigger_info));
   CHECK_NULL_RET(data,*status,"Memory allocation failed in tes_init_trigger: data structure",NULL);
 
-  // create and initialize fifo. 
+  // create and initialize fifo.
   // we initialize to "invalid" - this way we don't have to worry about a buffer that's not yet
   // fully filled
   data->fifo=createTesRecord(triggerSize,tes->delta_t,0,status);
@@ -80,7 +101,7 @@ typedef struct diff_coeff {
 } diff_coeff;
 
 
-// coefficients are the one-sided differentiators of 
+// coefficients are the one-sided differentiators of
 // Pavel Holoborodko
 // http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/smooth-low-noise-differentiators/
 // dy_j/dh = 1/divisor * sum c_i y_{j-i}
@@ -113,7 +134,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   //   helper[1]: index into the fifo (for moving average calculation)
   //
 
-  CHECK_STATUS_VOID(*status); 
+  CHECK_STATUS_VOID(*status);
 
   tes_trigger_info *data=(tes_trigger_info *) (tes->streaminfo);
 
@@ -146,7 +167,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       // to start)
       data->helper[0]=data->npts*0xFFFF;
       data->helper[1]=data->triggerSize-data->npts;
-      data->CanTrigger=data->npts; 
+      data->CanTrigger=data->npts;
     }
   }
 
@@ -154,14 +175,14 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 
   // only check trigger if we are allowed to trigger
   if (data->CanTrigger==0) {
-    // only trigger if there's no overflow 
+    // only trigger if there's no overflow
     if (pulse16!=0xFFFF || data->strategy==TRIGGER_IMPACT) {
       if (data->strategy==TRIGGER_MOVAVG) {
 	// moving average trigger
 	// fast trigger: if pulse16/moving average > threshold
-	// note: this is prone to integer overflows. 
+	// note: this is prone to integer overflows.
 	// helper[0] is a long, so the probability that this happens
-	// is not that large. but we might want to revisit this 
+	// is not that large. but we might want to revisit this
 	// and make it more stable
 	trigger=(data->npts*pulse16 > data->helper[0]*data->threshold);
       } else {
@@ -169,11 +190,11 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 	if (data->strategy==TRIGGER_DIFF) {
 	  // calculate filtered derivative
 	  // ndx is the index of the newest sample
-	  int ndx=data->fifoind-1; 
+	  int ndx=data->fifoind-1;
 	  // this loop could be optimized making use of the symmetry
 	  // of the coefficients (we might also want to code this in a
 	  // different way to prevent integer overflows, although again
-	  // I think by using a long while the trigger is an unsigned int 
+	  // I think by using a long while the trigger is an unsigned int
 	  // we have enough buffer
 	  assert(diffcoeff[data->npts].n==(int) data->npts);
 	  long diffsum=0;
@@ -224,7 +245,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   if (trigger) {
 
     //    printf("Trigger: %10.5f\n",time);
-    
+
     // prevent trigger happening for the next SuppressTrigger samples
     data->CanTrigger=data->SuppressTrigger;
 
@@ -260,7 +281,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
 	data->stream->adc_double[i]=data->fifo->adc_double[ii];
 	ii++;
       }
-      
+
       data->streamind=data->preBufferSize;
     }
     CHECK_STATUS_VOID(*status);
@@ -282,7 +303,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       data->streamind=-1;
 
       // TODO leave the option to write this to a buffer of records,
-      // so that we can e.g. handle the record internally instead of 
+      // so that we can e.g. handle the record internally instead of
       // writing it to the file
       // strategy: define a buffer struct:
       // If it exists, instead of writing the record, forward the pointer

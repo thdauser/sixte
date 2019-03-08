@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladsignal.h"
@@ -24,9 +26,9 @@
 LADSignal* getLADSignal(int* const status)
 {
   LADSignal* ev = (LADSignal*)malloc(sizeof(LADSignal));
-  CHECK_NULL_RET(ev, *status, 
+  CHECK_NULL_RET(ev, *status,
 		 "memory allocation for LADSignal failed", ev);
-  
+
   // Initalize.
   ev->panel  =0;
   ev->module =0;
@@ -69,4 +71,3 @@ void copyLADSignal(LADSignal* const dest, const LADSignal* const src)
     dest->src_id[ii] = src->src_id[ii];
   }
 }
-

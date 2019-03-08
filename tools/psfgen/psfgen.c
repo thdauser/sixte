@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sixt.h"
@@ -40,7 +42,7 @@ int psfgen_main()
   char psffile[MAXFILENAME];
 
   // Focal length of the telescope [m].
-  double focallength; 
+  double focallength;
 
   // Number of pixels along one edge of the (square) PSF image.
   int width;
@@ -49,14 +51,14 @@ int psfgen_main()
   double pixelwidth;
 
   // HEW of on-axis Gaussian [deg].
-  double hew; 
-         
+  double hew;
+
   // Parameters for the King profile.
   double rc;
   double alpha;
 
   // Error status.
-  int status=EXIT_SUCCESS;  
+  int status=EXIT_SUCCESS;
 
 
   // HEATOOLs: register program
@@ -110,7 +112,7 @@ int psfgen_main()
       psf->nphis     = 1;
 
     } // END of Simple Gauss PSF (type==1)
-    
+
     else if (2==type) { // King profile.
       if ((status=PILGetReal("rc_a", &rc))) {
 	SIXT_ERROR("failed reading the King parameter rc");
@@ -123,13 +125,13 @@ int psfgen_main()
       psf->nenergies = 1;
       psf->nthetas   = 1;
       psf->nphis     = 1;
-      
+
     } // End of type 2, King profile
 
     else if (3==type) { // King profile for pn Camera
       double rc_a, rc_b, rc_c, rc_d = 0.;
       double alpha_x, alpha_y, alpha_z, alpha_w = 0.;
-      
+
       if ((status=PILGetReal("rc_a", &rc_a))) {
 	SIXT_ERROR("failed reading the King parameter rc_a");
 	break;
@@ -162,20 +164,20 @@ int psfgen_main()
 	SIXT_ERROR("failed reading the King parameter alpha_w");
 	break;
       }
-      
+
       double Energy = 1.5;
       double Theta = 0.;
-      
+
       rc = rc_a + rc_b*Energy + rc_c*Theta + rc_d*Energy*Theta;
-      alpha = alpha_x + alpha_y*Energy + alpha_z*Theta + alpha_w*Energy*Theta; 
+      alpha = alpha_x + alpha_y*Energy + alpha_z*Theta + alpha_w*Energy*Theta;
       printf("rc is %f and alpha is %f\n", rc, alpha);
-      
+
       psf->nenergies = 1;
       psf->nthetas   = 1;
       psf->nphis     = 1;
-      
+
     } // End of type 3, King profile
-			
+
     else { // invalid PSF type
       status=EXIT_FAILURE;
       SIXT_ERROR("invalid PSF type");
@@ -186,7 +188,7 @@ int psfgen_main()
 
 
     // --- PSF initialization ---
-    
+
     int count1, count2, count3;
     int xcount;
 
@@ -205,11 +207,11 @@ int psfgen_main()
 		psf->data[count1][count2][count3].cdelt1 = pixelwidth;
 		psf->data[count1][count2][count3].cdelt2 = pixelwidth;
 
-		psf->data[count1][count2][count3].data = (double**) 
+		psf->data[count1][count2][count3].data = (double**)
 		  malloc(psf->data[count1][count2][count3].naxis1 * sizeof(double**));
 		if (psf->data[count1][count2][count3].data) {
 		  for (xcount=0; xcount<psf->data[count1][count2][count3].naxis1; xcount++) {
-		    psf->data[count1][count2][count3].data[xcount] = 
+		    psf->data[count1][count2][count3].data[xcount] =
 		      (double*)malloc(psf->data[count1][count2][count3].naxis2 * sizeof(double));
 		    if (!psf->data[count1][count2][count3].data[xcount]) {
 		      status=EXIT_FAILURE;
@@ -229,7 +231,7 @@ int psfgen_main()
     } else { status=EXIT_FAILURE; }
     // Check if all necessary memory has been allocated successfully:
     if (status!=EXIT_SUCCESS) {
-      SIXT_ERROR("not enough memory to store PSF data");  
+      SIXT_ERROR("not enough memory to store PSF data");
       break;
     }
 
@@ -243,10 +245,10 @@ int psfgen_main()
       psf->energies = (double*)malloc(sizeof(double));
       psf->thetas   = (double*)malloc(sizeof(double));
       psf->phis     = (double*)malloc(sizeof(double));
-      if ((NULL==psf->energies) || 
-	  (NULL==psf->thetas) || 
+      if ((NULL==psf->energies) ||
+	  (NULL==psf->thetas) ||
 	  (NULL==psf->phis)) {
-	SIXT_ERROR("not enough memory to store PSF data");  
+	SIXT_ERROR("not enough memory to store PSF data");
 	break;
       }
       psf->energies[0] = 1.;
@@ -255,7 +257,7 @@ int psfgen_main()
 
       // Fill the PSF array with a 2D Gaussian distribution.
       // Determine sigma in unit of [detector pixels].
-      double sigma = 
+      double sigma =
     		  hew*M_PI/180.          // [rad]
 			  /(2.*sqrt(2.*log(2.))) // HEW -> sigma
 			  /atan(psf->data[0][0][0].cdelt1/focallength); // [rad] -> [detector pixels]
@@ -277,10 +279,10 @@ int psfgen_main()
       psf->energies = (double*)malloc(sizeof(double));
       psf->thetas   = (double*)malloc(sizeof(double));
       psf->phis     = (double*)malloc(sizeof(double));
-      if ((NULL==psf->energies) || 
-	  (NULL==psf->thetas) || 
+      if ((NULL==psf->energies) ||
+	  (NULL==psf->thetas) ||
 	  (NULL==psf->phis)) {
-	SIXT_ERROR("not enough memory to store PSF data");  
+	SIXT_ERROR("not enough memory to store PSF data");
 	break;
       }
       psf->energies[0] = 1.;
@@ -293,11 +295,11 @@ int psfgen_main()
       double norm=0.;
       for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
 	for (count2=0; count2<psf->data[0][0][0].naxis2; count2++) {
-	  double x = 
+	  double x =
 	    (count1-psf->data[0][0][0].naxis1/2+0.5)*psf->data[0][0][0].cdelt1;
-	  double y = 
+	  double y =
 	    (count2-psf->data[0][0][0].naxis2/2+0.5)*psf->data[0][0][0].cdelt2;;
-	  psf->data[0][0][0].data[count1][count2] = 
+	  psf->data[0][0][0].data[count1][count2] =
 	    1./(pow(1.+pow(sqrt(pow(x,2.)+pow(y,2.))/rc,2.),alpha));
 	  norm += psf->data[0][0][0].data[count1][count2];
 	}
@@ -312,21 +314,21 @@ int psfgen_main()
     }
 
     else if (3==type) {
-      // Create a PSF with the King Profile with rc, 
+      // Create a PSF with the King Profile with rc,
       // the King core radius and alpha, the King slope
       psf->energies = (double*)malloc(sizeof(double));
       psf->thetas   = (double*)malloc(sizeof(double));
       psf->phis     = (double*)malloc(sizeof(double));
-      if ((NULL==psf->energies) || 
-	  (NULL==psf->thetas) || 
+      if ((NULL==psf->energies) ||
+	  (NULL==psf->thetas) ||
 	  (NULL==psf->phis)) {
-	SIXT_ERROR("not enough memory to store PSF data");  
+	SIXT_ERROR("not enough memory to store PSF data");
 	break;
       }
       psf->energies[0] = 1.;
       psf->thetas[0]   = 0.;
       psf->phis[0]     = 0.;
-      
+
       double x, y = 0.;
       double norm = 0.;
       for (count1=0; count1<psf->data[0][0][0].naxis1; count1++) {
@@ -336,7 +338,7 @@ int psfgen_main()
 	  psf->data[0][0][0].data[count1][count2] =
 	    1/(pow(1+pow(sqrt(pow(x,2)+pow(y,2))/(rc/4.1),2),alpha));//*1/(pow(1+pow(y/rc,2),alpha));
 	  norm = norm + psf->data[0][0][0].data[count1][count2];
-	  
+
 	}
       }
       printf("The norm is %f\n", norm);
@@ -351,7 +353,7 @@ int psfgen_main()
     // --- END of PSF data generation ---
 
 
-    // Create FITS file and store the PSF data (for 
+    // Create FITS file and store the PSF data (for
     // all off-axis angles and energies in the same file).
     remove(psffile);
     savePSFImage(psf, psffile, &status);

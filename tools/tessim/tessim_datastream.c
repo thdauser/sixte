@@ -1,10 +1,31 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 //
 // TESFitsStream based writing routines for the TES simulator
 //
 
 #include "tessim.h"
 
-// initialize the internal TESDataStream based memory management 
+// initialize the internal TESDataStream based memory management
 tes_datastream_info *tes_init_datastream(double tstart, double tstop,tesparams *tes, int *status) {
   tes_datastream_info *data=(tes_datastream_info *)malloc(sizeof(tes_datastream_info));
   CHECK_NULL_RET(data,*status,"Memory allocation failed for TES Datastream structure",NULL);
@@ -27,7 +48,7 @@ tes_datastream_info *tes_init_datastream(double tstart, double tstop,tesparams *
 }
 
 void tes_append_datastream(tesparams *tes,double time,double pulse, int *status) {
-  CHECK_STATUS_VOID(*status); 
+  CHECK_STATUS_VOID(*status);
 
   tes_datastream_info *data=(tes_datastream_info *) (tes->streaminfo);
 
@@ -38,7 +59,7 @@ void tes_append_datastream(tesparams *tes,double time,double pulse, int *status)
   // only write sample if we still have space in the stream
   if (data->streamind < data->Nt) {
     data->stream->time[data->streamind]=time;
-    data->tstop=time; 
+    data->tstop=time;
     if ((pulse<data->imin) || (pulse>data->imax)) {
       data->stream->adc_value[data->streamind++][0]=0xFFFF;
     } else {
@@ -49,7 +70,7 @@ void tes_append_datastream(tesparams *tes,double time,double pulse, int *status)
 
 // write the datastream described by argument data to a file
 void tes_close_datastream(tesparams *tes, char *streamfile, char *impactfile,
-			 tes_datastream_info *data, 
+			 tes_datastream_info *data,
 			 SixtStdKeywords *keywords, int *status) {
   fitsfile *fptr;
   createTESFitsStreamFile(&fptr,
@@ -69,7 +90,7 @@ void tes_close_datastream(tesparams *tes, char *streamfile, char *impactfile,
 			  status);
 
   CHECK_STATUS_VOID(*status);
-  
+
   // add properties of simulation to header
   tes_fits_write_params(fptr,tes,status);
 
@@ -88,7 +109,7 @@ void tes_close_datastream(tesparams *tes, char *streamfile, char *impactfile,
 		     data->tstart,
 		     data->tstop,
 		     tes->timeres,
-		     &(tes->Nevts), 
+		     &(tes->Nevts),
 		     0,-1,status);
   fits_close_file(fptr,status);
   CHECK_STATUS_VOID(*status);

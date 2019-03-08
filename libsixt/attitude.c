@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "attitude.h"
@@ -29,7 +31,7 @@ Attitude* getAttitude(int* const status)
     SIXT_ERROR("memory allocation for Attitude failed");
     return(NULL);
   }
-  
+
   // Initialize.
   ac->entry    =NULL;
   ac->nentries =0;
@@ -67,7 +69,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
 
   do { // Beginning of ERROR handling loop
 
-    // Read-in the attitude data from the FITS file and store 
+    // Read-in the attitude data from the FITS file and store
     // them in the Attitude data structure.
 
     // Open the attitude file:
@@ -75,7 +77,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
 		filename);
     af=open_AttitudeFile(filename, READONLY, status);
     if (NULL==af) break;
-    headas_chat(5, " attitude catalog contains %ld entries\n", 
+    headas_chat(5, " attitude catalog contains %ld entries\n",
 		af->nrows);
 
     // Get a new Attitude object.
@@ -90,7 +92,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
       break;
     }
 
-    // Determine whether the roll angle alignment refers to the 
+    // Determine whether the roll angle alignment refers to the
     // telescope's direction of motion or to the equatorial plane.
     int status2=EXIT_SUCCESS;
     char comment[MAXMSG], sbuffer[MAXMSG]; // String buffers.
@@ -116,7 +118,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
     fits_read_key(af->fptr, TDOUBLE, "MJDREF", &ac->mjdref, comment, status);
     if (EXIT_SUCCESS!=*status) {
       char msg[MAXMSG];
-      sprintf(msg, "could not read FITS keyword 'MJDREF' from attitude file '%s'", 
+      sprintf(msg, "could not read FITS keyword 'MJDREF' from attitude file '%s'",
 	      filename);
       SIXT_ERROR(msg);
       break;
@@ -124,7 +126,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
     fits_read_key(af->fptr, TDOUBLE, "TSTART", &ac->tstart, comment, status);
     if (EXIT_SUCCESS!=*status) {
       char msg[MAXMSG];
-      sprintf(msg, "could not read FITS keyword 'TSTART' from attitude file '%s'", 
+      sprintf(msg, "could not read FITS keyword 'TSTART' from attitude file '%s'",
 	      filename);
       SIXT_ERROR(msg);
       break;
@@ -132,7 +134,7 @@ Attitude* loadAttitude(const char* const filename, int* const status)
     fits_read_key(af->fptr, TDOUBLE, "TSTOP", &ac->tstop, comment, status);
     if (EXIT_SUCCESS!=*status) {
       char msg[MAXMSG];
-      sprintf(msg, "could not read FITS keyword 'TSTOP' from attitude file '%s'", 
+      sprintf(msg, "could not read FITS keyword 'TSTOP' from attitude file '%s'",
 	      filename);
       SIXT_ERROR(msg);
       break;
@@ -148,11 +150,11 @@ Attitude* loadAttitude(const char* const filename, int* const status)
       verifyTIMEZERO(timezero, status);
       CHECK_STATUS_BREAK(*status);
     }
-    
+
     // Read all lines from attitude file subsequently.
     AttitudeFileEntry afe;
     for (af->row=0; af->row<af->nrows; af->row++) {
-      
+
       afe=read_AttitudeFileEntry(af, status);
       CHECK_STATUS_BREAK(*status);
 
@@ -214,7 +216,7 @@ static void setAttitudeCurrEntry(Attitude* const ac,
     // Check if the beginning of the Attitude is reached.
     if (ac->currentry <= 0) {
       *status=EXIT_FAILURE;
-      char msg[MAXMSG]; 
+      char msg[MAXMSG];
       sprintf(msg, "no attitude entry available for time %lf", time);
       SIXT_ERROR(msg);
       return;
@@ -227,7 +229,7 @@ static void setAttitudeCurrEntry(Attitude* const ac,
     // Check if the end of the Attitude is reached.
     if (ac->currentry >= ac->nentries-2) {
       *status=EXIT_FAILURE;
-      char msg[MAXMSG]; 
+      char msg[MAXMSG];
       sprintf(msg, "no attitude entry available for time %lf", time);
       SIXT_ERROR(msg);
       return;
@@ -243,18 +245,18 @@ Vector getTelescopeNz(Attitude* const ac,
 		      int* const status)
 {
   Vector nz={.x=0., .y=0., .z=0.};
- 
+
   // Check if survey attitude.
   if (ac->nentries>1) {
-    // Find the appropriate entry in the Attitude for the 
+    // Find the appropriate entry in the Attitude for the
     // requested time.
     setAttitudeCurrEntry(ac, time, status);
     CHECK_STATUS_RET(*status,nz);
-   
+
     // The requested time lies within the current time bin.
     // Interpolation:
-    nz=interpolateCircleVector(ac->entry[ac->currentry].nz, 
-			       ac->entry[ac->currentry+1].nz, 
+    nz=interpolateCircleVector(ac->entry[ac->currentry].nz,
+			       ac->entry[ac->currentry+1].nz,
 			       (time-ac->entry[ac->currentry].time)/
 			       (ac->entry[ac->currentry+1].time-
 				ac->entry[ac->currentry].time));
@@ -262,7 +264,7 @@ Vector getTelescopeNz(Attitude* const ac,
   } else { // Pointing attitude.
     nz=ac->entry[0].nz;
   }
-    
+
   return(nz);
 }
 
@@ -273,7 +275,7 @@ void getTelescopeAxes(Attitude* const ac,
 		      Vector* const nz,
 		      const double time,
 		      int* const status)
-{   
+{
   // Determine the z vector (telescope pointing direction):
   *nz=getTelescopeNz(ac, time, status);
   CHECK_STATUS_VOID(*status);
@@ -297,18 +299,18 @@ void getTelescopeAxes(Attitude* const ac,
     }
   }
 
-  // Check if the x1 vector should be aligned along the north direction 
-  // or along the direction of motion of the telescope axis 
-  // (neglecting the rotation according to the roll angle). For a pointed 
+  // Check if the x1 vector should be aligned along the north direction
+  // or along the direction of motion of the telescope axis
+  // (neglecting the rotation according to the roll angle). For a pointed
   // observation the alignment is done along the north direction.
   Vector x1;
   if ((1==pointed) || (ATTNX_NORTH==ac->align)) {
     // Alignment along the north direction.
-    
+
     // Check if the telescope is pointing towards one of the poles.
     Vector n1={1.0, 0.0, 0.0};
     Vector n2={0.0, 1.0, 0.0};
-    if ((fabs(scalar_product(nz, &n1))<1.e-20) && 
+    if ((fabs(scalar_product(nz, &n1))<1.e-20) &&
 	(fabs(scalar_product(nz, &n2))<1.e-20)) {
       x1.x=1.0;
       x1.y=0.0;
@@ -339,7 +341,7 @@ void getTelescopeAxes(Attitude* const ac,
   // Normalize the vector in order to obtain a unit vector.
   x1=normalize_vector(x1);
 
-  // Determine the y1 vector, which is perpendicular 
+  // Determine the y1 vector, which is perpendicular
   // to the other two axes nz and x1:
   Vector y1=normalize_vector(vector_product(*nz, x1));
 
@@ -364,17 +366,17 @@ float getRollAngle(Attitude* const ac,
   // Check if survey attitude.
   if (ac->nentries>1) {
 
-    // Find the appropriate entry in the Attitude for the 
+    // Find the appropriate entry in the Attitude for the
     // requested time.
     setAttitudeCurrEntry(ac, time, status);
     CHECK_STATUS_RET(*status,0.);
-    
+
     // The requested time lies within the current time bin.
     // Interpolation:
     double fraction=
       (time-ac->entry[ac->currentry].time)/
       (ac->entry[ac->currentry+1].time-ac->entry[ac->currentry].time);
-    return(ac->entry[ac->currentry  ].roll_angle*(1.-fraction) + 
+    return(ac->entry[ac->currentry  ].roll_angle*(1.-fraction) +
 	   ac->entry[ac->currentry+1].roll_angle*    fraction );
 
   } else { // Pointing attitude.
@@ -383,7 +385,7 @@ float getRollAngle(Attitude* const ac,
 }
 
 
-AttitudeEntry* getAttitudeEntry(int* const status) 
+AttitudeEntry* getAttitudeEntry(int* const status)
 {
   AttitudeEntry* ae=(AttitudeEntry*)malloc(sizeof(AttitudeEntry));
   CHECK_NULL(ae, *status, "memory allocation for AttitudeEntry failed");
@@ -445,7 +447,7 @@ void checkAttitudeTimeCoverage(const Attitude* const ac,
 
 void setWCScurrentPointing(const char* const filename, const Attitude* const ac,
 			   Vector* const nz, struct wcsprm* wcs, int* const status)
-{  
+{
   AttitudeFile* af=NULL;
 
   //open the attitude file:
@@ -479,7 +481,7 @@ void setWCScurrentPointing(const char* const filename, const Attitude* const ac,
    //and lies inbetween the attitude entries)
    //formula is from unit vector 'backwards'
   double DECnz=asin(nz->z)*180./M_PI; //could be the wrong value from asin
-  if(fabs(currDEC-DECnz)>diffDEC){    //has to lie inbetween the attitude-interval 
+  if(fabs(currDEC-DECnz)>diffDEC){    //has to lie inbetween the attitude-interval
     DECnz=180.-DECnz;                 //if not, use the other solution
   }
   double RAnz=asin(nz->y/cos(DECnz*M_PI/180.))*180./M_PI;
@@ -559,4 +561,3 @@ void convert_galLB2RAdec(double* world){
 	world[1] =  asin( sin_d_ngp*sin_b + cos_d_ngp*cos_b*cos(l_ncp - l) )/M_PI*180.; // dec
 
 }
-

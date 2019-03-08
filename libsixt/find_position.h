@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #ifndef FIND_POSITION_H
 #define FIND_POSITION_H 1
 
@@ -26,7 +47,7 @@ typedef struct {
   long unsigned int entryCount; //count for all PixPosition-elements (all sources);
                                 //and also all SourceNeighbors-elements (max 8 per source)
   SourceNeighbors** neighbors;  //pointer to current entry of SourceNeighbors
-  int** found_pos;         //value of 'found_pos' equals (1D) index of sky image (zero else) to be 
+  int** found_pos;         //value of 'found_pos' equals (1D) index of sky image (zero else) to be
                                    //able to compare both
 } PixPositionList;
 
@@ -69,4 +90,3 @@ void FreePixPositionList(PixPositionList* ppl);
 void FreeLists(int** found_pos, double*  median_list, SourceImage* sky_pixels);
 
 #endif /* FIND_POSITION_H */
-

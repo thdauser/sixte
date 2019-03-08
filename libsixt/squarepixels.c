@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "squarepixels.h"
@@ -53,7 +55,7 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
   sp->array = (SquarePixel**)malloc(sp->xwidth*sizeof(SquarePixel*));
   if (NULL==sp->array) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
+    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n",
 		   *status);
     return(sp);
   } else {
@@ -64,7 +66,7 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
       sp->array[count] = (SquarePixel*)malloc(sp->ywidth*sizeof(SquarePixel));
       if (NULL==sp->array[count]) {
 	*status = EXIT_FAILURE;
-	HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
+	HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n",
 		       *status);
 	return(sp);
       }
@@ -75,7 +77,7 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
   sp->line2readout = (int*)malloc(sp->ywidth*sizeof(int));
   if (NULL==sp->line2readout) {
     *status = EXIT_FAILURE;
-    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n", 
+    HD_ERROR_THROW("Error: memory allocation for pixel array failed!\n",
 		   *status);
     return(sp);
   }
@@ -88,7 +90,7 @@ SquarePixels* newSquarePixels(struct SquarePixelsParameters* spp, int* const sta
 }
 
 
-void clearLineSquarePixels(SquarePixels* const sp, const int line) 
+void clearLineSquarePixels(SquarePixels* const sp, const int line)
 {
   int x;
   for (x=0; x<sp->xwidth; x++) {
@@ -99,7 +101,7 @@ void clearLineSquarePixels(SquarePixels* const sp, const int line)
 }
 
 
-void clearSquarePixels(SquarePixels* const sp) 
+void clearSquarePixels(SquarePixels* const sp)
 {
   int line;
   for (line=0; line<sp->ywidth; line++) {
@@ -108,7 +110,7 @@ void clearSquarePixels(SquarePixels* const sp)
 }
 
 
-void destroySquarePixels(SquarePixels** const sp) 
+void destroySquarePixels(SquarePixels** const sp)
 {
   if (NULL!=*sp) {
     if (NULL!=(*sp)->array) {
@@ -121,7 +123,7 @@ void destroySquarePixels(SquarePixels** const sp)
       free((*sp)->array);
       (*sp)->array=NULL;
     }
-  
+
     if (NULL!=(*sp)->line2readout) {
       free((*sp)->line2readout);
       (*sp)->line2readout=NULL;
@@ -134,7 +136,7 @@ void destroySquarePixels(SquarePixels** const sp)
 
 /** Determines the minimum distance value out of an array with 4
     entries and returns the corresponding index. */
-static inline int getMinimumDistance(double array[]) 
+static inline int getMinimumDistance(double array[])
 {
   int count, index=0;
   double minimum=array[0];
@@ -151,21 +153,21 @@ static inline int getMinimumDistance(double array[])
 }
 
 
-int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc, 
-				  struct Point2d position, 
+int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc,
+				  struct Point2d position,
 				  int* x, int* y, double* fraction)
 {
   int npixels = 0; // Number of affected pixels.
 
-  // The following array entries are used to transform between 
+  // The following array entries are used to transform between
   // different array indices.
-  int xe[4] = {1, 0,-1, 0};   
+  int xe[4] = {1, 0,-1, 0};
   int ye[4] = {0, 1, 0,-1};
 
   // Calculate pixel indices (integer) of central affected pixel:
   x[0] = (int)(position.x/sp->xpixelwidth + 0.5*sp->xwidth +1.)-1;
   y[0] = (int)(position.y/sp->ypixelwidth + 0.5*sp->ywidth +1.)-1;
-  
+
   // Check if the main event lies inside the detector.
   if ((x[0]<0) || (x[0]>=sp->xwidth) || (y[0]<0) || (y[0]>=sp->ywidth)) {
     x[0] = INVALID_PIXEL;
@@ -180,9 +182,9 @@ int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc,
     fraction[0] = 1.;
 
   } else {
-    // Calculate the distances from the event to the borders of the 
+    // Calculate the distances from the event to the borders of the
     // surrounding pixel (in [m]):
-    double distances[4] = { 
+    double distances[4] = {
       // distance to right pixel edge
       (x[0]-sp->xoffset+1)*sp->xpixelwidth - position.x,
       // distance to upper edge
@@ -257,17 +259,17 @@ int getSquarePixelsGaussianSplits(SquarePixels* sp, GaussianChargeCloud* gcc,
 
 
 
-int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* ecc, 
-				     struct Point2d position, 
+int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* ecc,
+				     struct Point2d position,
 				     int* x, int* y, double* fraction)
 {
-  // None-Gaussian, exponential charge cloud model 
+  // None-Gaussian, exponential charge cloud model
   // (concept proposed by Konrad Dennerl).
   int npixels = 4; // Number of affected pixels.
 
-  // The following array entries are used to transform between 
+  // The following array entries are used to transform between
   // different array indices.
-  int xe[4] = {1, 0,-1, 0};   
+  int xe[4] = {1, 0,-1, 0};
   int ye[4] = {0, 1, 0,-1};
 
   // Determine the affected pixels:
@@ -275,7 +277,7 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   // Calculate pixel indices (integer) of central affected pixel:
   x[0] = (int)(position.x/sp->xpixelwidth + (double)(sp->xoffset)+1.) -1;
   y[0] = (int)(position.y/sp->ypixelwidth + (double)(sp->yoffset)+1.) -1;
-  
+
   // Check if the main event lies inside the detector.
   if ((x[0]<0) || (x[0]>=sp->xwidth) || (y[0]<0) || (y[0]>=sp->ywidth)) {
     x[0] = INVALID_PIXEL;
@@ -283,9 +285,9 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
     return(0);
   }
 
-  // Calculate the distances from the exact event position to the borders of the 
+  // Calculate the distances from the exact event position to the borders of the
   // surrounding pixel (in units [fraction of a pixel border]):
-  double distances[4] = { 
+  double distances[4] = {
     // distance to right pixel edge
     (x[0]-sp->xoffset+1)*1. - position.x/sp->xpixelwidth,
     // distance to upper edge
@@ -312,7 +314,7 @@ int getSquarePixelsExponentialSplits(SquarePixels* sp, ExponentialChargeCloud* e
   x[3] = x[1] + xe[secmindist];
   y[3] = y[1] + ye[secmindist];
 
-  // Now we know the affected pixels and can determine the 
+  // Now we know the affected pixels and can determine the
   // charge fractions according to the model exp(-(r/0.355)^2).
   // Remember that the array distances[] contains the distances
   // to the pixel borders, whereas here we need the distances from
@@ -365,7 +367,7 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
   int ratio_x=(int)((position.x)/DCA);
   int ratio_y=(int)((position.y)/DCA);
 
-  if(position.x < (ratio_x*DCA+sp->DCU_length)) 
+  if(position.x < (ratio_x*DCA+sp->DCU_length))
     {*x = (int)(position.x/sp->xpixelwidth +1.)-1;}
      else{if(position.x > (ratio_x*DCA+sp->DCU_length+sp->DCU_gap)
 			   && position.x < (ratio_x*DCA+DCA_length))
@@ -373,7 +375,7 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
 	    else{return(0);
 	    }
     }
-  if(position.y < (ratio_y*DCA+sp->DCU_length)) 
+  if(position.y < (ratio_y*DCA+sp->DCU_length))
     {*y = (int)(position.y/sp->ypixelwidth +1.)-1;}
      else{if(position.y > (ratio_y*DCA+sp->DCU_length+sp->DCU_gap)
 			   && position.y < (ratio_y*DCA+DCA_length))
@@ -385,7 +387,7 @@ int getSquarePixel(SquarePixels* sp, struct Point2d position, int* x, int* y)
     *x = (int)(position.x/sp->xpixelwidth +1.)-1;
     *y = (int)(position.y/sp->ypixelwidth +1.)-1;
   }
- 
+
   if ((*x>=0) && (*x<sp->xwidth) && (*y>=0) && (*y<sp->ywidth)) {
     return (1); // Valid pixel.
   } else {
@@ -399,12 +401,12 @@ int getSquarePixel_protoMirax(SquarePixels* sp, struct Point2d position, int* x,
   int ratio_x=(int)((position.x)/sp->DCU_length);
   int ratio_y=(int)((position.y)/sp->DCU_length);
 
-  if(position.x > (ratio_x*sp->DCU_length+sp->DCU_gap) && position.x < (ratio_x*sp->DCU_length+sp->DCU_gap+2*sp->xpixelwidth)) 
+  if(position.x > (ratio_x*sp->DCU_length+sp->DCU_gap) && position.x < (ratio_x*sp->DCU_length+sp->DCU_gap+2*sp->xpixelwidth))
     {*x = (int)(position.x/sp->xpixelwidth +1.)-1;}
   else{
     return(0);
   }
-  if(position.y > (ratio_y*sp->DCU_length+sp->DCU_gap) && position.y < (ratio_y*sp->DCU_length+sp->DCU_gap+2*sp->ypixelwidth)) 
+  if(position.y > (ratio_y*sp->DCU_length+sp->DCU_gap) && position.y < (ratio_y*sp->DCU_length+sp->DCU_gap+2*sp->ypixelwidth))
     {*y = (int)(position.y/sp->ypixelwidth +1.)-1;}
   else{
     return(0);
@@ -425,7 +427,7 @@ void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits)
 {
   int valid_flag = 1;
 
-  // First check the affected pixels and the surrounding pixels 
+  // First check the affected pixels and the surrounding pixels
   // whether there are already any events.
   int split;
   int xcount, ycount;
@@ -454,7 +456,7 @@ void SPupdateValidFlag(SquarePixels* sp, int* x, int* y, int nsplits)
 
 
 
-void SPsetInvalidFlag(SquarePixels* sp, int x, int y) 
+void SPsetInvalidFlag(SquarePixels* sp, int x, int y)
 {
   sp->array[x][y].valid_flag = -1;
 
@@ -477,9 +479,8 @@ void SPaddCharge(SquarePixels* sp, int x, int y, float charge) {
 
     // Set the read-out flag for this line. That means that the line has
     // been affected by an event since the last read-out cycle. Some kinds
-    // of detector models require this information to determine, whether 
+    // of detector models require this information to determine, whether
     // it is necessary to read out the line in the next cycle.
     sp->line2readout[y] = 1;
   }
 }
-

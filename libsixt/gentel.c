@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "gentel.h"
@@ -26,7 +28,7 @@
 ////////////////////////////////////////////////////////////////////
 
 
-GenTel* newGenTel(int* const status) 
+GenTel* newGenTel(int* const status)
 {
   // Allocate memory.
   GenTel* tel=(GenTel*)malloc(sizeof(GenTel));
@@ -64,5 +66,3 @@ void destroyGenTel(GenTel** const tel)
     *tel=NULL;
   }
 }
-
-

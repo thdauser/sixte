@@ -16,12 +16,14 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "phogen.h"
 
 
-int phogen_main() 
+int phogen_main()
 {
   const double timezero=0.0;
 
@@ -39,9 +41,9 @@ int phogen_main()
 
   // Photon list file.
   PhotonFile* plf=NULL;
-  
+
   // Error status.
-  int status=EXIT_SUCCESS;  
+  int status=EXIT_SUCCESS;
 
   // Register HEATOOL.
   set_toolname("phogen");
@@ -72,7 +74,7 @@ int phogen_main()
 
     // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
@@ -80,7 +82,7 @@ int phogen_main()
     // Load the instrument configuration.
     inst=loadGenInst(xml_filename, seed, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Set up the Attitude.
     char ucase_buffer[MAXFILENAME];
     strcpy(ucase_buffer, par.Attitude);
@@ -98,7 +100,7 @@ int phogen_main()
 
       // Check if the required time interval for the simulation
       // is a subset of the period covered by the attitude file.
-      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
 				par.TSTART+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -138,7 +140,7 @@ int phogen_main()
     // Start the actual photon generation (after loading required data):
     headas_chat(3, "start photon generation process ...\n");
 
-    // Loop over photon generation, till the time of the photon exceeds 
+    // Loop over photon generation, till the time of the photon exceeds
     // the requested exposure time.
     // Simulation progress status (running from 0 to 1000).
     int progress=0;
@@ -146,9 +148,9 @@ int phogen_main()
 
       // Photon generation.
       Photon ph;
-      int isph=phgen(ac, &srccat, 1, 
-		     par.TSTART, par.TSTART+par.Exposure, 
-		     par.MJDREF, par.dt, 
+      int isph=phgen(ac, &srccat, 1,
+		     par.TSTART, par.TSTART+par.Exposure,
+		     par.MJDREF, par.dt,
 		     inst->tel->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -171,7 +173,7 @@ int phogen_main()
 
     } while(1); // END of photon generation loop.
     CHECK_STATUS_BREAK(status);
- 
+
     // Progress output.
     headas_chat(2, "\r%.1lf %%\n", 100.);
     fflush(NULL);
@@ -182,7 +184,7 @@ int phogen_main()
 
 
   // --- Clean up ---
-  
+
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
@@ -210,7 +212,7 @@ int phogen_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -218,7 +220,7 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the photon list");
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -226,7 +228,7 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the mission");
     return(status);
-  } 
+  }
   strcpy(par->Mission, sbuffer);
   free(sbuffer);
 
@@ -234,7 +236,7 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument");
     return(status);
-  } 
+  }
   strcpy(par->Instrument, sbuffer);
   free(sbuffer);
 
@@ -242,7 +244,7 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
-  } 
+  }
   strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
@@ -250,7 +252,7 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -258,7 +260,7 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -278,7 +280,7 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput, sbuffer);
   free(sbuffer);
 
@@ -286,25 +288,25 @@ int phogen_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading dt");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
@@ -320,5 +322,3 @@ int phogen_getpar(struct Parameters* par)
 
   return(status);
 }
-
-

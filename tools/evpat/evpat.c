@@ -16,15 +16,17 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "evpat.h"
 
 
-int evpat_main() 
+int evpat_main()
 {
   // Containing all programm parameters read by PIL
-  struct Parameters par; 
+  struct Parameters par;
 
   // Input event file.
   EventFile* elf=NULL;
@@ -39,7 +41,7 @@ int evpat_main()
   GTI* gti=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
@@ -56,7 +58,7 @@ int evpat_main()
 
     // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
@@ -110,7 +112,7 @@ int evpat_main()
 			 inst->tel->arf->Filter,
 			 inst->tel->arf_filename,
 			 inst->det->rmf_filename,
-			 mjdref, timezero, tstart, tstop,			   
+			 mjdref, timezero, tstart, tstop,
 			 inst->det->pixgrid->xwidth,
 			 inst->det->pixgrid->ywidth,
 			 par.clobber, &status);
@@ -133,7 +135,7 @@ int evpat_main()
   // Close the files.
   freeEventFile(&elf, &status);
   freeEventFile(&plf, &status);
- 
+
   destroyGenInst(&inst, &status);
   freeGTI(&gti);
 
@@ -162,7 +164,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the input event list");
     return(status);
-  } 
+  }
   strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
@@ -170,7 +172,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output pattern list");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -178,7 +180,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the mission");
     return(status);
-  } 
+  }
   strcpy(par->Mission, sbuffer);
   free(sbuffer);
 
@@ -186,7 +188,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument");
     return(status);
-  } 
+  }
   strcpy(par->Instrument, sbuffer);
   free(sbuffer);
 
@@ -194,7 +196,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
-  } 
+  }
   strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
@@ -202,7 +204,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -226,5 +228,3 @@ int getpar(struct Parameters* const par)
 
   return(status);
 }
-
-

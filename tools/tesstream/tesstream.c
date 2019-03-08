@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU, Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tesstream.h"
@@ -23,55 +25,55 @@
 ////////////////////////////////////
 /** Main procedure. */
 int tesstream_main() {
-  
+
   // Containing all programm parameters read by PIL.
   struct Parameters partmp;
   TESGeneralParameters par;
-  
+
   // Error status.
   int status=EXIT_SUCCESS;
 
-  int Nstreams=0;  
+  int Nstreams=0;
   TESInitStruct* init=NULL;
   TESFitsStream** fitsstream=NULL;
   TESDataStream* stream=NULL;
   fitsfile *ofptr=NULL;
-    
+
   int ismonoc=0;
   float monoen=0.;
-  
+
   int ii;
-  
+
   // Register HEATOOL:
   set_toolname("tesstream");
   set_toolversion("0.05");
-  
-  do { // Beginning of the ERROR handling loop (will at 
+
+  do { // Beginning of the ERROR handling loop (will at
        // most be run once).
-       
+
     headas_chat(3, "initialize ...\n");
     // Get program parameters.
     status=getpar(&partmp);
     CHECK_STATUS_BREAK(status);
-       
+
     // Copy parameters in general parameters structure
     copyParams2GeneralStruct(partmp,&par);
-    
+
     // Initialization
     init = newInitStruct(&status);
     CHECK_STATUS_BREAK(status);
     tesinitialization(init,&par,&status);
     CHECK_STATUS_BREAK(status);
-  
-    // Generate the data      
+
+    // Generate the data
     stream=newTESDataStream(&status);
     CHECK_STATUS_BREAK(status);
-    
-    getTESDataStream(stream, 
-		     init->impfile, 
+
+    getTESDataStream(stream,
+		     init->impfile,
 		     init->profiles,
 		     init->det,
-		     init->tstart, 
+		     init->tstart,
 		     init->tstop,
 		     init->det->npix,
 		     par.Nactive,
@@ -82,7 +84,7 @@ int tesstream_main() {
 		     par.seed,
 		     &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Get output data arrays
     Nstreams=(par.Nactive+TESFITSMAXPIX-1)/TESFITSMAXPIX;
     fitsstream=(TESFitsStream**)malloc(Nstreams*sizeof(TESFitsStream*));
@@ -95,7 +97,7 @@ int tesstream_main() {
       fitsstream[ii]=newTESFitsStream(&status);
       CHECK_STATUS_BREAK(status);
     }
-    createTESFitsStreamFile(&ofptr, 
+    createTESFitsStreamFile(&ofptr,
 			    par.streamname,
 			    init->telescop,
 			    init->instrume,
@@ -108,30 +110,30 @@ int tesstream_main() {
 			    init->timezero,
 			    init->tstart,
 			    init->tstop,
-			    par.clobber, 
+			    par.clobber,
 			    &status);
     CHECK_STATUS_BREAK(status);
-  
+
     // Write the output file
-    
+
     int restpix=par.Nactive;
     for(ii=0; ii<Nstreams; ii++){
       // print extension name
       sprintf(fitsstream[ii]->name, "ADC%03d", ii+1);
-      
+
       // calculate number of pixels in the extension
       int extpix=TESFITSMAXPIX;
       if(extpix>restpix){
 	extpix=restpix;
       }
-      
+
       // allocate memory for fits stream
-      allocateTESFitsStream(fitsstream[ii], 
-			   stream->Ntime, 
-			   extpix, 
+      allocateTESFitsStream(fitsstream[ii],
+			   stream->Ntime,
+			   extpix,
 			   &status);
       CHECK_STATUS_BREAK(status);
-      
+
       // transfer values into fits stream
       int pp, tt, ll, id;
       // time array
@@ -160,9 +162,9 @@ int tesstream_main() {
 	}
       }
       CHECK_STATUS_BREAK(status);
-  
+
       double timeres=1./init->det->SampleFreq;
-      writeTESFitsStream(ofptr, 
+      writeTESFitsStream(ofptr,
 			 fitsstream[ii],
 			 init->tstart,
 			 init->tstop,
@@ -175,26 +177,26 @@ int tesstream_main() {
       restpix=restpix-TESFITSMAXPIX;
     }
     CHECK_STATUS_BREAK(status);
-    
+
     fits_close_file(ofptr, &status);
     CHECK_STATUS_BREAK(status);
-       
+
   } while(0); // END of the error handling loop.
-  
+
   freeTESInitStruct(&init,&status);
   destroyTESDataStream(stream);
   for(ii=0; ii<Nstreams; ii++){
     destroyTESFitsStream(fitsstream[ii]);
   }
   free(fitsstream);
-  
+
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
   } else {
     return(EXIT_FAILURE);
   }
-  
+
 }
 
 int getpar(struct Parameters* const par)
@@ -203,7 +205,7 @@ int getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -211,7 +213,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pixel impact list");
     return(status);
-  } 
+  }
   strcpy(par->PixImpList, sbuffer);
   free(sbuffer);
 
@@ -219,7 +221,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -227,22 +229,22 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the Stream file");
     return(status);
-  } 
+  }
   strcpy(par->streamname, sbuffer);
-  free(sbuffer); 
-  
+  free(sbuffer);
+
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the clobber parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("tstart", &par->tstart);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the tstart parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("tstop", &par->tstop);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the tstop parameter");
@@ -269,7 +271,7 @@ int getpar(struct Parameters* const par)
   }else{
     par->seed=(unsigned long int)seed;
   }
-  
+
   char *pix=NULL;
   status=ape_trad_query_string("pixels", &pix);
   if (EXIT_SUCCESS!=status) {
@@ -310,16 +312,16 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   strcpy(par->PixImpList,partmp.PixImpList);
   strcpy(par->XMLFile,partmp.XMLFile);
   strcpy(par->streamname,partmp.streamname);
-  
+
   strcpy(par->activePixels,partmp.activePixels);
   par->Nactive=partmp.Nactive;
   par->Npix=partmp.Npix;
   par->nlo=partmp.nlo;
   par->nhi=partmp.nhi;
-  
+
   par->tstart=partmp.tstart;
   par->tstop=partmp.tstop;
-  
+
   par->clobber=partmp.clobber;
   par->history=partmp.history;
   par->check_times=1;
@@ -328,4 +330,3 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
 
   par->seed=partmp.seed;
 }
- 

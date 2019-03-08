@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "event.h"
@@ -24,9 +26,9 @@
 Event* getEvent(int* const status)
 {
   Event* ev=(Event*)malloc(sizeof(Event));
-  CHECK_NULL_RET(ev, *status, 
+  CHECK_NULL_RET(ev, *status,
 		 "memory allocation for Event failed", ev);
-  
+
   // Initalize.
   ev->rawx=0;
   ev->rawy=0;

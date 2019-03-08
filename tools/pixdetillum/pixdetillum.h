@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef DETPIXILLUM_H
@@ -38,13 +40,13 @@
 struct Parameters {
   char PixImpList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
-  
+
   char telescop[MAXMSG];
   char instrume[MAXMSG];
   char filter[MAXMSG];
   char ancrfile[MAXMSG];
   char respfile[MAXMSG];
-  
+
   double mjdref;
   double timezero;
   double tstart;
@@ -53,14 +55,14 @@ struct Parameters {
   int Nactive;
   int nlo;
   int nhi;
-  
+
   double rate;
   double energy;
   double bandwidth;
-  
+
   char clobber;
   char history;
-  
+
   unsigned long int seed;
 };
 

@@ -16,12 +16,14 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "xmlbuffer.h"
 
 
-void addString2XMLBuffer(struct XMLBuffer* const buffer, 
+void addString2XMLBuffer(struct XMLBuffer* const buffer,
 			 const char* const string,
 			 int* const status)
 {
@@ -31,7 +33,7 @@ void addString2XMLBuffer(struct XMLBuffer* const buffer,
     SIXT_ERROR("NULL pointer to XMLBuffer");
     return;
   }
-    
+
   // Check if the buffer is empty.
   if (NULL==buffer->text) {
     // Allocate memory for the first chunk of bytes.
@@ -111,12 +113,12 @@ void freeXMLBuffer(struct XMLBuffer** const buffer)
 }
 
 
-static void expandXMLElementStart(void* data, const char* el, 
+static void expandXMLElementStart(void* data, const char* el,
 				  const char** attr)
 {
   struct XMLPreParseData* mydata=(struct XMLPreParseData*)data;
 
-  // Pointer to the right output buffer (either mydata->output_buffer 
+  // Pointer to the right output buffer (either mydata->output_buffer
   // or mydata->loop_buffer).
   struct XMLBuffer* output=mydata->output_buffer;
 
@@ -160,7 +162,7 @@ static void expandXMLElementStart(void* data, const char* el,
 	ii+=2;
       }
       // END of loop over all attributes.
-      
+
       // Check if parameters are set to valid values.
       if (((mydata->loop_end-mydata->loop_start)*mydata->loop_increment<0) ||
 	  (0==mydata->loop_increment)){
@@ -180,7 +182,7 @@ static void expandXMLElementStart(void* data, const char* el,
   }
   // END of check for loop tag.
 
-  
+
   // If we are inside a loop, print to the loop buffer.
   if (mydata->loop_depth>0) {
     output=mydata->loop_buffer;
@@ -205,7 +207,7 @@ static void expandXMLElementStart(void* data, const char* el,
     }
     addString2XMLBuffer(output, buffer, &mydata->status);
     CHECK_STATUS_VOID(mydata->status);
-    
+
     ii+=2;
   }
 
@@ -214,13 +216,13 @@ static void expandXMLElementStart(void* data, const char* el,
 }
 
 
-static void replaceInXMLBuffer(struct XMLBuffer* const buffer, 
+static void replaceInXMLBuffer(struct XMLBuffer* const buffer,
 			       const char* const old,
-			       const char* const new, 
+			       const char* const new,
 			       int* const status)
 {
   // Pointer to the first occurence of the old string in the buffer text.
-  char* occurence; 
+  char* occurence;
   // Length of the old string.
   int len_old=strlen(old);
 
@@ -230,7 +232,7 @@ static void replaceInXMLBuffer(struct XMLBuffer* const buffer,
     // Get the length of the tail.
     int len_tail=strlen(occurence)-len_old;
 
-    // String tail after the first occurence of the old string 
+    // String tail after the first occurence of the old string
     // in the buffer text.
     char* tail=(char*)malloc((1+len_tail)*sizeof(char));
     if (NULL==tail) {
@@ -241,7 +243,7 @@ static void replaceInXMLBuffer(struct XMLBuffer* const buffer,
     }
     // Copy the tail of the string without the old string to the buffer.
     strcpy(tail, &occurence[len_old]);
-    // Truncate the buffer string directly before the occurence 
+    // Truncate the buffer string directly before the occurence
     // of the old string.
     occurence[0]='\0';
     // Append the new string to the truncated buffer string.
@@ -286,7 +288,7 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
       svalue[ii]=start[ii];
     }
     svalue[ii]='\0';
-    
+
     // Convert the string to an integer value.
     int ivalue1=atoi(svalue);
 
@@ -376,7 +378,7 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
       svalue[ii]=start[ii];
     }
     svalue[ii]='\0';
-    
+
     // Convert the string to an integer value.
     int ivalue1=atoi(svalue);
 
@@ -422,7 +424,7 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
     // Get the length of the tail.
     int len_tail=strlen(end)-1;
 
-    // String tail after the first occurrence of the old string 
+    // String tail after the first occurrence of the old string
     // in the buffer text.
     char* tail=(char*)malloc((1+len_tail)*sizeof(char));
     if (NULL==tail) {
@@ -433,7 +435,7 @@ static void execArithmeticOpsInXMLBuffer(struct XMLBuffer* const buffer,
     }
     // Copy the tail of the string without the old string to the buffer.
     strcpy(tail, &end[1]);
-    // Truncate the buffer string directly before the occurrence 
+    // Truncate the buffer string directly before the occurrence
     // of the old string.
     start[0]='\0';
     // Append the new string to the truncated buffer string.
@@ -452,7 +454,7 @@ static void expandXMLElementEnd(void* data, const char* el)
 {
   struct XMLPreParseData* mydata=(struct XMLPreParseData*)data;
 
-  // Pointer to the right output buffer (either mydata->output_buffer 
+  // Pointer to the right output buffer (either mydata->output_buffer
   // or mydata->loop_buffer).
   struct XMLBuffer* output=mydata->output_buffer;
 
@@ -468,9 +470,9 @@ static void expandXMLElementEnd(void* data, const char* el)
     // In that case add the loop buffer n-times to the output buffer.
     if (1==mydata->loop_depth) {
       int ii;
-      for (ii=mydata->loop_start; 
+      for (ii=mydata->loop_start;
 	   ((ii<=mydata->loop_end)&&(mydata->loop_increment>0)) ||
-	     ((ii>=mydata->loop_end)&&(mydata->loop_increment<0)); 
+	     ((ii>=mydata->loop_end)&&(mydata->loop_increment<0));
 	   ii+=mydata->loop_increment) {
 	// Copy loop buffer to separate XMLBuffer before replacing the
 	// variables, since they have to be preserved for the following loop
@@ -495,7 +497,7 @@ static void expandXMLElementEnd(void* data, const char* el)
 	}
 
 	// Add the loop content to the output buffer.
-	addString2XMLBuffer(mydata->output_buffer, replacedBuffer->text, 
+	addString2XMLBuffer(mydata->output_buffer, replacedBuffer->text,
 			    &mydata->status);
 	CHECK_STATUS_VOID(mydata->status);
 
@@ -505,7 +507,7 @@ static void expandXMLElementEnd(void* data, const char* el)
       freeXMLBuffer(&mydata->loop_buffer);
       mydata->loop_buffer=newXMLBuffer(&mydata->status);
       CHECK_STATUS_VOID(mydata->status);
-      
+
       // Now we are outside of any loop.
       mydata->loop_depth--;
       return;
@@ -515,7 +517,7 @@ static void expandXMLElementEnd(void* data, const char* el)
       mydata->loop_depth--;
     }
   }
-  
+
   // If we are inside a loop, print to the loop buffer.
   if (mydata->loop_depth>0) {
     output=mydata->loop_buffer;
@@ -534,9 +536,9 @@ static void expandXMLElementEnd(void* data, const char* el)
 
 
 
-static void InclXMLElementStart(void* data, 
-			    const char* el, 
-			    const char** attr) 
+static void InclXMLElementStart(void* data,
+			    const char* el,
+			    const char** attr)
 {
   struct XMLIncludeHandler* mydata=(struct XMLIncludeHandler*)data;
 
@@ -653,8 +655,8 @@ static void InclXMLElementStart(void* data,
   }
 }
 
-static void InclXMLElementEnd(void* data, 
-			    const char* el) 
+static void InclXMLElementEnd(void* data,
+			    const char* el)
 {
   struct XMLIncludeHandler* mydata=(struct XMLIncludeHandler*)data;
 
@@ -688,7 +690,7 @@ void expandIncludesXML(struct XMLBuffer* const buffer, const char* filename, int
   strcpy(data.xmlfile, filename);
 
   do{
-    // Set further_includes to 0, if nothing new is found, 
+    // Set further_includes to 0, if nothing new is found,
     // this terminates the while loop
     data.further_includes=0;
     data.status=EXIT_SUCCESS;
@@ -716,7 +718,7 @@ void expandIncludesXML(struct XMLBuffer* const buffer, const char* filename, int
       // Parse error.
       *status=EXIT_FAILURE;
       char msg[MAXMSG];
-      sprintf(msg, "parsing XML code failed: \n%s\n", 
+      sprintf(msg, "parsing XML code failed: \n%s\n",
 	      XML_ErrorString(XML_GetErrorCode(parser)));
       printf("%s", buffer->text);
       SIXT_ERROR(msg);
@@ -747,7 +749,7 @@ void expandIncludesXML(struct XMLBuffer* const buffer, const char* filename, int
 void expandXML(struct XMLBuffer* const buffer, int* const status)
 {
   struct XMLPreParseData data;
-  
+
   do {
 
     // Parse XML code in the xmlbuffer using the expat library.
@@ -782,7 +784,7 @@ void expandXML(struct XMLBuffer* const buffer, int* const status)
       // Parse error.
       *status=EXIT_FAILURE;
       char msg[MAXMSG];
-      sprintf(msg, "parsing XML code failed:\n%s\n", 
+      sprintf(msg, "parsing XML code failed:\n%s\n",
 	      XML_ErrorString(XML_GetErrorCode(parser)));
       printf("%s", buffer->text);
       SIXT_ERROR(msg);
@@ -816,8 +818,8 @@ void expandXML(struct XMLBuffer* const buffer, int* const status)
 }
 
 
-void getXMLAttributeString(const char** attr, 
-			   const char* const key, 
+void getXMLAttributeString(const char** attr,
+			   const char* const key,
 			   char* const value)
 {
   char Uattribute[MAXMSG]; // Upper case version of XML attribute
@@ -828,7 +830,7 @@ void getXMLAttributeString(const char** attr,
   strtoupper(Ukey);
 
   int i;
-  for (i=0; attr[i]; i+=2) {  
+  for (i=0; attr[i]; i+=2) {
     // Convert the attribute to an upper case string.
     strcpy(Uattribute, attr[i]);
     strtoupper(Uattribute);
@@ -1178,6 +1180,3 @@ void expandHexagon(struct XMLBuffer* const buffer, int* const status)
 
   XML_ParserFree(parser);
 }
-
-
-

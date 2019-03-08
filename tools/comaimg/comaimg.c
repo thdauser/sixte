@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comaimg.h"
@@ -56,7 +58,7 @@ int comaimg_main() {
     //Read parameters using PIL library.
     status=comaimg_getpar(&par);
     if (EXIT_SUCCESS!=status) break;
-    
+
     //Detector-setup:
     float x_det = par.x_det;
     float y_det = par.y_det;
@@ -110,7 +112,7 @@ int comaimg_main() {
       //Set the values of the AttitudeEntry.
 
       ac->nentries=1;
-      ac->entry[0]=initializeAttitudeEntry();  
+      ac->entry[0]=initializeAttitudeEntry();
       //ac->entry[0].time=0;
 
       //Telescope pointing direction:
@@ -139,7 +141,7 @@ int comaimg_main() {
 	SIXT_ERROR("attitude data does not cover the specified period");
 	break;
 	}*/
-      
+
     }//END of setting up the attitude.
 
     // Read header keywords.
@@ -161,7 +163,7 @@ int comaimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
-    ilf=openNewImpactFile(par.ImpactList, 
+    ilf=openNewImpactFile(par.ImpactList,
 			  telescop, instrume, filter,
 			  ancrfile, respfile,
 			  mjdref, timezero, tstart, tstop,
@@ -204,7 +206,7 @@ int comaimg_main() {
 
     //SCAN PHOTON LIST (starts with first entry, plf initialized to 0 at beginning)
     while (plf->row < plf->nrows) {
-         
+
       //Read an entry from the photon list:
       Photon photon={.time= 0.0};
       status=PhotonFile_getNextRow(plf,&photon);
@@ -220,7 +222,7 @@ int comaimg_main() {
       //Determine current telescope pointing direction.
       telescope.nz=getTelescopeNz(ac,photon.time,&status);
       CHECK_STATUS_BREAK(status);
-      
+
       //Check whether photon is inside FOV:
       //Compare photon direction to direction of telescope axis
       if (check_fov(&phodir,&telescope.nz,fov_min_align)==0){
@@ -235,7 +237,7 @@ int comaimg_main() {
 
 	//Determine photon impact position on detector in [m].
 	struct Point2d position;
-	
+
 	//first:impact position in mask-plane (transparent pixels only);
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
 	int reval=getImpactPos_wcs(&wcs,&position,mask,photon.ra*180./M_PI,
@@ -243,7 +245,7 @@ int comaimg_main() {
 	CHECK_STATUS_BREAK(status);
 
 	if (reval == 1){
-	 
+
 	  //Create new impact.
 	  Impact impact;
 	  impact.time       = photon.time;
@@ -260,7 +262,7 @@ int comaimg_main() {
       } // END of photon  inside fov.
     } // END of scanning LOOP over the photon list.
     if (EXIT_SUCCESS!=status) break;
-  
+
     // Release memory.
     destroyCodedMask(&mask);
     wcsfree(&wcs);
@@ -299,7 +301,7 @@ int comaimg_getpar(struct Parameters* par)
   }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
-  
+
   // Get the filename of the coded mask file (FITS image file).
   status=ape_trad_query_string("Mask", &sbuffer);
   if (EXIT_SUCCESS!=status) {
@@ -347,7 +349,7 @@ int comaimg_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the depth of the mask");
     return(status);
   }
- 
+
   //Read width of the detector [m].
   status=ape_trad_query_float("x_det", &par->x_det);
   if (EXIT_SUCCESS!=status) {
@@ -368,18 +370,18 @@ int comaimg_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the width of one detector pixel");
     return(status);
   }
- 
+
   status=ape_trad_query_double("RA", &par->RA);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the right ascension of the telescope");
     return(status);
-  } 
+  }
 
  status=ape_trad_query_double("DEC", &par->DEC);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope");
     return(status);
-  } 
+  }
 
   //Read time-offset for simulated intervall [s].
   status=ape_trad_query_double("Timezero", &par->Timezero);
@@ -392,7 +394,7 @@ int comaimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   return(status);
 }

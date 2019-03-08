@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "phproj.h"
@@ -34,7 +36,7 @@ void phproj(GenInst* const inst,
   // LOOP over all events in the input file.
   long row;
   for (row=0; row<elf->nrows; row++) {
-    
+
     // Read the next event from the file.
     Event event;
     getEventFromFile(elf, row+1, &event, status);
@@ -60,25 +62,25 @@ void phproj(GenInst* const inst,
       (event.rawy*1.-inst->det->pixgrid->yrpix
        +0.5+sixt_get_random_number(status))*inst->det->pixgrid->ydelt;
     CHECK_STATUS_BREAK(*status);
-    
+
     double xr=cosrota*xb -sinrota*yb;
     double yr=sinrota*xb +cosrota*yb;
-    
+
     struct Point2d detpos;
-    detpos.x=xr + inst->det->pixgrid->xrval; // in [m]      
+    detpos.x=xr + inst->det->pixgrid->xrval; // in [m]
     detpos.y=yr + inst->det->pixgrid->yrval; // in [m]
-    
-    // Determine the source position on the sky using the telescope 
-    // axis pointing vector and a vector from the point of the intersection 
+
+    // Determine the source position on the sky using the telescope
+    // axis pointing vector and a vector from the point of the intersection
     // of the optical axis with the sky plane to the source position.
     Vector srcpos;
-    srcpos.x = nz.x 
+    srcpos.x = nz.x
       +detpos.x/inst->tel->focal_length*nx.x
       +detpos.y/inst->tel->focal_length*ny.x;
-    srcpos.y = nz.y 
+    srcpos.y = nz.y
       +detpos.x/inst->tel->focal_length*nx.y
       +detpos.y/inst->tel->focal_length*ny.y;
-    srcpos.z = nz.z 
+    srcpos.z = nz.z
       +detpos.x/inst->tel->focal_length*nx.z
       +detpos.y/inst->tel->focal_length*ny.z;
     srcpos = normalize_vector(srcpos);
@@ -86,11 +88,11 @@ void phproj(GenInst* const inst,
     // Determine the equatorial coordinates RA and DEC
     // (RA and DEC are in the range [-pi:pi] and [-pi/2:pi/2] respectively).
     calculate_ra_dec(srcpos, &event.ra, &event.dec);
-    
+
     // Update the data in the event list FITS file.
     updateEventInFile(elf, row+1, &event, status);
     CHECK_STATUS_BREAK(*status);
-  } 
+  }
   CHECK_STATUS_VOID(*status);
   // END of LOOP over all events.
 }

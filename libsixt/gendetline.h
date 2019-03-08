@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef GENDETLINE_H 
+#ifndef GENDETLINE_H
 #define GENDETLINE_H 1
 
 #include "sixt.h"
@@ -33,7 +35,7 @@
 /** One line in the GenDet model for a generic pixelized X-ray
     detector. */
 typedef struct {
-  
+
   /** Number of pixels in this line. */
   int xwidth;
 
@@ -47,7 +49,7 @@ typedef struct {
       this parameter determines the point of time until that the pixel
       is insensitive to further incident photons. */
   double* deadtime;
-  
+
   /** The time of the last readout of this line */
   double last_readouttime;
 
@@ -71,11 +73,11 @@ typedef struct {
       1). If not (value 0), the read-out does not have to be
       performed. */
   int anycharge;
-  
+
   /** This flag specifies if the line contains any carry charges
       for the next read-out cycle (f.e. for DEPFETs). */
   int anycarry;
-  
+
 } GenDetLine;
 
 

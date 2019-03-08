@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef HTRSEVENTFILE_H
@@ -29,10 +31,10 @@
 typedef struct {
 
   /** Generic EventList data structure. */
-  EventList generic; 
+  EventList generic;
 
   /* Column numbers of the individual HTRS-specific event list entries.
-   * The numbers start at 1. The number 0 means, that there 
+   * The numbers start at 1. The number 0 means, that there
    * is no corresponding column in the table. */
   int ctime, cpha, cenergy, cpixel, cgrade, cx, cy;
 
@@ -47,8 +49,8 @@ typedef struct {
     of rows in the FITS table and initializes the HTRSEventFile data
     structure. The access_mode parameter can be either READONLY or
     READWRITE. */
-int openHTRSEventFile(HTRSEventFile* hef, 
-		      char* const filename, 
+int openHTRSEventFile(HTRSEventFile* hef,
+		      char* const filename,
 		      const int access_mode);
 
 /** Create and open a new FITS event file for the HTRS detector from a
@@ -57,8 +59,8 @@ int openHTRSEventFile(HTRSEventFile* hef,
     file the function also initializes the HTRSEventFile data
     structure by calling openHTRSEventFile(). The access_mode
     parameter is always READWRITE. */
-int openNewHTRSEventFile(HTRSEventFile* hef, 
-			 char* const filename, 
+int openNewHTRSEventFile(HTRSEventFile* hef,
+			 char* const filename,
 			 char* const template);
 
 /** Close an open HTRS event list FITS file. */
@@ -93,4 +95,3 @@ int HTRSEventFile_writeRow(HTRSEventFile*, HTRSEvent*, const long row);
 
 
 #endif /* HTRSEVENTFILE */
-

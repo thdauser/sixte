@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "attitudefile.h"
@@ -25,19 +27,19 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const stat
 {
   AttitudeFileEntry afe={ .time = 0. };
   int anynul=0;
- 
+
   // Time
-  fits_read_col(af->fptr, TDOUBLE, af->ctime, af->row+1, 1, 1, 
+  fits_read_col(af->fptr, TDOUBLE, af->ctime, af->row+1, 1, 1,
 		&afe.time, &afe.time, &anynul, status);
   // RA
-  fits_read_col(af->fptr, TFLOAT, af->cra, af->row+1, 1, 1, 
+  fits_read_col(af->fptr, TFLOAT, af->cra, af->row+1, 1, 1,
 		&afe.ra, &afe.ra, &anynul, status);
   // Dec
-  fits_read_col(af->fptr, TFLOAT, af->cdec, af->row+1, 1, 1, 
+  fits_read_col(af->fptr, TFLOAT, af->cdec, af->row+1, 1, 1,
 		&afe.dec, &afe.dec, &anynul, status);
   // Roll angle.
   if (af->crollang>0) {
-    fits_read_col(af->fptr, TFLOAT, af->crollang, af->row+1, 1, 1, 
+    fits_read_col(af->fptr, TFLOAT, af->crollang, af->row+1, 1, 1,
 		  &afe.rollang, &afe.rollang, &anynul, status);
   } else {
     afe.rollang=0.0;
@@ -47,8 +49,8 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const stat
 }
 
 
-AttitudeFile* open_AttitudeFile(const char filename[], 
-				const int access_mode, 
+AttitudeFile* open_AttitudeFile(const char filename[],
+				const int access_mode,
 				int* const status)
 {
   AttitudeFile* af=NULL;
@@ -57,7 +59,7 @@ AttitudeFile* open_AttitudeFile(const char filename[],
 
     af=(AttitudeFile*)malloc(sizeof(AttitudeFile));
     CHECK_NULL_BREAK(af, *status, "memory allocation failed");
-    
+
     // Initialize.
     af->fptr =NULL;
     af->row  =0;
@@ -138,4 +140,3 @@ AttitudeFile* open_AttitudeFile(const char filename[],
 
   return(af);
 }
-

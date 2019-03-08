@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "tesgenimpacts.h"
 
 #define TOOLSUB tesgenimpacts_main
@@ -38,10 +59,10 @@ int tesgenimpacts_main() {
       int n;
       for (n=0; n<par.nPhotons; n++) {
         Earray[n] = par.EConst;
-        tarray[n] = par.tstart + (n+1)*par.dtau; 
+        tarray[n] = par.tstart + (n+1)*par.dtau;
       }
 
-    
+
     } else if (par.mode == MODE_LIN) {
     // mode 2: Generate nsamples photons
     // with linearly increasing energies
@@ -49,7 +70,7 @@ int tesgenimpacts_main() {
       int n;
       for (n=0; n<par.nPhotons; n++){
         Earray[n] = par.Emin + (par.Emax - par.Emin) * (n)/(par.nPhotons-1);
-        tarray[n] = par.tstart + (n+1)*par.dtau; 
+        tarray[n] = par.tstart + (n+1)*par.dtau;
       }
 
 
@@ -74,7 +95,7 @@ int tesgenimpacts_main() {
       gsl_rng_set(rng,par.seed);
 
       int n;
-      if (par.mode == MODE_RAND) { 
+      if (par.mode == MODE_RAND) {
         // probability distribution in t is linear
         for (n = 0; n <par.nPhotons; n++) {
         // populate the Earray and tarray
@@ -201,7 +222,7 @@ void tesgenimpacts_getpar(tesgenimppars *par, int *status){
 
   query_simput_parameter_int("PixID", &(par->pixid), status);
   par->pixid -= 1; // internal functions have a different offset;
-  
+
   query_simput_parameter_double("tstart", &(par->tstart), status);
   query_simput_parameter_double("tstop", &(par->tstop), status);
   if (par->mode == MODE_CONST || par->mode == MODE_LIN){
@@ -216,8 +237,8 @@ void tesgenimpacts_getpar(tesgenimppars *par, int *status){
         time += par->dtau;
       }
     }
-    
-  } 
+
+  }
   if (par->mode == MODE_CONST) {
     query_simput_parameter_double("EConst", &(par->EConst), status);
   }
@@ -234,6 +255,6 @@ void tesgenimpacts_getpar(tesgenimppars *par, int *status){
         query_simput_parameter_double("phaseShift", &(par->shift), status);
         par->shift = par->shift * M_PI / 180; // degrees->radiants
       }
-    } 
+    }
   }
 }

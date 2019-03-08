@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "streamtotriggers.h"
@@ -27,17 +29,17 @@ int streamtotriggers_main() {
   // Containing all programm parameters read by PIL.
   struct Parameters par;
   TESGeneralParameters generic_par;
-  
+
   // Error status.
   int status=EXIT_SUCCESS;
-  
+
   //Pointers
   TESDataStream* stream=NULL;
   TesStreamFile* tesfile=NULL;
   TESInitStruct* init=NULL;
 
   float monoen;
-  
+
   int hdu_type=0;
 
   char comment[MAXMSG];
@@ -45,8 +47,8 @@ int streamtotriggers_main() {
   // Register HEATOOL:
   set_toolname("streamtotriggers");
   set_toolversion("0.05");
-  
-  do { // Beginning of the ERROR handling loop (will at 
+
+  do { // Beginning of the ERROR handling loop (will at
        // most be run once).
     headas_chat(3, "initialize ...\n");
     // Get program parameters.
@@ -55,7 +57,7 @@ int streamtotriggers_main() {
 
     // Copy parameters in general parameters structure
     copyParams2GeneralStruct(par,&generic_par);
-    
+
     // Initialization structure necessary for trigger step
     init = newInitStruct(&status);
     CHECK_STATUS_BREAK(status);
@@ -149,7 +151,7 @@ int getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -157,7 +159,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pixel impact list");
     return(status);
-  } 
+  }
   strcpy(par->PixImpList, sbuffer);
   free(sbuffer);
 
@@ -165,7 +167,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -173,18 +175,18 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the Stream file");
     return(status);
-  } 
+  }
   strcpy(par->streamname, sbuffer);
-  free(sbuffer); 
+  free(sbuffer);
 
   status=ape_trad_query_string("TesTriggerfile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the TES Trigger output file");
     return(status);
-  } 
+  }
   strcpy(par->tesTriggerFile, sbuffer);
   free(sbuffer);
-  
+
   status=ape_trad_query_int("TriggerSize", &par->triggerSize);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the TriggerSize parameter");
@@ -196,7 +198,7 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the PreBufferSize parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_bool("clobber", &par->clobber);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the clobber parameter");
@@ -208,7 +210,7 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the tstart parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_double("tstop", &par->tstop);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the tstop parameter");
@@ -220,7 +222,7 @@ int getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the history parameter");
     return(status);
   }
-  
+
   char *pix=NULL;
   status=ape_trad_query_string("pixels", &pix);
   if (EXIT_SUCCESS!=status) {
@@ -279,4 +281,3 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
   par->history=partmp.history;
   par->check_times=0;
 }
-

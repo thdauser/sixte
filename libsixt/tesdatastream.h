@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESDATASTREAM_H
@@ -37,79 +39,79 @@
 
 /** Structure containing the data stream */
 typedef struct{
-  
+
   /** Number of pixels. */
   int Npix;
-  
+
   /** Number of time steps. */
   long Ntime;
-  
+
   /** Time stamp. */
   double *time;
-  
+
   /** Signal array for all pixels. [time][pixID] */
   uint16_t **adc_value;
-  
+
 }TESDataStream;
 
 /** Structure containing the calorimeter pixel properties. */
 typedef struct{
-  
+
   /** Number of pixels. */
   int Npix;
-  
+
   /** Array containing the indices of the pixels. */
   int *pixID;
-  
+
   /** Array containing the indices of the version IDs of the pixels. */
   int *versionID;
-  
+
   /** Templates. */
   TESProfiles *templates;
-  
+
 }TESPulseProperties;
 
 /** Structure containing the information for a FITS table. */
 typedef struct{
-  
+
   /** Name of the stream. */
   // NOTE: THIS WILL BE IGNORED!
   char name[9];
-  
+
   /** Number of pixels in the struct. Maximum TESFITSMAXPIX. */
   int Npix;
-  
+
   /** Number of time bins in the struct. */
   long Ntime;
-  
+
   /** Array containing the IDs of the pixels. */
   int *pixID;
-  
+
   /** Time array. */
   double *time;
-  
+
   /** Signal array for all pixels. [pixID][time] */
   uint16_t **adc_value;
-  
+
 }TESFitsStream;
 
 /** Linked list containing active pulses */
 typedef struct node{
-  
+
   /** Time array */
   double *time;
-  
+
   /** Pulse array containing scaled pulse */
   double *adcpulse;
-  
-  /** Number of time steps */ 
+
+  /** Number of time steps */
   long Nt;
-  
+
   /** Current position (index) in the pulse */
   /** saved as double to account for different */
   /** sampling for pulses and data stream */
-  double count;  
-  
+  double count;
+
   /** Next node */
   struct node * next;
 
@@ -123,9 +125,9 @@ typedef struct node{
 TESDataStream* newTESDataStream(int* const status);
 
 /** Function which allocates memory for the TESDataStream structure */
-void allocateTESDataStream(TESDataStream* stream, 
-			   long Nt, 
-			   int Npix, 
+void allocateTESDataStream(TESDataStream* stream,
+			   long Nt,
+			   int Npix,
 			   int* const status);
 
 /** Destructor for the data structure TESDataStream. */
@@ -141,16 +143,16 @@ void destroyTESPulseProperties(TESPulseProperties* prop);
 TESFitsStream* newTESFitsStream(int* const status);
 
 /** Function which allocates memory for the TESDataStream structure */
-void allocateTESFitsStream(TESFitsStream* stream, 
-			   long Nt, 
-			   int Npix, 
+void allocateTESFitsStream(TESFitsStream* stream,
+			   long Nt,
+			   int Npix,
 			   int* const status);
 
 /** Destructor for the data structure TESFitsStream. */
 void destroyTESFitsStream(TESFitsStream* stream);
 
 /** Creates a new TESFitsStream file. */
-void createTESFitsStreamFile(fitsfile **fptr, 
+void createTESFitsStreamFile(fitsfile **fptr,
 			     char *filename,
 			     char* const telescop,
 			     char* const instrume,
@@ -163,11 +165,11 @@ void createTESFitsStreamFile(fitsfile **fptr,
 			     const double timezero,
 			     const double tstart,
 			     const double tstop,
-			     const char clobber, 
+			     const char clobber,
 			     int* const status);
 
 /** Function to write a TESFitsStream into a FITS Extension. */
-void writeTESFitsStream(fitsfile *fptr, 
+void writeTESFitsStream(fitsfile *fptr,
 			TESFitsStream *stream,
 			double tstart,
 			double tstop,
@@ -178,7 +180,7 @@ void writeTESFitsStream(fitsfile *fptr,
 			int* const status);
 
 /** Function to append a TESFitsStream to an existing FITS Extension. */
-void appendTESFitsStream(fitsfile *fptr, 
+void appendTESFitsStream(fitsfile *fptr,
 			TESFitsStream *stream,
 			double tstart,
 			double tstop,
@@ -186,11 +188,11 @@ void appendTESFitsStream(fitsfile *fptr,
 			int* const status);
 
 /** Main engine generating TES data stream */
-void getTESDataStream(TESDataStream* TESData, 
-		      PixImpFile* PixFile, 
+void getTESDataStream(TESDataStream* TESData,
+		      PixImpFile* PixFile,
 		      TESProfiles* TESProf,
-		      AdvDet* det, 
-		      double tstart, 
+		      AdvDet* det,
+		      double tstart,
 		      double tstop,
 		      int Ndetpix,
 		      int Nactive,
@@ -202,8 +204,8 @@ void getTESDataStream(TESDataStream* TESData,
 		      int* const status);
 
 /** Add an event to the node list */
-int addEventToNode(EvtNode** ActPulses, 
-		   TESProfiles* Pulses, 
+int addEventToNode(EvtNode** ActPulses,
+		   TESProfiles* Pulses,
                    PixImpact* impact,
 		   int pixno,
 		   int versionID,
@@ -211,7 +213,7 @@ int addEventToNode(EvtNode** ActPulses,
 		   int* const status);
 
 /** Remove an event from the node list */
-void removeEventFromNode(EvtNode** ActPulses, 
+void removeEventFromNode(EvtNode** ActPulses,
 			int* pixel);
 
 /** Destroy array of linked lists */

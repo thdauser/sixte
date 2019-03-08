@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef ATTITUDEFILE_H
@@ -32,13 +34,13 @@
 /** Data structure describing an attitude file. */
 typedef struct {
   /** File pointer to the FITS file. */
-  fitsfile* fptr; 
+  fitsfile* fptr;
 
   /** Current row in the attitude FITS file (starting at 0). */
   long row;
 
   /** Total number of rows in the attitude file. */
-  long nrows; 
+  long nrows;
 
   /* Column numbers of the individual attitude file entries. The
      numbers start at 1. The number 0 means, that there is no
@@ -51,13 +53,13 @@ typedef struct {
 /** Contains a line of attitude data from a FITS file. */
 typedef struct {
   /** Time for which the AttitudeFileEntry is valid. */
-  double time; 
+  double time;
   /** Right ascension of telescope pointing direction [deg]. */
-  float ra; 
+  float ra;
   /** Declination of telescope pointing direction [deg].*/
-  float dec; 
+  float dec;
   /** Rollangle [deg]. */
-  float rollang; 
+  float rollang;
 
 } AttitudeFileEntry;
 
@@ -74,7 +76,7 @@ AttitudeFileEntry read_AttitudeFileEntry(AttitudeFile* const af, int* const stat
 
 /** Opens an existing attitude file. The access_mode parameter can be
     either READONLY or READWRITE. */
-AttitudeFile* open_AttitudeFile(const char filename[], const int access_mode, 
+AttitudeFile* open_AttitudeFile(const char filename[], const int access_mode,
 				int* const status);
 
 

@@ -15,7 +15,8 @@
    <http://www.gnu.org/licenses/>.
 
 
-   Copyright 2007-2018 Remeis-Sternwarte
+   Copyright 2007-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include <sixteconfig.h>
@@ -23,12 +24,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main() 
+int main()
 {
   printf("SIXTE version %s\n",PACKAGE_VERSION);
   printf("Compiled %s, %s\n",__DATE__,__TIME__);
   exit(0);
 }
-
-
-

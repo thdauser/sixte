@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PIXIMPFILE_H
@@ -33,7 +35,7 @@
 typedef struct {
   /** Pointer to the FITS file. */
   fitsfile* fptr;
-  
+
   /** Total number of rows in the FITS file. */
   long nrows;
 
@@ -85,13 +87,13 @@ PixImpFile* openNewPixImpFile(const char* const filename,
     counter by 1 (e.g. if 'row==0' at the beginning of the function
     call, the first row from the FITS table is read and the counter is
     increased to 'row==1'). */
-int getNextImpactFromPixImpFile(PixImpFile* const file, 
+int getNextImpactFromPixImpFile(PixImpFile* const file,
 			   PixImpact* const impact,
 			   int* const status);
 
 /** Append a new entry to the PixImpFile. */
-void addImpact2PixImpFile(PixImpFile* const ilf, 
-			  PixImpact* const impact, 
+void addImpact2PixImpFile(PixImpFile* const ilf,
+			  PixImpact* const impact,
 			  int* const status);
 
 /** Get the tstart and tstop times from the file. */

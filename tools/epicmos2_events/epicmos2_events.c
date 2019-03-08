@@ -1,15 +1,36 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "epicmos2_events.h"
 
 
-int epicmos2_events_main() 
+int epicmos2_events_main()
 {
   // Containing all programm parameters read by PIL.
-  struct Parameters par; 
+  struct Parameters par;
 
   // Input event file.
   EventFile* elf=NULL;
 
-  // File pointer to the output EPIC-mos2 event file. 
+  // File pointer to the output EPIC-mos2 event file.
   fitsfile* fptr=NULL;
 
   // WCS data structure used for projection.
@@ -18,7 +39,7 @@ int epicmos2_events_main()
   char* headerstr=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Plate scale [0.05arcsec/pixel].
   const double ps=atan(40.e-6/7.5)*180./M_PI*3600./0.05;
@@ -222,11 +243,11 @@ int epicmos2_events_main()
 		   "I", "I",
 		   "I", "I", "J", "J",
 		   "I", "I", "J", "B"};
-    char *tunit[]={"s", 
-		   "pixel", "pixel", 
+    char *tunit[]={"s",
+		   "pixel", "pixel",
 		   "0.05arcsec", "0.05arcsec", "0.05arcsec", "0.05arcsec",
 		   "channel", "eV", "", ""};
-    fits_create_tbl(fptr, BINARY_TBL, 0, 11, ttype, tform, tunit, 
+    fits_create_tbl(fptr, BINARY_TBL, 0, 11, ttype, tform, tunit,
 		    "EVENTS", &status);
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
@@ -314,34 +335,34 @@ int epicmos2_events_main()
 
     // Update the WCS keywords in the output file.
     sprintf(keyword, "TCTYP%d", cx);
-    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[0], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[0],
 		    "projection type", &status);
     sprintf(keyword, "TCTYP%d", cy);
-    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[1], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[1],
 		    "projection type", &status);
     sprintf(keyword, "TCRVL%d", cx);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[0], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[0],
 		    "reference value", &status);
     sprintf(keyword, "TCRVL%d", cy);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1],
 		    "reference value", &status);
     sprintf(keyword, "TCRPX%d", cx);
-    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[0], 
+    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[0],
 		    "reference point", &status);
     sprintf(keyword, "TCRPX%d", cy);
-    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[1], 
+    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[1],
 		    "reference point", &status);
     sprintf(keyword, "TCDLT%d", cx);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[0], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[0],
 		    "pixel increment", &status);
     sprintf(keyword, "TCDLT%d", cy);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[1], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[1],
 		    "pixel increment", &status);
     sprintf(keyword, "TCUNI%d", cx);
-    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[0], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[0],
 		    "axis units", &status);
     sprintf(keyword, "TCUNI%d", cy);
-    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[1], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[1],
 		    "axis units", &status);
     CHECK_STATUS_BREAK(status);
 
@@ -376,10 +397,10 @@ int epicmos2_events_main()
     // Actual minimum and maximum values of X and Y.
     long refxdmin, refxdmax, refydmin, refydmax;
 
-    // Loop over all events in the FITS file. 
+    // Loop over all events in the FITS file.
     long row;
     for (row=0; row<elf->nrows; row++) {
-      
+
       // Read the next event from the input file.
       Event event;
       getEventFromFile(elf, row+1, &event, &status);
@@ -399,16 +420,16 @@ int epicmos2_events_main()
       wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &wcsstatus);
       if (0!=wcsstatus) {
 	char msg[MAXMSG];
-	sprintf(msg, 
-		"WCS coordinate conversion failed (RA=%lf, Dec=%lf, error code %d)", 
+	sprintf(msg,
+		"WCS coordinate conversion failed (RA=%lf, Dec=%lf, error code %d)",
 		world[0], world[1], wcsstatus);
 	SIXT_ERROR(msg);
 	status=EXIT_FAILURE;
 	break;
       }
-      ev.x=(long)pixcrd[0]; 
+      ev.x=(long)pixcrd[0];
       if (pixcrd[0] < 0.) ev.x--;
-      ev.y=(long)pixcrd[1]; 
+      ev.y=(long)pixcrd[1];
       if (pixcrd[1] < 0.) ev.y--;
 
       // Determine the actual minimum and maximum values of X and Y.
@@ -494,7 +515,7 @@ int epicmos2_events_main()
   // Close the files.
   freeEventFile(&elf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
-  
+
   // Release memory.
   wcsfree(&wcs);
   if (NULL!=headerstr) free(headerstr);
@@ -525,7 +546,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the input pattern list");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -533,7 +554,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output event list");
     return(status);
-  } 
+  }
   strcpy(par->EPICmos2EventList, sbuffer);
   free(sbuffer);
 

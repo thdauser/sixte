@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESEVENTLIST_H
@@ -39,7 +41,7 @@ typedef struct {
 	int index;
 
 	/** Index arrival time of the photons inside a record */
-	//int * event_indexes;	
+	//int * event_indexes;
 	double * event_indexes;	//BEA
 
 	/** Pulse height of the photons */

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef RUNSIXT_H
@@ -79,7 +81,7 @@ struct Parameters {
   double dt;
 
   int Seed;
-  
+
   /** Skip invalid patterns when producing the output pattern file. */
   char SkipInvalids;
 
@@ -96,4 +98,3 @@ int runsixt_getpar(struct Parameters* const par);
 
 
 #endif /* RUNSIXT_H */
-

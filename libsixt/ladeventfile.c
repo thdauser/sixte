@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladeventfile.h"
@@ -25,7 +27,7 @@ LADEventFile* newLADEventFile(int* const status)
 {
   LADEventFile* file=
     (LADEventFile*)malloc(sizeof(LADEventFile));
-  CHECK_NULL_RET(file, *status, 
+  CHECK_NULL_RET(file, *status,
 		 "memory allocation for LADEventFile failed", file);
 
   // Initialize pointers with NULL.
@@ -99,7 +101,7 @@ LADEventFile* openNewLADEventFile(const char* const filename,
 
   // Create a new LADEvent list FITS file from the template file.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
 	  "/templates/ladeventfile.tpl");
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, NULL);
@@ -121,13 +123,13 @@ LADEventFile* openNewLADEventFile(const char* const filename,
   // Re-open the file.
   LADEventFile* lef=openLADEventFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, lef);
-  
+
   return(lef);
 }
 
 
 LADEventFile* openLADEventFile(const char* const filename,
-			       const int mode, 
+			       const int mode,
 			       int* const status)
 {
   LADEventFile* file=newLADEventFile(status);
@@ -153,7 +155,7 @@ LADEventFile* openLADEventFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
   CHECK_STATUS_RET(*status, file);
 
-  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
+  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent
   // with the corresponding array lengths in the LADEvent data structure.
   int typecode;
   long repeat, width;
@@ -192,8 +194,8 @@ LADEventFile* openLADEventFile(const char* const filename,
 }
 
 
-void addLADEvent2File(LADEventFile* const file, 
-		      LADEvent* const event, 
+void addLADEvent2File(LADEventFile* const file,
+		      LADEvent* const event,
 		      int* const status)
 {
   // Check if the event file has been opened.
@@ -230,35 +232,35 @@ void getLADEventFromFile(const LADEventFile* const file,
   float fnull=0.;
   long lnull=0;
 
-  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1,
 		&dnull, &event->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
+  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1,
 		&fnull, &event->signal, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->cpanel, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cpanel, row, 1, 1,
 		&lnull, &event->panel, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->cmodule, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cmodule, row, 1, 1,
 		&lnull, &event->module, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->celement, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->celement, row, 1, 1,
 		&lnull, &event->element, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->canode, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->canode, row, 1, 1,
 		&lnull, &event->anode, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NLADEVENTPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NLADEVENTPHOTONS,
 		&lnull, &event->ph_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
-  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NLADEVENTPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NLADEVENTPHOTONS,
 		&lnull, &event->src_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
@@ -275,22 +277,21 @@ void updateLADEventInFile(const LADEventFile* const file,
 			  const int row, LADEvent* const event,
 			  int* const status)
 {
-  fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
+  fits_write_col(file->fptr, TDOUBLE, file->ctime, row,
 		 1, 1, &event->time, status);
-  fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
+  fits_write_col(file->fptr, TFLOAT, file->csignal, row,
 		 1, 1, &event->signal, status);
-  fits_write_col(file->fptr, TLONG, file->cpanel, row, 
+  fits_write_col(file->fptr, TLONG, file->cpanel, row,
 		 1, 1, &event->panel, status);
-  fits_write_col(file->fptr, TLONG, file->cmodule, row, 
+  fits_write_col(file->fptr, TLONG, file->cmodule, row,
 		 1, 1, &event->module, status);
-  fits_write_col(file->fptr, TLONG, file->celement, row, 
+  fits_write_col(file->fptr, TLONG, file->celement, row,
 		 1, 1, &event->element, status);
-  fits_write_col(file->fptr, TLONG, file->canode, row, 
+  fits_write_col(file->fptr, TLONG, file->canode, row,
 		 1, 1, &event->anode, status);
-  fits_write_col(file->fptr, TLONG, file->cph_id, row, 
+  fits_write_col(file->fptr, TLONG, file->cph_id, row,
 		 1, NLADEVENTPHOTONS, &event->ph_id, status);
-  fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
+  fits_write_col(file->fptr, TLONG, file->csrc_id, row,
 		 1, NLADEVENTPHOTONS, &event->src_id, status);
   CHECK_STATUS_VOID(*status);
 }
-

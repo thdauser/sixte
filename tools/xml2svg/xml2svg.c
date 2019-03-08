@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Thorsten Brand, FAU
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "xml2svg.h"
@@ -58,19 +60,19 @@ static char *obj2d_fc[]={"#ff7979",
 /** Main */
 
 int xml2svg_main() {
-  
+
   // Containing all programm parameters read by PIL.
   struct Parameters par;
-  
+
   // Error status.
   int status=EXIT_SUCCESS;
-  
+
   int nxmls=0;
   char **xmls=NULL;
-  
+
   double xmin, xmax, ymin, ymax, xxmin, xxmax, yymin, yymax;
   double worldxmin, worldxmax, worldymin, worldymax, worldborder;
-  
+
   char *linecolor[]={"black", "red"};
   char **lc_file=NULL;
   int n_lc_file=0;
@@ -80,36 +82,36 @@ int xml2svg_main() {
   double linewidth[2]={2.0, 1.0};
   double textsize[2]={5.,4.};
   int fill[2]={1, 0};
-  
+
   Obj2D_instance **obj=NULL;
   SixteSVGObj *svg=NULL;
-  
+
   int ii;
-  
+
   // Register HEATOOL:
   set_toolname("xml2svg");
   set_toolversion("0.05");
-  
+
   do{
-    
-    // ---- Initialization ----   
+
+    // ---- Initialization ----
     // Read the parameters using PIL.
     status=xml2svg_getpar(&par, &nxmls, &xmls, &obj);
-    CHECK_STATUS_BREAK(status);    
-    
+    CHECK_STATUS_BREAK(status);
+
     if(par.CFillFile!=NULL){
       get_collist(par.CFillFile, &n_fc_file, &fc_file, &status);
       CHECK_STATUS_BREAK(status);
-    } 
+    }
     if(par.COutlFile!=NULL){
       get_collist(par.COutlFile, &n_lc_file, &lc_file, &status);
       CHECK_STATUS_BREAK(status);
     }
-    
+
     for(ii=0; ii<nxmls; ii++){
       obj[ii]=getObj2DFromXML(xmls[ii], &status);
       CHECK_STATUS_BREAK(status);
-    }    
+    }
     CHECK_STATUS_BREAK(status);
     int writeid=0;
     if(par.writeid!=0){
@@ -136,25 +138,25 @@ int xml2svg_main() {
 	ymin=MIN(ymin, yymin);
 	ymax=MAX(ymax, yymax);
       }
-    }    
+    }
     // Open the SVG objects
     worldborder=par.border*(xmax-xmin)/par.svgwidth;
     worldxmin=xmin-worldborder;
     worldxmax=xmax+worldborder;
     worldymin=ymin-worldborder;
     worldymax=ymax+worldborder;
-    
+
     svg=getSixteSVGObj(&status);
-    SixteSVG_init(svg, 
-		  par.SVGName, 
-		  worldxmin, 
-		  worldymin, 
+    SixteSVG_init(svg,
+		  par.SVGName,
+		  worldxmin,
+		  worldymin,
 		  (worldxmax-worldxmin),
 		  (worldymax-worldymin),
 		  par.svgwidth,
 		  &status);
     CHECK_STATUS_BREAK(status);
-    SixteSVG_makeHeader(svg, &status);   
+    SixteSVG_makeHeader(svg, &status);
     // Draw all Objects
     char **filling=fillc;
     char **linec=linecolor;
@@ -166,11 +168,11 @@ int xml2svg_main() {
       linec=lc_file;
     }
     for(ii=0; ii<nxmls; ii++){
-      Obj2D_DrawInstanceSVG(obj[ii], 
-			    svg, 
-			    linec, 
-			    linewidth, 
-			    filling, 
+      Obj2D_DrawInstanceSVG(obj[ii],
+			    svg,
+			    linec,
+			    linewidth,
+			    filling,
 			    fill,
 			    par.drawn,
 			    writeid,
@@ -181,23 +183,23 @@ int xml2svg_main() {
     CHECK_STATUS_BREAK(status);
     }
     // Draw coordinate system axes
-    SixteSVG_draw_line(svg, 
-		       0., worldymin, 
-		       0., worldymax, 
-		       1., "#999999", 
+    SixteSVG_draw_line(svg,
+		       0., worldymin,
+		       0., worldymax,
+		       1., "#999999",
 		       &status);
-    SixteSVG_draw_line(svg, 
-		       worldxmin, 0., 
+    SixteSVG_draw_line(svg,
+		       worldxmin, 0.,
 		       worldxmax, 0.,
-		       1., "#999999", 
+		       1., "#999999",
 		       &status);
     CHECK_STATUS_BREAK(status);
     // Close SVG Objects
     SixteSVG_close(svg, &status);
     CHECK_STATUS_BREAK(status);
-    
+
   }while(0); // END of the error handling loop.
-  
+
   if(obj!=NULL){
     for(ii=0; ii<nxmls; ii++){
       freeObj2D_instance(obj[ii]);
@@ -205,7 +207,7 @@ int xml2svg_main() {
     }
     free(obj);
     obj=NULL;
-  }  
+  }
   if(xmls!=NULL){
     for(ii=0; ii<nxmls; ii++){
       free(xmls[ii]);
@@ -214,7 +216,7 @@ int xml2svg_main() {
     free(xmls);
     xmls=NULL;
   }
-  
+
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
@@ -224,13 +226,13 @@ int xml2svg_main() {
 }
 
 int parse_xmlnames(char *xmlnames, int *nxmls, char ***xmls){
-  
+
   char *ptr=xmlnames;
   char buffer[MAXFILENAME];
   int ll;
-  
+
   *nxmls=0;
-  
+
   while(1){
     ll=0;
     while(*ptr!=' ' && *ptr!=';' && *ptr!=',' && *ptr!='\'' && *ptr!='\"' && ll<MAXFILENAME-2 && *ptr!='\0'){
@@ -257,52 +259,52 @@ int parse_xmlnames(char *xmlnames, int *nxmls, char ***xmls){
       break;
     }
   }
-  
+
   return EXIT_SUCCESS;
 }
 
-int xml2svg_getpar(struct Parameters* const par, 
-		   int *nxmls, 
-		   char ***xmls, 
+int xml2svg_getpar(struct Parameters* const par,
+		   int *nxmls,
+		   char ***xmls,
 		   Obj2D_instance ***obj){
 
   // Error status.
   int status=EXIT_SUCCESS;
-  
+
   int ii;
-  
+
   status=ape_trad_query_string("XMLFiles", &(par->XMLFiles));
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the XML file(s).");
     return(status);
   }
-  
+
   status=ape_trad_query_string("SVGName", &(par->SVGName));
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the output SVG file name.");
     return(status);
   }
-  
+
   status=ape_trad_query_double("SVGWidth", &par->svgwidth);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading SVGWidth");
     return(status);
   }
-  
+
   status=ape_trad_query_double("Border", &par->border);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading Border");
     return(status);
   }
-  
+
   status=ape_trad_query_int("DrawN", &par->drawn);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading DrawN");
     return(status);
   }
-  
+
   status=parse_xmlnames(par->XMLFiles, nxmls, xmls);
-  
+
   if(status==EXIT_SUCCESS){
     printf("%d XML files were found:\n", *nxmls);
     for(ii=0; ii<*nxmls; ii++){
@@ -312,7 +314,7 @@ int xml2svg_getpar(struct Parameters* const par,
     SIXT_ERROR("Failed to parse XML files.");
     return status;
   }
-  
+
   (*obj)=(Obj2D_instance**)malloc(*nxmls*sizeof(Obj2D_instance*));
   if(*obj==NULL){
     status=EXIT_FAILURE;
@@ -322,25 +324,25 @@ int xml2svg_getpar(struct Parameters* const par,
   for(ii=0; ii<(*nxmls); ii++){
     (*obj)[ii]=NULL;
   }
-  
+
   status=ape_trad_query_bool("WriteID", &par->writeid);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the WriteID parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_bool("WriteAtt", &par->writeatt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the WriteAtt parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_bool("UseGCol", &par->usegcol);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the UseGCol parameter");
     return(status);
   }
-  
+
   status=ape_trad_query_string("CFillFile", &(par->CFillFile));
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the fill color file.");
@@ -350,7 +352,7 @@ int xml2svg_getpar(struct Parameters* const par,
     free(par->CFillFile);
     par->CFillFile=NULL;
   }
-  
+
   status=ape_trad_query_string("COutlFile", &(par->COutlFile));
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the outline color file.");
@@ -360,24 +362,24 @@ int xml2svg_getpar(struct Parameters* const par,
     free(par->COutlFile);
     par->COutlFile=NULL;
   }
-  
+
   return status;
 }
 
 void get_collist(char *filename, int *ncols, char ***cols, int *status){
-  
+
   FILE *f=NULL;
   f=fopen(filename, "r");
-  
+
   if(f==NULL){
     printf("%s was not found.\n", filename);
     SIXT_ERROR("Unable to load color list.");
     *status=EXIT_FAILURE;
     return;
   }
-  
+
   *ncols=0;
-  
+
   while(!feof(f)){
     char coldummy[32];
     int retval=fscanf(f, "%s", coldummy);
@@ -386,7 +388,7 @@ void get_collist(char *filename, int *ncols, char ***cols, int *status){
       *status=EXIT_FAILURE;
       break;
     }
-    
+
     if(coldummy[0]!='#'){
       printf("%s is not a valid color. Colors must be in hex format (rrggbb) and start with '#'.\n", coldummy);
       *status=EXIT_FAILURE;
@@ -407,9 +409,9 @@ void get_collist(char *filename, int *ncols, char ***cols, int *status){
     }
     (*ncols)++;
   }
-  
+
   fclose(f);
-  
+
   printf("Found %d colors in file %s\n", *ncols, filename);
   return;
 }

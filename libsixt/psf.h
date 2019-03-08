@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PSF_H
@@ -39,16 +41,16 @@
     particular energy. */
 typedef struct {
   /** Pointer to the PSF data array [x][y]. */
-  double** data;   
+  double** data;
 
   /** Width of the image [pixel]. */
-  int naxis1, naxis2;   
+  int naxis1, naxis2;
   /** Width of one pixel [m]. */
   double cdelt1, cdelt2;
   double crpix1, crpix2; /**< [pixel] */
   /** Coordinate value of reference pixel [m]. */
-  double crval1, crval2; 
-  
+  double crval1, crval2;
+
 } PSF_Item;
 
 
@@ -98,16 +100,16 @@ PSF* newPSF(const char* const filename, const float focal_length,
     the function. */
 int get_psf_pos(/** Output: coordinates of the photon on the detector
 		    ([m]). */
-		struct Point2d* const position, 
+		struct Point2d* const position,
 		/** Incident photon. */
-		const Photon photon, 
+		const Photon photon,
 		/** Telescope information (pointing directions). */
-		const struct Telescope telescope, 
+		const struct Telescope telescope,
 		/** Focal length of the telescope [m]. Used for
 		    off-axis angle calculations. */
 		const float focal_length,
 		/** Vignetting function. */
-		const Vignetting* const vignetting, 
+		const Vignetting* const vignetting,
 		/** PSF with data for different photon energies and
 		    off-axis angles. */
 		const PSF* const psf,
@@ -119,9 +121,8 @@ void destroyPSF(PSF** const psf);
 /** Save the data contained in the PSF data struct to one or several
     image extensions in a FITS file following the OGIP standards for
     2-dimensional PSFs. */
-int savePSFImage(const PSF* const psf, const char* const filename, 
+int savePSFImage(const PSF* const psf, const char* const filename,
 		 int* const status);
 
 
 #endif /* PSF_H */
-

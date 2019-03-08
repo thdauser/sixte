@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef EXPOSURE_MAP_H
@@ -90,4 +92,3 @@ int exposure_map_getpar(struct Parameters *parameters);
 
 
 #endif /* EXPOSURE_MAP_H */
-

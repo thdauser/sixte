@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladsim.h"
@@ -28,9 +30,9 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 {
   assert(ph!=NULL);
 
-  // Calculate the minimum cos-value for sources inside the FOV: 
+  // Calculate the minimum cos-value for sources inside the FOV:
   // (angle(x0,source) <= 1/2 * diameter)
-  const double fov_min_align=cos(lad->fov_diameter/2.); 
+  const double fov_min_align=cos(lad->fov_diameter/2.);
 
   // Determine telescope pointing direction at the current time.
   struct Telescope telescope;
@@ -42,10 +44,10 @@ static inline LADImpact* ladphimg(const LAD* const lad,
   Vector photon_direction=unit_vector(ph->ra, ph->dec);
   if (check_fov(&photon_direction, &telescope.nz, fov_min_align)==0) {
     // Photon is inside the FOV!
-    
+
     // Determine telescope data like pointing direction (attitude) etc.
     // The telescope coordinate system consists of an x-, y-, and z-axis.
-    getTelescopeAxes(ac, &telescope.nx, &telescope.ny, &telescope.nz, 
+    getTelescopeAxes(ac, &telescope.nx, &telescope.ny, &telescope.nz,
 		     ph->time, status);
     CHECK_STATUS_RET(*status, NULL);
 
@@ -75,13 +77,13 @@ static inline LADImpact* ladphimg(const LAD* const lad,
 
     // New impact.
     LADImpact* imp=getLADImpact(status);
-    CHECK_STATUS_RET(*status, NULL);    
+    CHECK_STATUS_RET(*status, NULL);
 
     imp->time  =ph->time;
     imp->energy=ph->energy;
     imp->ph_id =ph->ph_id;
     imp->src_id=ph->src_id;
-    
+
     // Determine the photon impact position on the detector:
     // Randomly select a panel, module, and element.
     imp->panel=
@@ -94,15 +96,15 @@ static inline LADImpact* ladphimg(const LAD* const lad,
       (long)(sixt_get_random_number(status)*
 	     lad->panel[imp->panel]->module[imp->module]->nelements);
     CHECK_STATUS_RET(*status, NULL);
-    
+
     // Pointer to the element.
     LADElement* element=
       lad->panel[imp->panel]->module[imp->module]->element[imp->element];
-    
+
     // Determine the sensitive area of the element.
     float xwidth=element->xdim - 2.*element->xborder;
     float ywidth=element->ydim - 2.*element->yborder;
-    
+
     // Determine the entrance position into a collimator hole ([m]).
     long col1, row1;
     struct Point2d entrance_position;
@@ -112,13 +114,13 @@ static inline LADImpact* ladphimg(const LAD* const lad,
       CHECK_STATUS_RET(*status, NULL);
       entrance_position.y=sixt_get_random_number(status)*ywidth;
       CHECK_STATUS_RET(*status, NULL);
-	
+
       // Check if the random position lies within a hole opening.
       LADCollimatorHoleIdx(entrance_position, &col1, &row1);
 
     } while ((col1<0)||(row1<0));
 
-    // If a vignetting function is given, the impact position on the 
+    // If a vignetting function is given, the impact position on the
     // detector is set equivalent to the entrance position.
     if (NULL!=lad->vignetting) {
       imp->position.x=entrance_position.x;
@@ -128,28 +130,28 @@ static inline LADImpact* ladphimg(const LAD* const lad,
       // check if the impact position still is inside the hole.
       // Otherwise the photon has been absorbed by the walls of the hole.
       // Make sure that it is the SAME hole as before.
-      
+
       // Determine the position on the detector according to the off-axis
       // angle and the orientation of the element ([m]).
-      
+
       // Determine the photon direction with respect to the telescope
       // coordinate system.
       Vector deviation;
       deviation.x=scalar_product(&telescope.nx, &photon_direction);
       deviation.y=scalar_product(&telescope.ny, &photon_direction);
       deviation.z=scalar_product(&telescope.nz, &photon_direction);
-    
+
       // Determine the length of the vector to reach from the entrance
       // position on top of the collimator to the bottom.
       // (The collimator has a thickness of 5 mm.)
       double length=0.005/deviation.z;
-    
+
       // Add the off-axis deviation to the entrance position.
       imp->position.x=
 	entrance_position.x + deviation.x * length;
       imp->position.y=
 	entrance_position.y + deviation.y * length;
-      
+
       long col2, row2;
       LADCollimatorHoleIdx(imp->position, &col2, &row2);
       if ((col1!=col2)||(row1!=row2)) {
@@ -166,7 +168,7 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     }
 
     return(imp);
-  } 
+  }
   // End of FOV check.
 
   return(NULL);
@@ -177,11 +179,11 @@ static inline LADImpact* ladphimg(const LAD* const lad,
     charge distribution among the neighboring anodes implemented in
     this function follows the approach of Campana et al. (2011). The
     function has to be called with impact times in chronological
-    order. */ 
-static inline void ladphdet(const LAD* const lad, 
+    order. */
+static inline void ladphdet(const LAD* const lad,
 			    LADImpact* const imp,
 			    const int conv_with_rmf,
-			    LADSignalListItem** const siglist, 
+			    LADSignalListItem** const siglist,
 			    int* const status)
 {
   // Determine the measured signal.
@@ -191,7 +193,7 @@ static inline void ladphdet(const LAD* const lad,
   // Note that for background events drawn from an input PHA,
   // the energy must NOT be convolved with the RMF again.
   if (1==conv_with_rmf) {
-    // Determine the measured detector channel (PHA channel) according 
+    // Determine the measured detector channel (PHA channel) according
     // to the RMF.
     // The channel is obtained from the RMF using the corresponding
     // HEAdas routine which is based on drawing a random number.
@@ -199,10 +201,10 @@ static inline void ladphdet(const LAD* const lad,
     returnRMFChannel(lad->rmf, imp->energy, &channel);
 
     // Check if the signal is really measured. If the
-    // PHA channel returned by the HEAdas RMF function is '-1', 
+    // PHA channel returned by the HEAdas RMF function is '-1',
     // the photon is not detected.
-    // This can happen, if the RMF actually is an RSP, i.e., it 
-    // includes ARF contributions, e.g., 
+    // This can happen, if the RMF actually is an RSP, i.e., it
+    // includes ARF contributions, e.g.,
     // the detector quantum efficiency and filter transmission.
     if (channel<0) {
       headas_chat(5, "# undetected photon\n");
@@ -215,7 +217,7 @@ static inline void ladphdet(const LAD* const lad,
       return;
     }
 
-    // Determine the signal corresponding to the channel according 
+    // Determine the signal corresponding to the channel according
     // to the EBOUNDS table.
     signal=getEBOUNDSEnergy(channel, lad->rmf, status);
     CHECK_STATUS_VOID(*status);
@@ -228,9 +230,9 @@ static inline void ladphdet(const LAD* const lad,
   assert(signal>=0.);
 
   // Element on the LAD.
-  LADElement* element= 
+  LADElement* element=
     lad->panel[imp->panel]->module[imp->module]->element[imp->element];
-  
+
   // Drift velocity.
   double vD=lad->mobility*lad->efield;
   // Drift time.
@@ -266,9 +268,9 @@ static inline void ladphdet(const LAD* const lad,
   } else if ((anode1!=element->nanodes/2-1) && (anode1!=element->nanodes-1) &&
 	     (y0-anode1*1.0>=0.5)) {
     anode2=anode1+1;
-  } 
+  }
 
-  // Determine the charge distribution according to the model 
+  // Determine the charge distribution according to the model
   // of Campana et al. (2011). Distribute the charge among
   // at most 2 anodes!
   double fraction1, fraction2;
@@ -285,7 +287,7 @@ static inline void ladphdet(const LAD* const lad,
   LADSignalListItem** el=siglist;
 
   LADSignal newsignal;
-  newsignal.time     =imp->time+drifttime;    
+  newsignal.time     =imp->time+drifttime;
   newsignal.panel    =imp->panel;
   newsignal.module   =imp->module;
   newsignal.element  =imp->element;
@@ -368,7 +370,7 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
     long jj;
     for (jj=0; jj<NLADSIGNALPHOTONS; jj++) {
       ev->ph_id[jj] =first->signal.ph_id[jj];
-      ev->src_id[jj]=first->signal.src_id[jj];		
+      ev->src_id[jj]=first->signal.src_id[jj];
     }
 
     // Delete the first element from the list.
@@ -397,19 +399,19 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
       LADSignalListItem** item=&first;
       while (NULL!=(*item)) {
 
-	// Check if the regarded signal in the list seems to belong to 
+	// Check if the regarded signal in the list seems to belong to
 	// the same photon event.
 	// Check for the panel, module, and element.
 	if (((*item)->signal.panel==ev->panel) &&
 	    ((*item)->signal.module==ev->module) &&
 	    ((*item)->signal.element==ev->element)) {
-	  // Check for the anode, considering the different (bottom and top) 
+	  // Check for the anode, considering the different (bottom and top)
 	  // anode lines.
 	  if ((((*item)->signal.anode>=nanodes/2)&&(ev->anode>=nanodes/2)) ||
 	      (((*item)->signal.anode< nanodes/2)&&(ev->anode< nanodes/2))) {
 	    for (ii=0; ii<nanodes/2; ii++) {
 	      if (anodes[ii]==-1) break;
-	      if (((*item)->signal.anode==anodes[ii]-1) || 
+	      if (((*item)->signal.anode==anodes[ii]-1) ||
 		  ((*item)->signal.anode==anodes[ii]+1)) {
 		// Add the signal to the event.
 		ev->signal+=(*item)->signal.signal;
@@ -424,7 +426,7 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
 		    if ((*item)->signal.ph_id[jj]==ev->ph_id[kk]) break;
 		    if (0==ev->ph_id[kk]) {
 		      ev->ph_id[kk] =(*item)->signal.ph_id[jj];
-		      ev->src_id[kk]=(*item)->signal.src_id[jj];		
+		      ev->src_id[kk]=(*item)->signal.src_id[jj];
 		      break;
 		    }
 		  }
@@ -435,7 +437,7 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
 		    break;
 		  }
 		}
-	      
+
 		// Delete the signal entry from the list.
 		next=(*item)->next;
 		free((*item));
@@ -447,7 +449,7 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
 	    }
 	    // END of loop over all anodes belonging to this signal.
 	  }
-	} 
+	}
 	// End of check for adjacent signal.
 	if (1==new) break;
 
@@ -494,11 +496,11 @@ static inline LADEvent* ladevrecomb(const LAD* const lad,
 }
 
 
-int ladsim_main() 
+int ladsim_main()
 {
   // Program parameters.
   struct Parameters par;
-  
+
   // Detector setup.
   LAD* lad=NULL;
 
@@ -522,7 +524,7 @@ int ladsim_main()
 
   // List of measured signals.
   LADSignalListItem* siglist=NULL;
- 
+
   // Output file for progress status.
   FILE* progressfile=NULL;
 
@@ -539,7 +541,7 @@ int ladsim_main()
   long nbkgevts=0;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
@@ -550,7 +552,7 @@ int ladsim_main()
   do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-    
+
     // Read the parameters using PIL.
     status=ladsim_getpar(&par);
     CHECK_STATUS_BREAK(status);
@@ -563,7 +565,7 @@ int ladsim_main()
     strtoupper(ucase_buffer);
     if (0==strcmp(ucase_buffer,"NONE")) {
       strcpy(par.Prefix, "");
-    } 
+    }
 
     // Determine the photon list output file.
     char photonlist_filename[MAXFILENAME];
@@ -586,7 +588,7 @@ int ladsim_main()
       strcpy(impactlist_filename, par.Prefix);
       strcat(impactlist_filename, par.ImpactList);
     }
-    
+
     // Determine the signal list output file.
     char signallist_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.SignalList);
@@ -641,7 +643,7 @@ int ladsim_main()
       CHECK_STATUS_BREAK(status);
 
       // Allocate memory. Use a logarithmic energy grid for this ARF.
-      // So the number of required bins is determined as 
+      // So the number of required bins is determined as
       // log(Emax/Emin)/log(factor)
       // For Emin=0.9, Emax=1000., and factor=1.01 a total number of
       // 704 bins is required.
@@ -649,13 +651,13 @@ int ladsim_main()
       const float arfEmin=0.9; // lower boundary for the energy grid.
       const float arffactor=1.01;
       bkgarf->LowEnergy=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_BREAK(bkgarf->LowEnergy, status, 
+      CHECK_NULL_BREAK(bkgarf->LowEnergy, status,
 		       "memory allocation for background ARF failed");
       bkgarf->HighEnergy=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_BREAK(bkgarf->HighEnergy, status, 
+      CHECK_NULL_BREAK(bkgarf->HighEnergy, status,
 		       "memory allocation for background ARF failed");
       bkgarf->EffArea=(float*)malloc(narfbins*sizeof(float));
-      CHECK_NULL_BREAK(bkgarf->EffArea, status, 
+      CHECK_NULL_BREAK(bkgarf->EffArea, status,
 		       "memory allocation for background ARF failed");
       bkgarf->NumberEnergyBins=narfbins;
 
@@ -697,10 +699,10 @@ int ladsim_main()
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
-      
+
       // Check if the required time interval for the simulation
       // is a subset of the period described by the attitude file.
-      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
 				par.TSTART+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -731,7 +733,7 @@ int ladsim_main()
 	CHECK_STATUS_BREAK(status);
 	position.y=sixt_get_random_number(&status)*ywidth;
 	CHECK_STATUS_BREAK(status);
-	
+
 	// Determine the indices of the respective hole.
 	LADCollimatorHoleIdx(position, &col, &row);
 
@@ -748,10 +750,10 @@ int ladsim_main()
 
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonFile(photonlist_filename, 
+      plf=openNewPhotonFile(photonlist_filename,
 			    "LOFT", "LAD", "Normal",
 			    lad->arf_filename, lad->rmf_filename,
-			    par.MJDREF, 0.0, 
+			    par.MJDREF, 0.0,
 			    par.TSTART, par.TSTART+par.Exposure,
 			    par.clobber, &status);
       CHECK_STATUS_BREAK(status);
@@ -770,7 +772,7 @@ int ladsim_main()
     }
 
     // Open the output event list file for recombined events.
-    elf=openNewLADEventFile(eventlist_filename, 
+    elf=openNewLADEventFile(eventlist_filename,
 			    lad->arf_filename, lad->rmf_filename,
 			    par.MJDREF, 0.0,
 			    par.TSTART, par.TSTART+par.Exposure,
@@ -784,11 +786,11 @@ int ladsim_main()
       // Determine the telescope pointing direction and roll angle.
       Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
-    
+
       // Direction.
       double ra, dec;
       calculate_ra_dec(pointing, &ra, &dec);
-    
+
       // Roll angle.
       float rollangle=getRollAngle(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
@@ -879,7 +881,7 @@ int ladsim_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 0.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
 
     // Loop over photon generation and processing
@@ -889,7 +891,7 @@ int ladsim_main()
     do {
       // Get a new photon from the generation routine.
       Photon ph;
-      int isph=phgen(ac, &srccat, 1, par.TSTART, par.TSTART+par.Exposure, 
+      int isph=phgen(ac, &srccat, 1, par.TSTART, par.TSTART+par.Exposure,
 		     par.MJDREF, par.dt, lad->fov_diameter, &ph, &status);
       CHECK_STATUS_BREAK(status);
 
@@ -897,7 +899,7 @@ int ladsim_main()
       if ((0!=isph)&&(ph.time>par.TSTART+par.Exposure)) {
 	isph=0;
       }
-      
+
       // If a photon has been generated within the regarded time interval.
       LADImpact* imp=NULL;
       if (0!=isph) {
@@ -914,10 +916,10 @@ int ladsim_main()
 	// If the photon is not transmitted but lost in the collimator,
 	// continue with the next one.
 	if (NULL==imp) continue;
-    
+
 	// If requested, write the impact to the output file.
 	if (NULL!=ilf) {
-	  addLADImpact2File(ilf, imp, &status);	    
+	  addLADImpact2File(ilf, imp, &status);
 	  CHECK_STATUS_BREAK(status);
 	}
       } else {
@@ -937,10 +939,10 @@ int ladsim_main()
 	if ((NULL!=lad->bkgctlg) && (t_next_bkg<imp->time)) {
 	  LADImpact* bkgimp=getLADImpact(&status);
 	  CHECK_STATUS_BREAK(status);
-	  
+
 	  // Time.
 	  bkgimp->time=t_next_bkg;
-      
+
 	  // Energy.
 	  double ra, dec;
 	  getSimputPhotonEnergyCoord(lad->bkgctlg, bkgsrc,
@@ -974,11 +976,11 @@ int ladsim_main()
 	  CHECK_STATUS_BREAK(status);
 	  bkgimp->position.y=sixt_get_random_number(&status)*ywidth;
 	  CHECK_STATUS_BREAK(status);
-	  
+
 	  // Photon and source ID.
 	  bkgimp->ph_id =0;
 	  bkgimp->src_id=0;
-	  
+
 	  // Insert the background impact into the time-ordered cache.
 	  ladphdet(lad, bkgimp, 0, &siglist, &status);
 	  CHECK_STATUS_BREAK(status);
@@ -1012,7 +1014,7 @@ int ladsim_main()
 
 	// Determine the signals at the individual anodes.
 	while (NULL!=siglist) {
-	  
+
 	  LADSignal* signal=&siglist->signal;
 
 	  // Go through the cache of detected signals and read out
@@ -1033,7 +1035,7 @@ int ladsim_main()
 	  // anode is attached to.
 	  int asic=(int)(signal->anode/lad->asic_channels);
 	  int pin =      signal->anode%lad->asic_channels;
-	  
+
 	  // Check if the pin is at the border of the ASIC and whether
 	  // the neighboring ASIC has to be read out, too.
 	  int asic2=-1;
@@ -1052,7 +1054,7 @@ int ladsim_main()
 		 lad->coincidencetime) &&
 		(signal->time-element->asic_readout_time[asic]<
 		 lad->coincidencetime+element->asic_deadtime[asic])) {
-	      
+
 	      // Delete the element from the buffered list.
 	      LADSignalListItem* next=siglist->next;
 	      free(siglist);
@@ -1075,7 +1077,7 @@ int ladsim_main()
 	      }
 	    }
 	  }
-    
+
 	  // Set the time of this ASIC readout.
 	  if ((signal->time-element->asic_readout_time[asic]>
 	       lad->coincidencetime) ||
@@ -1085,7 +1087,7 @@ int ladsim_main()
 	      element->asic_readout_time[asic2]=signal->time;
 	    }
 	  }
-    
+
 	  // Write the detected signal to the output file.
 	  if (NULL!=slf) {
 	    addLADSignal2File(slf, signal, &status);
@@ -1100,7 +1102,7 @@ int ladsim_main()
 	    // Add the event to the output file.
 	    addLADEvent2File(elf, ev, &status);
 	    CHECK_STATUS_BREAK(status);
-	  
+
 	    freeLADEvent(&ev);
 	  }
 	  CHECK_STATUS_BREAK(status);
@@ -1118,7 +1120,7 @@ int ladsim_main()
       // END of loop while there is an impact.
 
       if (0==isph) break;
-	
+
       // Program progress output.
       while ((int)((ph.time-par.TSTART)*100./par.Exposure)>progress) {
 	progress++;
@@ -1128,7 +1130,7 @@ int ladsim_main()
 	} else {
 	  rewind(progressfile);
 	  fprintf(progressfile, "%.2lf", progress*1./100.);
-	  fflush(progressfile);	
+	  fflush(progressfile);
 	}
       }
 
@@ -1158,7 +1160,7 @@ int ladsim_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 1.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
 
     // --- End of simulation process ---
@@ -1167,7 +1169,7 @@ int ladsim_main()
 
 
   // --- Clean up ---
-  
+
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
@@ -1208,13 +1210,13 @@ int ladsim_getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
   status=ape_trad_query_string("Prefix", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the prefix for the output files!\n", 
+    HD_ERROR_THROW("Error reading the prefix for the output files!\n",
 		   status);
     return(status);
   }
@@ -1225,7 +1227,7 @@ int ladsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the photon list!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -1233,16 +1235,16 @@ int ladsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the impact list!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("RawData", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the raw event list!\n", 
+    HD_ERROR_THROW("Error reading the name of the raw event list!\n",
 		   status);
     return(status);
-  } 
+  }
   strcpy(par->SignalList, sbuffer);
   free(sbuffer);
 
@@ -1250,7 +1252,7 @@ int ladsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the event list!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -1258,7 +1260,7 @@ int ladsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the XML file!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -1266,7 +1268,7 @@ int ladsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the attitude!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -1275,20 +1277,20 @@ int ladsim_getpar(struct Parameters* const par)
     HD_ERROR_THROW("Error reading the right ascension of the telescope "
 		   "pointing!\n", status);
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the declination of the telescope "
 		   "pointing!\n", status);
     return(status);
-  } 
+  }
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {
     HD_ERROR_THROW("Error reading the name of the SIMPUT file!\n", status);
     return(status);
-  } 
+  }
   strcpy(par->Simput, sbuffer);
   free(sbuffer);
 
@@ -1296,25 +1298,25 @@ int ladsim_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading dt");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
@@ -1324,10 +1326,10 @@ int ladsim_getpar(struct Parameters* const par)
 
   status=ape_trad_query_string("ProgressFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    HD_ERROR_THROW("Error reading the name of the progress status file!\n", 
+    HD_ERROR_THROW("Error reading the name of the progress status file!\n",
 		   status);
     return(status);
-  } 
+  }
   strcpy(par->ProgressFile, sbuffer);
   free(sbuffer);
 
@@ -1339,5 +1341,3 @@ int ladsim_getpar(struct Parameters* const par)
 
   return(status);
 }
-
-

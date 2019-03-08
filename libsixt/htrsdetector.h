@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef HTRSDETECTOR_H
@@ -103,7 +105,7 @@ typedef struct {
   /** Number of single events. */
   long nsingles;
   /** Number of double split events. */
-  long ndoubles; 
+  long ndoubles;
 
 } HTRSDetector;
 
@@ -174,4 +176,3 @@ int HTRSassignEventGrades(HTRSDetector detector);
 
 
 #endif /* HTRSDETECTOR_H */
-

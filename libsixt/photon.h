@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PHOTON_H
@@ -45,13 +47,13 @@
 typedef struct {
   /** Real time, when the photon is falling on the detector (in
       [s]). */
-  double time;  
+  double time;
 
   /** Photon energy in [keV]. */
-  float energy; 
+  float energy;
 
   /** Right ascension and declination of photon position [rad]. */
-  double ra, dec; 
+  double ra, dec;
 
   /** Unique photon identifier. */
   long ph_id;
@@ -62,10 +64,10 @@ typedef struct {
 } Photon;
 
 
-/** Structure containing a photon and a pointer to the next photon in the 
+/** Structure containing a photon and a pointer to the next photon in the
     time-ordered photon list. */
 struct PhotonOrderedListEntry {
-  Photon photon; 
+  Photon photon;
   struct PhotonOrderedListEntry *next;  // pointer to the next entry
 };
 
@@ -73,12 +75,12 @@ struct PhotonOrderedListEntry {
 /** Entry in the binary tree that stores the generated photons. */
 struct PhotonBinaryTreeEntry {
   /** Photon data. */
-  Photon photon; 
+  Photon photon;
 
   /** Pointer to entry with smaller time value. */
-  struct PhotonBinaryTreeEntry* sptr; 
+  struct PhotonBinaryTreeEntry* sptr;
   /** Pointer to entry with greater time value. */
-  struct PhotonBinaryTreeEntry* gptr; 
+  struct PhotonBinaryTreeEntry* gptr;
 };
 
 
@@ -95,4 +97,3 @@ void copyPhoton(Photon* const dest, const Photon* const source);
 
 
 #endif  /* PHOTON_H */
-

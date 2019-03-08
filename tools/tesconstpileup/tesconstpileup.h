@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESCONSTPILEUP_H
@@ -38,13 +40,13 @@
 struct Parameters {
   char PixImpList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
-  
+
   char telescop[MAXMSG];
   char instrume[MAXMSG];
   char filter[MAXMSG];
   char ancrfile[MAXMSG];
   char respfile[MAXMSG];
-  
+
   double mjdref;
   double timezero;
   double tstop;
@@ -57,7 +59,7 @@ struct Parameters {
   double offset;// offset in time bin
   double sample_freq;// sampling frequency to use (defaults to the one in the XML file)
   int nb_offset_values;// number of offset values to simulate in the -0.5 to 0.5 range (useful for jitter calibration)
-  
+
   //Necessary to ensure exactly 2/3 pulses per trigger
   int preBufferSize;
   int triggerSize;
@@ -65,7 +67,7 @@ struct Parameters {
   int seed;
   char clobber;
   char history;
-  
+
 };
 
 

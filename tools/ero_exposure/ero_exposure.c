@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sixt.h"
@@ -35,23 +37,23 @@ struct Parameters {
   char Vignetting[MAXFILENAME];  // filename of the vignetting file
   char Exposuremap[MAXFILENAME]; // output: exposure map
   char ProgressFile[MAXFILENAME];
-  
+
   /** Telescope Pointing direction [deg]. */
   float RA, Dec;
 
   double TSTART;
   double timespan;
   /** Step width for the exposure map calculation [s]. */
-  double dt; 
+  double dt;
 
   double fov_diameter;
 
   /** Right ascension range [rad]. */
-  double ra1 , ra2;  
+  double ra1 , ra2;
   /** Declination range [rad]. */
-  double dec1, dec2; 
+  double dec1, dec2;
   /** Number of pixels in right ascension and declination. */
-  long ra_bins, dec_bins; 
+  long ra_bins, dec_bins;
 
   /** Projection method (1: AIT, 2: SIN). */
   int projection;
@@ -71,7 +73,7 @@ void saveExpoMap(float** const map,
 		 const long naxis1, const long naxis2,
 		 struct wcsprm* const wcs,
 		 const char clobber,
-		 int* const status) 
+		 int* const status)
 {
   // 1d image buffer for storing in FITS image.
   float* map1d=NULL;
@@ -83,7 +85,7 @@ void saveExpoMap(float** const map,
   char* headerstr=NULL;
 
   // Store the exposure map in a FITS file image.
-  headas_chat(3, "\nstore exposure map in FITS image '%s' ...\n", 
+  headas_chat(3, "\nstore exposure map in FITS image '%s' ...\n",
 	      filename);
 
   do { // Beginning of error handling loop.
@@ -112,7 +114,7 @@ void saveExpoMap(float** const map,
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
     map1d=(float*)malloc(naxis1*naxis2*sizeof(float));
-    CHECK_NULL_BREAK(map1d, *status, 
+    CHECK_NULL_BREAK(map1d, *status,
 		    "memory allocation for 1d exposure map buffer failed");
     long x;
     for (x=0; x<naxis1; x++) {
@@ -156,7 +158,7 @@ void saveExpoMap(float** const map,
     long fpixel[2]={1, 1}; // Lower left corner.
     //              |--|--> FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
-    long lpixel[2]={naxis1, naxis2}; 
+    long lpixel[2]={naxis1, naxis2};
     fits_write_subset(fptr, TFLOAT, fpixel, lpixel, map1d, status);
     CHECK_STATUS_BREAK(*status);
 
@@ -172,17 +174,17 @@ void saveExpoMap(float** const map,
   if (NULL!=headerstr) {
     free(headerstr);
   }
-}  
+}
 
 
-int ero_exposure_main() 
+int ero_exposure_main()
 {
   // Program parameters.
   struct Parameters par;
 
   Attitude* ac=NULL;
-  Vignetting* vignetting=NULL; 
-  
+  Vignetting* vignetting=NULL;
+
   // Array for the calculation of the exposure map.
   float** expoMap=NULL;
 
@@ -199,7 +201,7 @@ int ero_exposure_main()
   // Register HEATOOL:
   set_toolname("ero_exposure");
   set_toolversion("0.12");
-  
+
 
   do { // Beginning of the ERROR handling loop.
 
@@ -243,7 +245,7 @@ int ero_exposure_main()
     wcs.crpix[0]=par.ra_bins/2 +0.5;
     wcs.crpix[1]=par.dec_bins/2+0.5;
     wcs.crval[0]=0.5*(par.ra1 +par.ra2 )*180./M_PI;
-    wcs.crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;    
+    wcs.crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;
     wcs.cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins*-1.0; // needs to be <0 as coordinates increase to the left
     wcs.cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
     strcpy(wcs.cunit[0], "deg");
@@ -263,14 +265,14 @@ int ero_exposure_main()
       break;
     }
 
-    // Calculate the minimum cos-value for sources inside the FOV: 
+    // Calculate the minimum cos-value for sources inside the FOV:
     // (angle(x0,source) <= 1/2 * diameter)
-    const double fov_min_align=cos(par.fov_diameter/2.); 
+    const double fov_min_align=cos(par.fov_diameter/2.);
     double field_min_align;
-    if ((par.ra2-par.ra1 > M_PI/6.) || 
+    if ((par.ra2-par.ra1 > M_PI/6.) ||
 	(par.dec2-par.dec1 > M_PI/6.)) {
       // Actually -1 should be sufficient, but -2 is even safer.
-      field_min_align=-2.; 
+      field_min_align=-2.;
     } else {
       field_min_align=
 	cos((sqrt(pow(par.ra2-par.ra1, 2.)+pow(par.dec2-par.dec1, 2.))+
@@ -304,7 +306,7 @@ int ero_exposure_main()
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
-      
+
       // Check if the required time interval for the simulation
       // is a subset of the time described by the attitude file.
       // Note that MJDREF is assumed as the value from the attitude file.
@@ -338,14 +340,14 @@ int ero_exposure_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 0.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
-    
+
     // LOOP over the given time interval from TSTART to TSTART+timespan in steps of dt.
     int intermaps=0;
     double time;
     for (time=par.TSTART; time<par.TSTART+par.timespan; time+=par.dt) {
-      
+
       // Check if an interim map should be saved now.
       if (par.intermaps>0) {
 	if (time >= par.TSTART+intermaps*(par.timespan/par.intermaps)) {
@@ -377,7 +379,7 @@ int ero_exposure_main()
       calculate_ra_dec(telescope_nz, &telescope_ra, &telescope_dec);
 
       // Check if the specified field of the sky might be within the FOV.
-      // Otherwise break this run and continue at the beginning of the loop 
+      // Otherwise break this run and continue at the beginning of the loop
       // with the next time step.
       Vector pixpos=
 	unit_vector(0.5*(par.ra1+par.ra2), 0.5*(par.dec1+par.dec2));
@@ -391,13 +393,13 @@ int ero_exposure_main()
       for (x=0; x<par.ra_bins; x++) {
 	long y;
 	for (y=0; y<par.dec_bins; y++) {
-	  
+
 	  double pixcrd[2]={ x+1., y+1. };
 	  double imgcrd[2], world[2];
 	  double phi, theta;
 	  int status2=0;
 	  wcsp2s(&wcs, 1, 2, pixcrd, imgcrd, &phi, &theta, world, &status2);
-	  if (3==status2) { 
+	  if (3==status2) {
 	    // Pixel does not correspond to valid world coordinates.
 	    continue;
 	  } else if (0!=status2) {
@@ -415,14 +417,14 @@ int ero_exposure_main()
 
 	  // Determine a unit vector for the calculated RA and Dec.
 	  pixpos=unit_vector(world[0]*M_PI/180., world[1]*M_PI/180.);
-	  
+
 	  // Check if the current pixel lies within the FOV.
 	  if (check_fov(&pixpos, &telescope_nz, fov_min_align)==0) {
 	    // Pixel lies inside the FOV!
-	
+
 	    // Calculate the off-axis angle ([rad])
 	    double delta=acos(scalar_product(&telescope_nz, &pixpos));
-	
+
 	    // Add the exposure time step weighted with the vignetting
 	    // factor for this particular off-axis angle at 1 keV.
 	    double addvalue=par.dt;
@@ -432,7 +434,7 @@ int ero_exposure_main()
 	    expoMap[x][y]+=addvalue;
 	  }
 	}
-	CHECK_STATUS_BREAK(status);  
+	CHECK_STATUS_BREAK(status);
       }
       CHECK_STATUS_BREAK(status);
 
@@ -445,13 +447,13 @@ int ero_exposure_main()
 	} else {
 	  rewind(progressfile);
 	  fprintf(progressfile, "%.2lf", progress*1./100.);
-	  fflush(progressfile);	
+	  fflush(progressfile);
 	}
       }
-    } 
+    }
     CHECK_STATUS_BREAK(status);
     // END of LOOP over the specified time interval.
-    
+
     // Progress output.
     if (NULL==progressfile) {
       headas_chat(2, "\r%.0lf %%\n", 100.);
@@ -459,13 +461,13 @@ int ero_exposure_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 1.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
 
     // END of generating the exposure map.
 
     // Store the exposure map in the output file.
-    saveExpoMap(expoMap, par.Exposuremap, par.ra_bins, par.dec_bins, 
+    saveExpoMap(expoMap, par.Exposuremap, par.ra_bins, par.dec_bins,
 		&wcs, par.clobber, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -506,10 +508,10 @@ int ero_exposure_getpar(struct Parameters *par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
-  
+
   query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 
   // only load RA,Dec if Attitude is not given
@@ -570,7 +572,7 @@ int ero_exposure_getpar(struct Parameters *par)
     return(status);
   }
 
-  // Get the position of the desired section of the sky 
+  // Get the position of the desired section of the sky
   // (right ascension and declination range).
   status=ape_trad_query_double("ra1", &par->ra1);
   if (EXIT_SUCCESS!=status) {
@@ -620,7 +622,7 @@ int ero_exposure_getpar(struct Parameters *par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the progress status file");
     return(status);
-  } 
+  }
   strcpy(par->ProgressFile, sbuffer);
   free(sbuffer);
 
@@ -637,8 +639,7 @@ int ero_exposure_getpar(struct Parameters *par)
   par->dec2*=M_PI/180.;
 
   // Convert angles from [arc min] to [rad].
-  par->fov_diameter*=M_PI/180./60.; 
-  
+  par->fov_diameter*=M_PI/180./60.;
+
   return(status);
 }
-

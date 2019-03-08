@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 //
 // sixt_main.c: modification of headas_main.c that preserves
 // argc/argv as sixt_argc and sixt_argv for those SIXT tools that
@@ -44,7 +65,7 @@ int main(int argc, char **argv) {
 
   sixt_argc=argc;
   sixt_argv=argv;
-  
+
   status = headas_init(argc, argv);
 
   if(0 == status) status = TOOLSUB();

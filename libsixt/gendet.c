@@ -16,6 +16,8 @@
 
 
  Copyright 2007-2014 Christian Schmid, FAU
+ Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                     Erlangen-Nuernberg
  */
 
 #include "gendet.h"
@@ -927,7 +929,7 @@ int addDepfetSignal(GenDet* const det, const int colnum, const int row,
 
 	double rtime = time - line->last_readouttime;
 	//printf("New event: rtime=%lf\n", rtime);
-//printf("last readout time of line: %lf\n", line->last_readouttime);  
+//printf("last readout time of line: %lf\n", line->last_readouttime);
 	if (det->depfet.istorageflag == 0) {
 		// Normal DEPFET.
 

@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESTRIGGERFILE_H

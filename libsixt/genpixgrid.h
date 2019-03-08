@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef GENPIXGRID_H 
+#ifndef GENPIXGRID_H
 #define GENPIXGRID_H 1
 
 #include "sixt.h"
@@ -75,12 +77,12 @@ void destroyGenPixGrid(GenPixGrid** const grid);
     -1. The function also returns the relative position within the
     pixel. The latter values are required for the calculation of split
     events. */
-void getGenDetAffectedPixel(const GenPixGrid* const grid, 
-			    const double x, 
+void getGenDetAffectedPixel(const GenPixGrid* const grid,
+			    const double x,
 			    const double y,
-			    int* const xi, 
+			    int* const xi,
 			    int* const yi,
-			    double* const xp, 
+			    double* const xp,
 			    double* const yp);
 
 

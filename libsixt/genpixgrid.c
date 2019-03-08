@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "genpixgrid.h"
@@ -26,7 +28,7 @@
 ////////////////////////////////////////////////////////////////////
 
 
-GenPixGrid* newGenPixGrid(int* const status) 
+GenPixGrid* newGenPixGrid(int* const status)
 {
   // Allocate memory.
   GenPixGrid* grid=(GenPixGrid*)malloc(sizeof(GenPixGrid));
@@ -64,7 +66,7 @@ void destroyGenPixGrid(GenPixGrid** const grid)
 }
 
 
-void getGenDetAffectedPixel(const GenPixGrid* const grid, 
+void getGenDetAffectedPixel(const GenPixGrid* const grid,
 			    const double x,
 			    const double y,
 			    int* const xi,
@@ -93,11 +95,11 @@ void getGenDetAffectedPixel(const GenPixGrid* const grid,
 
 
   // Check if this is a valid pixel.
-  if ((*xi>=grid->xwidth) || (*xi<0) || (*yi>=grid->ywidth) || (*yi<0)) { 
-    *xi=-1; 
+  if ((*xi>=grid->xwidth) || (*xi<0) || (*yi>=grid->ywidth) || (*yi<0)) {
+    *xi=-1;
     *yi=-1;
     return;
-  } else { 
+  } else {
     // Check if the impact is located on one of the pixel borders
     if (grid->xborder>0. || grid->yborder>0.) {
       if ((grid->xrval+(*xi-grid->xrpix+1.5)*grid->xdelt-x<grid->xborder) ||
@@ -115,9 +117,8 @@ void getGenDetAffectedPixel(const GenPixGrid* const grid,
     }
   }
 
-  // Calculate the relative position with respect to the left 
+  // Calculate the relative position with respect to the left
   // and lower pixel boundaries.
   *xp=xb-1.0*(*xi);
   *yp=yb-1.0*(*yi);
 }
-

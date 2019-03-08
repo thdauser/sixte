@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "optimalfilters.h"
@@ -29,7 +31,7 @@ OptimalFilterCollection* newOptimalFilterCollection(int* const status){
     SIXT_ERROR("memory allocation for OptimalFilterCollection failed");
     return(opt_filter_collection);
   }
-  
+
   opt_filter_collection->nfilters = 0;
   opt_filter_collection->ph_a = 0;
   opt_filter_collection->ph_b = 0;
@@ -492,4 +494,3 @@ void initializeReconstruction(ReconstructInit* reconstruct_init,char* const opti
 	reconstruct_init->derivate_exclusion=derivate_exclusion;
 	reconstruct_init->saturation_value=saturation_value;
 }
-

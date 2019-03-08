@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU, Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESSTREAM_H
@@ -39,19 +41,19 @@ struct Parameters {
   char PixImpList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
   char streamname[MAXFILENAME];
-  
+
   char activePixels[9];
   int Nactive;
   int Npix;
   int nlo;
   int nhi;
-  
+
   double tstart;
   double tstop;
-  
+
   char clobber;
   char history;
-  
+
   unsigned long int seed;
 };
 

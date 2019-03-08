@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "codedmask.h"
@@ -86,7 +88,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
   int* input_buffer=NULL; // Input buffer for FITS image.
   int x, y;
 
-  do { // Beginning of Error Handling loop. 
+  do { // Beginning of Error Handling loop.
 
     // Open the FITS file containing the coded mask.
     headas_chat(5, "open Coded Mask FITS file '%s' ...\n", filename);
@@ -98,7 +100,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
     assert(naxes[0]==naxes[1]);
     mask->naxis1 = (int)naxes[0];
     mask->naxis2 = (int)naxes[1];
-    
+
     // Determine the width of one image pixel.
     char comment[MAXMSG]; // buffer
     if (fits_read_key(fptr, TDOUBLE, "CDELT1", &mask->cdelt1, comment, status))
@@ -133,7 +135,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
       HD_ERROR_THROW("Error: could not allocate memory to store the "
 		     "CodedMask!\n", *status);
       break;
-    }     
+    }
     // Allocate memory for input buffer (1D array):
     input_buffer=(int*)malloc(mask->naxis1*mask->naxis2*sizeof(int));
     if(NULL==input_buffer) {
@@ -144,7 +146,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
     }
     // END of memory allocation
 
-    
+
     // READ the FITS image:
     int anynul=0;
     int null_value=0.;
@@ -152,7 +154,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
     //                |--|--> FITS coordinates start at (1,1)
     long lpixel[2] = {mask->naxis1, mask->naxis2}; // upper right corner
     long inc[2] = {1, 1};
-    if (fits_read_subset(fptr, TINT, fpixel, lpixel, inc, &null_value, 
+    if (fits_read_subset(fptr, TINT, fpixel, lpixel, inc, &null_value,
 			 input_buffer, &anynul, status)) break;
 
     // Copy the image from the input buffer to the map array.
@@ -160,7 +162,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
     for(x=0; x<mask->naxis1; x++) {
       for(y=0; y<mask->naxis2; y++) {
 	mask->map[x][y] = input_buffer[x+ mask->naxis1*y];
-	
+
 	// Check if the pixel is transparent or opaque.
 	if (TRANSPARENT==mask->map[x][y]) {
 	  mask->n_transparent_pixels++;
@@ -170,9 +172,9 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 
 
     // Determine the masks transparency.
-    mask->transparency = 
+    mask->transparency =
       ((double)mask->n_transparent_pixels)/((double)(mask->naxis1*mask->naxis2));
-    
+
     // Allocate memory for the list of transparent pixels.
     mask->transparent_pixels = (int**)malloc(mask->n_transparent_pixels*sizeof(int*));
     if (NULL==mask->transparent_pixels) {
@@ -201,7 +203,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 	  count++;
 	}
       }
-    }  
+    }
 
   } while (0); // END of Error Handling loop.
 
@@ -218,7 +220,7 @@ CodedMask* getCodedMaskFromFile(const char* const filename, int* const status)
 //impact position via projection downwards,'per hand'-> for comparison
 int getImpactPos (struct Point2d* const position,
 		  const Vector* const phodir,
-		  const CodedMask* const mask, 
+		  const CodedMask* const mask,
 		  const struct Telescope* const telescope,
 		  const Vector* const nz,
 		  const float distance,
@@ -230,7 +232,7 @@ int getImpactPos (struct Point2d* const position,
 
   // Get a random number.
   double rand=sixt_get_random_number(status);
-    CHECK_STATUS_RET(*status, 0); 
+    CHECK_STATUS_RET(*status, 0);
 
    //Photon passes through transparent pixel.
    //Determine its impact position on the detection plane.
@@ -252,7 +254,7 @@ int getImpactPos (struct Point2d* const position,
      *mask->cdelt2+mask->crval2;
    CHECK_STATUS_RET(*status, 0);
 
-   
+
    //third:if off-axis photon
    if(phodir->x!=nz->x || phodir->y!=nz->y || phodir->z!=nz->z){
    //Determine the components of the photon direction with respect to the
@@ -308,7 +310,7 @@ int getImpactPos_wcs (struct wcsprm* wcs, struct Point2d* const position, const 
 
   // Get a random number.
   double rand=sixt_get_random_number(status);
-  CHECK_STATUS_RET(*status, 0); 
+  CHECK_STATUS_RET(*status, 0);
 
   //Photon passes through transparent pixel.
   //Determine its impact position on the detection plane.
@@ -377,7 +379,7 @@ int getImpactPos_protoMirax(struct wcsprm* wcs, struct wcsprm* wcs2, struct Poin
   //Determine the pixel(random)the photon passes through (mask plane).
   int pixel =(int)(rand * mask->n_transparent_pixels);
   //Pixel points to an arbitrary pixel out of all transparent ones.
-  
+
   //impact position at collimator distance (between mask and det-plane) in meters
   double x_coll=((double)(mask->transparent_pixels[pixel][0])-mask->crpix1+0.5+sixt_get_random_number(status))
     *mask->cdelt1+mask->crval1+(double)((pixcrd2[0]-wcs2->crpix[0])*det_pixelwidth);

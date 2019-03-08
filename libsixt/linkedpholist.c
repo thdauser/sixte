@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "linkedpholist.h"
@@ -26,7 +28,7 @@ LinkedPhoListElement* newLinkedPhoListElement(int* const status)
     (LinkedPhoListElement*)malloc(sizeof(LinkedPhoListElement));
   CHECK_NULL(el, *status,
 	     "memory allocation for LinkedPhoListElement failed");
-  
+
   // Initialize pointers with NULL.
   el->next=NULL;
 
@@ -47,7 +49,7 @@ void freeLinkedPhoList(LinkedPhoListElement** const list)
 }
 
 
-LinkedPhoListElement* mergeLinkedPhoLists(LinkedPhoListElement* list1, 
+LinkedPhoListElement* mergeLinkedPhoLists(LinkedPhoListElement* list1,
 					  LinkedPhoListElement* list2)
 {
   LinkedPhoListElement* start   =NULL;
@@ -75,4 +77,3 @@ LinkedPhoListElement* mergeLinkedPhoLists(LinkedPhoListElement* list1,
 
   return(start);
 }
-

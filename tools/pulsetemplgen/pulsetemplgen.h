@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PULSEGEN_H
@@ -34,11 +36,11 @@ struct Parameters {
   char filename[MAXMSG];
   char clobber;
   char history;
-  
+
   double energy_high;
   double energy_low;
   int energy_steps;
-  
+
   TESTemplateInput pinp;
 };
 

@@ -16,20 +16,22 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ero_calevents.h"
 
 
-int ero_calevents_main() 
+int ero_calevents_main()
 {
   // Containing all programm parameters read by PIL
-  struct Parameters par; 
+  struct Parameters par;
 
   // Input event file.
   EventFile* elf=NULL;
 
-  // File pointer to the output eROSITA event file. 
+  // File pointer to the output eROSITA event file.
   fitsfile* fptr=NULL;
 
   // WCS data structure used for projection.
@@ -41,7 +43,7 @@ int ero_calevents_main()
   Attitude* ac=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
@@ -237,7 +239,7 @@ int ero_calevents_main()
 		   "", "", "", "", "",
 		   "adu", "", "", "",
 		   "", ""};
-    fits_create_tbl(fptr, BINARY_TBL, 0, 17, ttype, tform, tunit, 
+    fits_create_tbl(fptr, BINARY_TBL, 0, 17, ttype, tform, tunit,
 		    "EVENTS", &status);
     if (EXIT_SUCCESS!=status) {
       char msg[MAXMSG];
@@ -265,7 +267,7 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Determine the column numbers.
-    int ctime, cra, cdec, cx, cy, cenergy, cev_weight, crawx, crawy, 
+    int ctime, cra, cdec, cx, cy, cenergy, cev_weight, crawx, crawy,
       csubx, csuby, cpha, cpat_typ, cpat_inf, cccdnr, cflag, cframe;
     fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
     fits_get_colnum(fptr, CASEINSEN, "RA", &cra, &status);
@@ -331,7 +333,7 @@ int ero_calevents_main()
     wcs.crpix[0]=0.0;
     wcs.crpix[1]=0.0;
     wcs.crval[0]=par.RefRA;
-    wcs.crval[1]=par.RefDec;    
+    wcs.crval[1]=par.RefDec;
     wcs.cdelt[0]=-0.05/3600.;
     wcs.cdelt[1]= 0.05/3600.;
     strcpy(wcs.cunit[0], "deg");
@@ -343,34 +345,34 @@ int ero_calevents_main()
 
     // Update the WCS keywords in the output file.
     sprintf(keyword, "TCTYP%d", cx);
-    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[0], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[0],
 		    "projection type", &status);
     sprintf(keyword, "TCTYP%d", cy);
-    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[1], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.ctype[1],
 		    "projection type", &status);
     sprintf(keyword, "TCRVL%d", cx);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[0], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[0],
 		    "reference value", &status);
     sprintf(keyword, "TCRVL%d", cy);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.crval[1],
 		    "reference value", &status);
     sprintf(keyword, "TCRPX%d", cx);
-    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[0], 
+    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[0],
 		    "reference point", &status);
     sprintf(keyword, "TCRPX%d", cy);
-    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[1], 
+    fits_update_key(fptr, TFLOAT, keyword, &wcs.crpix[1],
 		    "reference point", &status);
     sprintf(keyword, "TCDLT%d", cx);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[0], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[0],
 		    "pixel increment", &status);
     sprintf(keyword, "TCDLT%d", cy);
-    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[1], 
+    fits_update_key(fptr, TDOUBLE, keyword, &wcs.cdelt[1],
 		    "pixel increment", &status);
     sprintf(keyword, "TCUNI%d", cx);
-    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[0], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[0],
 		    "axis units", &status);
     sprintf(keyword, "TCUNI%d", cy);
-    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[1], 
+    fits_update_key(fptr, TSTRING, keyword, wcs.cunit[1],
 		    "axis units", &status);
     CHECK_STATUS_BREAK(status);
 
@@ -397,7 +399,7 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Set the TZERO keywords for the columns SUBX and SUBY. Note that
-    // the TZERO values also have to be set with the routine 
+    // the TZERO values also have to be set with the routine
     // fits_set_tscale(). Otherwise CFITSIO will access the raw values
     // in the file.
     double tzero_subx_suby=-0.843333333333333;
@@ -415,7 +417,7 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Set the TZERO and TSCAL keywords for the columns RA and DEC.
-    // Note that both values also have to be set with the routine 
+    // Note that both values also have to be set with the routine
     // fits_set_tscale(). Otherwise CFITSIO will access the raw values
     // in the file.
     double tzero_ra_dec=0.0, tscal_ra_dec=1.e-6;
@@ -441,10 +443,10 @@ int ero_calevents_main()
     long refxdmin, refxdmax, refydmin, refydmax;
     double ra_min, ra_max, dec_min, dec_max;
 
-    // Loop over all events in the FITS file. 
+    // Loop over all events in the FITS file.
     long input_row, output_row=0;
     for (input_row=0; input_row<elf->nrows; input_row++) {
-      
+
       // Read the next event from the input file.
       Event event;
       getEventFromFile(elf, input_row+1, &event, &status);
@@ -491,8 +493,8 @@ int ero_calevents_main()
       wcss2p(&wcs, 1, 2, world, &phi, &theta, imgcrd, pixcrd, &wcsstatus);
       if (0!=wcsstatus) {
 	char msg[MAXMSG];
-	sprintf(msg, 
-		"WCS coordinate conversion failed (RA=%lf, Dec=%lf, error code %d)", 
+	sprintf(msg,
+		"WCS coordinate conversion failed (RA=%lf, Dec=%lf, error code %d)",
 		world[0], world[1], wcsstatus);
 	if ( strcmp(par.Projection, "AIT") != 0 )
 	{
@@ -505,9 +507,9 @@ int ero_calevents_main()
 	status=EXIT_FAILURE;
 	break;
       }
-      ev.x=(long)pixcrd[0]; 
+      ev.x=(long)pixcrd[0];
       if (pixcrd[0] < 0.) ev.x--;
-      ev.y=(long)pixcrd[1]; 
+      ev.y=(long)pixcrd[1];
       if (pixcrd[1] < 0.) ev.y--;
 
       // Determine the actual minimum and maximum values of X and Y.
@@ -543,7 +545,7 @@ int ero_calevents_main()
       // Loop over all split partners contributing to the event.
       int ii;
       for (ii=0; ii<9; ii++) {
-	
+
 	// Only regard split events with a non-vanishing contribution.
 	if (event.signals[ii]<=0.0) continue;
 
@@ -576,7 +578,7 @@ int ero_calevents_main()
 	} else {
 	  ev.energy=-event.signal*1000.;
 	}
-	
+
 	// Event type.
 	if (event.type>=0) {
 	  ev.pat_typ=event.npixels;
@@ -653,7 +655,7 @@ int ero_calevents_main()
     fits_read_key(elf->fptr, TFLOAT, "SPLTTHR", &spltthr, comment, &opt_status);
     if (EXIT_SUCCESS==opt_status) {
       fits_update_key(fptr, TFLOAT, "SPLTTHR", &spltthr,
-		      "Relative search level for split events", &status);      
+		      "Relative search level for split events", &status);
       CHECK_STATUS_BREAK(status);
     }
     opt_status=EXIT_SUCCESS;
@@ -692,8 +694,8 @@ int ero_calevents_main()
     char *deadcor_ttype[]={"TIME", "DEADC"};
     char *deadcor_tform[]={"D", "E"};
     char *deadcor_tunit[]={"", ""};
-    fits_create_tbl(fptr, BINARY_TBL, 0, 2, 
-		    deadcor_ttype, deadcor_tform, deadcor_tunit, 
+    fits_create_tbl(fptr, BINARY_TBL, 0, 2,
+		    deadcor_ttype, deadcor_tform, deadcor_tunit,
 		    deadcor_extname, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not create binary table for DEADCOR extension");
@@ -711,7 +713,7 @@ int ero_calevents_main()
     fits_get_colnum(fptr, CASEINSEN, "TIME", &cdeadcor_time, &status);
     fits_get_colnum(fptr, CASEINSEN, "DEADC", &cdeadc, &status);
     CHECK_STATUS_BREAK(status);
-  
+
     // Store the data in the table.
     double dbuffer[2]={tstart, tstop};
     fits_write_col(fptr, TDOUBLE, cdeadcor_time, 1, 1, 2, dbuffer, &status);
@@ -730,12 +732,12 @@ int ero_calevents_main()
     sprintf(badpix_extname, "BADPIX%d", par.CCDNr);
     char *badpix_ttype[]={"RAWX", "RAWY", "YEXTENT", "TYPE", "BADFLAG",
 			  "TIMEMIN", "TIMEMAX", "PHAMIN", "PHAMAX", "PHAMED"};
-    char *badpix_tform[]={"I", "I", "I", "I", "I", 
+    char *badpix_tform[]={"I", "I", "I", "I", "I",
 			  "D", "D", "I", "I", "E"};
     char *badpix_tunit[]={"", "", "", "", "",
 			  "", "", "", "", ""};
     fits_create_tbl(fptr, BINARY_TBL, 0, 10,
-		    badpix_ttype, badpix_tform, badpix_tunit, 
+		    badpix_ttype, badpix_tform, badpix_tunit,
 		    badpix_extname, &status);
     if (EXIT_SUCCESS!=status) {
       SIXT_ERROR("could not create binary table for BADPIX extension");
@@ -749,7 +751,7 @@ int ero_calevents_main()
     CHECK_STATUS_BREAK(status);
 
     // Determine the individual column numbers.
-    int cbadpix_rawx, cbadpix_rawy, cbadpix_yextent, cbadpix_type, 
+    int cbadpix_rawx, cbadpix_rawy, cbadpix_yextent, cbadpix_type,
       cbadflag, ctimemin, ctimemax, cphamin, cphamax, cphamed;
     fits_get_colnum(fptr, CASEINSEN, "RAWX", &cbadpix_rawx, &status);
     fits_get_colnum(fptr, CASEINSEN, "RAWY", &cbadpix_rawy, &status);
@@ -798,7 +800,7 @@ int ero_calevents_main()
       char *corratt_tform[]={"D", "D", "D", "D"};
       char *corratt_tunit[]={"", "deg", "deg", "deg"};
       fits_create_tbl(fptr, BINARY_TBL, 0, 4,
-		      corratt_ttype, corratt_tform, corratt_tunit, 
+		      corratt_ttype, corratt_tform, corratt_tunit,
 		      corratt_extname, &status);
       if (EXIT_SUCCESS!=status) {
 	SIXT_ERROR("could not create binary table for CORRATT extension");
@@ -835,7 +837,7 @@ int ero_calevents_main()
       do {
 	// Currently regarded interval.
 	double t0, t1;
-      
+
 	// Determine the currently regarded interval.
 	if (NULL==gti) {
 	  t0=tstart;
@@ -844,8 +846,8 @@ int ero_calevents_main()
 	  t0=gti->start[gtibin];
 	  t1=gti->stop[gtibin];
 	}
-	
-	// Note that the attitude is stored in steps of 1s 
+
+	// Note that the attitude is stored in steps of 1s
 	// according to the official event file format definition.
 	double currtime;
 	for (currtime=t0; currtime<=t1; currtime+=1.0) {
@@ -866,26 +868,26 @@ int ero_calevents_main()
 
 	  float rollangle=
 	    atan2(scalar_product(&nx,&x2), scalar_product(&nx,&x1))*180./M_PI;
-	  
+
 	  // Apply the rotation angle of the CCD.
 	  rollangle+=ccdrotation;
-	  
+
 	  // Store the data in the file.
 	  nrows++;
 	  fits_write_col(fptr, TDOUBLE, ccorratt_time, nrows, 1, 1, &currtime, &status);
 	  fits_write_col(fptr, TDOUBLE, ccorratt_ra, nrows, 1, 1, &ra, &status);
 	  fits_write_col(fptr, TDOUBLE, ccorratt_dec, nrows, 1, 1, &dec, &status);
 	  fits_write_col(fptr, TFLOAT, croll, nrows, 1, 1, &rollangle, &status);
-	  CHECK_STATUS_BREAK(status);	  
+	  CHECK_STATUS_BREAK(status);
 	}
 	CHECK_STATUS_BREAK(status);
-	
+
 	// Proceed to the next GTI interval.
 	if (NULL!=gti) {
 	  gtibin++;
 	  if (gtibin>=gti->ngti) break;
 	}
-	
+
       } while (NULL!=gti);
       CHECK_STATUS_BREAK(status);
       // End of loop over the individual GTI intervals.
@@ -908,7 +910,7 @@ int ero_calevents_main()
   // Close the files.
   freeEventFile(&elf, &status);
   if (NULL!=fptr) fits_close_file(fptr, &status);
-  
+
   // Release memory.
   wcsfree(&wcs);
   if (NULL!=headerstr) free(headerstr);
@@ -940,7 +942,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the input pattern list");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -948,7 +950,7 @@ int getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the output event list");
     return(status);
-  } 
+  }
   strcpy(par->eroEvtFile, sbuffer);
   free(sbuffer);
 

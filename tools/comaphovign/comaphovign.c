@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comaphovign.h"
@@ -34,7 +36,7 @@ int comaphovign_main() {
   int cenergy, cra, cdec, ctime;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
@@ -164,11 +166,11 @@ int comaphovign_main() {
     char *ttype[] = { "ENERGY", "RA", "DEC" };
     char *tform[] = { "E", "E", "E" };
     char *tunit[] = { "keV", "deg", "deg" };
-    fits_create_tbl(ofptr, BINARY_TBL, 0, 3, ttype, tform, tunit, 
+    fits_create_tbl(ofptr, BINARY_TBL, 0, 3, ttype, tform, tunit,
 		    "PHOTONS", &status);
     CHECK_STATUS_BREAK(status);
 
-    // Check if the time information should be stored in the 
+    // Check if the time information should be stored in the
     // output file.
     if (0!=par.TimeColumn) {
       fits_insert_col(ofptr, 1, "TIME", "D", &status);
@@ -176,7 +178,7 @@ int comaphovign_main() {
     }
 
     // Determine the column numbers in the output file.
-    fits_get_colnum(ofptr, CASEINSEN, "ENERGY", &cenergy, &status); 
+    fits_get_colnum(ofptr, CASEINSEN, "ENERGY", &cenergy, &status);
     fits_get_colnum(ofptr, CASEINSEN, "RA", &cra, &status);
     fits_get_colnum(ofptr, CASEINSEN, "DEC", &cdec, &status);
     if (0!=par.TimeColumn) {
@@ -193,7 +195,7 @@ int comaphovign_main() {
     // Move back to the second HDU.
     fits_movabs_hdu(ofptr, 2,NULL, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Write FITS header keywords.
     fits_update_key(ofptr, TSTRING, "ATTITUDE",
 		    par.Attitude, comment, &status);
@@ -201,7 +203,7 @@ int comaphovign_main() {
     fits_update_key(ofptr, TDOUBLE, "MJDREF",
 		    &mjdref, comment, &status);
     CHECK_STATUS_BREAK(status);
-    fits_update_key(ofptr, TDOUBLE, "TIMEZERO", 
+    fits_update_key(ofptr, TDOUBLE, "TIMEZERO",
 		    &timezero, comment, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -210,11 +212,11 @@ int comaphovign_main() {
     headas_chat(3, "apply vignetting ...\n");
 
     // Scan the entire photon list.
-    int progress=0;  
+    int progress=0;
     while (plif->row < plif->nrows) {
 
       Photon photon={.time=0.};
-      
+
       // Read an entry from the photon list:
       status=PhotonFile_getNextRow(plif, &photon);
       CHECK_STATUS_BREAK(status);
@@ -237,19 +239,19 @@ int comaphovign_main() {
 	fits_insert_rows(ofptr, onrows, 1, &status);
 	CHECK_STATUS_BREAK(status);
 	onrows++;
-	
+
 	// Store the data in the FITS file.
 	if (0!=par.TimeColumn) {
-	  fits_write_col(ofptr, TDOUBLE, ctime, 
+	  fits_write_col(ofptr, TDOUBLE, ctime,
 			 onrows, 1, 1, &photon.time, &status);
 	}
-	fits_write_col(ofptr, TFLOAT, cenergy, 
+	fits_write_col(ofptr, TFLOAT, cenergy,
 		       onrows, 1, 1, &photon.energy, &status);
 	float fbuffer=photon.ra * 180./M_PI;
-	fits_write_col(ofptr, TFLOAT, cra, 
+	fits_write_col(ofptr, TFLOAT, cra,
 		       onrows, 1, 1, &fbuffer, &status);
 	fbuffer=photon.dec * 180./M_PI;
-	fits_write_col(ofptr, TFLOAT, cdec, 
+	fits_write_col(ofptr, TFLOAT, cdec,
 		       onrows, 1, 1, &fbuffer, &status);
 	CHECK_STATUS_BREAK(status);
       }
@@ -298,7 +300,7 @@ int comaphovign_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status = EXIT_SUCCESS; 
+  int status = EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -306,7 +308,7 @@ int comaphovign_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("could not read the name of the input photon list");
     return(status);
-  } 
+  }
   strcpy(par->InputList, sbuffer);
   free(sbuffer);
 
@@ -314,7 +316,7 @@ int comaphovign_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("could not read the name of the output photon list");
     return(status);
-  } 
+  }
   strcpy(par->OutputList, sbuffer);
   free(sbuffer);
 
@@ -322,7 +324,7 @@ int comaphovign_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("could not read the name of the attitude");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -330,13 +332,13 @@ int comaphovign_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the right ascension of the telescope pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_bool("TimeColumn", &par->TimeColumn);
   if (EXIT_SUCCESS!=status) {
@@ -358,4 +360,3 @@ int comaphovign_getpar(struct Parameters* par)
 
   return(status);
 }
-

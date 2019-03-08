@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PULSEIMP_H
@@ -30,18 +32,18 @@
 
 
 struct Parameters {
-  
+
   char filename[MAXMSG];
   char ascii[MAXMSG];
   char version[9];
-  
+
   double energy;
-  
+
 };
 
 int getpar(struct Parameters* const par);
 
-void read_ascii_pulse(char *ascii, 
+void read_ascii_pulse(char *ascii,
 		      TESProfilesEntries *prof,
 		      double energy,
 		      int* const status);

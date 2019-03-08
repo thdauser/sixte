@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "arcpixels.h"
@@ -68,7 +70,7 @@ int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app)
     ap->offset_angle[ring] = app->offset_angle[ring];
     headas_chat(5, " ring %d, containing %d pixels, radius %.3lf mm, "
 		"angle offset %.2lf degree\n",
-		ring, ap->npixels[ring], ap->radius[ring]*1.e3, 
+		ring, ap->npixels[ring], ap->radius[ring]*1.e3,
 		ap->offset_angle[ring]*180./M_PI);
   }
 
@@ -99,7 +101,7 @@ int initArcPixels(ArcPixels* ap, struct ArcPixelsParameters* app)
 
 
 
-static inline void clearArcPixels(ArcPixels* ap) 
+static inline void clearArcPixels(ArcPixels* ap)
 {
   int ring, pixel;
   for (ring=0; ring<ap->nrings; ring++) {
@@ -113,7 +115,7 @@ static inline void clearArcPixels(ArcPixels* ap)
 
 
 
-void cleanupArcPixels(ArcPixels* ap) 
+void cleanupArcPixels(ArcPixels* ap)
 {
   // Free the array/detector dimensions.
   if (NULL!=ap->npixels) {
@@ -144,8 +146,8 @@ void cleanupArcPixels(ArcPixels* ap)
 
 
 
-int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd, 
-		      struct Point2d position, 
+int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
+		      struct Point2d position,
 		      int* ring, int* number)
 {
   // Exact impact position in polar coordinates.
@@ -170,7 +172,7 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
       ring[1] = INVALID_PIXEL;
       number[0] = INVALID_PIXEL;
       number[1] = INVALID_PIXEL;
-      return(0); 
+      return(0);
     }
   }
 
@@ -181,7 +183,7 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
     return(1);
   }
 
-  // The event could be a split event (up to double) but also 
+  // The event could be a split event (up to double) but also
   // may be a single.
   // Check the 4 next-nearest neighbors:
   // Vary radius:
@@ -223,7 +225,7 @@ int getArcPixelSplits(ArcPixels* ap, GenericDetector* gd,
 
 
 
-void getArcPixelFromPolar(ArcPixels* ap, 
+void getArcPixelFromPolar(ArcPixels* ap,
 			  double radius, double angle,
 			  int* ring, int* number)
 {
@@ -240,7 +242,7 @@ void getArcPixelFromPolar(ArcPixels* ap,
 
   // Search for the pixel index within this ring.
   // Subtract the offset angle of the particular pixel ring.
-  angle -= ap->offset_angle[*ring];  
+  angle -= ap->offset_angle[*ring];
   // Make shure that the angle is within [0:2pi].
   while (angle < 0.)       angle+=2.*M_PI;
   while (angle >= 2.*M_PI) angle-=2.*M_PI;
@@ -260,8 +262,8 @@ int getArcPixelIndex(ArcPixels* ap, int ring, int number)
 
 
 
-void getPolarCoordinates(struct Point2d position, 
-			 double* radius, double* angle) 
+void getPolarCoordinates(struct Point2d position,
+			 double* radius, double* angle)
 {
   // Determine the radial distance from the origin.
   *radius = sqrt(pow(position.x,2.)+pow(position.y,2.));
@@ -273,7 +275,7 @@ void getPolarCoordinates(struct Point2d position,
 
 
 
-int HTRSisPositionOnMask(ArcPixels* ap, int ring, int number, 
+int HTRSisPositionOnMask(ArcPixels* ap, int ring, int number,
 			 double radius, double angle)
 {
   int ring2, number2;
@@ -316,4 +318,3 @@ int HTRSisPositionOnMask(ArcPixels* ap, int ring, int number,
   // The photon is not absorbed by the mask.
   return(0);
 }
-

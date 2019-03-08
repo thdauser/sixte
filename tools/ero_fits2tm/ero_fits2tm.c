@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sixt.h"
@@ -51,7 +53,7 @@ struct Binary_Output {
 
 
 // Clear the given byte buffer with 'length' bytes.
-void binary_output_clear_bytes(unsigned char *bytes, const int length) 
+void binary_output_clear_bytes(unsigned char *bytes, const int length)
 {
   int count;
   for (count=0; count<length; count++) {
@@ -61,7 +63,7 @@ void binary_output_clear_bytes(unsigned char *bytes, const int length)
 
 
 // Constructor of Binary_Output
-struct Binary_Output *get_Binary_Output(const int max_bytes, FILE* const fptr) 
+struct Binary_Output *get_Binary_Output(const int max_bytes, FILE* const fptr)
 {
   // Get memory for the object itself:
   struct Binary_Output *binary_output=
@@ -85,7 +87,7 @@ struct Binary_Output *get_Binary_Output(const int max_bytes, FILE* const fptr)
 
 
 // Destructor of Binary_Output
-void free_Binary_Output(struct Binary_Output *binary_output) 
+void free_Binary_Output(struct Binary_Output *binary_output)
 {
   // Free all allocated memory:
   if (NULL!=binary_output) {
@@ -132,10 +134,10 @@ int binary_output_erosita_finish_record(struct Binary_Output* const binary_outpu
     binary_output->bytes[11]=binary_output->framenumber;
 
     // Write the byte buffer to the output file:
-    int nbytes=fwrite(binary_output->bytes, 1, 
+    int nbytes=fwrite(binary_output->bytes, 1,
 		      binary_output->max_bytes, binary_output->fptr);
     if (nbytes!=binary_output->max_bytes) return(-1);
-    
+
     // Reset variables:
     binary_output->n_bytes=12;
 
@@ -156,7 +158,7 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
   assert(event->pha<=0x3FFF);
   assert(event->rawx<=0xFF);
   assert(event->rawy<=0xFF);
-  
+
   // Write the data of the event to the byte output buffer:
   binary_output->bytes[binary_output->n_bytes++]=
     0x3F & (unsigned char)(event->pha>>8);
@@ -178,8 +180,8 @@ int binary_output_erosita_insert_event(struct Binary_Output *binary_output,
 
 // This routine finishes a detector frame by adding the 3 last 4-byte elements
 // containing the frame time, the number of discarded pixels and a spare element.
-int binary_output_erosita_finish_frame(struct Binary_Output *binary_output, 
-				       const double time) 
+int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
+				       const double time)
 {
   // Write the TIME element (readout time of last detector frame):
   long ltime=(long)(time*40);
@@ -200,7 +202,7 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
   if (binary_output->n_bytes>=binary_output->max_bytes) {
     if (binary_output_erosita_finish_record(binary_output)) return(-1);
   }
-  
+
   // Write number of DISCARDED PIXELS (assumed to be 0):
   binary_output->bytes[binary_output->n_bytes++]=0xBE;
   binary_output->bytes[binary_output->n_bytes++]=0x00;
@@ -211,7 +213,7 @@ int binary_output_erosita_finish_frame(struct Binary_Output *binary_output,
   if (binary_output->n_bytes>=binary_output->max_bytes) {
     if (binary_output_erosita_finish_record(binary_output)) return(-1);
   }
-  
+
   // Write SPARE element:
   binary_output->bytes[binary_output->n_bytes++]=0xC0;
   binary_output->bytes[binary_output->n_bytes++]=0x00;
@@ -233,7 +235,7 @@ int ero_fits2tm_main()
   struct Parameters par;
 
   /** FITS file containing the input event list. */
-  EventFile* elf=NULL; 
+  EventFile* elf=NULL;
   /** Output file. */
   FILE *of=NULL;
 
@@ -330,7 +332,7 @@ int ero_fits2tm_main()
 
     // Loop over all events in the FITS file:
     headas_chat(3, "processing events ...\n");
-    
+
     // Loop over all entries in the event list:
     int n_buffered_events=0;
     long row;
@@ -358,7 +360,7 @@ int ero_fits2tm_main()
 	  SIXT_ERROR("generation of binary format failed");
 	  break;
 	}
-	  
+
 	// New buffering period has started.
 	eventlist[0]=eventlist[n_buffered_events];
 	n_buffered_events=0;
@@ -367,7 +369,7 @@ int ero_fits2tm_main()
       CHECK_STATUS_BREAK(status);
 
       n_buffered_events++;
-	
+
     } // END of loop over all entries in the event list.
     CHECK_STATUS_BREAK(status);
 
@@ -386,7 +388,7 @@ int ero_fits2tm_main()
       SIXT_ERROR("generation of binary format failed");
       break;
     }
-  
+
   } while (0); // END of ERROR handling loop
 
 
@@ -399,7 +401,7 @@ int ero_fits2tm_main()
   // Release memory.
   free_Binary_Output(binary_output);
   if (NULL!=eventlist) free(eventlist);
-  
+
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
@@ -407,4 +409,3 @@ int ero_fits2tm_main()
     return(EXIT_FAILURE);
   }
 }
-

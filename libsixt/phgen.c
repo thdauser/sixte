@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "phgen.h"
@@ -43,7 +45,7 @@ int phgen(Attitude* const ac,
     time=t0;
   }
 
-  // If the photon list is empty generate new photons from the 
+  // If the photon list is empty generate new photons from the
   // given source catalog.
   while((NULL==pholist)&&(time<tend)) {
     // Determine the telescope pointing at the current point of time.
@@ -53,7 +55,7 @@ int phgen(Attitude* const ac,
     // Display the program progress status.
     double ra, dec;
     calculate_ra_dec(pointing, &ra, &dec);
-    
+
     // Generate new photons for all specified catalogs.
     double t1=MIN(time+dt, tend);
     unsigned int ii;
@@ -65,7 +67,7 @@ int phgen(Attitude* const ac,
 	genFoVXRayPhotons(srccat[ii], &pointing, fov,
 			  time, t1, mjdref, status);
       CHECK_STATUS_BREAK(*status);
-      
+
       // Merge the photon lists.
       pholist=mergeLinkedPhoLists(pholist, newlist);
     }
@@ -90,4 +92,3 @@ int phgen(Attitude* const ac,
 
   return(1);
 }
-

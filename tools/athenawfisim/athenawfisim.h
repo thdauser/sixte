@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef ATHENAPWFISIM_H
@@ -80,7 +82,7 @@ struct Parameters {
   double dt;
 
   int Seed;
-  
+
   /** Skip invalid patterns when producing the output file. */
   char SkipInvalids;
 
@@ -92,4 +94,3 @@ int athenapwfisim_getpar(struct Parameters* const par);
 
 
 #endif /* ATHENAPWFISIM_H */
-

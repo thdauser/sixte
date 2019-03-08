@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PHA2PILIB_H
@@ -93,4 +95,3 @@ void pha2pi_correct_eventfile(EventFile* const evtfile,
 
 
 #endif /* PHA2PILIB_H */
-

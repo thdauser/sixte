@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef HTRSEVENT_H
@@ -25,17 +27,17 @@
 /** HTRS-specific event. */
 typedef struct {
   /** Detection time. */
-  double time; 
+  double time;
 
   /** PHA channel. */
-  long pha; 
+  long pha;
 
   /** Photon energy [keV]. */
   float energy;
 
   /** Number of the pixel, where the event is detected. Numbering
       starts at 0. */
-  int pixel; 
+  int pixel;
 
   /** Event grade. This gives information about the energy and time
       resolution of the event. There are the following event grades:
@@ -51,13 +53,12 @@ typedef struct {
 
   */
   int grade;
-  
+
 
   /** Exact impact position of the photon on the detector. */
-  double x, y; 
+  double x, y;
 
 } HTRSEvent;
 
 
 #endif /* HTRSEVENT_H */
-

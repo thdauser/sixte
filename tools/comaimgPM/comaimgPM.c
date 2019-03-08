@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comaimgPM.h"
@@ -56,7 +58,7 @@ int comaimgPM_main() {
     //Read parameters using PIL library.
     status=comaimgPM_getpar(&par);
     if (EXIT_SUCCESS!=status) break;
-    
+
     //Detector-setup:
     float x_det = par.x_det;
     float y_det = par.y_det;
@@ -67,17 +69,17 @@ int comaimgPM_main() {
     //Width of one detector-pixel (area that can actual detect)
     float det_pixelwidth = par.det_pixelwidth;
     //Width of one detector-element that is surrounded by the collimator
-    float det_width = par.det_width; 
+    float det_width = par.det_width;
      //Width of collimator wall
     float wall = par.wall;
     //current telescope pointing
     double ra = par.RA;
     double dec = par.DEC;
-   
+
     // Initialize the random number generator.
     sixt_init_rng(getSeed(-1),&status);
     CHECK_STATUS_BREAK(status);
-   
+
 
     //Open the FITS file with the input photon list.
     plf=openPhotonFile(par.PhotonList,READONLY,&status);
@@ -123,7 +125,7 @@ int comaimgPM_main() {
       //Set the values of the AttitudeEntry.
 
       ac->nentries=1;
-      ac->entry[0]=initializeAttitudeEntry();  
+      ac->entry[0]=initializeAttitudeEntry();
       //ac->entry[0].time=0;
 
       //Telescope pointing direction:
@@ -152,7 +154,7 @@ int comaimgPM_main() {
 	SIXT_ERROR("attitude data does not cover the specified period");
 	break;
       }
-      
+
     }//END of setting up the attitude.
 
     // Read header keywords.
@@ -174,7 +176,7 @@ int comaimgPM_main() {
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
-    ilf=openNewImpactFile(par.ImpactList, 
+    ilf=openNewImpactFile(par.ImpactList,
 			  telescop, instrume, filter,
 			  ancrfile, respfile,
 			  mjdref, timezero, tstart, tstop,
@@ -227,7 +229,7 @@ int comaimgPM_main() {
     strcpy(wcs2.cunit[1], "deg");
     strcpy(wcs2.ctype[0], "RA---TAN");
     strcpy(wcs2.ctype[1], "DEC--TAN");
-    
+
     // --- END of Initialization ---
 
 
@@ -238,7 +240,7 @@ int comaimgPM_main() {
 
     //SCAN PHOTON LIST (starts with first entry, plf initialized to 0 at beginning)
     while (plf->row < plf->nrows) {
-         
+
       //Read an entry from the photon list:
       Photon photon={.time= 0.0};
       status=PhotonFile_getNextRow(plf,&photon);
@@ -254,7 +256,7 @@ int comaimgPM_main() {
       //Determine current telescope pointing direction.
       telescope.nz=getTelescopeNz(ac,photon.time,&status);
       CHECK_STATUS_BREAK(status);
-      
+
       //Check whether photon is inside FOV:
       //Compare photon direction to direction of telescope axis
       if (check_fov(&phodir,&telescope.nz,fov_min_align)==0){
@@ -269,7 +271,7 @@ int comaimgPM_main() {
 
 	//Determine photon impact position on detector in [m].
 	struct Point2d position;
-	
+
 	//first:impact position in mask-plane (transparent pixels only);
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
 	int reval=getImpactPos_protoMirax(&wcs,&wcs2,&position,mask,photon.ra*180./M_PI,
@@ -278,7 +280,7 @@ int comaimgPM_main() {
 	CHECK_STATUS_BREAK(status);
 
 	if (reval == 1){
-	 
+
 	  //Create new impact.
 	  Impact impact;
 	  impact.time       = photon.time;
@@ -295,7 +297,7 @@ int comaimgPM_main() {
       } // END of photon  inside fov.
     } // END of scanning LOOP over the photon list.
     if (EXIT_SUCCESS!=status) break;
-  
+
     // Release memory.
     destroyCodedMask(&mask);
     wcsfree(&wcs);
@@ -334,7 +336,7 @@ int comaimgPM_getpar(struct Parameters* par)
   }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
-  
+
   // Get the filename of the coded mask file (FITS image file).
   status=ape_trad_query_string("Mask", &sbuffer);
   if (EXIT_SUCCESS!=status) {
@@ -352,7 +354,7 @@ int comaimgPM_getpar(struct Parameters* par)
   }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
-  
+
   // Get the filename of the telescope-attitude input file (FITS file).
   status=ape_trad_query_string("Attitude", &sbuffer);
   if (EXIT_SUCCESS!=status) {
@@ -403,7 +405,7 @@ int comaimgPM_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the width of one detector element");
     return(status);
   }
- 
+
   //Read width of collimator wall[m].
   status=ape_trad_query_float("wall", &par->wall);
   if (EXIT_SUCCESS!=status) {
@@ -415,13 +417,13 @@ int comaimgPM_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the right ascension of the telescope");
     return(status);
-  } 
+  }
 
  status=ape_trad_query_double("DEC", &par->DEC);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope");
     return(status);
-  } 
+  }
 
   //Read time-offset for simulated intervall [s].
   status=ape_trad_query_double("Timezero", &par->Timezero);
@@ -434,7 +436,7 @@ int comaimgPM_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   return(status);
 }

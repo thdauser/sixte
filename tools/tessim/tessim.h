@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #ifndef TESSIM_H
 #define TESSIM_H
 
@@ -73,7 +94,7 @@ typedef struct {
   int write_doubles; // option to write the records in doubles (irrelevant if triggertype=stream)
 
   int clobber;  // overwrite output files?
-  int simnoise; // simulator noise 
+  int simnoise; // simulator noise
   int twofluid; // option to use the two fluid model transition
   //TODO Change this keyword once more models become available
   int stochastic_integrator; // option to use the stochastic integrator
@@ -106,7 +127,7 @@ typedef struct {
   int doCrosstalk;   // do crosstalk?
 
   int readoutMode; // readout mode (total, Ichannel, Qchannel)
-  
+
 } tespxlparams;
 
 
@@ -129,7 +150,7 @@ tes_datastream_info *tes_init_datastream(double tstart, double tstop, tesparams 
 // append a pulse to the data stream. data points on a tes_datastream_info structure
 void tes_append_datastream(tesparams *tes,double time,double pulse,int *status);
 // write the TES data stream to file
-void tes_close_datastream(tesparams *tes,char *streamfile, char *impactfile,tes_datastream_info *data, 
+void tes_close_datastream(tesparams *tes,char *streamfile, char *impactfile,tes_datastream_info *data,
 			 SixtStdKeywords *keywords, int *status);
 // cleanup the TES data stream
 void tes_free_datastream(tes_datastream_info **data, int *status);
@@ -169,7 +190,7 @@ tes_record_info *tes_init_tesrecord(double tstart, double tstop, tesparams *tes,
 				    char *streamfile, char *impactfile,int clobber,int write_error,
 				    SixtStdKeywords *keywords,
 				    int *status);
-// append a pulse to the data stream. 
+// append a pulse to the data stream.
 void tes_append_tesrecord(tesparams *tes,double time,double pulse,int *status);
 // append a photon to the data stream
 void tes_append_photon_tesrecord(tesparams *tes, double time, long phid, int *status);
@@ -212,14 +233,14 @@ typedef struct {
 } tes_trigger_info;
 
 // initialize a TES trigger built on tesrecords
-tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes, 
+tes_trigger_info *tes_init_trigger(double tstart, double tstop, tesparams *tes,
 				   int strategy,unsigned long preBufferSize,
 				   unsigned long triggerSize,
 				   double threshold,unsigned int npts,unsigned int suppress,
 				   char *streamfile, char *impactfile,int clobber,
 				   SixtStdKeywords *keywords,int write_doubles,
 				   int *status);
-// append a pulse to the trigger data stream. 
+// append a pulse to the trigger data stream.
 // this is the routine that also does the trigger
 void tes_append_trigger(tesparams *tes,double time,double pulse,int *status);
 

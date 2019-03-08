@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "gti.h"
@@ -24,7 +26,7 @@
 GTI* newGTI(int* const status)
 {
   GTI* gti=(GTI*)malloc(sizeof(GTI));
-  CHECK_NULL_RET(gti, *status, 
+  CHECK_NULL_RET(gti, *status,
 		 "memory allocation for GTI data structure failed", gti);
 
   // Initialize.
@@ -50,7 +52,7 @@ GTI* loadGTI(char* const filename, int* const status)
 
   // Allocate memory.
   gti=newGTI(status);
-  CHECK_NULL(gti, *status, 
+  CHECK_NULL(gti, *status,
 	     "memory allocation for GTI data structure failed");
 
   // Try to load an extension with the name 'GTI' or 'STDGTI'.
@@ -111,13 +113,13 @@ void saveGTI(GTI* const gti,
   // Store the GTI extension.
   saveGTIExt(fptr, "GTI", gti, status);
   CHECK_STATUS_VOID(*status);
-  
+
   // Set the time-keyword in the event list header.
   char datestr[MAXMSG];
   int timeref;
   fits_get_system_time(datestr, &timeref, status);
   CHECK_STATUS_VOID(*status);
-  fits_update_key(fptr, TSTRING, "DATE", datestr, 
+  fits_update_key(fptr, TSTRING, "DATE", datestr,
 		  "File creation date", status);
   CHECK_STATUS_VOID(*status);
 
@@ -136,9 +138,9 @@ void saveGTIExt(fitsfile* const fptr,
 }
 
 
-void appendGTI(GTI* const gti, 
-	       const double start, 
-	       const double stop, 
+void appendGTI(GTI* const gti,
+	       const double start,
+	       const double stop,
 	       int* const status)
 {
   // Allocate memory.
@@ -157,7 +159,7 @@ void appendGTI(GTI* const gti,
 double sumGTI(GTI* const gti)
 {
   double sum=0.;
-  int ii; 
+  int ii;
   for (ii=0; ii<gti->ngti; ii++) {
     sum+=gti->stop[ii]-gti->start[ii];
   }

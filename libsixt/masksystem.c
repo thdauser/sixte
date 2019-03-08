@@ -19,6 +19,10 @@
    Manuel Castro, National Institute for Space Research (INPE),
 		 Brazil; under grant #2017/00968-6,
 		 São Paulo Research Foundation (FAPESP).
+     
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+
 */
 
 #include "masksystem.h"
@@ -53,7 +57,7 @@ static int auxBkgInitialized=0;
 
 
 /** Handler for the start of an XML element. */
-static void MaskSystemXMLElementStart(void* data, const char* el, 
+static void MaskSystemXMLElementStart(void* data, const char* el,
 				   const char** attr);
 /** Handler for the end of an XML element. */
 static void MaskSystemXMLElementEnd(void* data, const char* el);
@@ -65,7 +69,7 @@ static void MaskSystemXMLElementEnd(void* data, const char* el);
 ////////////////////////////////////////////////////////////////////
 
 
-MaskSystem* newMaskSystem(int* const status) 
+MaskSystem* newMaskSystem(int* const status)
 {
   // Allocate memory.
   MaskSystem* inst=(MaskSystem*)malloc(sizeof(MaskSystem));
@@ -76,7 +80,7 @@ MaskSystem* newMaskSystem(int* const status)
   }
 
   // Initialize all pointers with NULL.
-  
+
   inst->filename=NULL;
   inst->filepath=NULL;
   inst->x_mask=0;
@@ -85,7 +89,7 @@ MaskSystem* newMaskSystem(int* const status)
   inst->mask_pattern=NULL;
   inst->collimator_height=0;
   inst->wall_thickness=0;
-  inst->flag=0; 
+  inst->flag=0;
   inst->x_det=0;
   inst->y_det=0;
   inst->det_pixelwidth;
@@ -144,8 +148,8 @@ void destroyMaskSystem(MaskSystem** const inst, int* const status)
     (*inst)->DCA_gap=0;
     (*inst)->pixelwidth=0;
     (*inst)->repixsize=0;
- 
-    
+
+
 //    if (0!=(*inst)->det_pixelwidth) {
 //      free((*inst)->det_pixelwidth);
 //    }
@@ -200,7 +204,7 @@ void parseMaskSystemXML(MaskSystem* const inst,
   struct XMLBuffer* xmlbuffer=newXMLBuffer(status);
   CHECK_STATUS_VOID(*status);
 
-  // Input buffer with an additional byte at the end for the 
+  // Input buffer with an additional byte at the end for the
   // termination of the string.
   const int buffer_size=256;
   char buffer[buffer_size+1];
@@ -223,7 +227,7 @@ void parseMaskSystemXML(MaskSystem* const inst,
   expandIncludesXML(xmlbuffer, filename, status);
   CHECK_STATUS_VOID(*status);
 
-  // Before actually parsing the XML code, expand the loops and 
+  // Before actually parsing the XML code, expand the loops and
   // arithmetic operations in the GenDet XML description.
   // The expansion algorithm repeatedly scans the XML code and
   // searches for loop tags. It replaces the loop tags by repeating
@@ -258,7 +262,7 @@ void parseMaskSystemXML(MaskSystem* const inst,
     // Parse error.
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "failed parsing XML file '%s':\n%s\n", 
+    sprintf(msg, "failed parsing XML file '%s':\n%s\n",
 	    filename, XML_ErrorString(XML_GetErrorCode(parser)));
     printf("%s", xmlbuffer->text);
     SIXT_ERROR(msg);
@@ -276,50 +280,50 @@ void parseMaskSystemXML(MaskSystem* const inst,
   // Remove the XML string buffer.
   freeXMLBuffer(&xmlbuffer);
 
-//  // Check if all required parameters have been read successfully from 
+//  // Check if all required parameters have been read successfully from
 //  // the XML file.
 //  if (INT_MAX==inst->det->pixgrid->xwidth) {
 //    *status=EXIT_FAILURE;
 //    SIXT_ERROR("no specification of x-width of pixel array");
-//    return;    
-//  }  
+//    return;
+//  }
 //  if (INT_MAX==inst->det->pixgrid->ywidth) {
 //    *status=EXIT_FAILURE;
 //    SIXT_ERROR("no specification of y-width of pixel array");
-//    return;    
+//    return;
 //  }
 //
 //  if (isnan(inst->det->pixgrid->xrpix)) {
 //    *status=EXIT_FAILURE;
 //    SIXT_ERROR("no specification of x reference pixel");
-//    return;    
+//    return;
 //  }
 //  if (isnan(inst->det->pixgrid->yrpix)) {
 //    *status=EXIT_FAILURE;
 //    SIXT_ERROR("no specification of y reference pixel");
-//    return;    
+//    return;
 //  }
 //
 //  if (isnan(inst->det->pixgrid->xdelt)) {
 //    *status=EXIT_FAILURE;
 //    SIXT_WARNING("no specification of pixel x-width");
-//    return;    
+//    return;
 //  }
 //  if (isnan(inst->det->pixgrid->ydelt)) {
 //    *status=EXIT_FAILURE;
 //    SIXT_WARNING("no specification of pixel y-width");
-//    return;    
+//    return;
 //  }
-//  
+//
 //  if (inst->det->pixgrid->xborder<0.) {
 //    *status=EXIT_FAILURE;
 //    SIXT_ERROR("invalid specification of x-border of pixels");
-//    return;    
+//    return;
 //  }
 //  if (inst->det->pixgrid->yborder<0.) {
 //    *status=EXIT_FAILURE;
 //    SIXT_ERROR("invalid specification of y-border of pixels");
-//    return;    
+//    return;
 //  }
 //
 //  if (NULL==inst->det->rmf) {
@@ -348,7 +352,7 @@ void parseMaskSystemXML(MaskSystem* const inst,
 //    if (inst->det->split->par1==0.) {
 //      *status=EXIT_FAILURE;
 //      SIXT_ERROR("no valid split model parameters in the XML file");
-//      return;    
+//      return;
 //    }
 //  }
 //
@@ -356,20 +360,20 @@ void parseMaskSystemXML(MaskSystem* const inst,
 //    if ((inst->det->split->par1==0.)&&(inst->det->split->par2==0.)) {
 //      *status=EXIT_FAILURE;
 //      SIXT_ERROR("no valid split model parameters in the XML file");
-//      return;    
+//      return;
 //    }
 //  }
-//  
-//  
-//    
+//
+//
+//
 //  // change borders for event driven detectors
-//    
+//
 //  if(GENDET_TIME_TRIGGERED!=inst->det->readout_trigger){
-//    inst->det->rawymin=0;	
+//    inst->det->rawymin=0;
 //    inst->det->rawymax=inst->det->pixgrid->ywidth-1;
 //  }
-    
-  // END of checking, if all detector parameters have successfully been 
+
+  // END of checking, if all detector parameters have successfully been
   // read from the XML file.
 }
 
@@ -389,7 +393,7 @@ MaskSystem* loadMaskSystem(const char* const filename,
   char filename2[MAXFILENAME];
   char rootname[MAXFILENAME];
   // Make a local copy of the filename variable in order to avoid
-  // compiler warnings due to discarded const qualifier at the 
+  // compiler warnings due to discarded const qualifier at the
   // subsequent function call.
   strcpy(filename2, filename);
   fits_parse_rootname(filename2, rootname, status);
@@ -399,23 +403,23 @@ MaskSystem* loadMaskSystem(const char* const filename,
   char* lastslash=strrchr(rootname, '/');
   if (NULL==lastslash) {
     inst->filepath=(char*)malloc(sizeof(char));
-    CHECK_NULL_RET(inst->filepath, *status, 
+    CHECK_NULL_RET(inst->filepath, *status,
 		   "memory allocation for filepath failed", inst);
     inst->filename=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filename, *status, 
+    CHECK_NULL_RET(inst->filename, *status,
 		   "memory allocation for filename failed", inst);
     strcpy(inst->filepath, "");
     strcpy(inst->filename, rootname);
   } else {
     lastslash++;
     inst->filename=(char*)malloc((strlen(lastslash)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filename, *status, 
+    CHECK_NULL_RET(inst->filename, *status,
 		   "memory allocation for filename failed", inst);
     strcpy(inst->filename, lastslash);
-      
+
     *lastslash='\0';
     inst->filepath=(char*)malloc((strlen(rootname)+1)*sizeof(char));
-    CHECK_NULL_RET(inst->filepath, *status, 
+    CHECK_NULL_RET(inst->filepath, *status,
 		   "memory allocation for filepath failed", inst);
     strcpy(inst->filepath, rootname);
   }
@@ -445,9 +449,9 @@ MaskSystem* loadMaskSystem(const char* const filename,
 }
 
 
-static void MaskSystemXMLElementStart(void* parsedata, 
-				   const char* el, 
-				   const char** attr) 
+static void MaskSystemXMLElementStart(void* parsedata,
+				   const char* el,
+				   const char** attr)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
@@ -489,11 +493,11 @@ static void MaskSystemXMLElementStart(void* parsedata,
 
     // Store the file name of the ARF.
     xmlparsedata->inst->mask_pattern =  (char*)malloc((strlen(filename)+1)*sizeof(char));
-    CHECK_NULL_VOID(xmlparsedata->inst->mask_pattern, 
+    CHECK_NULL_VOID(xmlparsedata->inst->mask_pattern,
 		    xmlparsedata->status,
 		    "memory allocation for mask pattern name failed");
     strcpy(xmlparsedata->inst->mask_pattern, filename);
-    
+
 
     xmlparsedata->inst->collimator_height = getXMLAttributeFloat(attr, "COLLIMATOR_HEIGHT");
     xmlparsedata->inst->wall_thickness = getXMLAttributeFloat(attr, "WALL_THICKNESS");
@@ -504,7 +508,7 @@ static void MaskSystemXMLElementStart(void* parsedata,
 }
 
 
-static void MaskSystemXMLElementEnd(void* parsedata, const char* el) 
+static void MaskSystemXMLElementEnd(void* parsedata, const char* el)
 {
   struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
@@ -513,4 +517,3 @@ static void MaskSystemXMLElementEnd(void* parsedata, const char* el)
   // Check if an error has occurred previously.
   CHECK_STATUS_VOID(xmlparsedata->status);
 }
-

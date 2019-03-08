@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "eventfile.h"
@@ -24,7 +26,7 @@
 EventFile* newEventFile(int* const status)
 {
   EventFile* file=(EventFile*)malloc(sizeof(EventFile));
-  CHECK_NULL_RET(file, *status, "memory allocation for EventFile failed", 
+  CHECK_NULL_RET(file, *status, "memory allocation for EventFile failed",
 		 file);
 
   // Initialize pointers with NULL.
@@ -53,7 +55,7 @@ EventFile* newEventFile(int* const status)
 }
 
 
-void freeEventFile(EventFile** const file, 
+void freeEventFile(EventFile** const file,
 		   int* const status)
 {
   if (NULL!=*file) {
@@ -137,7 +139,7 @@ EventFile* openNewEventFile(const char* const filename,
 
   // Create a new event list FITS file from the template file.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
 	  "/templates/eventfile.tpl");
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, NULL);
@@ -176,7 +178,7 @@ EventFile* openNewEventFile(const char* const filename,
   ibuffer=nydim-1;
   fits_update_key(plf->fptr, TINT, keystr, &ibuffer, "", status);
   CHECK_STATUS_RET(*status, plf);
-  
+
   return(plf);
 }
 
@@ -198,7 +200,7 @@ EventFile* openEventFile(const char* const filename,
   getColNumsFromEventFile(file, status);
   CHECK_STATUS_RET(*status, file);
 
-  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
+  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent
   // with the corresponding array lengths in the Event data structure.
   int typecode;
   long repeat, width;
@@ -211,7 +213,7 @@ EventFile* openEventFile(const char* const filename,
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
     sprintf(msg, "inconsistent maximum number of photons contributing "
-	    "to a single event (simulation: %d, event file template %ld)", 
+	    "to a single event (simulation: %d, event file template %ld)",
 	    NEVENTPHOTONS, repeat);
     SIXT_ERROR(msg);
     return(file);
@@ -225,7 +227,7 @@ EventFile* openEventFile(const char* const filename,
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
     sprintf(msg, "inconsistent maximum number of photons contributing "
-	    "to a single event (simulation: %d, event file template %ld)", 
+	    "to a single event (simulation: %d, event file template %ld)",
 	    NEVENTPHOTONS, repeat);
     SIXT_ERROR(msg);
     return(file);
@@ -277,8 +279,8 @@ void addCol2EventFile(EventFile* const file,
 	return;
 }
 
-void addEvent2File(EventFile* const file, 
-		   Event* const event, 
+void addEvent2File(EventFile* const file,
+		   Event* const event,
 		   int* const status)
 {
   // Check if the file has been opened.
@@ -313,35 +315,35 @@ void getEventFromFile(const EventFile* const file,
   long lnull=0;
   int inull=0;
 
-  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1,
 		&dnull, &event->time, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cframe, row, 1, 1,
 		&lnull, &event->frame, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cpha, row, 1, 1,
 		&lnull, &event->pha, &anynul, status);
-  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
+  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1,
 		&fnull, &event->signal, &anynul, status);
-  fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1, 
+  fits_read_col(file->fptr, TINT, file->crawx, row, 1, 1,
 		&inull, &event->rawx, &anynul, status);
-  fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1, 
+  fits_read_col(file->fptr, TINT, file->crawy, row, 1, 1,
 		&inull, &event->rawy, &anynul, status);
-  fits_read_col(file->fptr, TDOUBLE, file->cra, row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cra, row, 1, 1,
 		&dnull, &event->ra, &anynul, status);
   event->ra*=M_PI/180.;
-  fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1,
 		&lnull, &event->dec, &anynul, status);
   event->dec*=M_PI/180.;
-  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS,
 		&lnull, &event->ph_id, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NEVENTPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NEVENTPHOTONS,
 		&lnull, &event->src_id, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cnpixels, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cnpixels, row, 1, 1,
 		&lnull, &event->npixels, &anynul, status);
-  fits_read_col(file->fptr, TINT, file->ctype, row, 1, 1, 
+  fits_read_col(file->fptr, TINT, file->ctype, row, 1, 1,
 		&inull, &event->type, &anynul, status);
-  fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1, 
+  fits_read_col(file->fptr, TINT, file->cpileup, row, 1, 1,
 		&inull, &event->pileup, &anynul, status);
-  fits_read_col(file->fptr, TFLOAT, file->csignals, row, 1, 9, 
+  fits_read_col(file->fptr, TFLOAT, file->csignals, row, 1, 9,
 		&fnull, &event->signals, &anynul, status);
   fits_read_col(file->fptr, TLONG, file->cphas, row, 1, 9,
 		&lnull, &event->phas, &anynul, status);
@@ -368,35 +370,35 @@ void updateEventInFile(const EventFile* const file,
 		       int* const status)
 {
 //puts("write event.");
-  fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
+  fits_write_col(file->fptr, TDOUBLE, file->ctime, row,
 		 1, 1, &event->time, status);
-  fits_write_col(file->fptr, TLONG, file->cframe, row, 
+  fits_write_col(file->fptr, TLONG, file->cframe, row,
 		 1, 1, &event->frame, status);
   fits_write_col(file->fptr, TLONG, file->cpha, row,
 		 1, 1, &event->pha, status);
-  fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
+  fits_write_col(file->fptr, TFLOAT, file->csignal, row,
 		 1, 1, &event->signal, status);
-  fits_write_col(file->fptr, TINT, file->crawx, row, 
+  fits_write_col(file->fptr, TINT, file->crawx, row,
 		 1, 1, &event->rawx, status);
-  fits_write_col(file->fptr, TINT, file->crawy, row, 
+  fits_write_col(file->fptr, TINT, file->crawy, row,
 		 1, 1, &event->rawy, status);
   double dbuffer=event->ra*180./M_PI;
-  fits_write_col(file->fptr, TDOUBLE, file->cra, row, 
+  fits_write_col(file->fptr, TDOUBLE, file->cra, row,
 		 1, 1, &dbuffer, status);
   dbuffer=event->dec*180./M_PI;
-  fits_write_col(file->fptr, TDOUBLE, file->cdec, row, 
+  fits_write_col(file->fptr, TDOUBLE, file->cdec, row,
 		 1, 1, &dbuffer, status);
-  fits_write_col(file->fptr, TLONG, file->cph_id, row, 
+  fits_write_col(file->fptr, TLONG, file->cph_id, row,
 		 1, NEVENTPHOTONS, &event->ph_id, status);
-  fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
+  fits_write_col(file->fptr, TLONG, file->csrc_id, row,
 		 1, NEVENTPHOTONS, &event->src_id, status);
-  fits_write_col(file->fptr, TLONG, file->cnpixels, row, 
+  fits_write_col(file->fptr, TLONG, file->cnpixels, row,
 		 1, 1, &event->npixels, status);
-  fits_write_col(file->fptr, TINT, file->cpileup, row, 
+  fits_write_col(file->fptr, TINT, file->cpileup, row,
 		 1, 1, &event->pileup, status);
-  fits_write_col(file->fptr, TINT, file->ctype, row, 
+  fits_write_col(file->fptr, TINT, file->ctype, row,
 		 1, 1, &event->type, status);
-  fits_write_col(file->fptr, TFLOAT, file->csignals, row, 
+  fits_write_col(file->fptr, TFLOAT, file->csignals, row,
 		 1, 9, &event->signals, status);
   fits_write_col(file->fptr, TLONG, file->cphas, row,
 		 1, 9, &event->phas, status);
@@ -423,7 +425,7 @@ void copyEventFile(const EventFile* const src,
     SIXT_ERROR("destination event file is not empty");
     return;
   }
-  
+
   // Copy the event type.
   char evtype[MAXMSG], comment[MAXMSG];
   fits_read_key(src->fptr, TSTRING, "EVTYPE", evtype, comment, status);
@@ -457,7 +459,7 @@ void copyEventFile(const EventFile* const src,
     }
 
     // Add the new event to the output file.
-    addEvent2File(dest, event, status);	  
+    addEvent2File(dest, event, status);
     CHECK_STATUS_BREAK(*status);
   }
   CHECK_STATUS_VOID(*status);
@@ -465,4 +467,3 @@ void copyEventFile(const EventFile* const src,
   // Free memory.
   freeEvent(&event);
 }
-

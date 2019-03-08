@@ -16,9 +16,11 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
-#ifndef XMLBUFFER_H 
+#ifndef XMLBUFFER_H
 #define XMLBUFFER_H 1
 
 #include "sixt.h"
@@ -71,12 +73,12 @@ struct XMLPreParseData {
   /** Loop counter variable. This variable can be used in the XML text
       as $[NAME]. */
   char loop_variable[MAXMSG];
-  
+
   /** Output buffer for processed XML data. */
   struct XMLBuffer* output_buffer;
   /** Buffer for XML code inside the loop. */
   struct XMLBuffer* loop_buffer;
-  
+
   int status;
 };
 
@@ -114,14 +116,14 @@ void freeXMLBuffer(struct XMLBuffer** const buffer);
 
 /** Add a string to the XMLBuffer. If the buffer size is to small,
     allocate additional memory. */
-void addString2XMLBuffer(struct XMLBuffer* const buffer, 
+void addString2XMLBuffer(struct XMLBuffer* const buffer,
 			 const char* const string,
 			 int* const status);
 
 /** Expand the included XML files in the GenDet XML
     description. */
-void expandIncludesXML(struct XMLBuffer* const buffer, 
-		       const char* filename, 
+void expandIncludesXML(struct XMLBuffer* const buffer,
+		       const char* filename,
 		       int* const status);
 
 /** Expand the loops and arithmetic operations in the GenDet XML
@@ -130,7 +132,7 @@ void expandXML(struct XMLBuffer* const buffer, int* const status);
 
 
 /** Read the string value of an XML element. */
-void getXMLAttributeString(const char** attr, const char* const key, 
+void getXMLAttributeString(const char** attr, const char* const key,
 			   char* const value);
 
 /** Read the float value of an XML element. */

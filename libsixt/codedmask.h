@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef CODEDMASK_H
@@ -90,7 +92,7 @@ void destroyCodedMask(CodedMask** const mask);
 
 int getImpactPos (struct Point2d* const position,
 		  const Vector* const phodir,
-		  const CodedMask* const mask, 
+		  const CodedMask* const mask,
 		  const struct Telescope* const telescope,
 		  const Vector* const nz,
 		  const float distance,

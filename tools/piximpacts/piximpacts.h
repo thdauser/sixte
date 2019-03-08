@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef PIXIMP_H
@@ -39,7 +41,7 @@ struct Parameters {
   char ImpactList[MAXFILENAME];
   char PixImpList[MAXFILENAME];
   char XMLFile[MAXFILENAME];
-  
+
   char clobber;
   char history;
 };

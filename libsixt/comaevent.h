@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef COMAEVENT_H
@@ -31,7 +33,7 @@
 typedef struct {
   double time;
   /** Pixel charge represented by the photon energy [keV]. */
-  double charge; 
+  double charge;
   /** Pixel coordinates starting at 0. */
   int rawx, rawy;
 } CoMaEvent;
@@ -46,4 +48,3 @@ void freeCoMaEvent(CoMaEvent** const ce);
 
 
 #endif /* COMAEVENT_H */
-

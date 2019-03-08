@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 //
 // tessim routines for FITS-based impactlist handling
 //
@@ -37,7 +58,7 @@ int tes_photon_from_impactlist(PixImpact *impact, void *dataptr, int *status) {
   if (data->impfile->row >= data->impfile->nrows) {
     // no
     return 0;
-  } 
+  }
 
   getNextImpactFromPixImpFile(data->impfile,impact,status);
   CHECK_STATUS_RET(*status,0);
@@ -78,7 +99,7 @@ tes_impactbuffer_info *tes_init_impactbuffer(int nImpacts, int *status){
     imp->impacts[ii].ph_id = ii;
     imp->impacts[ii].src_id = 1;
   }
-  
+
   CHECK_STATUS_RET(*status,NULL);
   return(imp);
 }
@@ -98,8 +119,8 @@ int tes_photon_from_impactbuffer(PixImpact *photon, void *dataptr, int *status){
   if (data->nextimpact >= data->numimpacts) {
     // no
     return 0;
-  } 
-  
+  }
+
   // copy over the contents of the impact
   PixImpact source = data->impacts[data->nextimpact]; // dereference it
   photon->pixID = source.pixID;

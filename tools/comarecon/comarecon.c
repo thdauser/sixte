@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comarecon.h"
@@ -34,15 +36,15 @@
 /** Main procedure. */
 int comarecon_main() {
   struct Parameters par;
-  
+
   CoMaEventFile* eventfile=NULL;
   SquarePixels* detector_pixels=NULL;
-  CodedMask* mask=NULL; 
+  CodedMask* mask=NULL;
   SourceImage* sky_pixels=NULL;
   ReconArray* recon=NULL;
   MaskShadow* mask_shadow=NULL;
   PixPositionList* position_list=NULL;
-  double* median_list=NULL; //temp array of all background pix for determination of median 
+  double* median_list=NULL; //temp array of all background pix for determination of median
   ReadEvent* ea=NULL;
   ReadEvent* ear=NULL;
   double* ReconImage1d=NULL;
@@ -69,7 +71,7 @@ int comarecon_main() {
 
     // Read the program parameters using the PIL library.
     if ((status=comarecon_getpar(&par))) break;
-    
+
     // Open the event file.
     eventfile=openCoMaEventFile(par.EventList, READONLY, &status);
     CHECK_STATUS_BREAK(status);
@@ -77,13 +79,13 @@ int comarecon_main() {
     // Load the coded mask from the file.
     mask=getCodedMaskFromFile(par.Mask, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // DETECTOR setup.
     double ra=par.RA;
     double dec=par.DEC;
     double distance=par.MaskDistance;
 
-    double xdetsize_beforeRepix=par.width; //in the case of Repix the detector_pixels are overwritten, 
+    double xdetsize_beforeRepix=par.width; //in the case of Repix the detector_pixels are overwritten,
     double ydetsize_beforeRepix=par.width; //but some functions need the old smaller size (of the det in pixels)
     double xpixelsize_beforeRepix=par.pixelwidth; //original detector-pixelsize
     double ypixelsize_beforeRepix=par.pixelwidth;
@@ -99,7 +101,7 @@ int comarecon_main() {
     };
     detector_pixels=newSquarePixels(&spp, &status);
     CHECK_STATUS_BREAK(status);
-    // END of DETECTOR CONFIGURATION SETUP    
+    // END of DETECTOR CONFIGURATION SETUP
 
     // SKY IMAGE setup.
        if(par.RePixSize==0.){
@@ -121,12 +123,12 @@ int comarecon_main() {
        }else{//only works, if new smaller pixel fit without remainder in former big ones!
 	 //EventArray has been built with original pix-size, in order to distribute the events correctly
 	 //from now on, the new smaller size is used -> also for the later called ReconArray
-	 
+
 	 detector_pixels->xwidth=(detector_pixels->xwidth*detector_pixels->xpixelwidth)/par.RePixSize;
 	 detector_pixels->ywidth=(detector_pixels->ywidth*detector_pixels->ypixelwidth)/par.RePixSize;
 	 detector_pixels->xpixelwidth=par.RePixSize;
 	 detector_pixels->ypixelwidth=par.RePixSize;
-	 
+
 	 PixAmount=24;
 
 	 //get source image with correct axes, since xpixelwidth has changed
@@ -147,7 +149,7 @@ int comarecon_main() {
         CHECK_STATUS_BREAK(status);
 
 	}
-    // END of SKY IMAGE CONFIGURATION SETUP 
+    // END of SKY IMAGE CONFIGURATION SETUP
 
     //SOURCE-POSITION DETERMINATION:
     double pixval=0.;
@@ -169,7 +171,7 @@ int comarecon_main() {
     }
     wcs.naxis=2;
     wcs.crpix[0]=sky_pixels->crpix1;
-    wcs.crpix[1]=sky_pixels->crpix2; 
+    wcs.crpix[1]=sky_pixels->crpix2;
     wcs.crval[0]=sky_pixels->crval1*180./M_PI;
     wcs.crval[1]=sky_pixels->crval2*180./M_PI;
     wcs.cdelt[0]=sky_pixels->cdelt1*180./M_PI; //in deg
@@ -199,9 +201,9 @@ int comarecon_main() {
        //unit-vector in z-direction:
        //Vector vz = {0.,0.,1.};
 
-       // Vector nx= normalize_vector(vector_product(nz,vz));   
-       // Vector ny= normalize_vector(vector_product(nz,nx)); 
-    
+       // Vector nx= normalize_vector(vector_product(nz,vz));
+       // Vector ny= normalize_vector(vector_product(nz,nx));
+
     // --- END of Initialization ---
 
 
@@ -216,7 +218,7 @@ int comarecon_main() {
     int ea_size1=2*(mask->naxis1*mask->cdelt1/xpixelsize_beforeRepix);
     int ea_size2=2*(mask->naxis2*mask->cdelt2/ypixelsize_beforeRepix);
     ea=getEventArray(ea_size1,ea_size2,&status);
-     
+
        //detector size <= mask size
        //if mask size = det size -> shift is zero
        xdiff=((ea->naxis1)/2-xdetsize_beforeRepix)/2;
@@ -233,10 +235,10 @@ int comarecon_main() {
 
        } // END of scanning the event list.
        CHECK_STATUS_BREAK(status);
-       
+
        //createTestImg(&ea->EventArray,2,detector_pixels->xwidth,detector_pixels->ywidth,
        // ea->naxis1/2+xdiff,ea->naxis2/2+ydiff,"eventArray.fits",&status);
-       
+
 
        if(par.RePixSize!=0.){
 	 double pixelwidth_big=xpixelsize_beforeRepix;//width of the former EventArray pixels (the real det-pix-size)
@@ -266,23 +268,23 @@ int comarecon_main() {
        }else{
 	 type=1;
 	 }*/ //TODO
-       
+
        recon=getReconArray(mask,2,detector_pixels,&status);
        int Size1 = recon->naxis1;
        int Size2 = recon->naxis2;
 
         //Get the 1d image of the reconstruction array -> needed by FFTW
-       ReconImage1d=SaveReconArray1d(recon, &status);  
-      
-       //perform a fft with the ReconArray       
+       ReconImage1d=SaveReconArray1d(recon, &status);
+
+       //perform a fft with the ReconArray
        fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2, -1);
 
        //get repixeled mask from ReconArray, which is needed later for building the mask shadow during IROS
        //basic constructor for both,the whole re-pixeled mask&/shadow element
-       mask_shadow=getMaskShadowElement(Size1/2, Size2/2, Size1, Size2, &status); 
+       mask_shadow=getMaskShadowElement(Size1/2, Size2/2, Size1, Size2, &status);
        //gets re-pixeled mask as big as EventArray with values betw. 0...1
        getMaskRepix(recon, mask_shadow, 1);
-  
+
        do{ //search for sources as long as pixval is above certain value
 	 //run as long as threshold==1
 
@@ -293,12 +295,12 @@ int comarecon_main() {
 	   printf ("Error: ReconArrray and EventArray must have the same size!\n");
 	   break;
 	 }
-   
-	 //perform a fft with the EventArray       
+
+	 //perform a fft with the EventArray
 	 fftEventArray=FFTOfArray_1d(EventImage1d, Size1, Size2, -1);
-    
+
        //multiply fftEventArray with komplex conjugate of fftReconArray
-       //Re-part: E(Re)*R(Re)+E(Im)*R(Im); Im-part: E(Re)*R(Im)-E(Im)*R(Re)       
+       //Re-part: E(Re)*R(Re)+E(Im)*R(Im); Im-part: E(Re)*R(Im)-E(Im)*R(Re)
        Multiply=(fftw_complex*) fftw_malloc(sizeof(fftw_complex)*(Size1*Size2));
        for(ii=0; ii<Size1; ii++){
 	 for(jj=0; jj<Size2; jj++){
@@ -309,7 +311,7 @@ int comarecon_main() {
 	 }
        }
 
-       //Inverse FFT of Multilpy which already is of type fftw_complex       
+       //Inverse FFT of Multilpy which already is of type fftw_complex
        fftInvMultiply=FFTOfArray(Multiply, Size1, Size2, +1);
 
        //save real part of inverse fft in sky image
@@ -328,7 +330,7 @@ int comarecon_main() {
        saveSourceImage(sky_pixels, name_image, &status);
        CHECK_STATUS_BREAK(status);
        }
-   
+
        //finds current brightest pixel coordinates and saves PixPosition; returns current brightest pixval
        pixval=findBrightestPix(threshold, PixAmount, sky_pixels, pixval, position_list, &wcs, &status);
        threshold=getThresholdForSources(pixval, position_list, sky_pixels, median_list, par.Sigma);
@@ -336,7 +338,7 @@ int comarecon_main() {
        //get mask shadow for current source
        getMaskShadow2(mask_shadow,&wcs2,position_list,sky_pixels->crpix1,sky_pixels->crpix2,detector_pixels,Size1/2,Size2/2,1,&status);
        double norm=getNormalization2(mask_shadow, ea, detector_pixels, xdiff, ydiff);
-       
+
        //new event array: method two
        if(norm>1.){
 
@@ -348,12 +350,12 @@ int comarecon_main() {
 		 ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]=0.;
 	       }
 	     }
-	     
+
 	   }
 	 }
 
        }else{
-	 threshold=2; 
+	 threshold=2;
        }
        FreeEventArray1d(EventImage1d);
        fftw_free(fftEventArray);
@@ -369,7 +371,7 @@ int comarecon_main() {
   headas_chat(5, "cleaning up ...\n");
 
   // Free the detector and sky image pixels.
-  
+
     //set detector_pixels to original size again to be able to call destroy-fct from 'squarepixels.c'
   detector_pixels->xwidth=xdetsize_beforeRepix;
   destroySquarePixels(&detector_pixels);
@@ -380,7 +382,7 @@ int comarecon_main() {
   FreeEventArray(ea);
   FreePixPositionList(position_list);
   FreeMaskShadow(mask_shadow,Size1);
-  fftw_free(fftReconArray); 
+  fftw_free(fftReconArray);
   wcsfree(&wcs);
   wcsfree(&wcs2);
   free_SourceImage(sky_pixels);
@@ -403,7 +405,7 @@ int comarecon_getpar(struct Parameters* par)
   if ((status=PILGetFname("Mask", par->Mask))) {
     SIXT_ERROR("failed reading the filename of the mask reconstruction image");
   }
- 
+
   // Get the filename of the event list file (FITS input file).
   else if ((status=PILGetFname("EventList", par->EventList))) {
     SIXT_ERROR("failed reading the filename of the event list");

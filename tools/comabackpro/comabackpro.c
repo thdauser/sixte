@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "comabackpro.h"
@@ -37,7 +39,7 @@ int comabackpro_main() {
 
   //struct Telescope telescope; //Telescope coordinate system
   CoMaEventFile* eventfile=NULL;
-  CodedMask* mask=NULL; 
+  CodedMask* mask=NULL;
   SquarePixels* detector_pixels=NULL;
   ProjectedMask* proj_mask=NULL;
   ProjectedMask* proj_mask_repix=NULL;
@@ -46,7 +48,7 @@ int comabackpro_main() {
   CoMaEvent* event=NULL;
   //Attitude* ac=NULL;
   PixPositionList* position_list=NULL;
-  double* median_list=NULL; //temp array of all background pix for determination of median 
+  double* median_list=NULL; //temp array of all background pix for determination of median
   //ReadEvent* ea=NULL;
   //ReconArray* recon=NULL;
   //MaskShadow* mask_shadow=NULL;
@@ -54,7 +56,7 @@ int comabackpro_main() {
   int status=EXIT_SUCCESS; // Error status.
 
   int ii,jj;//kk,ll;   //counts
-  int Size1, Size2;  //Sizes of ProjectedMask in pixels 
+  int Size1, Size2;  //Sizes of ProjectedMask in pixels
   int Size1_RePix, Size2_RePix;  //Sizes of re-pixeled ProjectedMask in pixels
   //int lastEvent=0;
   int PixAmount=10;
@@ -63,7 +65,7 @@ int comabackpro_main() {
   double RePixValue; //pixelsize in meters to which the ProjectedMask is re-pixeled to
   //double att_start, att_stop; //start and stop time for current pointing from attitude-file
   //double velocity_ra,velocity_dec; //velocity of telescope motion according to current interval between att_start, att_stop
-  // double timeInterval; //interval for which current pointing can be treated as constant. sub-interval for interval 
+  // double timeInterval; //interval for which current pointing can be treated as constant. sub-interval for interval
                        //between att_start, att_stop.current pointing has to be approximated accordingly
   double pixval=0.;
   int threshold=0; //for first source threshold is '0' after that: '1' if still bright enough, '2' else
@@ -92,7 +94,7 @@ int comabackpro_main() {
     double ra=par.ra;
     double dec=par.dec;
     double distance=par.MaskDistance;
-     
+
     struct SquarePixelsParameters spp = {
       .xwidth = par.width,
       .ywidth = par.width,
@@ -107,7 +109,7 @@ int comabackpro_main() {
 
     //get telescope resolution in degrees
     // double res=par.Resolution/60.;
-    // END of DETECTOR CONFIGURATION SETUP 
+    // END of DETECTOR CONFIGURATION SETUP
 
     //Set up the TELESCOPE ATTITUDE:
     //Buffer for attitude-filename.
@@ -137,7 +139,7 @@ int comabackpro_main() {
       //Set the values of the AttitudeEntry.
 
       ac->nentries=1;
-      ac->entry[0]=initializeAttitudeEntry();  
+      ac->entry[0]=initializeAttitudeEntry();
       //ac->entry[0].time=0;
 
       //Telescope pointing direction:
@@ -192,7 +194,7 @@ int comabackpro_main() {
     };
     sky_chart=getEmptySourceImage(&sip, &status);
     CHECK_STATUS_BREAK(status);
-    // END of SKY CHART CONFIGURATION SETUP 
+    // END of SKY CHART CONFIGURATION SETUP
 
     //initialization of WCS PARAMETER STRUCTURE for deteremining ra/dec of skyChart-pixels
        struct wcsprm wcs = {
@@ -205,7 +207,7 @@ int comabackpro_main() {
     }
     wcs.naxis=2;
     wcs.crpix[0]=sky_chart->crpix1;
-    wcs.crpix[1]=sky_chart->crpix2; 
+    wcs.crpix[1]=sky_chart->crpix2;
     wcs.crval[0]=sky_chart->crval1*180./M_PI; //in deg
     wcs.crval[1]=sky_chart->crval2*180./M_PI;
     wcs.cdelt[0]=sky_chart->cdelt1*180./M_PI;
@@ -257,7 +259,7 @@ int comabackpro_main() {
 	minRA=lastRA;
 	maxRA=firstRA;
       }else{
-	minRA=firstRA; 
+	minRA=firstRA;
 	maxRA=lastRA;
       }
 
@@ -272,7 +274,7 @@ int comabackpro_main() {
     }//END Attitude-file
     //get max. FOV
     float fov = det_phi_max(distance,mask->naxis1*mask->cdelt1,mask->naxis2*mask->cdelt2,
-			    detector_pixels->xwidth*detector_pixels->xpixelwidth, 
+			    detector_pixels->xwidth*detector_pixels->xpixelwidth,
 			    detector_pixels->ywidth*detector_pixels->ypixelwidth);
     fov=fov*180./M_PI; //in deg
     minRA-=fov/2.; //RA: 0...360
@@ -284,7 +286,7 @@ int comabackpro_main() {
       minRA=lastRA;
       maxRA=firstRA;
     }else{
-      minRA=firstRA; 
+      minRA=firstRA;
       maxRA=lastRA;
     }
     minDEC-=fov/2.; //DEC: -180...180
@@ -303,7 +305,7 @@ int comabackpro_main() {
     struct SkyImageParameters skp = {
       .naxis1 = (int)(fabs(maxRA-minRA)/res),
       .naxis2 = (int)(fabs(maxDEC-minDEC)/res),
-      .crpix1 = (float)(skp.naxis1/2.+1), 
+      .crpix1 = (float)(skp.naxis1/2.+1),
       .crpix2 = (float)(skp.naxis2/2.+1),
       .cdelt1 = res, //in deg
       .cdelt2 = res,
@@ -311,7 +313,7 @@ int comabackpro_main() {
       .crval2 = minDEC+skp.crpix2*res,
       .minra  = minRA,  //in deg
       .maxra  = maxRA,
-      .mindec = minDEC, //in deg 
+      .mindec = minDEC, //in deg
       .maxdec = maxDEC
     };
     sky_image=getEmptySkyImage(&skp, &status);
@@ -319,7 +321,7 @@ int comabackpro_main() {
 
     //fill in ra- and dec-array for skyImage
     fillRaDecArrays(sky_image);
-    
+
     // END of SKY IMAGE CONFIGURATION SETUP
 
     */
@@ -356,7 +358,7 @@ int comabackpro_main() {
 
     // Beginning of actual detector simulation (after loading required data):
     headas_chat(5, "start image reconstruction process ...\n");
-    
+
     //empty ProjectedMask object
     proj_mask=getEmptyProjectedMask(Size1,Size2,pixelsize1,pixelsize2,&status);
     //filled ProjectedMask object derived from mask pattern
@@ -376,17 +378,17 @@ int comabackpro_main() {
     int Size2 = recon->naxis2;
     //get repixeled mask from ReconArray, which is needed later for building the mask shadow during IROS
     //basic constructor for both,the whole re-pixeled mask&/shadow element
-    mask_shadow=getMaskShadowElement(Size1/2,Size2/2,detector_pixels->xwidth,detector_pixels->ywidth,&status); 
+    mask_shadow=getMaskShadowElement(Size1/2,Size2/2,detector_pixels->xwidth,detector_pixels->ywidth,&status);
     //gets re-pixeled mask as big as EventArray with values betw. 0...1
     getMaskRepix(recon,mask_shadow,0);*/
-    
-    
+
+
     //get CoMaEvent; pointer for current event in eventfile
     event=getCoMaEvent(&status);
     //get 1st event
     status=CoMaEventFile_getNextRow(eventfile,event);
     CHECK_STATUS_BREAK(status);
-   
+
 
     /*    ea=getEventArray(detector_pixels->xwidth,detector_pixels->ywidth,&status);
     // Loop over all events in the FITS file.
@@ -418,13 +420,13 @@ int comabackpro_main() {
 	    //+1 -> (int) rounds down;
 	    int detpix_x=(event->rawx)*(int)(detector_pixels->xpixelwidth/RePixValue+1);
 	    int detpix_y=(event->rawy)*(int)(detector_pixels->ypixelwidth/RePixValue+1);
-	  
+
 	    //scanning all projected mask pixels to fill in
 	    //skyChart (still pix-values)
-	 
-	    for(ii=0; ii<proj_mask_repix->naxis1; ii++){ 
+
+	    for(ii=0; ii<proj_mask_repix->naxis1; ii++){
 	      for(jj=0; jj<proj_mask_repix->naxis2; jj++){
-	    
+
 		int shift_ii=proj_mask_repix->naxis1-1-ii;
 		int shift_jj=proj_mask_repix->naxis2-1-jj;
 
@@ -450,7 +452,7 @@ int comabackpro_main() {
 	  saveSourceImage(sky_chart, name_image, &status);
 	  CHECK_STATUS_BREAK(status);
 	  //	}
-   
+
 	do{ //search for sources as long as pixval is above certain value
 	//run as long as threshold==1
 
@@ -476,7 +478,7 @@ int comabackpro_main() {
 		  ea->EventArray[ii][jj]=0.;
 		}
 	      }
-	     
+
 	    }
 	  }
 
@@ -491,15 +493,15 @@ int comabackpro_main() {
 
 
 	}else{
-	  threshold=2; 
+	  threshold=2;
 	  }*/
       }while(threshold==1);
-     
+
       //create FITS-file with all pix-coordinates
       savePositionList(position_list, "posList.fits", &status);
 
 
- 
+
 
     }else{//BEGIN attitude-file
       //get 1st telescope pointing
@@ -516,19 +518,19 @@ int comabackpro_main() {
       getCurrentVelocity(par.Attitude,ac,&velocity_ra,&velocity_dec,att_start,att_stop,&status);
 
       //set 1st timeInterval according to velocity and resolution
-      double time_ra=res/velocity_ra; 
+      double time_ra=res/velocity_ra;
       double time_dec=res/velocity_dec;
       if(time_ra < time_dec){
 	timeInterval=time_ra;
       }else{
 	timeInterval=time_dec;
       }
-    
+
       // Loop over all events in the FITS file.
       while (0==EventListEOF(&eventfile->generic)) {
-      
+
 	while(event->time < att_stop){ //current pointing in attitude-file
-	
+
 	  while(event->time < (att_start+timeInterval)){//current 'constant'-interval
 
 	    //add projected mask(pm) correctly to SkyChart for current photon/event
@@ -537,13 +539,13 @@ int comabackpro_main() {
 	    //+1 -> (int) rounds down;
 	    int detpix_x=(detector_pixels->xwidth-event->rawx-1)*(int)(detector_pixels->xpixelwidth/RePixValue+1);
 	    int detpix_y=(detector_pixels->ywidth-event->rawy-1)*(int)(detector_pixels->ypixelwidth/RePixValue+1);
-	  
+
 	    //scanning all projected mask pixels to fill in
 	    //skyChart (still pix-values)
-	 
-	    for(ii=0; ii<proj_mask_repix->naxis1; ii++){ 
+
+	    for(ii=0; ii<proj_mask_repix->naxis1; ii++){
 	      for(jj=0; jj<proj_mask_repix->naxis2; jj++){
-          
+
 		sky_chart->pixel[ii+detpix_x][jj+detpix_y]+=event->charge/proj_mask_repix->OpenPixels
 		  *proj_mask_repix->map[ii][jj];
 	      }
@@ -551,18 +553,18 @@ int comabackpro_main() {
 
 	    //get all events for current constant interval
 	    status=CoMaEventFile_getNextRow(eventfile, event);
-	  
+
 	    if(status == 1){lastEvent=1;status=0;}
 
 	    //saveSourceImage(sky_chart,"skyChart.fits", &status);
-	  
+
 	    if(lastEvent == 1){break;}
 	  }//END of current 'constant'-interval
 
 	  saveSourceImage(sky_chart,"skyChart.fits", &status);
 
 	  //TODO: fill in skyChart at corresponding position in skyImg
-	  for(ii=0; ii<sky_chart->naxis1; ii++){ 
+	  for(ii=0; ii<sky_chart->naxis1; ii++){
 	    for(jj=0; jj<sky_chart->naxis2; jj++){
 	      double pixcrd[2]={ii+1,jj+1};
 	      double imgcrd[2];
@@ -577,7 +579,7 @@ int comabackpro_main() {
 	      }
 	      double pix_ra=world[0];
 	      double pix_dec=world[1];
-	      
+
 	      //(RA-minra)/cdelt -> index for corresponding skyImg-pix
 	      int sky_ii=(int)((pix_ra-sky_image->minra)/sky_image->cdelt1);
 	      int sky_jj=(int)((pix_dec-sky_image->mindec)/sky_image->cdelt2);
@@ -585,7 +587,7 @@ int comabackpro_main() {
 	      sky_image->pixel[sky_ii][sky_jj]+=sky_chart->pixel[ii][jj];
 	    }
 	  }
-	
+
 	  int xcount,ycount;
 	  //reset SkyChart to zero for next round
 	  for(xcount=0; xcount<sky_chart->naxis1; xcount++){
@@ -605,7 +607,7 @@ int comabackpro_main() {
 	  setWCScurrentPointing(par.Attitude,ac,&telescope.nz,&wcs,&status); //in deg
 	  sky_chart->crval1= wcs.crval[0]*M_PI/180.; //in rad
 	  sky_chart->crval2= wcs.crval[1]*M_PI/180.;
-	
+
 	  if(lastEvent == 1){break;}
 	}//END of current pointing in attitude-file
 
@@ -614,7 +616,7 @@ int comabackpro_main() {
 	att_start=ac->entry[ac->currentry].time;
 	att_stop=ac->entry[ac->currentry+1].time;
 	getCurrentVelocity(par.Attitude,ac,&velocity_ra,&velocity_dec,att_start,att_stop,&status);
-	double time_ra=res/velocity_ra; 
+	double time_ra=res/velocity_ra;
 	double time_dec=res/velocity_dec;
 	if(time_ra < time_dec){
 	  timeInterval=time_ra;
@@ -632,10 +634,10 @@ int comabackpro_main() {
 
 	} // END of scanning the event list.*/
       }//END attitude-file
-    
+
    } while(0);  // END of the error handling loop.
 
-  //saveSkyImage(sky_image,"SkyImg_final.fits",&status); 
+  //saveSkyImage(sky_image,"SkyImg_final.fits",&status);
 
 
 
@@ -668,7 +670,7 @@ int comabackpro_getpar(struct Parameters* par)
   if ((status=PILGetFname("Mask", par->Mask))) {
     SIXT_ERROR("failed reading the filename of the mask reconstruction image");
   }
- 
+
   // Get the filename of the event list file (FITS input file).
   else if ((status=PILGetFname("EventList", par->EventList))) {
     SIXT_ERROR("failed reading the filename of the event list");

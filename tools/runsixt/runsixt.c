@@ -16,17 +16,19 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "runsixt.h"
 #include "parinput.h"
 
 
-int runsixt_main() 
+int runsixt_main()
 {
   // Program parameters.
   struct Parameters par;
-  
+
   // Instrument setup.
   GenInst* inst=NULL;
 
@@ -51,7 +53,7 @@ int runsixt_main()
 
   // Single-pixel event file.
   EventFile* elf=NULL;
-  
+
   // Pattern event file.
   EventFile* patf=NULL;
 
@@ -62,7 +64,7 @@ int runsixt_main()
   Pha2Pi* p2p=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL
@@ -73,7 +75,7 @@ int runsixt_main()
   do { // Beginning of ERROR HANDLING Loop.
 
     // ---- Initialization ----
-    
+
     // Read the parameters using PIL.
     status=runsixt_getpar(&par);
     CHECK_STATUS_BREAK(status);
@@ -109,7 +111,7 @@ int runsixt_main()
       strcpy(impactlist_filename, par.Prefix);
       strcat(impactlist_filename, par.ImpactList);
     }
-    
+
     // Determine the single-pixel event output file.
     char rawdata_filename[MAXFILENAME];
     strcpy(ucase_buffer, par.RawData);
@@ -154,7 +156,7 @@ int runsixt_main()
 
     // Determine the appropriate instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile, 
+    sixt_get_XMLFile(xml_filename, par.XMLFile,
 		     par.Mission, par.Instrument, par.Mode,
 		     &status);
     CHECK_STATUS_BREAK(status);
@@ -189,17 +191,17 @@ int runsixt_main()
       // Load the attitude from the given file.
       ac=loadAttitude(par.Attitude, &status);
       CHECK_STATUS_BREAK(status);
-      
+
       // Check if the required time interval for the simulation
       // is a subset of the period described by the attitude file.
-      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
 				par.TSTART+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
 
     // Get a GTI.
-    gti=getGTIFromFileOrContinuous(par.GTIfile, 
+    gti=getGTIFromFileOrContinuous(par.GTIfile,
 				   par.TSTART, par.TSTART+par.Exposure,
 				   par.MJDREF, &status);
     CHECK_STATUS_BREAK(status);
@@ -277,7 +279,7 @@ int runsixt_main()
 
     // Open the output photon list file.
     if (strlen(photonlist_filename)>0) {
-      plf=openNewPhotonFile(photonlist_filename, 
+      plf=openNewPhotonFile(photonlist_filename,
 			    telescop, instrume, filter,
 			    inst->tel->arf_filename, inst->det->rmf_filename,
 			    par.MJDREF, 0.0, par.TSTART, tstop,
@@ -287,7 +289,7 @@ int runsixt_main()
 
     // Open the output impact list file.
     if (strlen(impactlist_filename)>0) {
-      ilf=openNewImpactFile(impactlist_filename, 
+      ilf=openNewImpactFile(impactlist_filename,
 			    telescop, instrume, filter,
 			    inst->tel->arf_filename, inst->det->rmf_filename,
 			    par.MJDREF, 0.0, par.TSTART, tstop,
@@ -317,7 +319,7 @@ int runsixt_main()
 			  inst->det->pixgrid->ywidth,
 			  par.clobber, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     float rotation_angle=inst->det->pixgrid->rota*180./M_PI;
     fits_update_key(elf->fptr, TFLOAT, "CCDROTA", &rotation_angle, "CCD rotation angle [deg]", &status);
     fits_update_key(patf->fptr, TFLOAT, "CCDROTA", &rotation_angle, "CCD rotation angle [deg]", &status);
@@ -330,11 +332,11 @@ int runsixt_main()
       // Determine the telescope pointing direction and roll angle.
       Vector pointing=getTelescopeNz(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
-    
+
       // Direction.
       double ra, dec;
       calculate_ra_dec(pointing, &ra, &dec);
-    
+
       // Roll angle.
       float rollangle=getRollAngle(ac, par.TSTART, &status);
       CHECK_STATUS_BREAK(status);
@@ -374,7 +376,7 @@ int runsixt_main()
       fits_update_key(elf->fptr, TFLOAT, "PA_PNT", &rollangle,
 		      "Roll angle [deg]", &status);
       CHECK_STATUS_BREAK(status);
-    
+
       // Pattern list file.
       fits_update_key(patf->fptr, TDOUBLE, "RA_PNT", &ra,
 		      "RA of pointing direction [deg]", &status);
@@ -416,7 +418,7 @@ int runsixt_main()
     value=inst->det->rmf->FirstChannel+inst->det->rmf->NumberChannels-1;
     fits_update_key(elf->fptr, TLONG, keystr, &value, "", &status);
     CHECK_STATUS_BREAK(status);
-    
+
     sprintf(keystr, "TLMIN%d", patf->cpha);
     value=inst->det->rmf->FirstChannel;
     fits_update_key(patf->fptr, TLONG, keystr, &value, "", &status);
@@ -440,7 +442,7 @@ int runsixt_main()
     } else {
       rewind(progressfile);
       fprintf(progressfile, "%.2lf", 0.);
-      fflush(progressfile);	
+      fflush(progressfile);
     }
 
     // Determine the total length of the time interval to
@@ -449,7 +451,7 @@ int runsixt_main()
     fits_update_key(patf->fptr, TDOUBLE, "EXPOSURE", &totalsimtime,
 		    "exposure time [s]", &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // Loop over all intervals in the GTI collection.
     int gtibin=0;
     double simtime=0.;
@@ -608,7 +610,7 @@ int runsixt_main()
 
 
   // --- Clean up ---
-  
+
   headas_chat(3, "\ncleaning up ...\n");
 
   // Release memory.
@@ -631,7 +633,7 @@ int runsixt_main()
 
   // Clean up the random number generator.
   sixt_destroy_rng();
-  
+
   if (EXIT_SUCCESS==status) {
     headas_chat(3, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
@@ -647,7 +649,7 @@ int runsixt_getpar(struct Parameters* const par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -663,7 +665,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the photon list");
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -671,7 +673,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the impact list");
     return(status);
-  } 
+  }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
@@ -679,7 +681,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
-  } 
+  }
   strcpy(par->RawData, sbuffer);
   free(sbuffer);
 
@@ -687,7 +689,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the pattern list");
     return(status);
-  } 
+  }
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
@@ -695,7 +697,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the mission");
     return(status);
-  } 
+  }
   strcpy(par->Mission, sbuffer);
   free(sbuffer);
 
@@ -703,7 +705,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument");
     return(status);
-  } 
+  }
   strcpy(par->Instrument, sbuffer);
   free(sbuffer);
 
@@ -711,7 +713,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
-  } 
+  }
   strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
@@ -719,7 +721,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -746,7 +748,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput, sbuffer);
   free(sbuffer);
 
@@ -754,7 +756,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the second SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput2, sbuffer);
   free(sbuffer);
 
@@ -762,7 +764,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the third SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput3, sbuffer);
   free(sbuffer);
 
@@ -770,7 +772,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the forth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput4, sbuffer);
   free(sbuffer);
 
@@ -778,7 +780,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the fifth SIMPUT file");
     return(status);
-  } 
+  }
   strcpy(par->Simput5, sbuffer);
   free(sbuffer);
 
@@ -794,7 +796,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the GTI file");
     return(status);
-  } 
+  }
   strcpy(par->GTIfile, sbuffer);
   free(sbuffer);
 
@@ -802,7 +804,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
@@ -814,13 +816,13 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("dt", &par->dt);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading dt");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_bool("SkipInvalids", &par->SkipInvalids);
   if (EXIT_SUCCESS!=status) {
@@ -838,7 +840,7 @@ int runsixt_getpar(struct Parameters* const par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the progress status file");
     return(status);
-  } 
+  }
   strcpy(par->ProgressFile, sbuffer);
   free(sbuffer);
 
@@ -850,5 +852,3 @@ int runsixt_getpar(struct Parameters* const par)
 
   return(status);
 }
-
-

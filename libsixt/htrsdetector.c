@@ -16,12 +16,14 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "htrsdetector.h"
 
 
-int initHTRSDetector(HTRSDetector* hd, 
+int initHTRSDetector(HTRSDetector* hd,
 		     struct HTRSDetectorParameters* parameters)
 {
   int status = EXIT_SUCCESS;
@@ -67,7 +69,7 @@ int cleanupHTRSDetector(HTRSDetector* hd)
     headas_printf(" number of events: %ld\n", hd->nevents);
     headas_printf(" number of single events: %ld\n", hd->nsingles);
     headas_printf(" number of double events: %ld\n", hd->ndoubles);
-		  
+
     // Call the cleanup routines of the underlying data structures.
 #ifdef HTRS_HEXPIXELS
     cleanupHexagonalPixels(&hd->pixels);
@@ -96,7 +98,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
   ReturnChannel(hd->generic.rmf, impact->energy, 1, &channel);
 
   // Check if the photon is really measured. If the
-  // PHA channel returned by the HEAdas RMF function is equal to '-1', 
+  // PHA channel returned by the HEAdas RMF function is equal to '-1',
   // the photon is not detected.
   // This can happen as the RMF is actually an RSP including, e.g.,
   // the detector quantum efficiency and filter transmission.
@@ -120,51 +122,51 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
     int pixel[2];
     int npixels=0; // Number of VALID split partners.
     double fraction[2];
-    int nsplits=getHexagonalPixelSplits(&hd->pixels, &hd->generic, 
+    int nsplits=getHexagonalPixelSplits(&hd->pixels, &hd->generic,
 					impact->position, pixel, fraction);
     // Loop over all split partners.
     int pixel_counter;
     for (pixel_counter=0; pixel_counter<nsplits; pixel_counter++) {
       if (INVALID_PIXEL != pixel[pixel_counter]) {
-	
+
 	// Check if the pixel is currently active.
-	if (impact->time - hd->pixels.array[pixel[pixel_counter]].last_impact 
+	if (impact->time - hd->pixels.array[pixel[pixel_counter]].last_impact
 	    < hd->shaping_time) {
-	  // The photon cannot be detected in this pixel as it is still within 
+	  // The photon cannot be detected in this pixel as it is still within
 	  // the shaping time after the previous event.
 
 	  // TODO Although the current photon cannot be detected, the dead time
 	  // of the affected pixel is extended due to its interaction with the
-	  // detector (activate the following line to implement paralyzable dead 
+	  // detector (activate the following line to implement paralyzable dead
 	  // time).
 	  //  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
 
 	  continue;
 	}
 
-	// Add the charge created by the photon to the affected detector 
+	// Add the charge created by the photon to the affected detector
 	// pixel(s).
 	HTRSEvent event;
 
-	// Determine the detector channel that corresponds to the charge 
+	// Determine the detector channel that corresponds to the charge
 	// fraction created by the incident photon in the regarded pixel.
 	event.pha = getEBOUNDSChannel(charge * fraction[pixel_counter], hd->generic.rmf);
 	//                     |        |-> charge fraction due to split events
 	//                     |-> charge created by incident photon
-      
+
 	// Check lower threshold (PHA and energy):
-	if ((event.pha>=hd->generic.pha_threshold) && 
-	    (charge*fraction[pixel_counter]>=hd->generic.energy_threshold)) { 
+	if ((event.pha>=hd->generic.pha_threshold) &&
+	    (charge*fraction[pixel_counter]>=hd->generic.energy_threshold)) {
 
 	  // Check if a valid channel is returned.
 	  assert(event.pha >= 0);
-	  
+
 	  // The impact has generated an event in this pixel,
 	  // so add it to the event file.
 	  event.energy = charge * fraction[pixel_counter];
 	  event.pixel = pixel[pixel_counter];
 	  event.time = impact->time;
-	  
+
 	  // Store the time of this impact in the pixel in order to consider the
 	  // shaping time.
 	  hd->pixels.array[pixel[pixel_counter]].last_impact = impact->time;
@@ -191,10 +193,10 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 
 #ifdef HTRS_ARCPIXELS
 
-    // The event can be either a single or a double. Therefore we must be 
+    // The event can be either a single or a double. Therefore we must be
     // able to store up to 2 pairs of ring and pixel number.
-    int ring[2], number[2]; 
-    int npixels = getArcPixelSplits(&hd->pixels, &hd->generic, 
+    int ring[2], number[2];
+    int npixels = getArcPixelSplits(&hd->pixels, &hd->generic,
 				    impact->position, ring, number);
 
     if (INVALID_PIXEL != ring[0]) {
@@ -204,7 +206,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 
       // Check if the pixel is currently active or whether it is in
       // a clearing (reset) phase.
-      if (impact->time < 
+      if (impact->time <
 	  hd->pixels.array[ring[0]][number[0]].reset_from + hd->reset_time) {
 	event.grade = -1;
       } else {
@@ -213,28 +215,28 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	event.grade = 0;
       }
 
-	
+
       // Determine the detector channel that corresponds to the charge fraction
       // created by the incident photon in the regarded pixel.
       event.pha = getEBOUNDSChannel(charge, hd->generic.rmf);
       //                     |-> charge created by incident photon
-      
+
       // Check lower thresholds (PHA and energy):
-      if ((event.pha>=hd->generic.pha_threshold) && 
-	  (charge>=hd->generic.energy_threshold)) { 
-	
+      if ((event.pha>=hd->generic.pha_threshold) &&
+	  (charge>=hd->generic.energy_threshold)) {
+
 	assert(event.pha >= 0);
-	
+
 	// The impact has generated an event in this pixel,
 	// so add it to the event file.
 	event.energy = charge;
 	event.pixel = getArcPixelIndex(&(hd->pixels), ring[0], number[0]);
 	event.time = impact->time;
-	
+
 	// Store the exact impact position of the event for closer analysis.
 	event.x = impact->position.x;
 	event.y = impact->position.y;
-	  
+
 	// Add the newly generated charge to the pixel.
 	hd->pixels.array[ring[0]][number[0]].charge += charge;
 	// Store the time of this impact in the pixel in order to consider the
@@ -242,16 +244,16 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 	hd->pixels.array[ring[0]][number[0]].last_impact = impact->time;
 	// Check if the pixel has to be resetted (clear the charge).
 	// The reset threshold 350 keV.
-	if (hd->pixels.array[ring[0]][number[0]].charge > 350.) { 
+	if (hd->pixels.array[ring[0]][number[0]].charge > 350.) {
 	  hd->pixels.array[ring[0]][number[0]].charge = 0.;
-	  hd->pixels.array[ring[0]][number[0]].reset_from = 
+	  hd->pixels.array[ring[0]][number[0]].reset_from =
 	    impact->time; // + hd->slow_shaping_time; TODO
 	}
-	
+
 	// Add event to the event file.
 	status = addHTRSEvent2File(&hd->eventlist, &event);
 	if (EXIT_SUCCESS!=status) return(status);
-	
+
       } // END Check for thresholds.
 
       // Count the number of events for statistical information.
@@ -266,7 +268,7 @@ int addImpact2HTRSDetector(HTRSDetector* hd, Impact* impact)
 #endif
 
   } // END if(charge>0.)
- 
+
   return(status);
 }
 
@@ -288,13 +290,13 @@ int HTRSassignEventGrades(HTRSDetector detector)
   detector.eventlist.generic.row = 0;
   // Loop over all events in the event file.
   while((EXIT_SUCCESS==status) && (0==EventListEOF(&detector.eventlist.generic))) {
-    
+
     // Read the next event from the FITS file.
     status=HTRSEventFile_getNextRow(&detector.eventlist, &event);
     if(EXIT_SUCCESS!=status) break;
 
     // Check if the event has happend during a reset interval.
-    // In that case a further analysis of the event grade is 
+    // In that case a further analysis of the event grade is
     // not necessary.
     if (-1==event.grade) continue;
 
@@ -330,15 +332,15 @@ int HTRSassignEventGrades(HTRSDetector detector)
 	  nafter_fast++;
 	}
 	// Avoid too many unnecessary loop runs.
-	break;	
+	break;
       }
       row++;
     }
     if (EXIT_SUCCESS!=status) break;
-    
+
     // Determine the grade of the event.
     if ((nbefore_fast>0)||(nafter_fast>0)) {
-      // Event is not measured at all, because it cannot be distinguished 
+      // Event is not measured at all, because it cannot be distinguished
       // from the previous or the subsequent event.
       event.grade = 2;
     } else if ((nbefore_slow>0)||(nafter_slow>0)) {
@@ -349,15 +351,13 @@ int HTRSassignEventGrades(HTRSDetector detector)
       // Event is detected as nominal event with the slow filter.
       event.grade = 0;
     }
-    
+
     // Write the event information to the event file.
-    status = HTRSEventFile_writeRow(&detector.eventlist, &event, 
+    status = HTRSEventFile_writeRow(&detector.eventlist, &event,
 				    detector.eventlist.generic.row);
     if (EXIT_SUCCESS!=status) break;
-    
+
   } // END of loop over all events in the event list.
-  
+
   return(status);
 }
-
-

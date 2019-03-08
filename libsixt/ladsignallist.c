@@ -16,17 +16,19 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladsignallist.h"
 
 LADSignalListItem* newLADSignalListItem(int* const status)
 {
-  LADSignalListItem* el= 
+  LADSignalListItem* el=
     (LADSignalListItem*)malloc(sizeof(LADSignalListItem));
   CHECK_NULL(el, *status,
 	     "memory allocation for LADSignalListItem failed");
-  
+
   // Initialize pointers with NULL.
   el->next=NULL;
 

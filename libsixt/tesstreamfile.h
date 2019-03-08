@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESSTREAMFILE_H
@@ -32,7 +34,7 @@
 typedef struct {
   /** Pointer to the FITS file. */
   fitsfile* fptr;
-  
+
   /** Total number of rows in the FITS file. */
   long nrows;
 

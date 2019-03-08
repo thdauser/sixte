@@ -16,6 +16,8 @@
 
 
    Copyright 2016 Philippe Peille, IRAP; Thomas Dauser, ECAP; Edoardo Cucchetti, IRAP;
+   Copyright 2017-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "crosstalk.h"

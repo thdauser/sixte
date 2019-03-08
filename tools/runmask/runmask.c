@@ -19,6 +19,8 @@
    Manuel Castro, National Institute for Space Research (INPE),
 		 Brazil; under grant #2017/00968-6,
 		 São Paulo Research Foundation (FAPESP).
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
 */
 
 #include "runmask.h"
@@ -35,8 +37,8 @@ int runmask_main()
 	GenInst* inst=NULL;
 
 	//Coded-mask setup
-	MaskSystem* mask_setup=NULL;	
-	
+	MaskSystem* mask_setup=NULL;
+
 	// Attitude.
 	Attitude* ac=NULL;
 
@@ -47,12 +49,12 @@ int runmask_main()
 	PhotonFile* plf=NULL;
 
 	// Error status.
-	int status=EXIT_SUCCESS;  
+	int status=EXIT_SUCCESS;
 
 	// Register HEATOOL.
 	set_toolname("runmask");
 	set_toolversion("0.05");
-	
+
 	do {
 
 	// --- Initialization ---
@@ -93,16 +95,16 @@ int runmask_main()
 
 
 //------------------------------------
-//-------Execute each task 
+//-------Execute each task
 
 	do{
 
-	status = photogen(&par, inst);	
+	status = photogen(&par, inst);
 	CHECK_STATUS_BREAK(status);
 
 	status = comaimg(&par, mask_setup);
 	CHECK_STATUS_BREAK(status);
-	
+
 	status = comadet(&par, mask_setup);
 	CHECK_STATUS_BREAK(status);
 
@@ -120,12 +122,12 @@ int runmask_getpar(struct Parameters* par)
 {
 	// String input buffer
 	char* sbuffer = NULL;
-	
-	// Error status 
+
+	// Error status
 	int status = EXIT_SUCCESS;
-	
+
 	//Read all parameters via the aped_trad routines
-	
+
 	status = ape_trad_query_string("PhotonList" , &sbuffer);
 	if (EXIT_SUCCESS != status) {
 	   	SIXT_ERROR("failed reading the name of the photon list");
@@ -176,7 +178,7 @@ int runmask_getpar(struct Parameters* par)
 
 	status = ape_trad_query_string("Instrument" , &sbuffer);
 	if (EXIT_SUCCESS != status) {
-		SIXT_ERROR("failed reading the name of the instrument");	
+		SIXT_ERROR("failed reading the name of the instrument");
 		return(status);
 	}
 	strcpy(par->Instrument , sbuffer);
@@ -189,12 +191,12 @@ int runmask_getpar(struct Parameters* par)
 	}
 	strcpy(par->Mode , sbuffer);
 	free(sbuffer);
-	
+
 	status=ape_trad_query_string("XMLFile" , &sbuffer);
   	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the name of the XML file");
 		return(status);
-  	} 
+  	}
 	strcpy(par->XMLFile, sbuffer);
 	free(sbuffer);
 
@@ -202,15 +204,15 @@ int runmask_getpar(struct Parameters* par)
   	if (EXIT_SUCCESS!=status) {
 		SIXT_ERROR("failed reading the name of the advanced XML file");
 		return(status);
-  	} 
+  	}
 	strcpy(par->AdvXMLFile, sbuffer);
 	free(sbuffer);
-	
+
 	status = ape_trad_query_string("Attitude" , &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		 SIXT_ERROR("failed reading the name of the attitude");
 		return(status);
-	} 
+	}
 	strcpy(par->Attitude , sbuffer);
 	free(sbuffer);
 
@@ -218,19 +220,19 @@ int runmask_getpar(struct Parameters* par)
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the right ascension of the telescope pointing");
 		return(status);
-	} 
+	}
 
 	status = ape_trad_query_double("DEC" , &par->DEC);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the declination of the telescope pointing");
 		return(status);
-	} 
+	}
 
 	status = ape_trad_query_file_name("Simput" , &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the name of the SIMPUT file");
 		return(status);
-	} 
+	}
 	strcpy(par->Simput , sbuffer);
 	free(sbuffer);
 
@@ -238,25 +240,25 @@ int runmask_getpar(struct Parameters* par)
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading MJDREF");
 		return(status);
-	} 
+	}
 
 	status = ape_trad_query_double("dt" , &par->dt);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading dt");
 		return(status);
-	 } 
+	 }
 
 	 status = ape_trad_query_double("TSTART" , &par->TSTART);
 	 if (EXIT_SUCCESS != status) {
 	 	SIXT_ERROR("failed reading TSTART");
 		return(status);
-	 } 
+	 }
 
 	status = ape_trad_query_double("Exposure", &par->Exposure);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the exposure time");
 		return(status);
-	 } 
+	 }
 
 	status = ape_trad_query_int("seed" , &par->Seed);
 	if (EXIT_SUCCESS != status) {
@@ -291,11 +293,11 @@ int photogen(struct Parameters* par, GenInst* inst)
 	PhotonFile* plf=NULL;
 
 	// Error status.
-	int status=EXIT_SUCCESS;  
+	int status=EXIT_SUCCESS;
 
 
 
-	//--------checking 
+	//--------checking
 	printf("PhotonList= %s \n",par->PhotonList);
 	printf("ImpactList= %s \n",par->ImpactList);
 	printf("XMLFile   = %s \n",par->XMLFile);
@@ -379,7 +381,7 @@ int photogen(struct Parameters* par, GenInst* inst)
 	// Start the actual photon generation (after loading required data):
 	headas_chat(3, "start photon generation process ...\n");
 
-	// Loop over photon generation, till the time of the photon exceeds 
+	// Loop over photon generation, till the time of the photon exceeds
 	// the requested exposure time.
 	// Simulation progress status (running from 0 to 1000).
 	int progress=0;
@@ -387,9 +389,9 @@ int photogen(struct Parameters* par, GenInst* inst)
 
 	// Photon generation.
 	Photon ph;
-	int isph=phgen(ac, &srccat, 1, 
-		     par->TSTART, par->TSTART+par->Exposure, 
-		     par->MJDREF, par->dt, 
+	int isph=phgen(ac, &srccat, 1,
+		     par->TSTART, par->TSTART+par->Exposure,
+		     par->MJDREF, par->dt,
 		     inst->tel->fov_diameter, &ph, &status);
 	CHECK_STATUS_BREAK(status);
 
@@ -461,7 +463,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
   do { //Beginning of the ERROR handling loop (will at most be run once)
 
     headas_chat(3 , "initialize imaging ...\n");
-     
+
     //Detector-setup:
     float x_det = mask_setup->x_det;
     float y_det = mask_setup->y_det;
@@ -473,7 +475,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
     //Distance between the mask plane and the collimator top plane
     float coll_distance = mask_setup->mask_distance - mask_setup->collimator_height;
     //Width of one detector-element that is surrounded by the collimator
-    float det_width = mask_setup->det_width; 
+    float det_width = mask_setup->det_width;
     // Initialize the random number generator.
     sixt_init_rng(getSeed(-1),&status);
     CHECK_STATUS_BREAK(status);
@@ -520,7 +522,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
       //Set the values of the AttitudeEntry.
 
       ac->nentries=1;
-      ac->entry[0]=initializeAttitudeEntry();  
+      ac->entry[0]=initializeAttitudeEntry();
       //ac->entry[0].time=0;
 
       //Telescope pointing direction:
@@ -549,7 +551,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
 	SIXT_ERROR("attitude data does not cover the specified period");
 	break;
 	}*/
-      
+
     }//END of setting up the attitude.
 
 
@@ -572,7 +574,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
     CHECK_STATUS_BREAK(status);
 
     // Create a new FITS file for the output of the impact list.
-    ilf=openNewImpactFile(par->ImpactList, 
+    ilf=openNewImpactFile(par->ImpactList,
 			  telescop, instrume, filter,
 			  ancrfile, respfile,
 			  mjdref, timezero, tstart, tstop,
@@ -636,7 +638,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
 
     //SCAN PHOTON LIST (starts with first entry, plf initialized to 0 at beginning)
     while (plf->row < plf->nrows) {
-         
+
       //Read an entry from the photon list:
       Photon photon={.time= 0.0};
       status=PhotonFile_getNextRow(plf,&photon);
@@ -652,7 +654,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
       //Determine current telescope pointing direction.
       telescope.nz=getTelescopeNz(ac,photon.time,&status);
       CHECK_STATUS_BREAK(status);
-      
+
       //Check whether photon is inside FOV:
       //Compare photon direction to direction of telescope axis
       if (check_fov(&phodir,&telescope.nz,fov_min_align)==0){
@@ -667,13 +669,13 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
 
 	//Determine photon impact position on detector in [m].
 	struct Point2d position;
-	
+
 	//first:impact position in mask-plane (transparent pixels only);
 	//if photon then hits the detector (and not the walls), return value is 1, 0 else
 
 	// If flag == 0 ---> mirax, flag == 1 ---> protoMirax
 
-	int reval;	
+	int reval;
 	if (mask_setup->flag ==1 ){
 
 	reval=getImpactPos_protoMirax(&wcs,&wcs2,&position,mask,photon.ra*180./M_PI,
@@ -688,7 +690,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
 
 
 	if (reval == 1){
-	 
+
 	  //Create new impact.
 	  Impact impact;
 	  impact.time       = photon.time;
@@ -705,7 +707,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
       } // END of photon  inside fov.
     } // END of scanning LOOP over the photon list.
     if (EXIT_SUCCESS!=status) break;
-  
+
     // Release memory.
     destroyCodedMask(&mask);
     wcsfree(&wcs);
@@ -723,7 +725,7 @@ int comaimg(struct Parameters* par,  MaskSystem* mask_setup)
   sixt_destroy_rng();
 
   if (EXIT_SUCCESS==status) headas_chat(3, "comaimg finished successfully!\n\n");
-  
+
 
 return(status);
 }
@@ -742,11 +744,11 @@ int comadet(struct Parameters* par,  MaskSystem* mask_setup)
   do {  //Beginning of the ERROR handling loop (will at most be run once)
 
     headas_chat(3 , "initialize comadet ...\n");
-   
+
   //Open the impact list FITS file.
     ilf=openImpactFile(par->ImpactList, READONLY, &status);
     CHECK_STATUS_RET(status, status);
-    
+
     //Set the event list template file:
     strcpy(par->EventListTemplate, SIXT_DATA_PATH);
     strcat(par->EventListTemplate, "/templates/coma.eventlist.tpl");
@@ -754,14 +756,14 @@ int comadet(struct Parameters* par,  MaskSystem* mask_setup)
     //DETECTOR setup.
     //initializes from par-file
     struct CoMaDetectorParameters cdp = {
-      .pixels = 
+      .pixels =
       { .xwidth = mask_setup->width,          //detector-width [pixel]
 	.ywidth = mask_setup->width,
 	.DCU_length = mask_setup->DCU_length, //length of DCU [m]
 	.DCU_gap = mask_setup->DCU_gap,       //gap between 2 DCU's [m]
 	.DCA_gap = mask_setup->DCA_gap,       //gap between 2 DCA's [m]
 	.xpixelwidth = mask_setup->pixelwidth,//width of one pixel [m]
-	.ypixelwidth = mask_setup->pixelwidth 
+	.ypixelwidth = mask_setup->pixelwidth
       },
       .eventfile_filename=par->EventList,
       .eventfile_template=par->EventListTemplate
@@ -771,7 +773,7 @@ int comadet(struct Parameters* par,  MaskSystem* mask_setup)
     detector=getCoMaDetector(&cdp, &status);
     CHECK_STATUS_RET(status, status);
 
-    //END of DETECTOR CONFIGURATION SETUP    
+    //END of DETECTOR CONFIGURATION SETUP
 
     // --- END of Initialization ---
 
@@ -791,9 +793,9 @@ int comadet(struct Parameters* par,  MaskSystem* mask_setup)
 
       //detection routine:determines affected pixel and adds new event
       //to the event-file
-	
+
      //flag if protomirax=1, mirax =0
-	
+
       if(mask_setup->flag==1){
 	status=addImpact2CoMaDetector_protoMirax(detector, &impact);
 	CHECK_STATUS_RET(status, status);
@@ -801,7 +803,7 @@ int comadet(struct Parameters* par,  MaskSystem* mask_setup)
 	status=addImpact2CoMaDetector(detector, &impact);
 	CHECK_STATUS_RET(status, status);
       }
-      
+
     } //END of scanning the impact list.
     CHECK_STATUS_RET(status, status);
 
@@ -830,12 +832,12 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
 
   CoMaEventFile* eventfile=NULL;
   SquarePixels* detector_pixels=NULL;
-  CodedMask* mask=NULL; 
+  CodedMask* mask=NULL;
   SourceImage* sky_pixels=NULL;
   ReconArray* recon=NULL;
   MaskShadow* mask_shadow=NULL;
   PixPositionList* position_list=NULL;
-  double* median_list=NULL; //temp array of all background pix for determination of median 
+  double* median_list=NULL; //temp array of all background pix for determination of median
   ReadEvent* ea=NULL;
   ReadEvent* ear=NULL;
   double* ReconImage1d=NULL;
@@ -863,13 +865,13 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
     // Load the coded mask from the file.
     mask=getCodedMaskFromFile(mask_setup->mask_pattern, &status);
     CHECK_STATUS_BREAK(status);
-    
+
     // DETECTOR setup.
     double ra=par->RA;
     double dec=par->DEC;
     double distance=mask_setup->mask_distance;
 
-    double xdetsize_beforeRepix=mask_setup->width; //in the case of Repix the detector_pixels are overwritten, 
+    double xdetsize_beforeRepix=mask_setup->width; //in the case of Repix the detector_pixels are overwritten,
     double ydetsize_beforeRepix=mask_setup->width; //but some functions need the old smaller size (of the det in pixels)
     double xpixelsize_beforeRepix=mask_setup->pixelwidth; //original detector-pixelsize
     double ypixelsize_beforeRepix=mask_setup->pixelwidth;
@@ -885,7 +887,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
     };
     detector_pixels=newSquarePixels(&spp, &status);
     CHECK_STATUS_BREAK(status);
-    // END of DETECTOR CONFIGURATION SETUP    
+    // END of DETECTOR CONFIGURATION SETUP
 
 
     // SKY IMAGE setup.
@@ -908,12 +910,12 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
        }else{//only works, if new smaller pixel fit without remainder in former big ones!
 	 //EventArray has been built with original pix-size, in order to distribute the events correctly
 	 //from now on, the new smaller size is used -> also for the later called ReconArray
-	 
+
 	 detector_pixels->xwidth=(detector_pixels->xwidth*detector_pixels->xpixelwidth)/mask_setup->repixsize;
 	 detector_pixels->ywidth=(detector_pixels->ywidth*detector_pixels->ypixelwidth)/mask_setup->repixsize;
 	 detector_pixels->xpixelwidth=mask_setup->repixsize;
 	 detector_pixels->ypixelwidth=mask_setup->repixsize;
-	 
+
 	 PixAmount=24;
 
 	 //get source image with correct axes, since xpixelwidth has changed
@@ -934,7 +936,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
         CHECK_STATUS_BREAK(status);
 
 	}
-    // END of SKY IMAGE CONFIGURATION SETUP 
+    // END of SKY IMAGE CONFIGURATION SETUP
 
     //SOURCE-POSITION DETERMINATION:
     double pixval=0.;
@@ -956,7 +958,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
     }
     wcs.naxis=2;
     wcs.crpix[0]=sky_pixels->crpix1;
-    wcs.crpix[1]=sky_pixels->crpix2; 
+    wcs.crpix[1]=sky_pixels->crpix2;
     wcs.crval[0]=sky_pixels->crval1*180./M_PI;
     wcs.crval[1]=sky_pixels->crval2*180./M_PI;
     wcs.cdelt[0]=sky_pixels->cdelt1*180./M_PI; //in deg
@@ -986,9 +988,9 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
        //unit-vector in z-direction:
        //Vector vz = {0.,0.,1.};
 
-       // Vector nx= normalize_vector(vector_product(nz,vz));   
-       // Vector ny= normalize_vector(vector_product(nz,nx)); 
-    
+       // Vector nx= normalize_vector(vector_product(nz,vz));
+       // Vector ny= normalize_vector(vector_product(nz,nx));
+
     // --- END of Initialization ---
 
 
@@ -1003,7 +1005,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
     int ea_size1=2*(mask->naxis1*mask->cdelt1/xpixelsize_beforeRepix);
     int ea_size2=2*(mask->naxis2*mask->cdelt2/ypixelsize_beforeRepix);
     ea=getEventArray(ea_size1,ea_size2,&status);
-     
+
        //detector size <= mask size
        //if mask size = det size -> shift is zero
        xdiff=((ea->naxis1)/2-xdetsize_beforeRepix)/2;
@@ -1020,10 +1022,10 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
 
        } // END of scanning the event list.
        CHECK_STATUS_BREAK(status);
-       
+
        //createTestImg(&ea->EventArray,2,detector_pixels->xwidth,detector_pixels->ywidth,
        // ea->naxis1/2+xdiff,ea->naxis2/2+ydiff,"eventArray.fits",&status);
-       
+
 
        if(mask_setup->repixsize!=0.){
 	 double pixelwidth_big=xpixelsize_beforeRepix;//width of the former EventArray pixels (the real det-pix-size)
@@ -1053,23 +1055,23 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
        }else{
 	 type=1;
 	 }*/ //TODO
-       
+
        recon=getReconArray(mask,2,detector_pixels,&status);
        int Size1 = recon->naxis1;
        int Size2 = recon->naxis2;
 
         //Get the 1d image of the reconstruction array -> needed by FFTW
-       ReconImage1d=SaveReconArray1d(recon, &status);  
-      
-       //perform a fft with the ReconArray       
+       ReconImage1d=SaveReconArray1d(recon, &status);
+
+       //perform a fft with the ReconArray
        fftReconArray=FFTOfArray_1d(ReconImage1d, Size1, Size2, -1);
 
        //get repixeled mask from ReconArray, which is needed later for building the mask shadow during IROS
        //basic constructor for both,the whole re-pixeled mask&/shadow element
-       mask_shadow=getMaskShadowElement(Size1/2, Size2/2, Size1, Size2, &status); 
+       mask_shadow=getMaskShadowElement(Size1/2, Size2/2, Size1, Size2, &status);
        //gets re-pixeled mask as big as EventArray with values betw. 0...1
        getMaskRepix(recon, mask_shadow, 1);
-  
+
        do{ //search for sources as long as pixval is above certain value
 	 //run as long as threshold==1
 
@@ -1080,12 +1082,12 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
 	   printf ("Error: ReconArrray and EventArray must have the same size!\n");
 	   break;
 	 }
-   
-	 //perform a fft with the EventArray       
+
+	 //perform a fft with the EventArray
 	 fftEventArray=FFTOfArray_1d(EventImage1d, Size1, Size2, -1);
-    
+
        //multiply fftEventArray with komplex conjugate of fftReconArray
-       //Re-part: E(Re)*R(Re)+E(Im)*R(Im); Im-part: E(Re)*R(Im)-E(Im)*R(Re)       
+       //Re-part: E(Re)*R(Re)+E(Im)*R(Im); Im-part: E(Re)*R(Im)-E(Im)*R(Re)
        Multiply=(fftw_complex*) fftw_malloc(sizeof(fftw_complex)*(Size1*Size2));
        for(ii=0; ii<Size1; ii++){
 	 for(jj=0; jj<Size2; jj++){
@@ -1096,7 +1098,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
 	 }
        }
 
-       //Inverse FFT of Multilpy which already is of type fftw_complex       
+       //Inverse FFT of Multilpy which already is of type fftw_complex
        fftInvMultiply=FFTOfArray(Multiply, Size1, Size2, +1);
 
        //save real part of inverse fft in sky image
@@ -1115,7 +1117,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
        saveSourceImage(sky_pixels, name_image, &status);
        CHECK_STATUS_BREAK(status);
        }
-   
+
        //finds current brightest pixel coordinates and saves PixPosition; returns current brightest pixval
        pixval=findBrightestPix(threshold, PixAmount, sky_pixels, pixval, position_list, &wcs, &status);
        threshold=getThresholdForSources(pixval, position_list, sky_pixels, median_list, par->Sigma);
@@ -1123,7 +1125,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
        //get mask shadow for current source
        getMaskShadow2(mask_shadow,&wcs2,position_list,sky_pixels->crpix1,sky_pixels->crpix2,detector_pixels,Size1/2,Size2/2,1,&status);
        double norm=getNormalization2(mask_shadow, ea, detector_pixels, xdiff, ydiff);
-       
+
        //new event array: method two
        if(norm>1.){
 
@@ -1135,12 +1137,12 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
 		 ea->EventArray[ii+ea->naxis1/2+xdiff][jj+ea->naxis2/2+ydiff]=0.;
 	       }
 	     }
-	     
+
 	   }
 	 }
 
        }else{
-	 threshold=2; 
+	 threshold=2;
        }
        FreeEventArray1d(EventImage1d);
        fftw_free(fftEventArray);
@@ -1156,7 +1158,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
   headas_chat(5, "cleaning up ...\n");
 
   // Free the detector and sky image pixels.
-  
+
     //set detector_pixels to original size again to be able to call destroy-fct from 'squarepixels.c'
   detector_pixels->xwidth=xdetsize_beforeRepix;
   destroySquarePixels(&detector_pixels);
@@ -1167,7 +1169,7 @@ int comarecon(struct Parameters* par, MaskSystem* mask_setup)
   FreeEventArray(ea);
   FreePixPositionList(position_list);
   FreeMaskShadow(mask_shadow,Size1);
-  fftw_free(fftReconArray); 
+  fftw_free(fftReconArray);
   wcsfree(&wcs);
   wcsfree(&wcs2);
   free_SourceImage(sky_pixels);

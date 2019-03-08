@@ -1,3 +1,24 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #ifndef TESPIXEL_H
 #define TESPIXEL_H
 
@@ -98,7 +119,7 @@ typedef double (*DeltaTb_provider) (tesparams *tes);
 
 double get_DeltaTb(tesparams *tes);
 
-// 
+//
 // meta struct containing all physical parameters of the TES pixel
 //
 struct tesparams {
@@ -174,9 +195,9 @@ struct tesparams {
   double Pnb1;   // thermal noise
 
   double Vdn;    // Johnson noise terms
-  double Vcn;    // 
-  double Vexc;   // 
-  double Vunk;   // excess noise 
+  double Vcn;    //
+  double Vexc;   //
+  double Vunk;   // excess noise
   double m_excess; // magnitude of excess noise relative to Johnson (bath) noise
   double Vbn; 	// voltage noise on bias line
 

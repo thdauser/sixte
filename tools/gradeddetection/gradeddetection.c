@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
  */
 
 #include "gradeddetection.h"
@@ -142,5 +144,3 @@ void gradeddetection_getpar(struct Parameters* const par,int* const status) {
 	query_simput_parameter_bool("clobber", &par->clobber, status);
 	query_simput_parameter_bool("history", &par->history, status);
 }
-
-

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "photon.h"
@@ -47,4 +49,3 @@ void copyPhoton(Photon* const dest, const Photon* const source)
   dest->ph_id  = source->ph_id;
   dest->src_id = source->src_id;
 }
-

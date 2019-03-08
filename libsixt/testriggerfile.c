@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "testriggerfile.h"
@@ -68,7 +70,7 @@ void freeTesTriggerFile(TesTriggerFile** const file, int* const status){
       }
 
       fits_close_file_chksum((*file)->fptr, status);
-      headas_chat(5, "closed TesStream list file (containing %ld rows).\n", 
+      headas_chat(5, "closed TesStream list file (containing %ld rows).\n",
                   (*file)->nrows);
     }
 
@@ -120,7 +122,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_update_key(file->fptr, TINT, "PREBUFF", &preBufferSize, "Number of samples before start of pulse", status);
   double deltat = 1./sampleFreq;
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &deltat, "Time resolution of data stream", status);
-  
+
   //Write XML and pixel impact filenames into header
   fits_update_key(file->fptr,TSTRING,"XMLFILE",xmlfile,NULL,status);
   fits_update_key(file->fptr,TSTRING,"PIXFILE",impactlist,NULL,status);
@@ -139,10 +141,10 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
     sprintf(tform[1], "%ldU",triggerSize);
     CHECK_NULL_RET(tform[1],*status,"Memory allocation failed",NULL);
   }
-  
+
   // Include allocate a buffer of rows ahead of time
   file->rowbuffer = TESTRIGGERFILE_ROWBUFFERSIZE;
-  
+
   fits_create_tbl(file->fptr, BINARY_TBL, file->rowbuffer, 4, ttype, tform, tunit,"RECORDS", status);
   //Add keywords to other extension
   fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in a standard trigger", status);
@@ -238,17 +240,17 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
     fits_read_col(file->fptr, TLONG, file->pixIDCol,
 		  file->row,1,1,0,&(record->pixid), &anynul,status);
     CHECK_STATUS_RET(*status,0);
-    
+
     fits_read_col(file->fptr, TDOUBLE, file->timeCol,
 		  file->row,1,1,0,&(record->time), &anynul,status);
     CHECK_STATUS_RET(*status,0);
-    
+
     //Changed below by MTC//    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
     for (unsigned long i=0 ; i < record->trigger_size ; i++) {
 
       record->adc_double[i]= (double) (record->adc_array[i]);
     }
-    
+
     file->row++;
     return(1);
   } else {
@@ -263,7 +265,7 @@ void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status)
         // if we've run out of buffer, extend the table
         if (outputFile->rowbuffer==0){
                 // extend to 1.5 of previous length
-                outputFile->rowbuffer = (long) outputFile->nrows/2; 
+                outputFile->rowbuffer = (long) outputFile->nrows/2;
                 fits_insert_rows(outputFile->fptr, outputFile->nrows, outputFile->rowbuffer, status);
         }
 

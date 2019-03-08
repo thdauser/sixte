@@ -1,6 +1,27 @@
+/*
+   This file is part of SIXTE.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
+*/
+
 #include "repix.h"
 
-void repixNoReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int type, 
+void repixNoReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int type,
 		     int Size1, int Size2, double pixelwidth_big, double pixelwidth_small)
 {
   int xcount, ycount;                 //bigcount
@@ -21,20 +42,20 @@ void repixNoReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int ty
   //Scanning over all Array-elements to get Array with smaller pixel-size
   for(ycount=0; ycount<Size1; ycount++){
     for(xcount=0; xcount<Size2; xcount++){
-      
+
       topbig=ycount*pixelwidth_big;   //top of current big pixel
-      ypixelcount=ceil(topbig/pixelwidth_small);  //count for new smaller pixels 
+      ypixelcount=ceil(topbig/pixelwidth_small);  //count for new smaller pixels
        //current y-pix: top border of big pix/width of one small pix->determines 1st small in current big
 
       do{//as long as in current big pixel in y-direction
 	topsmall=ypixelcount*pixelwidth_small; //top border of small pix: current small pix*width of one
-	   
+
 	leftbig=xcount*pixelwidth_big;
 	xpixelcount=ceil(leftbig/pixelwidth_small);
 	do{//as long as in current big pixel in x-direction
 	  leftsmall=xpixelcount*pixelwidth_small;
-    
-	  dataAR[xpixelcount][ypixelcount]=dataBR[xcount][ycount];	     
+
+	  dataAR[xpixelcount][ypixelcount]=dataBR[xcount][ycount];
 
 	  xpixelcount++;
 	}while(leftsmall+pixelwidth_small < (leftbig+pixelwidth_big));
@@ -48,7 +69,7 @@ void repixNoReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int ty
 
 }
 
-void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int type, 
+void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int type,
 		       int Size1, int Size2, double pixelwidth_BR_big, double pixelwidth_BR_small,
 		       double pixelwidth_small, double MinVal)
 {
@@ -59,9 +80,9 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
   double w, h;                       //width and height of part of small pixel inside current big pixel
   double diff;                       //difference between MinVal (to which all BR-pixels are initialzed to)
                                        // and current not zero pix
-  double pixelheight_big;            //height of former bigger pixels;depending on whether size is 
+  double pixelheight_big;            //height of former bigger pixels;depending on whether size is
                                        //varying in input array
-  double pixelwidth_big;             //width of former bigger pixels;depending on whether size is 
+  double pixelwidth_big;             //width of former bigger pixels;depending on whether size is
                                        //varying in input array
   double dataBRbuffer;               //buffer for BR-data -> has to be typecasted for some input-types
 
@@ -75,7 +96,7 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
     dataBR_int=cm->map;
     ReconArray* ra =(ReconArray*)arg_dataAfterRepix;
     dataAR=ra->Rmap;
-  }else if(type==TPROJMASK){ 
+  }else if(type==TPROJMASK){
     ProjectedMask* pmBR =(ProjectedMask*)arg_dataBeforeRepix;
     dataBR_double=pmBR->map;
     ProjectedMask* pmAR =(ProjectedMask*)arg_dataAfterRepix;
@@ -112,7 +133,7 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
 	  leftbig=(xcount/2+1)*pixelwidth_BR_big+(xcount/2)*pixelwidth_BR_small;
 	}
       }
-      
+
       if((int)((topbig/pixelwidth_small-(int)(topbig/pixelwidth_small))*100) == 99){
 	  ypixelcount=(ceil)(topbig/pixelwidth_small);
 	}else{
@@ -124,7 +145,7 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
 	//count for new smaller pixels
 
 	topsmall=ypixelcount*pixelwidth_small; //top border of small pix: current small pix*width of one
-	  
+
 	if(topsmall<topbig){//1st small in current big starts with part of it in former pix
 	  h=pixelwidth_small-(topbig-topsmall);//height that lies in current big:
 	                                 //smallwidth-(part of height that lies in former big pix)
@@ -145,10 +166,10 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
 	}else{
 	  xpixelcount=leftbig/pixelwidth_small;
 	}
-   
+
 	do{//as long as in current big pixel in x-direction
 	  leftsmall=xpixelcount*pixelwidth_small;
-  
+
 	  if(leftsmall<leftbig){
 	       w=pixelwidth_small-(leftbig-leftsmall);
 	     }else{
@@ -170,7 +191,7 @@ void repixWithReminder(void* arg_dataBeforeRepix, void* arg_dataAfterRepix, int 
 	    //distance between MinVal and MaxVal has to be distributed to new smaller pix
 	    diff=dataBRbuffer-MinVal; //dataBR[xcount][ycount]=MaxVal;
                                     //MinVal might be neg-> greater diff
-	    dataAR[xpixelcount][ypixelcount]+=//one small pix can have 
+	    dataAR[xpixelcount][ypixelcount]+=//one small pix can have
 	      //contributions from parts lying in diff big pix
 	      h*w/(pixelwidth_small*pixelwidth_small)*diff;
 	      //percentage of area with respect to area of whole small pix

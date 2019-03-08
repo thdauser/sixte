@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladsignalfile.h"
@@ -25,7 +27,7 @@ LADSignalFile* newLADSignalFile(int* const status)
 {
   LADSignalFile* file=
     (LADSignalFile*)malloc(sizeof(LADSignalFile));
-  CHECK_NULL_RET(file, *status, 
+  CHECK_NULL_RET(file, *status,
 		 "memory allocation for LADSignalFile failed", file);
 
   // Initialize pointers with NULL.
@@ -86,7 +88,7 @@ LADSignalFile* openNewLADSignalFile(const char* const filename,
 
   // Create a new LADSignal list FITS file from the template file.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
 	  "/templates/ladsignalfile.tpl");
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
@@ -96,7 +98,7 @@ LADSignalFile* openNewLADSignalFile(const char* const filename,
   int timeref;
   fits_get_system_time(datestr, &timeref, status);
   CHECK_STATUS_RET(*status, file);
-  fits_update_key(file->fptr, TSTRING, "DATE", datestr, 
+  fits_update_key(file->fptr, TSTRING, "DATE", datestr,
 		  "File creation date", status);
   CHECK_STATUS_RET(*status, file);
 
@@ -117,13 +119,13 @@ LADSignalFile* openNewLADSignalFile(const char* const filename,
   // Re-open the file.
   file=openLADSignalFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
-  
+
   return(file);
 }
 
 
 LADSignalFile* openLADSignalFile(const char* const filename,
-				 const int mode, 
+				 const int mode,
 				 int* const status)
 {
   LADSignalFile* file=newLADSignalFile(status);
@@ -149,7 +151,7 @@ LADSignalFile* openLADSignalFile(const char* const filename,
   fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->csrc_id, status);
   CHECK_STATUS_RET(*status, file);
 
-  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent 
+  // Check if the vector length of the PH_ID and SRC_ID columns is equivalent
   // with the corresponding array lengths in the LADSignal data structure.
   int typecode;
   long repeat, width;
@@ -188,8 +190,8 @@ LADSignalFile* openLADSignalFile(const char* const filename,
 }
 
 
-void addLADSignal2File(LADSignalFile* const file, 
-		       LADSignal* const event, 
+void addLADSignal2File(LADSignalFile* const file,
+		       LADSignal* const event,
 		       int* const status)
 {
   // Check if the event file has been opened.
@@ -226,21 +228,21 @@ void getLADSignalFromFile(const LADSignalFile* const file,
   float fnull=0.;
   long lnull=0;
 
-  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, row, 1, 1,
 		&dnull, &event->time, &anynul, status);
-  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1, 
+  fits_read_col(file->fptr, TFLOAT, file->csignal, row, 1, 1,
 		&fnull, &event->signal, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cpanel, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cpanel, row, 1, 1,
 		&lnull, &event->panel, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cmodule, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cmodule, row, 1, 1,
 		&lnull, &event->module, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->celement, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->celement, row, 1, 1,
 		&lnull, &event->element, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->canode, row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->canode, row, 1, 1,
 		&lnull, &event->anode, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NLADSIGNALPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NLADSIGNALPHOTONS,
 		&lnull, &event->ph_id, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NLADSIGNALPHOTONS, 
+  fits_read_col(file->fptr, TLONG, file->csrc_id, row, 1, NLADSIGNALPHOTONS,
 		&lnull, &event->src_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
@@ -257,22 +259,21 @@ void updateLADSignalInFile(const LADSignalFile* const file,
 			   const int row, LADSignal* const event,
 			   int* const status)
 {
-  fits_write_col(file->fptr, TDOUBLE, file->ctime, row, 
+  fits_write_col(file->fptr, TDOUBLE, file->ctime, row,
 		 1, 1, &event->time, status);
-  fits_write_col(file->fptr, TFLOAT, file->csignal, row, 
+  fits_write_col(file->fptr, TFLOAT, file->csignal, row,
 		 1, 1, &event->signal, status);
-  fits_write_col(file->fptr, TLONG, file->cpanel, row, 
+  fits_write_col(file->fptr, TLONG, file->cpanel, row,
 		 1, 1, &event->panel, status);
-  fits_write_col(file->fptr, TLONG, file->cmodule, row, 
+  fits_write_col(file->fptr, TLONG, file->cmodule, row,
 		 1, 1, &event->module, status);
-  fits_write_col(file->fptr, TLONG, file->celement, row, 
+  fits_write_col(file->fptr, TLONG, file->celement, row,
 		 1, 1, &event->element, status);
-  fits_write_col(file->fptr, TLONG, file->canode, row, 
+  fits_write_col(file->fptr, TLONG, file->canode, row,
 		 1, 1, &event->anode, status);
-  fits_write_col(file->fptr, TLONG, file->cph_id, row, 
+  fits_write_col(file->fptr, TLONG, file->cph_id, row,
 		 1, NLADSIGNALPHOTONS, &event->ph_id, status);
-  fits_write_col(file->fptr, TLONG, file->csrc_id, row, 
+  fits_write_col(file->fptr, TLONG, file->csrc_id, row,
 		 1, NLADSIGNALPHOTONS, &event->src_id, status);
   CHECK_STATUS_VOID(*status);
 }
-

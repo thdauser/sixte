@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "linkedimplist.h"
@@ -72,4 +74,3 @@ LinkedImpListElement* mergeLinkedImpLists(LinkedImpListElement* list1,
 
   return(start);
 }
-

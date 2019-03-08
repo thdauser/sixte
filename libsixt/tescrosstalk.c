@@ -16,6 +16,8 @@
 
 
    Copyright 2017 Christian Kirsch, ECAP
+   Copyright 2018-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tescrosstalk.h"
@@ -73,7 +75,7 @@ void get_resonance_frequencies(AdvDet* det, int* status){
 
 /** Alloc an empty FDM system */
 FDMSystem* newFDMSystem(int num_pixels, int* status){
-  
+
   FDMSystem* fdmsys = (FDMSystem*) malloc(sizeof (FDMSystem));
   CHECK_MALLOC_RET_NULL_STATUS(fdmsys, *status);
 
@@ -85,7 +87,7 @@ FDMSystem* newFDMSystem(int num_pixels, int* status){
   fdmsys->res_omega_array = (double*) malloc(num_pixels*sizeof(double));
   CHECK_MALLOC_RET_NULL_STATUS(fdmsys->res_omega_array, *status);
 
-  // set up the Z_array 
+  // set up the Z_array
   fdmsys->Z_array = (double **)malloc(num_pixels* sizeof(double));
   CHECK_MALLOC_RET_NULL_STATUS(fdmsys->Z_array, *status);
   int ii;
@@ -110,7 +112,7 @@ FDMSystem* newFDMSystem(int num_pixels, int* status){
 
 /** Initialize an FDM system */
 void init_FDMSystem(Channel* chan, double L_Common, double C_Common, double TTR, int* status){
-  
+
   // get an empty FDMSystem
   FDMSystem* sys = newFDMSystem(chan->num_pixels, status);
 
@@ -176,7 +178,7 @@ void solve_FDM(Channel *chan){
       if (i_pix == i_freq) {
         continue; // only off-resonance currents
         //Icalc = gsl_complex_rect(0,0);
-      } else { 
+      } else {
         gsl_complex denominator = gsl_complex_rect((chan->pixels[i_pix]->tes->RT+chan->pixels[i_pix]->tes->Reff)*(1.+chan->fdmsys->capFac[i_freq]), chan->fdmsys->Z_array[i_freq][i_pix] - chan->fdmsys->X_L[i_freq]);
         gsl_complex numerator = gsl_complex_rect((chan->pixels[i_freq]->tes->RT+chan->pixels[i_freq]->tes->Reff)*(1.+chan->fdmsys->capFac[i_freq]), chan->fdmsys->Z_array[i_freq][i_freq] - chan->fdmsys->X_L[i_freq]);
         Icalc = gsl_complex_mul_real(gsl_complex_div(numerator,denominator), chan->pixels[i_freq]->tes->I0);

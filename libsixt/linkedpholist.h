@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef LINKEDPHOLIST_H
@@ -53,7 +55,7 @@ LinkedPhoListElement* newLinkedPhoListElement(int* const status);
 void freeLinkedPhoList(LinkedPhoListElement** const list);
 
 /** Merge 2 time-ordered linked photon lists. */
-LinkedPhoListElement* mergeLinkedPhoLists(LinkedPhoListElement* list1, 
+LinkedPhoListElement* mergeLinkedPhoLists(LinkedPhoListElement* list1,
 					  LinkedPhoListElement* list2);
 
 

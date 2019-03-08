@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2016 Michael Wille, FAU
+   Copyright 2017-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef _BACKGROUND_H_
@@ -53,7 +55,7 @@ typedef struct backgroundInput {
   double interval;
   double intervalsum;
   gsl_rng *randgen;
-  
+
   double xmin_mm;
   double xmax_mm;
   double ymin_mm;
@@ -70,7 +72,7 @@ typedef struct backgroundInput {
   int xcolnum;
   int ycolnum;
   int numevents;
-  
+
   double eventsperinterval;
   double *hit_xpos;
   double *hit_ypos;

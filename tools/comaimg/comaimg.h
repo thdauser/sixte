@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef COMAIMG_H
@@ -46,7 +48,7 @@ struct Parameters {
   char Mask[MAXMSG];       //input:mask
   char ImpactList[MAXMSG]; //output:impact list
   char Attitude[MAXMSG];   //input:attitude
-  
+
   //Distance between the mask and detection plane ([m])
   float MaskDistance;
   //mask-size (width, depth) ([m])

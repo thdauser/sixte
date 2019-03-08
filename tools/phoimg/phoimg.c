@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "phoimg.h"
@@ -36,7 +38,7 @@ int phoimg_main() {
   GenInst* inst=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
 
   // Register HEATOOL:
@@ -94,12 +96,12 @@ int phoimg_main() {
 
       // Check if the required time interval for the simulation
       // is a subset of the period covered by the attitude file.
-      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART, 
+      checkAttitudeTimeCoverage(ac, par.MJDREF, par.TSTART,
 				par.TSTART+par.Exposure, &status);
       CHECK_STATUS_BREAK(status);
     }
     // END of setting up the attitude.
-    
+
     // --- END of Initialization ---
 
 
@@ -129,7 +131,7 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Open the output impact list file.
-    ilf=openNewImpactFile(impactlist_filename, 
+    ilf=openNewImpactFile(impactlist_filename,
 			  telescop, instrume,
 			  inst->tel->arf->Filter,
 			  inst->tel->arf_filename,
@@ -144,11 +146,11 @@ int phoimg_main() {
     CHECK_STATUS_BREAK(status);
 
     // Scan the entire photon list.
-    int progress=0;  
+    int progress=0;
     while (plf->row < plf->nrows) {
 
       Photon photon={.time=0.};
-      
+
       // Read an entry from the photon list:
       status=PhotonFile_getNextRow(plf, &photon);
       CHECK_STATUS_BREAK(status);
@@ -217,7 +219,7 @@ int phoimg_getpar(struct Parameters* par)
   char* sbuffer=NULL;
 
   // Error status.
-  int status=EXIT_SUCCESS; 
+  int status=EXIT_SUCCESS;
 
   // Read all parameters via the ape_trad_ routines.
 
@@ -225,7 +227,7 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the photon list");
     return(status);
-  } 
+  }
   strcpy(par->PhotonList, sbuffer);
   free(sbuffer);
 
@@ -233,7 +235,7 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the impact list");
     return(status);
-  } 
+  }
   strcpy(par->ImpactList, sbuffer);
   free(sbuffer);
 
@@ -241,7 +243,7 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the mission");
     return(status);
-  } 
+  }
   strcpy(par->Mission, sbuffer);
   free(sbuffer);
 
@@ -249,7 +251,7 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument");
     return(status);
-  } 
+  }
   strcpy(par->Instrument, sbuffer);
   free(sbuffer);
 
@@ -257,7 +259,7 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the instrument mode");
     return(status);
-  } 
+  }
   strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
@@ -265,7 +267,7 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the XML file");
     return(status);
-  } 
+  }
   strcpy(par->XMLFile, sbuffer);
   free(sbuffer);
 
@@ -273,7 +275,7 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the attitude file");
     return(status);
-  } 
+  }
   strcpy(par->Attitude, sbuffer);
   free(sbuffer);
 
@@ -281,31 +283,31 @@ int phoimg_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the right ascension of the telescope pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_float("Dec", &par->Dec);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("MJDREF", &par->MJDREF);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading MJDREF");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("TSTART", &par->TSTART);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading TSTART");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_double("Exposure", &par->Exposure);
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the exposure time");
     return(status);
-  } 
+  }
 
   status=ape_trad_query_int("seed", &par->Seed);
   if (EXIT_SUCCESS!=status) {
@@ -321,6 +323,3 @@ int phoimg_getpar(struct Parameters* par)
 
   return(status);
 }
-
-
-

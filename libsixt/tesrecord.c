@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tesrecord.h"
@@ -81,7 +83,7 @@ void resizeTesRecord(TesRecord *record,unsigned long triggerSize, int* const sta
   CHECK_STATUS_VOID(*status);
 
   // reallocate the buffers
-  // note: since a tes record has no concept of how full it is, 
+  // note: since a tes record has no concept of how full it is,
   // this can destroy data!
   uint16_t* new_adc=realloc(record->adc_array,triggerSize*sizeof(uint16_t));
   CHECK_NULL_VOID(new_adc,*status,"Cannot reallocate ADC array");
@@ -198,5 +200,3 @@ int popPhID(PhIDList * const list,long* ph_id,double* time,int* const status){
 	list->n_elements--;
 	return(1);
 }
-
-

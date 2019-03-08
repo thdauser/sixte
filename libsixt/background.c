@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Michael Wille, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "background.h"
@@ -55,7 +57,7 @@ static int calcEvents(const double* const hit_time, const long numrows) {
  *  Write positions of next separate events to an eventlist.
  */
 static void fillEventList(const double* const hit_time,
-		   const long numrows, 
+		   const long numrows,
 		   size_t* const eventlist) {
   int cc = 0, dd = 0;
 
@@ -143,7 +145,7 @@ void bkgInitialize(const char* const filename,
 
   fits_open_table(&bkginputdata.inputfptr, filename, READONLY, status);
   fits_report_error(stderr, *status);
-  
+
   /* lead keywords describing the detector size used in the background simulations.*/
   fits_read_key(bkginputdata.inputfptr, TDOUBLE, "SAMINX", &bkginputdata.xmin_mm, NULL, status);
   if(*status != 0) {
@@ -195,7 +197,7 @@ void bkgInitialize(const char* const filename,
   fits_get_colnum(bkginputdata.inputfptr, CASEINSEN, bkginputdata.ycolname, &bkginputdata.ycolnum, status);
   fits_get_colnum(bkginputdata.inputfptr, CASEINSEN, bkginputdata.energycolname, &bkginputdata.energycolnum, status);
   fits_report_error(stderr, *status);
-  
+
   fits_read_col(bkginputdata.inputfptr, TDOUBLE, bkginputdata.timecolnum, 1L, 1L, bkginputdata.numrows, 0, bkginputdata.hit_time, NULL, status);
   fits_read_col(bkginputdata.inputfptr, TDOUBLE, bkginputdata.xcolnum, 1L, 1L, bkginputdata.numrows, 0, bkginputdata.hit_xpos, NULL, status);
   fits_read_col(bkginputdata.inputfptr, TDOUBLE, bkginputdata.ycolnum, 1L, 1L, bkginputdata.numrows, 0, bkginputdata.hit_ypos, NULL, status);
@@ -320,7 +322,7 @@ void bkgGetRate(double interval) {
   rCurr.rate = (float*) malloc(rCurr.ratesize * sizeof(float));
 
   // calculate current lightcurve slope to be used for interpolation
-  bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) / 
+  bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) /
                             (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
 
 
@@ -346,7 +348,7 @@ void bkgGetRate(double interval) {
   // All data will be normalized to the respective length fraction of the interval as the
   // rate output is multiplied later with the total number of events directly.
   while((bkginputdata.intervalsum >= bkgratefct.starttime) &&
-        (interval > 0) && 
+        (interval > 0) &&
         (bkgratefct.currenttime < &bkgratefct.time[bkgratefct.numelements - 1])) {
     startfraction = bkgratefct.time[0] + bkgratefct.intervalsum - *bkgratefct.currenttime;
     endfraction = *(bkgratefct.currenttime + 1) - (bkgratefct.time[0] + bkgratefct.intervalsum);
@@ -356,34 +358,34 @@ void bkgGetRate(double interval) {
 
     // if the interval is larger than the current bin we jump to the next and update the slope
     if(interval > 0) {
-      rCurr.rate[rCurr.numelements] = 0.5 * 
+      rCurr.rate[rCurr.numelements] = 0.5 *
                                       ((*bkgratefct.currentrate + bkgratefct.currentslope * startfraction) +
                                       *(bkgratefct.currentrate + 1));
       rCurr.rate[rCurr.numelements] *= endfraction / fullinterval;
       bkgratefct.currentrate++;
       bkgratefct.currenttime++;
-      bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) / 
+      bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) /
                                 (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
     } else {
-      rCurr.rate[rCurr.numelements] = 0.5 * 
+      rCurr.rate[rCurr.numelements] = 0.5 *
                                       ((*bkgratefct.currentrate + bkgratefct.currentslope * startfraction) +
                                       *(bkgratefct.currentrate + 1) + bkgratefct.currentslope * interval);
       rCurr.rate[rCurr.numelements] *= (*(bkgratefct.currenttime + 1) - (*bkgratefct.currenttime + startfraction) + interval) / fullinterval;
     }
     rCurr.numelements++;
-    
+
     // resize rate array if its maximum size has been reached
     if(rCurr.numelements >= rCurr.ratesize) {
       rCurr.rate = (float*) realloc(rCurr.rate, (rCurr.numelements + 50) * sizeof(float));
       rCurr.ratesize = rCurr.numelements + 50;
     }
   }
-  
+
   // if we hit the end of the last bin we increase the pointers and recalculate the slope
   if(interval == 0) {
     bkgratefct.currentrate++;
     bkgratefct.currenttime++;
-    bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) / 
+    bkgratefct.currentslope = (*(bkgratefct.currentrate + 1) - *bkgratefct.currentrate) /
                               (*(bkgratefct.currenttime + 1) - *bkgratefct.currenttime);
   } else {
     bkgratefct.intervalsum += interval;
@@ -393,7 +395,7 @@ void bkgGetRate(double interval) {
   // re-adjust size of rate array to actual size and remove trailing free space */
   rCurr.ratesize = rCurr.numelements + 1;
   rCurr.rate = (float*) realloc(rCurr.rate, rCurr.ratesize * sizeof(float));
-  
+
   // if we are at the EOF but still have some interval left we set the rate to 1.
   if((interval > 0) && (bkgratefct.currenttime >= &bkgratefct.time[bkgratefct.numelements - 1])) {
     rCurr.numelements++;
@@ -452,7 +454,7 @@ backgroundOutput* bkgGetBackgroundList(double interval) {
         bkgresultlist->hit_xpos[bkgresultlist->numhits] = bkginputdata.hit_xpos[bkginputdata.eventlist[rand] + hitcnt];
         bkgresultlist->hit_ypos[bkgresultlist->numhits] = bkginputdata.hit_ypos[bkginputdata.eventlist[rand] + hitcnt];
         bkgresultlist->numhits++;
-        
+
         /* Check if we are currently inside a subevent (i.e. the next "event" in the list belongs to the same event -> same time).
          * If yes, set hitcnt to something != 0
          */
@@ -491,7 +493,7 @@ backgroundOutput* bkgGetBackgroundList(double interval) {
     	}
     }
   }
-  
+
   return bkgresultlist;
 }
 

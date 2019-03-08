@@ -16,6 +16,8 @@
 
 
    Copyright 2016 Philippe Peille, CNES
+   Copyright 2017-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tessim.h"

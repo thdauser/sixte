@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef GRADEDDETECTION_H
@@ -37,16 +39,16 @@ struct Parameters {
   char* PixImpList;
   char* EvtFile;
   char* AdvXml;
-  
+
   double tstart;
   double tstop;
-  
+
   int doCrosstalk;
   int saveCrosstalk;
 
   int clobber;
   int history;
-  
+
   int seed;
 };
 

@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Jelle de Plaa, SRON, Thorsten Brand, FAU, Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "runtes.h"
@@ -478,4 +480,3 @@ void copyParams2GeneralStruct(const struct Parameters partmp, TESGeneralParamete
 
   par->seed=partmp.seed;
 }
-

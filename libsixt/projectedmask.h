@@ -1,4 +1,4 @@
-/*   
+/*
    This file is part of SIXTE.
 
    SIXTE is free software: you can redistribute it and/or modify it
@@ -16,6 +16,9 @@
 
 
    Copyright 2007-2014 Christian Schmid, Mirjam Oertel, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
+
 */
 
 #ifndef PROJECTEDMASK_H
@@ -33,7 +36,7 @@ typedef struct{
 		    The pixels of size 'pixelwidth1 x pixelwidth1' contain the former
 		    mask values (1 equals tranparent, 0 equals opaque).
 		    The pixels of size 'pixelwidth2 x pixelwidth1' contain the intermediate values
-		    given by the two surrounding 'real' former mask pixels and the pixels of size 
+		    given by the two surrounding 'real' former mask pixels and the pixels of size
 		    'pixelwidth2 x pixelwidth2' contain the intermediate values of the four
 		    surrounding 'intermediate pixels'. */
 

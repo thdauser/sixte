@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "ladimpactfile.h"
@@ -55,7 +57,7 @@ void freeLADImpactFile(LADImpactFile** const file, int* const status)
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
       fits_close_file((*file)->fptr, status);
-      headas_chat(5, "closed impact list file (containing %ld rows).\n", 
+      headas_chat(5, "closed impact list file (containing %ld rows).\n",
 		  (*file)->nrows);
     }
     free(*file);
@@ -83,7 +85,7 @@ LADImpactFile* openLADImpactFile(const char* const filename,
   if (IMAGE_HDU==hdutype) {
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "no table extension available in FITS file '%s'", 
+    sprintf(msg, "no table extension available in FITS file '%s'",
 	    filename);
     SIXT_ERROR(msg);
     return(file);
@@ -137,7 +139,7 @@ LADImpactFile* openNewLADImpactFile(const char* const filename,
 
   // Create a new event list FITS file from the template file.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, 
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
 	  "/templates/ladimpactfile.tpl");
   fits_create_file(&file->fptr, buffer, status);
   CHECK_STATUS_RET(*status, file);
@@ -147,7 +149,7 @@ LADImpactFile* openNewLADImpactFile(const char* const filename,
   int timeref;
   fits_get_system_time(datestr, &timeref, status);
   CHECK_STATUS_RET(*status, file);
-  fits_update_key(file->fptr, TSTRING, "DATE", datestr, 
+  fits_update_key(file->fptr, TSTRING, "DATE", datestr,
 		  "File creation date", status);
   CHECK_STATUS_RET(*status, file);
 
@@ -164,7 +166,7 @@ LADImpactFile* openNewLADImpactFile(const char* const filename,
   // Close the new LADImpactFile.
   freeLADImpactFile(&file, status);
   CHECK_STATUS_RET(*status, file);
-  
+
   // Re-open the file.
   file=openLADImpactFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
@@ -173,8 +175,8 @@ LADImpactFile* openNewLADImpactFile(const char* const filename,
 }
 
 
-void getNextLADImpactFromFile(LADImpactFile* const file, 
-			      LADImpact* const impact, 
+void getNextLADImpactFromFile(LADImpactFile* const file,
+			      LADImpact* const impact,
 			      int* const status)
 {
   // Check if the file has been opened.
@@ -202,50 +204,50 @@ void getNextLADImpactFromFile(LADImpactFile* const file,
   // Read in the data.
   int anynul=0;
   impact->time=0.;
-  fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1,
 		&impact->time, &impact->time, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->energy=0.;
-  fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
+  fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1,
 		&impact->energy, &impact->energy, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->panel=0;
-  fits_read_col(file->fptr, TLONG, file->cpanel, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cpanel, file->row, 1, 1,
 		&impact->panel, &impact->panel, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->module=0;
-  fits_read_col(file->fptr, TLONG, file->cmodule, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cmodule, file->row, 1, 1,
 		&impact->module, &impact->module, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->element=0;
-  fits_read_col(file->fptr, TLONG, file->celement, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->celement, file->row, 1, 1,
 		&impact->element, &impact->element, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->position.x=0.;
-  fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1,
 		&impact->position.x, &impact->position.x, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->position.y=0.;
-  fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1,
 		&impact->position.y, &impact->position.y, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->ph_id=0;
-  fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1,
 		&impact->ph_id, &impact->ph_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
 
   impact->src_id=0;
-  fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1,
 		&impact->src_id, &impact->src_id, &anynul, status);
   CHECK_STATUS_VOID(*status);
-  
+
   // Check if an error occurred during the reading process.
   if (0!=anynul) {
     *status=EXIT_FAILURE;
@@ -257,30 +259,29 @@ void getNextLADImpactFromFile(LADImpactFile* const file,
 }
 
 
-void addLADImpact2File(LADImpactFile* const ilf, 
-		       LADImpact* const impact, 
+void addLADImpact2File(LADImpactFile* const ilf,
+		       LADImpact* const impact,
 		       int* const status)
 {
   ilf->row++;
   ilf->nrows++;
 
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime,
 		 ilf->row, 1, 1, &impact->time, status);
-  fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
+  fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy,
 		 ilf->row, 1, 1, &impact->energy, status);
-  fits_write_col(ilf->fptr, TLONG, ilf->cpanel, 
+  fits_write_col(ilf->fptr, TLONG, ilf->cpanel,
 		 ilf->row, 1, 1, &impact->panel, status);
-  fits_write_col(ilf->fptr, TLONG, ilf->cmodule, 
+  fits_write_col(ilf->fptr, TLONG, ilf->cmodule,
 		 ilf->row, 1, 1, &impact->module, status);
-  fits_write_col(ilf->fptr, TLONG, ilf->celement, 
+  fits_write_col(ilf->fptr, TLONG, ilf->celement,
 		 ilf->row, 1, 1, &impact->element, status);
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->cx, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cx,
 		 ilf->row, 1, 1, &(impact->position.x), status);
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy,
 		 ilf->row, 1, 1, &(impact->position.y), status);
-  fits_write_col(ilf->fptr, TLONG, ilf->cph_id, 
+  fits_write_col(ilf->fptr, TLONG, ilf->cph_id,
 		 ilf->row, 1, 1, &impact->ph_id, status);
-  fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
+  fits_write_col(ilf->fptr, TLONG, ilf->csrc_id,
 		 ilf->row, 1, 1, &impact->src_id, status);
 }
-

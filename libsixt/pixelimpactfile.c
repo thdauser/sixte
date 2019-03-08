@@ -16,12 +16,14 @@
 
 
    Copyright 2014 Thorsten Brand, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "pixelimpactfile.h"
 
 PixImpFile* newPixImpFile(int* const status){
-  
+
   PixImpFile* file=(PixImpFile*)malloc(sizeof(PixImpFile));
   if (NULL==file) {
     *status=EXIT_FAILURE;
@@ -52,11 +54,11 @@ PixImpFile* newPixImpFile(int* const status){
 }
 
 void freePixImpFile(PixImpFile** const file, int* const status){
-  
+
   if (NULL!=*file) {
     if (NULL!=(*file)->fptr) {
       fits_close_file((*file)->fptr, status);
-      headas_chat(5, "closed impact list file (containing %ld rows).\n", 
+      headas_chat(5, "closed impact list file (containing %ld rows).\n",
 		  (*file)->nrows);
     }
     free(*file);
@@ -69,9 +71,9 @@ PixImpFile* openPixImpFile(const char* const filename,
 {
   PixImpFile* file=newPixImpFile(status);
   CHECK_STATUS_RET(*status, NULL);
-  
+
   headas_chat(5, "open pixel impact list file '%s' ...\n", filename);
-  
+
   // Open the FITS file table for reading:
   if (fits_open_table(&file->fptr, filename, mode, status)) return(file);;
 
@@ -82,12 +84,12 @@ PixImpFile* openPixImpFile(const char* const filename,
   if (IMAGE_HDU==hdutype) {
     *status=EXIT_FAILURE;
     char msg[MAXMSG];
-    sprintf(msg, "no table extension available in file '%s'", 
+    sprintf(msg, "no table extension available in file '%s'",
 	    filename);
     SIXT_ERROR(msg);
     return(NULL);
   }
-  
+
   // Determine the number of rows in the impact list.
   if (fits_get_num_rows(file->fptr, &file->nrows, status)) return(file);
   // Set internal row counter to the beginning of the file (starting at 0).
@@ -139,10 +141,10 @@ PixImpFile* openNewPixImpFile(const char* const filename,
 			      const double tstop,
 			      const char clobber,
 			      int* const status){
-  
+
   PixImpFile* file=newPixImpFile(status);
   CHECK_STATUS_RET(*status, file);
-  
+
   // Check if the file already exists.
   int exists;
   fits_file_exists(filename, &exists, status);
@@ -160,9 +162,9 @@ PixImpFile* openNewPixImpFile(const char* const filename,
       return(file);
     }
   }
-  
+
   // Create a new impact list FITS file from the template.
-  
+
   char buffer[MAXFILENAME];
   sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
 	  "/templates/pixelimpactfile_gradingcols.tpl");
@@ -178,17 +180,17 @@ PixImpFile* openNewPixImpFile(const char* const filename,
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
-  
+
   // Move to the binary table extension.
   fits_movabs_hdu(file->fptr, 2, 0, status);
   CHECK_STATUS_RET(*status, file);
-  
+
   //Write XML into header
   char comment[MAXMSG];
   sprintf(comment, "XMLFILE: %s", xmlfile);
   fits_write_comment(file->fptr, comment, status);
   CHECK_STATUS_RET(*status, file);
-  
+
   //Write photon impact file into header
   sprintf(comment, "PHOFILE: %s", impactlist);
   fits_write_comment(file->fptr, comment, status);
@@ -197,7 +199,7 @@ PixImpFile* openNewPixImpFile(const char* const filename,
   // Close the new ImpactFile.
   freePixImpFile(&file, status);
   CHECK_STATUS_RET(*status, file);
-  
+
   // Re-open the file.
   file=openPixImpFile(filename, READWRITE, status);
   CHECK_STATUS_RET(*status, file);
@@ -205,7 +207,7 @@ PixImpFile* openNewPixImpFile(const char* const filename,
   return(file);
 }
 
-int getNextImpactFromPixImpFile(PixImpFile* const file, 
+int getNextImpactFromPixImpFile(PixImpFile* const file,
 			   PixImpact* const impact,
 			   int* const status)
 {
@@ -230,29 +232,29 @@ int getNextImpactFromPixImpFile(PixImpFile* const file,
   }
 
   // Read in the data.
-  // JW: note: initialization of the data is NOT necessary 
+  // JW: note: initialization of the data is NOT necessary
   // (only costs time)
   int anynul=0;
-  fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->ctime, file->row, 1, 1,
 		NULL, &impact->time, &anynul, status);
-  fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1, 
+  fits_read_col(file->fptr, TFLOAT, file->cenergy, file->row, 1, 1,
 		NULL, &impact->energy, &anynul, status);
-  fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cx, file->row, 1, 1,
 		NULL, &impact->detposition.x, &anynul, status);
-  fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cy, file->row, 1, 1,
 		NULL, &impact->detposition.y, &anynul, status);
-  fits_read_col(file->fptr, TDOUBLE, file->cu, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cu, file->row, 1, 1,
 		NULL, &impact->pixposition.x, &anynul, status);
-  fits_read_col(file->fptr, TDOUBLE, file->cv, file->row, 1, 1, 
+  fits_read_col(file->fptr, TDOUBLE, file->cv, file->row, 1, 1,
 		NULL, &impact->pixposition.y, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cph_id, file->row, 1, 1,
 		NULL, &impact->ph_id, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->csrc_id, file->row, 1, 1,
 		NULL, &impact->src_id, &anynul, status);
-  fits_read_col(file->fptr, TLONG, file->cpix_id, file->row, 1, 1, 
+  fits_read_col(file->fptr, TLONG, file->cpix_id, file->row, 1, 1,
 		NULL, &impact->pixID, &anynul, status);
   impact->pixID=impact->pixID-1; // why??
-  
+
   if (file->cgrade1!=-1) {
     fits_read_col(file->fptr, TLONG, file->cgrade1, file->row, 1, 1,
 		  NULL, &impact->grade1, &anynul, status);
@@ -265,7 +267,7 @@ int getNextImpactFromPixImpFile(PixImpFile* const file,
     fits_read_col(file->fptr, TDOUBLE, file->ctotalenergy, file->row, 1, 1,
 		  NULL, &impact->totalenergy, &anynul, status);
   }
-  
+
   // Check if an error occurred during the reading process.
   if (*status!=0) {
     SIXT_ERROR("failed reading from pixel impact list file");
@@ -275,32 +277,32 @@ int getNextImpactFromPixImpFile(PixImpFile* const file,
   return 1;
 }
 
-void addImpact2PixImpFile(PixImpFile* const ilf, 
+void addImpact2PixImpFile(PixImpFile* const ilf,
 			  PixImpact* const impact,
 			  int* const status)
 {
   ilf->row++;
   ilf->nrows++;
-  
+
   impact->pixID=impact->pixID+1;
 
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->ctime,
 		 ilf->row, 1, 1, &impact->time, status);
-  fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy, 
+  fits_write_col(ilf->fptr, TFLOAT, ilf->cenergy,
 		 ilf->row, 1, 1, &impact->energy, status);
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->cu, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cu,
 		 ilf->row, 1, 1, &(impact->pixposition.x), status);
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->cv, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cv,
 		 ilf->row, 1, 1, &(impact->pixposition.y), status);
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->cx, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cx,
 		 ilf->row, 1, 1, &(impact->detposition.x), status);
-  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy, 
+  fits_write_col(ilf->fptr, TDOUBLE, ilf->cy,
 		 ilf->row, 1, 1, &(impact->detposition.y), status);
-  fits_write_col(ilf->fptr, TLONG, ilf->cph_id, 
+  fits_write_col(ilf->fptr, TLONG, ilf->cph_id,
 		 ilf->row, 1, 1, &impact->ph_id, status);
-  fits_write_col(ilf->fptr, TLONG, ilf->csrc_id, 
+  fits_write_col(ilf->fptr, TLONG, ilf->csrc_id,
 		 ilf->row, 1, 1, &impact->src_id, status);
-  fits_write_col(ilf->fptr, TLONG, ilf->cpix_id, 
+  fits_write_col(ilf->fptr, TLONG, ilf->cpix_id,
 		 ilf->row, 1, 1, &impact->pixID, status);
 
   long default_grade=0;

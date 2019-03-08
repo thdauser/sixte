@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "sixt.h"
@@ -45,14 +47,14 @@ struct Parameters {
   double TSTART;
   double timespan;
   /** Step width for the exposure map calculation [s]. */
-  double dt; 
+  double dt;
 
   /** Desired right ascension range [rad]. */
-  double ra1 , ra2;  
+  double ra1 , ra2;
   /** Desired declination range [rad]. */
-  double dec1, dec2; 
+  double dec1, dec2;
   /** Number of bins in right ascension and declination. */
-  long ra_bins, dec_bins; 
+  long ra_bins, dec_bins;
 };
 
 
@@ -66,23 +68,23 @@ struct ImageParameters {
   // [rad] values of reference pixels.
   double rval1, rval2;
   // CDELT1 and CDELT2 WCS-values in [rad].
-  double delt1, delt2; 
+  double delt1, delt2;
 
   long ra_bins, dec_bins;
 };
-  
+
 
 
 ////////////////////////////////////
 /** Main procedure. */
-int comaexp_main() 
+int comaexp_main()
 {
   struct Parameters parameters; // Program parameters.
-  
+
   Attitude* ac=NULL;
 
   // Array for the calculation of the exposure map.
-  float** expMap=NULL;       
+  float** expMap=NULL;
   struct ImageParameters expMapPar;
   // Array for pre-calculation of the carteesian coordinate vectors
   // of the individual pixels in the exposure map image.
@@ -91,14 +93,14 @@ int comaexp_main()
   // Image of the FoV.
   float** fovImg=NULL;
   struct ImageParameters fovImgPar;
-  // FoV image projection type: 
+  // FoV image projection type:
   // 0: local tangential system (obsolete)
   // 1: Plate carrée (CAR)
   // 2: Gnomonic (TAN)
   int fov_projection;
 
   // 1-dimensional image buffer for storing in FITS files.
-  float*  imagebuffer1d=NULL;     
+  float*  imagebuffer1d=NULL;
 
   long x, y;               // Counters.
   fitsfile* fptr=NULL;     // FITS file pointer for exposure map image.
@@ -109,7 +111,7 @@ int comaexp_main()
   // Register HEATOOL:
   set_toolname("comaexp");
   set_toolversion("0.01");
-  
+
 
   do { // Beginning of the ERROR handling loop (will at most be run once)
 
@@ -185,17 +187,17 @@ int comaexp_main()
     char ctype1[MAXMSG], ctype2[MAXMSG];
     fits_read_key(fptr, TSTRING, "CTYPE1", ctype1, comment, &status);
     fits_read_key(fptr, TSTRING, "CTYPE2", ctype2, comment, &status);
-    fits_read_key(fptr, TDOUBLE, "CDELT1", &fovImgPar.delt1, 
+    fits_read_key(fptr, TDOUBLE, "CDELT1", &fovImgPar.delt1,
 		  comment, &status);
-    fits_read_key(fptr, TDOUBLE, "CDELT2", &fovImgPar.delt2, 
+    fits_read_key(fptr, TDOUBLE, "CDELT2", &fovImgPar.delt2,
 		  comment, &status);
-    fits_read_key(fptr, TDOUBLE, "CRPIX1", &fovImgPar.rpix1, 
+    fits_read_key(fptr, TDOUBLE, "CRPIX1", &fovImgPar.rpix1,
 		  comment, &status);
-    fits_read_key(fptr, TDOUBLE, "CRPIX2", &fovImgPar.rpix2, 
+    fits_read_key(fptr, TDOUBLE, "CRPIX2", &fovImgPar.rpix2,
 		  comment, &status);
-    fits_read_key(fptr, TDOUBLE, "CRVAL1", &fovImgPar.rval1, 
+    fits_read_key(fptr, TDOUBLE, "CRVAL1", &fovImgPar.rval1,
 		  comment, &status);
-    fits_read_key(fptr, TDOUBLE, "CRVAL2", &fovImgPar.rval2, 
+    fits_read_key(fptr, TDOUBLE, "CRVAL2", &fovImgPar.rval2,
 		  comment, &status);
     if (EXIT_SUCCESS!=status) break;
     // Convert from [deg] to [rad].
@@ -206,10 +208,10 @@ int comaexp_main()
 
     // Determine the projection type of the FoV image.
     if ((strlen(ctype1)>0) || (strlen(ctype2)>0)) {
-      if ((0==strcmp(&(ctype1[5]), "CAR")) && 
+      if ((0==strcmp(&(ctype1[5]), "CAR")) &&
 	  (0==strcmp(&(ctype2[5]), "CAR"))) {
 	fov_projection=1;
-      } else if ((0==strcmp(&(ctype1[5]), "TAN")) && 
+      } else if ((0==strcmp(&(ctype1[5]), "TAN")) &&
 		 (0==strcmp(&(ctype2[5]), "TAN"))) {
 	fov_projection=2;
 	// TODO CRVAL2 ???
@@ -246,9 +248,9 @@ int comaexp_main()
 			     +(fovImgPar.dec_bins*1.-fovImgPar.rpix2+0.5)*fovImgPar.delt2);
     double sin_dec_min=sin(fovImgPar.rval2-(fovImgPar.rpix2-0.5)*fovImgPar.delt2);
 
-    headas_chat(5, "FoV dimensions: from %.1lf deg to %.1lf deg (RA direction)\n", 
+    headas_chat(5, "FoV dimensions: from %.1lf deg to %.1lf deg (RA direction)\n",
 		asin(sin_ra_min)*180./M_PI, asin(sin_ra_max)*180./M_PI);
-    headas_chat(5, "                and from %.1lf deg to %.1lf deg (Dec direction)\n", 
+    headas_chat(5, "                and from %.1lf deg to %.1lf deg (Dec direction)\n",
 		asin(sin_dec_min)*180./M_PI, asin(sin_dec_max)*180./M_PI);
 
     // Read the image from the file.
@@ -258,15 +260,15 @@ int comaexp_main()
       status=EXIT_FAILURE;
       SIXT_ERROR("memory allocation for image buffer failed");
       break;
-    }      
+    }
     int anynul;
     float null_value=0.;
     long fpixel[2] = {1, 1};   // lower left corner
     //                |--|--> FITS coordinates start at (1,1)
     // upper right corner
-    long lpixel[2] = {fovImgPar.ra_bins, fovImgPar.dec_bins};  
+    long lpixel[2] = {fovImgPar.ra_bins, fovImgPar.dec_bins};
     long inc[2] = {1, 1};
-    fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value, 
+    fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value,
 		     imagebuffer1d, &anynul, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -276,14 +278,14 @@ int comaexp_main()
       status=EXIT_FAILURE;
       SIXT_ERROR("memory allocation for FoV image failed");
       break;
-    }      
+    }
     for (x=0; x<fovImgPar.ra_bins; x++) {
       fovImg[x] = (float*)malloc(fovImgPar.dec_bins*sizeof(float));
       if (NULL==fovImg[x]) {
 	status=EXIT_FAILURE;
 	SIXT_ERROR("memory allocation for FoV image failed");
 	break;
-      }      
+      }
       for (y=0; y<fovImgPar.dec_bins; y++) {
 	// Take care of choosing x- and y-axis properly!
 	fovImg[x][y]=imagebuffer1d[y*fovImgPar.ra_bins+x];
@@ -294,7 +296,7 @@ int comaexp_main()
     // Release memory.
     free(imagebuffer1d);
     imagebuffer1d=NULL;
-	
+
     // Close the file.
     fits_close_file(fptr, &status);
     CHECK_STATUS_BREAK(status);
@@ -308,13 +310,13 @@ int comaexp_main()
     ac=loadAttitude(parameters.attitude_filename, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Pre-calculate the carteesian coordinate vectors of 
+    // Pre-calculate the carteesian coordinate vectors of
     // the positions of the individual pixels in the exposure map.
     for (x=0; x<expMapPar.ra_bins; x++) {
       for (y=0; y<expMapPar.dec_bins; y++) {
 	double pixelra =(x-(expMapPar.rpix1-1.0))*expMapPar.delt1 + expMapPar.rval1;
 	double pixeldec=(y-(expMapPar.rpix2-1.0))*expMapPar.delt2 + expMapPar.rval2;
-			
+
 	// Check if the requested projection method is Hammer-Aitoff.
 	if (1==parameters.projection) {
 	  double lon  =pixelra * 180./M_PI;
@@ -335,15 +337,15 @@ int comaexp_main()
 	  cel.ref[3] = 0.;
 	  strcpy(cel.prj.code, "AIT");
 	  cel.prj.r0 = 0.;
-	  //	  cel.prjprm.pv = 
+	  //	  cel.prjprm.pv =
 	  cel.prj.phi0   = 0.;
 	  cel.prj.theta0 = 0.;
 
-	  // Transform coordinates from projection plane to 
+	  // Transform coordinates from projection plane to
 	  // celestial coordinates.
 	  int invalid_coordinates=0;
 	  status=celx2s(&cel, 1, 1, 1, 1, &lon, &lat,
-			&phi, &theta, &pixelra, &pixeldec, 
+			&phi, &theta, &pixelra, &pixeldec,
 			&invalid_coordinates);
 
 	  if (0==invalid_coordinates) {
@@ -356,11 +358,11 @@ int comaexp_main()
 	  }
 	  CHECK_STATUS_BREAK(status);
 	}
-	// END of check if the requested projection method 
+	// END of check if the requested projection method
 	// is Hammer-Aitoff.
 
-	// If the coordinate system of the exposure map is galactic 
-	// coordinates, convert the pixel position vector from 
+	// If the coordinate system of the exposure map is galactic
+	// coordinates, convert the pixel position vector from
 	// galactic to equatorial coordinates.
 	if (1==parameters.coordinate_system) {
 	  double lon=pixelra;
@@ -369,7 +371,7 @@ int comaexp_main()
 	  const double cos_d_ngp=0.8899880874849542;
 	  const double sin_d_ngp=0.4559837761750669;
 	  pixelra=
-	    atan2(cos(lat)*sin(l_ncp - lon), 
+	    atan2(cos(lat)*sin(l_ncp - lon),
 		  cos_d_ngp*sin(lat)-sin_d_ngp*cos(lat)*cos(l_ncp - lon)) +
 	    +3.3660332687500039;
 	  while (pixelra>2*M_PI) {
@@ -379,7 +381,7 @@ int comaexp_main()
 	    pixelra+=2*M_PI;
 	  }
 	  pixeldec=asin(sin_d_ngp*sin(lat) + cos_d_ngp*cos(lat)*cos(l_ncp - lon));
-	} 
+	}
 	// END of check if requested coordinate system is galactic.
 
 	// Calculate the carteesian coordinate vector.
@@ -387,7 +389,7 @@ int comaexp_main()
       }
       CHECK_STATUS_BREAK(status);
       // END of loop over y.
-    }    
+    }
     CHECK_STATUS_BREAK(status);
     // END of loop over x.
 
@@ -397,12 +399,12 @@ int comaexp_main()
     // --- Beginning of Exposure Map calculation
     headas_chat(5, "calculate the exposure map ...\n");
 
-    // LOOP over the given time interval from TSTART to TSTART+timespan 
+    // LOOP over the given time interval from TSTART to TSTART+timespan
     // in steps of dt.
     double time;
     for (time=parameters.TSTART; time<parameters.TSTART+parameters.timespan;
 	 time+=parameters.dt) {
-      
+
       // Print the current time (program status information for the user).
       headas_printf("\rtime: %.1lf s ", time);
       fflush(NULL);
@@ -414,7 +416,7 @@ int comaexp_main()
 
       // Loop over all pixel in the exposure map.
       for (x=0; x<expMapPar.ra_bins; x++) {
-	for (y=0; y<expMapPar.dec_bins; y++) {	  
+	for (y=0; y<expMapPar.dec_bins; y++) {
 	  // If the source position is outside the hemisphere
 	  // defined by the telescope pointing direction, we
 	  // can continue with the next run.
@@ -432,17 +434,17 @@ int comaexp_main()
 	    // Projection along y-axis:
 	    double sy=scalar_product(&pixelpositions[x][y], &ny);
 	    if ((sy > sin_dec_max) || (sy < sin_dec_min)) continue;
-	    
+
 	    // Projection along x-axis:
 	    double sx=scalar_product(&pixelpositions[x][y], &nx);
 	    if ((sx > sin_ra_max) || (sx < sin_ra_min)) continue;
 
 	    double dec=asin(sy);
 	    double ra =asin(sx/cos(dec));
-	    
+
 	    int xi=(int)((ra -fovImgPar.rval1)/fovImgPar.delt1+fovImgPar.rpix1+0.5)-1;
 	    int yi=(int)((dec-fovImgPar.rval2)/fovImgPar.delt2+fovImgPar.rpix2+0.5)-1;
-	    
+
 	    if ((xi<0) || (xi>=fovImgPar.ra_bins )) continue;
 	    if ((yi<0) || (yi>=fovImgPar.dec_bins)) continue;
 
@@ -461,7 +463,7 @@ int comaexp_main()
 	    // Image coordinates:
 	    int xi=(int)(tan(alpha)/tan(fovImgPar.delt1) + fovImgPar.rpix1 + 0.5) -1;
 	    int yi=(int)(tan(beta) /tan(fovImgPar.delt2) + fovImgPar.rpix2 + 0.5) -1;
-	    
+
 	    // Check the limits of the FoV.
 	    if ((xi >= 0) && (xi < fovImgPar.ra_bins ) &&
 		(yi >= 0) && (yi < fovImgPar.dec_bins)) {
@@ -492,20 +494,20 @@ int comaexp_main()
 	      assert(yi<fovImgPar.dec_bins);
 	      expMap[x][y] += parameters.dt * fovImg[xi][yi];
 	    }
-	  } 
+	  }
 	  // END of different FoV image projection types.
 	}
       }
       CHECK_STATUS_BREAK(status);
       // END of loop over all pixels in the exposure map.
-    } 
+    }
     CHECK_STATUS_BREAK(status);
     // END of LOOP over the specified time interval.
     // END of generating the exposure map.
 
 
     // Store the exposure map in a FITS file image.
-    headas_chat(3, "\nstore exposure map in FITS image '%s' ...\n", 
+    headas_chat(3, "\nstore exposure map in FITS image '%s' ...\n",
 		parameters.exposuremap_filename);
 
     // Convert the exposure map to a 1d-array to store it in the FITS image.
@@ -535,11 +537,11 @@ int comaexp_main()
 
     // Store the name of the FoV map in the exposure map FITS file header.
     if (fits_update_key(fptr, TSTRING, "FOVMAP", parameters.fovimage_filename,
-			"", &status)) break;   
+			"", &status)) break;
 
     // Write WCS keywords to the FITS header of the newly created image.
     double buffer;
-    // Use the appropriate coordinate system: either equatorial or 
+    // Use the appropriate coordinate system: either equatorial or
     // galactic.
     if (0==parameters.coordinate_system) {
       strcpy(ctype1, "RA---");
@@ -580,7 +582,7 @@ int comaexp_main()
     fpixel[1] = 1; // FITS coordinates start at (1,1), NOT (0,0).
     // Upper right corner.
     lpixel[0] = expMapPar.ra_bins;
-    lpixel[1] = expMapPar.dec_bins; 
+    lpixel[1] = expMapPar.dec_bins;
     fits_write_subset(fptr, TFLOAT, fpixel, lpixel, imagebuffer1d, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -620,7 +622,7 @@ int comaexp_main()
     free(expMap);
     expMap=NULL;
   }
-  
+
   // Image buffer.
   if (NULL!=imagebuffer1d) {
     free(imagebuffer1d);
@@ -654,7 +656,7 @@ int comaexp_getpar(struct Parameters *par)
 {
   int ra_bins, dec_bins;    // Buffer
   int status=EXIT_SUCCESS;  // Error status
-  
+
   // Get the filename of the attitude file (FITS file)
   if ((status=PILGetFname("attitude_filename", par->attitude_filename))) {
     SIXT_ERROR("failed reading the filename of the attitude file");
@@ -664,7 +666,7 @@ int comaexp_getpar(struct Parameters *par)
   if ((status=PILGetFname("fovimage_filename", par->fovimage_filename))) {
     SIXT_ERROR("failed reading the filename of the FoV image file");
   }
-  
+
   // Get the filename of the output exposure map (FITS file)
   else if ((status=PILGetFname("exposuremap_filename", par->exposuremap_filename))) {
     SIXT_ERROR("failed reading the filename of the exposure map");
@@ -693,7 +695,7 @@ int comaexp_getpar(struct Parameters *par)
     SIXT_ERROR("Error reading the 'dt' parameter");
   }
 
-  // Get the position of the desired section of the sky 
+  // Get the position of the desired section of the sky
   // (right ascension and declination range).
   else if ((status=PILGetReal("ra1", &par->ra1))) {
     SIXT_ERROR("failed reading the 'ra1' parameter");
@@ -732,4 +734,3 @@ int comaexp_getpar(struct Parameters *par)
 
   return(status);
 }
-

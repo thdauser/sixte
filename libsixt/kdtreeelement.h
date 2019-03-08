@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef KDTREEELEMENT_H
@@ -53,7 +55,7 @@ KDTreeElement* newKDTreeElement(int* const status);
 void freeKDTreeElement(KDTreeElement** el);
 
 /** Build up the KDTree from the given list of Sources. */
-KDTreeElement* buildKDTree2(Source* const list, 
+KDTreeElement* buildKDTree2(Source* const list,
 			    const long nelements,
 			    const int depth,
 			    int* const status);
@@ -64,10 +66,10 @@ KDTreeElement* buildKDTree2(Source* const list,
     scalar product of the source direction and the reference
     vector. The function returns a time-ordered list of newly
     generated photons. */
-LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node, 
+LinkedPhoListElement* KDTreeRangeSearch(KDTreeElement* const node,
 					const int depth,
-					const Vector* const ref, 
-					const double min_align, 
+					const Vector* const ref,
+					const double min_align,
 					const double t0, const double t1,
 					const double mjdref,
 					SimputCtlg* const simputcat,

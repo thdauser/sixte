@@ -19,9 +19,12 @@
    Manuel Castro, National Institute for Space Research (INPE),
 		 Brazil; under grant #2017/00968-6,
 		 São Paulo Research Foundation (FAPESP).
+
+   Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                  Erlangen-Nuernberg
 */
 
-#ifndef MASKSYSTEM_H 
+#ifndef MASKSYSTEM_H
 #define MASKSYSTEM_H 1
 
 #include "sixt.h"
@@ -58,7 +61,7 @@ float y_mask;
 //Mask-detector distance (in m)
 float mask_distance;
 
-//Mask pattern - FITS file 
+//Mask pattern - FITS file
 char* mask_pattern;
 
 //Collimator height (in m)
@@ -78,7 +81,7 @@ float y_det;
 
 //detector pixel width (in m)
 float det_pixelwidth;
- 
+
 //
 float det_width;
 
@@ -125,4 +128,3 @@ MaskSystem* loadMaskSystem(const char* const filename,
 
 
 #endif /* MASKSYSTEM_H */
-

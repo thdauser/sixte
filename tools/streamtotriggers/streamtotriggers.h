@@ -16,6 +16,8 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef STREAMTOTRIGGERS_H
@@ -41,7 +43,7 @@ struct Parameters {
   char XMLFile[MAXFILENAME];
   char streamname[MAXFILENAME];
   char tesTriggerFile[MAXFILENAME];
-  
+
   char activePixels[9];
   int Nactive;
   int Npix;
@@ -49,10 +51,10 @@ struct Parameters {
   int nhi;
   int triggerSize;
   int preBufferSize;
-  
+
   double tstart;
   double tstop;
-  
+
   char clobber;
   char history;
 };

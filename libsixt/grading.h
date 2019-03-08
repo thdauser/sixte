@@ -16,6 +16,8 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
+   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef TESWITHRMF_H
@@ -93,4 +95,3 @@ void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixI
 void writeGrading2PixImpactFile(AdvDet *det,PixImpFile *piximpacfile,int *status);
 
 #endif /* TESWITHRMF_H */
-

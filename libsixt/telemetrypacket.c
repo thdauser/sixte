@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "telemetrypacket.h"
@@ -28,7 +30,7 @@ TelemetryPacket* getTelemetryPacket(int nbits, int* status)
   TelemetryPacket* packet = (TelemetryPacket*)malloc(sizeof(TelemetryPacket));
   if (NULL==packet) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: could not allocate memory for TelemetryPacket!\n", 
+    HD_ERROR_THROW("Error: could not allocate memory for TelemetryPacket!\n",
 		   *status);
     return(packet);
   }
@@ -37,14 +39,14 @@ TelemetryPacket* getTelemetryPacket(int nbits, int* status)
   packet->data = (unsigned char*)malloc(nbits*sizeof(unsigned char));
   if (NULL==packet->data) {
     *status=EXIT_FAILURE;
-    HD_ERROR_THROW("Error: could not allocate memory for TelemetryPacket!\n", 
+    HD_ERROR_THROW("Error: could not allocate memory for TelemetryPacket!\n",
 		   *status);
     return(packet);
   }
 
   // Set the total number of bits and the pointer to the current bit.
   packet->nbits = nbits;
-  packet->current_bit=0;  
+  packet->current_bit=0;
 
   return(packet);
 }
@@ -85,7 +87,7 @@ int availableBitsInTelemetryPacket(TelemetryPacket* packet)
 
 
 
-int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data, 
+int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data,
 			    int nbits)
 {
   unsigned char byte=0; // Buffer for the data.
@@ -101,12 +103,12 @@ int addData2TelemetryPacket(TelemetryPacket* packet, unsigned char* data,
     modulus = packet->current_bit % 8;
     // Insert the bits to the internal buffer.
     if (modulus+nbits<=8) {
-      packet->data[index] = packet->data[index] | 
+      packet->data[index] = packet->data[index] |
 	(unsigned char)(byte<<(8-nbits-modulus));
     } else {
-      packet->data[index] = packet->data[index] | 
+      packet->data[index] = packet->data[index] |
 	(unsigned char)(byte>>(nbits+modulus-8));
-      packet->data[index+1] = packet->data[index+1] | 
+      packet->data[index+1] = packet->data[index+1] |
 	(unsigned char)(byte<<(16-nbits-modulus));
     }
     // Update the counter for the current bit in the TelemetryPacket.
@@ -135,12 +137,10 @@ int writeTelemetryPacket2File(TelemetryPacket* packet, FILE* file)
   // Write the bytes from the internal storage to the file.
   int nbytes = fwrite (packet->data, 1, packet->nbits/8, file);
   if (nbytes < packet->nbits/8) {
-    HD_ERROR_THROW("Error: Writing TelemetryPacket to binary output file failed!\n", 
+    HD_ERROR_THROW("Error: Writing TelemetryPacket to binary output file failed!\n",
 		   EXIT_FAILURE);
     return(EXIT_FAILURE);
   } else {
     return(EXIT_SUCCESS);
   }
 }
-
-

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "eventlist.h"
@@ -51,7 +53,7 @@ int openEventList(EventList* ef, char* filename, int access_mode)
 }
 
 
-int closeEventList(EventList* ef) 
+int closeEventList(EventList* ef)
 {
   int status=EXIT_SUCCESS;
 
@@ -84,4 +86,3 @@ int EventListRowIsValid(EventList* ef, long row) {
     return(1);
   }
 }
-

@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "badpixmap.h"
@@ -44,7 +46,7 @@ BadPixMap* newBadPixMap(int* const status)
 }
 
 
-BadPixMap* loadBadPixMap(const char* const filename, 
+BadPixMap* loadBadPixMap(const char* const filename,
 			 int* const status)
 {
   // Get a new and empty data structure from the constructor.
@@ -57,11 +59,11 @@ BadPixMap* loadBadPixMap(const char* const filename,
     map=newBadPixMap(status);
     CHECK_STATUS_BREAK(*status);
 
-    // Load the data from the FITS file. 
+    // Load the data from the FITS file.
     // Open the FITS file.
     fits_open_image(&fptr, filename, READONLY, status);
     CHECK_STATUS_BREAK(*status);
-      
+
     // Determine the image dimensions.
     long naxes[2];
     fits_get_img_size(fptr, 2, naxes, status);
@@ -76,7 +78,7 @@ BadPixMap* loadBadPixMap(const char* const filename,
       SIXT_ERROR("memory allocation for BadPixMap failed");
       break;
     }
-    
+
     // Read the FITS image.
     int anynul=0;
     int null_value=0.;
@@ -87,7 +89,7 @@ BadPixMap* loadBadPixMap(const char* const filename,
     fits_read_subset(fptr, TFLOAT, fpixel, lpixel, inc, &null_value,
 		     input_buffer, &anynul, status);
     CHECK_STATUS_BREAK(*status);
-    
+
     // Allocate memory for the pixel array.
     map->pixels=(float**)malloc(map->xwidth*sizeof(float*));
     if (NULL==map->pixels) {
@@ -152,7 +154,7 @@ BadPixMap* loadBadPixMap(const char* const filename,
 }
 
 
-void destroyBadPixMap(BadPixMap** const map) 
+void destroyBadPixMap(BadPixMap** const map)
 {
   if (NULL!=(*map)) {
     if (NULL!=(*map)->pixels) {

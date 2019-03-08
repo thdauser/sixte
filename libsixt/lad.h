@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #ifndef LAD_H
@@ -42,7 +44,7 @@
 
 /** Element of the LAD detector for LOFT. */
 typedef struct {
-  
+
   /** Unique identifier within the parent module. */
   long id;
 
@@ -100,7 +102,7 @@ typedef struct {
 
   /** Width of the module in y-direction [m]. */
   float ydim;
-  
+
   /** Array containing pointers to the individual elements. */
   LADElement** element;
 
@@ -121,7 +123,7 @@ typedef struct {
 
   /** Number of modules. */
   long nmodules;
-  
+
   /** Width of the panel in x-direction [m]. */
   float xdim;
 
@@ -164,12 +166,12 @@ typedef struct {
 
   /** Temperature of the SDDs [K]. */
   float temperature;
-  
+
   /** Strength of the electric drift field [V/m]. */
   float efield;
 
   /** Mobility [m**2/V/s]. */
-  float mobility; 
+  float mobility;
 
   /** Dead time [s] due to the ADC conversion in the ASIC. */
   double deadtime;
@@ -209,7 +211,7 @@ typedef struct {
 
 /** Load the LAD detector definition from the XML file and create a
     new LAD data structure based on these data. */
-LAD* getLADfromXML(const char* const filename, 
+LAD* getLADfromXML(const char* const filename,
 		   int* const status);
 
 /** Constructor. Allocates memory for a new LAD data structure. */

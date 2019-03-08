@@ -16,6 +16,8 @@
 
 
    Copyright 2007-2014 Christian Schmid, FAU
+   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
+                       Erlangen-Nuernberg
 */
 
 #include "tes_grades.h"
@@ -51,13 +53,13 @@ int tes_grades_main() {
     // Loop over all entries in the event file.
     long row1;
     for (row1=0; row1<elf->nrows; row1++) {
-      
+
       // Read the time of the event from the file.
       Event ev1;
       getEventFromFile(elf, row1+1, &ev1, &status);
       CHECK_STATUS_BREAK(status);
 
-      // Check the events before and after the current one 
+      // Check the events before and after the current one
       // within the specified time spans.
       int nbefore_short=0, nbefore_long=0, nbefore_veryshort=0;
       int nafter_short=0, nafter_long=0, nafter_veryshort=0;
@@ -68,16 +70,16 @@ int tes_grades_main() {
 	Event ev2; // Buffer.
 	getEventFromFile(elf, row2+1, &ev2, &status);
 	CHECK_STATUS_BREAK(status);
-	
+
 	if (ev1.time-ev2.time > par.PostTrigger*par.TimeUnit) break;
 	if ((ev1.rawx==ev2.rawx)&&(ev1.rawy==ev2.rawy)) {
 	  nbefore_long++;
 	  if (ev1.time-ev2.time < par.PreTrigger*par.TimeUnit) {
 	    nbefore_short++;
-	  }	
+	  }
 	  if (ev1.time-ev2.time < par.PileupTime) {
 	    nbefore_veryshort++;
-	  }	
+	  }
 	}
 	// Avoid too many unnecessary loop runs.
 	if ((nbefore_short>0) || (nbefore_long>0)) break;
@@ -114,7 +116,7 @@ int tes_grades_main() {
 	ev1.type=0;
       } else {
 	ev1.type=1;
-      } 
+      }
 
       switch (ev1.type) {
       case 0: ngrade0++; break;
@@ -122,9 +124,9 @@ int tes_grades_main() {
       case 2: ngrade2++; break;
       case 3: ngrade3++; break;
       }
-      
+
       // Update the event information in the file.
-      fits_write_col(elf->fptr, TINT, elf->ctype, row1+1, 
+      fits_write_col(elf->fptr, TINT, elf->ctype, row1+1,
 		     1, 1, &ev1.type, &status);
       CHECK_STATUS_BREAK(status);
     }
@@ -169,7 +171,7 @@ int tes_grades_getpar(struct Parameters* par)
   if (EXIT_SUCCESS!=status) {
     SIXT_ERROR("failed reading the name of the event list");
     return(status);
-  } 
+  }
   strcpy(par->EventList, sbuffer);
   free(sbuffer);
 
@@ -206,4 +208,3 @@ int tes_grades_getpar(struct Parameters* par)
 
   return(status);
 }
-
