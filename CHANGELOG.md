@@ -1,4 +1,10 @@
 version [2.5.6]
+ - updates copyright and license notices
+ - fixes bug in reading older vignetting files
+ - changes vignetting handling (energies are interpolated linearly)
+ - fixes bug in xmm timing mode
+
+version [2.5.6]
  - ero_calevents: CORRATT Attitude changes reverted, given now
    in the Sixte system (in accordance with eSASS)
  - tessim: discard empty records at end ofsimulation
