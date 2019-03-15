@@ -25,7 +25,7 @@
 *
 *  File:       integraSIRENA.h
 *  Developers: Beatriz Cobo
-* 	       cobo@ifca.unican.es
+*              cobo@ifca.unican.es
 *              IFCA
 *              Maite Ceballos
 *              ceballos@ifca.unican.es
@@ -36,81 +36,100 @@
 #ifndef INTEGRASIRENA_H
 #define INTEGRASIRENA_H 1
 
+#include <stdio.h>
+
 #include "tesrecord.h"
+//#include "testriggerfile.h"
 #include "teseventlist.h"
 
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 
+//typedef struct TesTriggerFile TesTriggerFile;
+
 typedef struct MatrixStruct
 {
-	/** Number of rows */
-	int matrixRows;
-
-	/** Number of columns */
-	  int matrixColumns;
-
-	/** Matrix */
-	gsl_matrix *matrixBody;
+  /** Number of rows */
+  int matrixRows;
+  
+  /** Number of columns */
+  int matrixColumns;
+  
+  /** Matrix */
+  gsl_matrix *matrixBody;
 #ifdef __cplusplus
-	MatrixStruct():matrixRows(0), matrixColumns(0), matrixBody(0){}
-	~MatrixStruct(){gsl_matrix_free(matrixBody);}
+  MatrixStruct();
+  MatrixStruct(const MatrixStruct& other);
+  MatrixStruct& operator=(const MatrixStruct& other);
+  ~MatrixStruct();
 #endif
 
 } MatrixStruct;
 
 typedef struct PulseTemplate
 {
-	/** Duration of the pulse template in the library */
-	int template_duration;
-
-	/** Vector containing the pulse template */
-	gsl_vector *ptemplate;
-
-	/** Energy of the template */
-	double energy;
-
-	/** Pulse Height of the template */
-	double pulse_height;
+  /** Duration of the pulse template in the library */
+  int template_duration;
+  
+  /** Vector containing the pulse template */
+  gsl_vector *ptemplate;
+  
+  /** Energy of the template */
+  double energy;
+  
+  /** Pulse Height of the template */
+  double pulse_height;
 #ifdef __cplusplus
-	PulseTemplate():template_duration(0), ptemplate(0), energy(0.0f), pulse_height(0.0f){}
+  PulseTemplate();
+  PulseTemplate(const PulseTemplate& other);
+  PulseTemplate& operator=(const PulseTemplate& other);
+  // FIXME
+  ~PulseTemplate();
 #endif
-
+  
 } PulseTemplate;
 
 typedef struct MatchedFilter
 {  
-	/** Duration of the matched filter in the library */
-	int mfilter_duration;
-
-	/** Vector containing the matched filter */
-	gsl_vector *mfilter;
-
-	/** Energy of the mfilter */
-	double energy;
-
-	/** Pulse Height of the mfilter */
-	double pulse_height;
+  /** Duration of the matched filter in the library */
+  int mfilter_duration;
+  
+  /** Vector containing the matched filter */
+  gsl_vector *mfilter;
+  
+  /** Energy of the mfilter */
+  double energy;
+  
+  /** Pulse Height of the mfilter */
+  double pulse_height;
 #ifdef __cplusplus
-	MatchedFilter():mfilter_duration(0),mfilter(0),energy(0.0f), pulse_height(0.0f){}
+  MatchedFilter();
+  MatchedFilter(const MatchedFilter& other);
+  MatchedFilter& operator=(const MatchedFilter& other);
+  // FIXME
+  ~MatchedFilter();
 #endif
-	
+  
 } MatchedFilter;
 
 typedef struct OptimalFilterSIRENA
 {
-	// Duration of the optimalfilter
-	int ofilter_duration;
-
-	// Vector containing the optimal filter
-	gsl_vector *ofilter;
-
-	// Energy of the ofilter
-	double energy;
+  // Duration of the optimalfilter
+  int ofilter_duration;
+  
+  // Vector containing the optimal filter
+  gsl_vector *ofilter;
+  
+  // Energy of the ofilter
+  double energy;
 #ifdef __cplusplus
-	OptimalFilterSIRENA():ofilter_duration(0),ofilter(0), energy(0.0f){}
+  OptimalFilterSIRENA();
+  OptimalFilterSIRENA(const OptimalFilterSIRENA& other);
+  OptimalFilterSIRENA& operator=(const OptimalFilterSIRENA& other);
+  // FIXME
+  ~OptimalFilterSIRENA();
 #endif
-	
+  
 } OptimalFilterSIRENA;
 
 typedef struct LibraryCollection
@@ -209,57 +228,58 @@ typedef struct LibraryCollection
 	/** PRECALOFWM vector */
 	gsl_matrix *PRCLOFWM;
 #ifdef __cplusplus
-	LibraryCollection();
-	~LibraryCollection();
+  LibraryCollection();
+  LibraryCollection(const LibraryCollection& other);
+  LibraryCollection& operator=(const LibraryCollection& other);
+  ~LibraryCollection();
 #endif
-	
+  
 } LibraryCollection;
 
 typedef struct NoiseSpec
 {
-	/** Noise standard deviation */
-	double noiseStd;
-	
-	/** Baseline: BASELINE or BASELINR */
-	double baseline;
-	
-	/** Duration of the noise spectrum */
-	int noise_duration;
-	      
-	/** Vector containing the noise spectrum */
-	gsl_vector *noisespec;
-
-	/** Vector containing the frequecies of the noise spectrum */
-	gsl_vector *noisefreqs;
-	
-	/** Matrix conatining the weight matrixes of the noise for different lengths */
-	gsl_matrix *weightMatrixes;
+  /** Noise standard deviation */
+  double noiseStd;
+  
+  /** Baseline: BASELINE or BASELINR */
+  double baseline;
+  
+  /** Duration of the noise spectrum */
+  int noise_duration;
+  
+  /** Vector containing the noise spectrum */
+  gsl_vector *noisespec;
+  
+  /** Vector containing the frequecies of the noise spectrum */
+  gsl_vector *noisefreqs;
+  
+  /** Matrix conatining the weight matrixes of the noise for different lengths */
+  gsl_matrix *weightMatrixes;
 #ifdef __cplusplus
-	NoiseSpec():noiseStd(0.0f), baseline(0.0f), noise_duration(0), noisespec(0),noisefreqs(0), weightMatrixes(0){}
-	~NoiseSpec()
-	{
-		if(noisespec) gsl_vector_free(noisespec);
-		if(noisefreqs) gsl_vector_free(noisefreqs);
-		if(weightMatrixes) gsl_matrix_free(weightMatrixes);
-	}
+  NoiseSpec();
+  NoiseSpec(const NoiseSpec& other);
+  NoiseSpec& operator=(const NoiseSpec& other);
+  ~NoiseSpec();
 #endif
 
 } NoiseSpec;
 
 typedef struct Grading
 {
-	// Number of grades 
-	int ngrades;
-
-	// Structure which contains the grading data
-	gsl_vector *value;
-	gsl_matrix *gradeData;
+  // Number of grades 
+  int ngrades;
+  
+  // Structure which contains the grading data
+  gsl_vector *value;
+  gsl_matrix *gradeData;
 #ifdef __cplusplus
-	Grading():ngrades(0), value(0), gradeData(0){}
-	~Grading(){gsl_vector_free(value); gsl_matrix_free(gradeData);}
+  Grading();
+  Grading(const Grading& other);
+  Grading& operator=(const Grading& other);
+  ~Grading();
 #endif
-	
-} Grading;	// To store the dara read from the XML File
+  
+} Grading;// To store the dara read from the XML File
 
 typedef struct PulseDetected
 {
@@ -273,6 +293,8 @@ typedef struct PulseDetected
 	/** tstart(i)-tstart(i-1)*/
 	int grade2;
 
+        int grade2_1;
+
 	/** PIX_ID of the detected pulse*/
 	int pixid;
 	
@@ -281,6 +303,9 @@ typedef struct PulseDetected
 
 	/** Start time of the Pulse */
 	double Tstart;
+        
+        /** Start time of the Pulse in samples */
+	double TstartSamples;
 
 	/** End time of the Pulse */
 	double Tend;
@@ -302,9 +327,21 @@ typedef struct PulseDetected
 	
 	/** Energy (KeV) of the Pulse */
 	double energy;
+        
+        /** Pulse grade */
+	int grading;
 
         /** Average of the first 4 samples of the derivative of the Pulse */
 	double avg_4samplesDerivative;
+        
+        /** Low resolution energy estimator (4 samples-long filter) */
+	double E_lowres;
+        
+        /** Offset relative to the central point of the parabola */
+        double phi;
+        
+        /** Number of samples shifted to find the maximum of the parabola  */
+        int lagsShift;
         
 	/** Quality of the Pulse */
 	double quality;
@@ -312,23 +349,31 @@ typedef struct PulseDetected
         /**Number of lags used in detection*/
         int numLagsUsed;
 #ifdef __cplusplus
-	PulseDetected();
+  PulseDetected();
+  PulseDetected(const PulseDetected& other);
+  PulseDetected& operator=(const PulseDetected& other);
+  // FIXME
+  ~PulseDetected();
 #endif
 
 } PulseDetected;
 
 typedef struct PulsesCollection
 {
-	/** Number of detected pulses in the structure. **/
-	int ndetpulses;
+  /** Number of detected pulses in the structure. **/
+  int ndetpulses;
         
-        /** Current size of the array **/
-	int size;
+  /** Current size of the array **/
+  int size;
 
-	/** Array containing all the pulses detetected in record**/
-	PulseDetected* pulses_detected;
+  /** Array containing all the pulses detetected in record**/
+  PulseDetected* pulses_detected;
 #ifdef __cplusplus
-	PulsesCollection():ndetpulses(0), pulses_detected(0), size(0){}
+  PulsesCollection();
+  PulsesCollection(const PulsesCollection& other);
+  PulsesCollection& operator=(const PulsesCollection& other);
+  // FIXME
+  ~PulsesCollection();
 #endif
 
 } PulsesCollection;
@@ -336,145 +381,175 @@ typedef struct PulsesCollection
 /** Structure containing all the pointers and values to run the reconstruction stage */
 typedef struct ReconstructInitSIRENA
 {
- 	/**                   **/
-	/** SIRENA parameters **/
-	/**                   **/
-        /** LibraryCollection structure (pulse templates and matched filters)*/		
-	LibraryCollection* library_collection;
-	
-	/** Threshold of each record **/
-	double threshold;
-
-	/** Library file (to be used or to be created) **/
-	char library_file[256];
-	
-	/** records file (if any) **/
-	char record_file[256];
-	
-	/** records file pointer **/
-	fitsfile *record_file_fptr;
-
-	/** Noise file (to be used) **/
-	char noise_file[256];
-
-	/** Output event file **/
-	char event_file[256];
-
-	/** Pulse length */
-	int pulse_length;
-
-	/** Detection scaleFactor (0.005 ? no filtering) **/
-	double scaleFactor;
-	
-	/** Detection samplesUp (samples to confirm threshold overcoming) **/
-	double samplesUp;
-        
+  /**                   **/
+  /** SIRENA parameters **/
+  /**                   **/
+  /** LibraryCollection structure (pulse templates and matched filters)*/
+  LibraryCollection* library_collection;
+  
+  /** Threshold of each record **/
+  double threshold;
+  
+  /** Library file (to be used or to be created) **/
+  char library_file[256];
+  
+  /** records file (if any) **/
+  char record_file[256];
+  
+  /** records file pointer **/
+  fitsfile *record_file_fptr;
+  
+  /** Noise file (to be used) **/
+  char noise_file[256];
+  
+  /** Output event file **/
+  char event_file[256];
+  
+  /** Pulse length */
+  int pulse_length;
+  
+  /** Detection scaleFactor (0.005 ? no filtering) **/
+  double scaleFactor;
+  
+  /** Detection samplesUp (samples to confirm threshold overcoming) **/
+  double samplesUp;
+  
         /** A1 Detection samplesDown (samples below the threshold to look for other pulse) **/
-	double samplesDown;
+  double samplesDown;
+  
+  /** Detection nSgms (sigmas to establish a threshold for detection) **/
+  double nSgms;
+  
+  // Detect secondary pulses or not
+  int detectSP;
 
-	/** Detection nSgms (sigmas to establish a threshold for detection) **/
-	double nSgms;
-        
-        // Detect secondary pulses or not
-        int detectSP;
+  /** Monochromatic energy for library creation **/
+  double monoenergy;
+  
+  /** Add the PRECALWN HDU in the library file (1) or not (0) **/
+  int hduPRECALWN;
+  
+  /** Add the PRCLOFWM HDU in the library file (1) or not (0) **/
+  int hduPRCLOFWM;
+  
+  /** Length of the longest fixed filter for library creation **/
+  int largeFilter;
+  
+  /** Running sum length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
+  double LrsT;
+  
+  /** Baseline averaging length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
+  double LbT;
+  
+  /** Baseline (in ADC units) **/
+  //double baseline;
+  
+  /** Run mode (0: calibration/lib creation  1:energy reconstruction) **/
+  int opmode;
+  
+  /** Detection Mode: AD (Adjusted Derivative) or A1 (Alternative1) **/
+  char detectionMode[4];
+  
+  /** Noise spectrum **/
+  NoiseSpec* noise_spectrum;
+  
+  /** Filtering Domain: T (Time) or F (Frequency) **/
+  char FilterDomain[2];
+  
+  /** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
+  char FilterMethod[3];
+  
+  /** Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA **/
+  char EnergyMethod[10];
+  
+  double filtEev;
+  
+  //Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
+  char OFNoise[8];
+  
+  //LagsOrNot: LAGS == True or NOLAGS == False **/
+  int LagsOrNot;
+  
+  //Number of lags (odd number **/
+  int nLags;
+  
+  //Using 3 lags to analytically calculate a parabola or using 5 lags to fit **/
+  int Fitting35;
+  
+  //OFIter: Iterate == 1 or NOTIterate == 0 **/
+  int OFIter;
+  
+  /** Use a library with optimal filters (1) or calculate the optimal filter to each pulse (0) **/
+  int OFLib;
+  
+  //Optimal Filter by using the Matched Filter (MF) or the DAB as matched filter (MF, DAB) **/
+  char OFInterp[4];
+  
+  /** Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
+  char OFStrategy[8];
+  
+  //Optimal Filter length (taken into account if OFStrategy=FIXED) **/
+  int OFLength;
 
-	/** Monochromatic energy for library creation **/
-	double monoenergy;
-	
-	/** Add the PRECALWN HDU in the library file (1) or not (0) **/
-	int hduPRECALWN;
-	
-	/** Add the PRCLOFWM HDU in the library file (1) or not (0) **/
-	int hduPRCLOFWM;
-
-	/** Length of the longest fixed filter for library creation **/
-	int largeFilter;
-	
-	/** Running sum length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
-	double LrsT;
-	
-	/** Baseline averaging length for the RS raw energy estimation, in seconds (only in CALIBRATION) **/
-	double LbT;
-
-	/** Run mode (0: calibration/lib creation  1:energy reconstruction) **/
-	int mode;
-        
-        /** Detection Mode: AD (Adjusted Derivative) or A1 (Alternative1) **/
-	char detectionMode[3];
-
-	/** Noise spectrum **/
-	NoiseSpec* noise_spectrum;
-
-	/** Filtering Domain: T (Time) or F (Frequency) **/
-	char FilterDomain[2];
-
-	/** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
-	char FilterMethod[3];
-
-	/** Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA **/
-	char EnergyMethod[10];
-        
-        double filtEev;
-	
-	//Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
-	char OFNoise[8];
-
-	//LagsOrNot: LAGS == True or NOLAGS == False **/
-	int LagsOrNot;
-
-	//OFIter: Iterate == 1 or NOTIterate == 0 **/
-	int OFIter;
-
-	/** Use a library with optimal filters (1) or calculate the optimal filter to each pulse (0) **/
-	int OFLib;
-	
-	//Optimal Filter by using the Matched Filter (MF) or the DAB as matched filter (MF, DAB) **/
-	char OFInterp[4];
-
-	/** Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
-	char OFStrategy[8];
-
-	//Optimal Filter length (taken into account if OFStrategy=FIXED) **/
-	int OFLength;
-
-	/** Write intermediate files **/
-	int intermediate;
-	
-	/** Intermediate file **/
-	char detectFile[256];
-	
-	/** File with the optimal filter info **/
-	char filterFile[256];
-	
-	/** Overwrite files? **/
-	int clobber;
-	
-	/** PP's parameter **/
-	int maxPulsesPerRecord;
-	
-	/** Saturation level of the ADC curves **/
-	double SaturationValue;
-
-	/** Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0) **/
-	int tstartPulse1;
-	int tstartPulse2;
-	int tstartPulse3;
-	
-	/** Energies for PCA **/
-	double energyPCA1;
-	double energyPCA2;
-	
-	/** XML File with instrument definition **/
-	char XMLFile[256];
-	
-	/** grading info read from the XML File **/
-	Grading *grading;
+  /** Write intermediate files **/
+  int intermediate;
+  
+  /** Intermediate file **/
+  char detectFile[256];
+  
+  /** File with the optimal filter info **/
+  char filterFile[256];
+  
+  /** Overwrite files? **/
+  int clobber;
+  
+  /** PP's parameter **/
+  int maxPulsesPerRecord;
+  
+  /** Saturation level of the ADC curves **/
+  double SaturationValue;
+  
+  /** Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0) **/
+  int tstartPulse1;
+  int tstartPulse2;
+  int tstartPulse3;
+  
+  /** Energies for PCA **/
+  double energyPCA1;
+  double energyPCA2;
+  
+  /** XML File with instrument definition **/
+  char XMLFile[256];
+  
+  /** grading info read from the XML File **/
+  Grading *grading;
 #ifdef __cplusplus
-	ReconstructInitSIRENA();
-	~ReconstructInitSIRENA();
+  ReconstructInitSIRENA();
+  ReconstructInitSIRENA(const ReconstructInitSIRENA& other);
+  ~ReconstructInitSIRENA();
+  ReconstructInitSIRENA& operator=(const ReconstructInitSIRENA& other);
+  ReconstructInitSIRENA* get_threading_object(int n_record);
+  //ReconstructInitSIRENA& operator=(ReconstructInitSIRENA& other);
 #endif
 
 } ReconstructInitSIRENA;
+
+#ifdef __cplusplus
+extern "C"
+#endif
+void th_end(ReconstructInitSIRENA* reconstruct_init,
+            PulsesCollection** pulsesAll, 
+            OptimalFilterSIRENA** optimalFilter);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int th_get_event_list(TesEventList** test_event, TesRecord** record);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int is_threading();
 
 #ifdef __cplusplus
 extern "C"
@@ -490,13 +565,43 @@ ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status);
 extern "C"
 #endif
 
-void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, fitsfile *fptr, char* const library_file,
-	char* const event_file,	int pulse_length, double scaleFactor, double samplesUp, double samplesDown, double nSgms, int detectSP,
-	int mode, char* detectionMode,double LrsT, double LbT, char* const noise_file, char* filter_domain,
-	char* filter_method, char* energy_method, double filtEev, char* ofnoise, int lagsornot, int ofiter, char oflib, char *ofinterp, char* oflength_strategy, int oflength,
-	double monoenergy, char hduPRECALWN, char hduPRCLOFWM, int largeFilter, int interm, char* detectFile, char* filterFile, char clobber, int maxPulsesPerRecord, double SaturationValue,
-	int tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status);
+void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, 
+                                    char* const record_file, fitsfile *fptr, 
+                                    char* const library_file,
+                                    char* const event_file,
+                                    int pulse_length, double scaleFactor, 
+                                    double samplesUp, double samplesDown, 
+                                    double nSgms, int detectSP,
+                                    int opmode, char* detectionMode,double LrsT, 
+                                    double LbT, char* const noise_file, 
+                                    char* filter_domain,
+                                    char* filter_method, char* energy_method, 
+                                    double filtEev, char* ofnoise, 
+                                    int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, 
+                                    char *ofinterp, char* oflength_strategy, 
+                                    int oflength,
+                                    double monoenergy, char hduPRECALWN, 
+                                    char hduPRCLOFWM, int largeFilter, 
+                                    int interm, char* detectFile, 
+                                    char* filterFile, char clobber, 
+                                    int maxPulsesPerRecord, 
+                                    double SaturationValue,
+                                    int tstartPulse1, int tstartPulse2, 
+                                    int tstartPulse3, double energyPCA1, 
+                                    double energyPCA2, char * const XMLFile, 
+                                    int* const status);
 
+/*
+#ifdef __cplusplus
+extern "C"
+#endif
+void initializeCreationMode(){}
+
+#ifdef __cplusplus
+extern "C"
+#endif
+void initializeProductionMode(){}
+*/
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -523,12 +628,23 @@ extern "C"
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 
-LibraryCollection* getLibraryCollection(const char* const filename, int mode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int* const status);
+LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int* const status);
 
-NoiseSpec* getNoiseSpec(const char* const filename,int mode,int hduPRCLOFWM,char *energy_method,char *ofnoise,char *filter_method,int* const status);
+NoiseSpec* getNoiseSpec(const char* const filename,int opmode,int hduPRCLOFWM,char *energy_method,char *ofnoise,char *filter_method,int* const status);
+
+/*#ifdef __cplusplus
+extern "C"
+#endif
+void calculateAverageRecord(TesRecord* record, int lastRecord, int nrecord, gsl_vector **averageRecord, int* const status);*/
+
+#ifdef __cplusplus
+extern "C"
+#endif
+void calculateAverageRecord(TesRecord* record, int lastRecord, int *nrecordOK, gsl_vector **averageRecord, int* const status);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+void calculateRecordsError(TesRecord* record, int nrecord, gsl_vector *averageRecord, int* const status);
 
 #endif /* INTEGRASIRENA_H */
-
-
-
-

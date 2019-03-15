@@ -16,8 +16,6 @@
 
 
    Copyright 2014 Philippe Peille, IRAP
-   Copyright 2015-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
-                       Erlangen-Nuernberg
 */
 
 #include "testriggerfile.h"
@@ -70,7 +68,7 @@ void freeTesTriggerFile(TesTriggerFile** const file, int* const status){
       }
 
       fits_close_file_chksum((*file)->fptr, status);
-      headas_chat(5, "closed TesStream list file (containing %ld rows).\n",
+      headas_chat(5, "closed TesStream list file (containing %ld rows).\n", 
                   (*file)->nrows);
     }
 
@@ -122,7 +120,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
   fits_update_key(file->fptr, TINT, "PREBUFF", &preBufferSize, "Number of samples before start of pulse", status);
   double deltat = 1./sampleFreq;
   fits_update_key(file->fptr, TDOUBLE, "DELTAT", &deltat, "Time resolution of data stream", status);
-
+  
   //Write XML and pixel impact filenames into header
   fits_update_key(file->fptr,TSTRING,"XMLFILE",xmlfile,NULL,status);
   fits_update_key(file->fptr,TSTRING,"PIXFILE",impactlist,NULL,status);
@@ -141,10 +139,10 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
     sprintf(tform[1], "%ldU",triggerSize);
     CHECK_NULL_RET(tform[1],*status,"Memory allocation failed",NULL);
   }
-
+  
   // Include allocate a buffer of rows ahead of time
   file->rowbuffer = TESTRIGGERFILE_ROWBUFFERSIZE;
-
+  
   fits_create_tbl(file->fptr, BINARY_TBL, file->rowbuffer, 4, ttype, tform, tunit,"RECORDS", status);
   //Add keywords to other extension
   fits_update_key(file->fptr, TULONG, "TRIGGSZ", &triggerSize, "Number of samples in a standard trigger", status);
@@ -175,24 +173,18 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 
 	//Open record file in READONLY mode
 	fits_open_file(&(file->fptr), filename, READONLY, status);
-
 	//Read standard keywords
 	//(shouldn't we read these from the record extension?)
 	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
-
 	//Move to the binary table
 	fits_movnam_hdu(file->fptr,ANY_HDU,"RECORDS",0, status);
-
 	//Get number of rows
 	char comment[FLEN_COMMENT];
 	fits_read_key(file->fptr, TINT, "NAXIS2", &(file->nrows), comment, status);
-
 	//Get trigger_size
 	fits_read_key(file->fptr, TULONG, "TRIGGSZ", &(file->trigger_size), comment, status);
-
 	//Get delta_t
 	fits_read_key(file->fptr, TDOUBLE, "DELTAT", &(file->delta_t), comment, status);
-
 	//Associate column numbers
 	fits_get_colnum(file->fptr, CASEINSEN,"TIME", &(file->timeCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"ADC", &(file->trigCol), status);
@@ -206,6 +198,9 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 /** Populates a TesRecord structure with the next record */
 int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status){
   int anynul=0;
+  char tform2ADC[20];
+  LONGLONG rec_trigsize;
+
   if (NULL==file || NULL==file->fptr) {
     *status=EXIT_FAILURE;
     SIXT_ERROR("No opened trigger file to read from");
@@ -216,22 +211,35 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
     // get length of this record
     // (although unlikely, we might have a very large file, so we best
     // use the LONGLONG interface to the descriptor
-    LONGLONG rec_trigsize;
-    LONGLONG col_width;
-    int adc_col_typecode;
-    fits_get_coltypell(file->fptr,file->trigCol,&adc_col_typecode,
-		       &rec_trigsize,&col_width,status);
-    CHECK_STATUS_RET(*status,0);
+    
+    // read TFORM for ADC to know if it is FIXED or VARIABLE length
+    fits_read_key(file->fptr,TSTRING, "TFORM2", &tform2ADC, NULL, status);
+    if(strstr(tform2ADC, "(") != NULL){
+      LONGLONG offset;
+      fits_read_descriptll(file->fptr,file->trigCol,file->row,&rec_trigsize,&offset,status);
+      CHECK_STATUS_RET(*status,0);    
 
+    }else{
+      LONGLONG col_width;
+      int adc_col_typecode;
+      fits_get_coltypell(file->fptr,file->trigCol,&adc_col_typecode,
+			 &rec_trigsize,&col_width,status);
+      CHECK_STATUS_RET(*status,0);
+    }
     // resize buffers if that is necessary
     if (record->trigger_size!=(unsigned long) rec_trigsize) {
       resizeTesRecord(record,(unsigned long) rec_trigsize,status);
       CHECK_STATUS_RET(*status,0);
     }
 
-    fits_read_col(file->fptr, TUSHORT, file->trigCol,
-		  file->row,1,record->trigger_size,0,record->adc_array, &anynul,status);
+    // when ADC is integer
+    //fits_read_col(file->fptr, TUSHORT, file->trigCol,
+    //		  file->row,1,record->trigger_size,0,record->adc_array, &anynul,status);
+    // when ADC is DOUBLE
+    fits_read_col(file->fptr, TDOUBLE, file->trigCol,
+		  file->row,1,record->trigger_size,0,record->adc_double, &anynul,status);
     CHECK_STATUS_RET(*status,0);
+
 
 //		fits_read_col(file->fptr, TLONG, file->ph_idCol,
 //					  file->row,1,MAXIMPACTNUMBER,0,record->phid_array, &anynul,status);
@@ -240,17 +248,17 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
     fits_read_col(file->fptr, TLONG, file->pixIDCol,
 		  file->row,1,1,0,&(record->pixid), &anynul,status);
     CHECK_STATUS_RET(*status,0);
-
     fits_read_col(file->fptr, TDOUBLE, file->timeCol,
 		  file->row,1,1,0,&(record->time), &anynul,status);
     CHECK_STATUS_RET(*status,0);
-
     //Changed below by MTC//    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
+    /* Comment again because now ADC is double
     for (unsigned long i=0 ; i < record->trigger_size ; i++) {
 
       record->adc_double[i]= (double) (record->adc_array[i]);
     }
-
+    */
+    
     file->row++;
     return(1);
   } else {
@@ -265,7 +273,7 @@ void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status)
         // if we've run out of buffer, extend the table
         if (outputFile->rowbuffer==0){
                 // extend to 1.5 of previous length
-                outputFile->rowbuffer = (long) outputFile->nrows/2;
+                outputFile->rowbuffer = (long) outputFile->nrows/2; 
                 fits_insert_rows(outputFile->fptr, outputFile->nrows, outputFile->rowbuffer, status);
         }
 

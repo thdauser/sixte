@@ -57,6 +57,7 @@ MAP OF SECTIONS IN THIS FILE:
  - 14. FindSecondaries
  - 15. find_model_samp1DERsNoReSCLD
  - 16. smoothDerivative
+ - 17. noDetect
 
 *******************************************************************************/
 
@@ -172,8 +173,8 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sample
 	}
 
 	// Free allocated GSL vectors
-	gsl_vector_free(invectorAux);
-	gsl_vector_free(invectorAux1);
+	gsl_vector_free(invectorAux); invectorAux = 0;
+	gsl_vector_free(invectorAux1); invectorAux1 = 0;
 	
 	if (boxLength == 1)	return(3);
 
@@ -219,24 +220,33 @@ int findMeanSigma (gsl_vector *invector, double *mean, double *sigma)
 	// Declare variables
 	int size = invector->size; // Size of the input vector
 	// To calculate the mean
-	double data[size];	// Intermediate value to use 'gsl_stats_median_from_sorted_data'
 	bool veryBig = false;
+        double suma = 0.0;
 
 	// Mean
 	for (int i=0;i<size;i++)
 	{
-		data[i] = gsl_vector_get(invector,i);
-		if (data[i]>1e10)
+                if (gsl_vector_get(invector,i)>1e10)
 		{
 			veryBig =true;
 			break;
 		}
 	}
+	
 	if (veryBig == false)
 	{
-		*mean = gsl_stats_mean(data, 1, size);
+                *mean = 0.0;
+                for (int i=0;i<size;i++)
+                {
+                    *mean = *mean + gsl_vector_get(invector,i);
+                }
+                *mean = *mean/size;
 		// Standard deviation
-		*sigma= gsl_stats_sd_m(data, 1, size, *mean);
+                for (int i=0;i<size;i++)
+                {
+                    suma = suma + pow(gsl_vector_get(invector,i)-*mean,2.0);
+                }
+                *sigma = sqrt(suma/(size-1));
 	}
 	else	// To avoid an inf in IO or a NAN in JUPITER
 	{
@@ -245,6 +255,74 @@ int findMeanSigma (gsl_vector *invector, double *mean, double *sigma)
 	}
 
 	return EPOK;
+        
+        
+        /*// Declare variables
+	int size = invector->size; // Size of the input vector
+	// To calculate the mean
+	//double data[size];	// Intermediate value to use 'gsl_stats_median_from_sorted_data'
+	bool veryBig = false;
+
+	// Mean
+	for (int i=0;i<size;i++)
+	{
+		//data[i] = gsl_vector_get(invector,i);
+		//if (data[i]>1e10)
+                if (gsl_vector_get(invector,i)>1e10)
+		{
+			veryBig =true;
+			break;
+		}
+	}
+	
+	gsl_vector *vector_prueba = gsl_vector_alloc(5);
+        gsl_vector_set(vector_prueba,0,2);
+        gsl_vector_set(vector_prueba,1,20);
+        gsl_vector_set(vector_prueba,2,-2);
+        gsl_vector_set(vector_prueba,3,17);
+        gsl_vector_set(vector_prueba,4,-0.5);
+        double media = 0.0;
+        double suma =0.0;
+        double std;
+        double data_prueba[5];
+        for (int i=0;i<5;i++)
+	{
+		data_prueba[i] = gsl_vector_get(vector_prueba,i);
+        }
+	
+	if (veryBig == false)
+	{
+                
+                media = 0.0;
+                for (int i=0;i<5;i++)
+                {
+                    media = media + gsl_vector_get(vector_prueba,i);
+                }
+                media = media/5;
+		//*mean = gsl_stats_mean(data, 1, size);
+                *mean = gsl_stats_mean(data_prueba, 1, 5);
+		// Standard deviation
+                
+                for (int i=0;i<5;i++)
+                {
+                    suma = suma + pow(gsl_vector_get(vector_prueba,i)-media,2.0);
+                    cout<<"suma: "<<suma<<endl;
+                }
+                std = sqrt(suma/4);
+		//*sigma= gsl_stats_sd_m(data, 1, size, *mean);
+		*sigma= gsl_stats_sd_m(data_prueba, 1, 5, *mean);
+                cout<<"media0: "<<media<<endl;
+                cout<<"*mean: "<<*mean<<endl;
+                cout<<"std0: "<<std<<endl;
+                cout<<"*sigma: "<<*sigma<<endl;
+	}
+	else	// To avoid an inf in IO or a NAN in JUPITER
+	{
+		*mean = 1e10;
+		*sigma = 1e10;
+	}
+
+	return EPOK;*/
 }
 /*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
@@ -286,17 +364,46 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 	int cnt;						// Number of points inside the excursion (mean+-excursion)
 	// It is not necessary to check the allocation because 'invector' size must already be > 0
 	gsl_vector *invectorNew = gsl_vector_alloc(size);	// Auxiliary vector
+        /*cout<<"Paso median1"<<endl;
+        
+        gsl_vector *vector_prueba = gsl_vector_alloc(6);
+        gsl_vector_set(vector_prueba,0,2);
+        gsl_vector_set(vector_prueba,1,20);
+        gsl_vector_set(vector_prueba,2,-2);
+        gsl_vector_set(vector_prueba,3,17);
+        gsl_vector_set(vector_prueba,4,-0.5);
+        gsl_vector_set(vector_prueba,5,23);
+        gsl_sort_vector(vector_prueba);
+        cout<<"median0="<<(gsl_vector_get(vector_prueba,(int) (6/2)-1)+gsl_vector_get(vector_prueba,(int) (6/2)))/2<<endl;
+        double data_prueba[6];				
+        for (int i=0;i<6;i++)
+	{
+		data_prueba[i] = gsl_vector_get(vector_prueba,i);
+	}
+	gsl_sort(data_prueba,1,6);
+	cout<<"median1: "<<gsl_stats_median_from_sorted_data(data_prueba,1,6)<<endl;*/
+        
 	// To calculate the median
-	double data[size];					// Intermediate value to use 'gsl_stats_median_from_sorted_data'
+	//double data[size];					// Intermediate value to use 'gsl_stats_median_from_sorted_data'
 	double median;
 
 	// Median
-	for (int i=0;i<size;i++)
+	/*for (int i=0;i<size;i++)
 	{
 		data[i] = gsl_vector_get(invector,i);
 	}
 	gsl_sort(data,1,size);
-	median = gsl_stats_median_from_sorted_data (data,1,size);
+	median = gsl_stats_median_from_sorted_data(data,1,size);*/
+        gsl_vector_memcpy(invectorNew,invector);
+        gsl_sort_vector(invectorNew);
+        if (size%2 == 0)	//Even
+        {
+            median = (gsl_vector_get(invectorNew,(int) (size/2)-1)+gsl_vector_get(invectorNew,(int) (size/2)))/2;
+        }
+        else                    //Odd
+        {
+            median = gsl_vector_get(invectorNew,(int) (size/2));
+        }
 
 	gsl_vector_memcpy(invectorNew,invector);
 
@@ -355,6 +462,7 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 		}
 
 	} while (fabs((mean2-mean1)/mean1)>(stopCriteria/100.0));	// HARDPOINT!!!!!!!!!!!!!!!!!!! (stopCriteria)
+	
 
 	// Establish the threshold as mean+nSigmas*sigma
 	*threshold = mean2+nSigmas*sg2;	// HARDPOINT!!!!!!!!!!!!!!!!!!! (nSigmas)
@@ -442,7 +550,7 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
         //cout<<"theshold-thesholdNew="<<(*threshold-thresholdNew)/sg2New<<"sgsNew"<<endl;*/
 	////////////////////////////////////////////////////////////////
 
-	gsl_vector_free(invectorNew);
+	gsl_vector_free(invectorNew); invectorNew= 0;
 
 	return EPOK;
 }
@@ -549,7 +657,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                         message = "Cannot run gsl_vector_Sumsubvector routine when tstart>=lb";
                                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                 }
-                                gsl_vector_free(input);
+                                gsl_vector_free(input); input = 0;
                         }
                         else if ((gsl_vector_get(tstart,0)<gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,0)>1))
                         // 0<tstart<lb => Sum the available number of samples (although the available number of samples was lower than lb)
@@ -586,7 +694,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                 }
                                 gsl_vector_set(*lb,0, gsl_vector_get(tstart,0));
-                                gsl_vector_free(input);
+                                gsl_vector_free(input); input = 0;
                         }
                         else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
                         {
@@ -636,7 +744,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                 message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
                                                                 EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                         }
-                                                        gsl_vector_free(input);
+                                                        gsl_vector_free(input); input = 0;
 
                                                         break;
                                                 }
@@ -675,7 +783,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                 message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
                                                                 EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                         }
-                                                        gsl_vector_free(input);
+                                                        gsl_vector_free(input); input = 0;
 
                                                         break;
                                                 }
@@ -725,7 +833,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                         message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
                                                                                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                                                 }
-                                                                                gsl_vector_free(input);
+                                                                                gsl_vector_free(input); input = 0;
 
                                                                                 break;
                                                                         }
@@ -770,7 +878,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                         EP_PRINT_ERROR(message,EPFAIL);
                                                                                 }
                                                                                 gsl_vector_set(*lb,0,gsl_vector_get(tstart,j+1)-tendprev-1);
-                                                                                gsl_vector_free(input);
+                                                                                gsl_vector_free(input); input = 0;
 
                                                                                 break;
                                                                         }
@@ -812,7 +920,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                         message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
                                                                                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                                                 }
-                                                                                gsl_vector_free(input);
+                                                                                gsl_vector_free(input); input = 0;
 
                                                                                 break;
                                                                         }
@@ -857,7 +965,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                         message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
                                                                                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                                                 }
-                                                                                gsl_vector_free(input);
+                                                                                gsl_vector_free(input); input = 0;
 
                                                                                 break;
                                                                         }
@@ -911,7 +1019,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                         message = "Cannot run gsl_vector_Sumsubvector routine length_(2)>=lb";
                                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                 }
-                                gsl_vector_free(input);
+                                gsl_vector_free(input); input = 0;
                         }
                         else if ((gsl_vector_get(tstart,i)-tendprev<gsl_vector_get(*lb,i)) && (gsl_vector_get(tstart,i)-tendprev>1))
                         // 0<tstart_(i)-tend_(i-1)<lb => Sum the available number of samples (although the available number of samples was lower than lb)
@@ -956,7 +1064,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                         EP_PRINT_ERROR(message,EPFAIL);
                                 }
                                 gsl_vector_set(*lb,i,gsl_vector_get(tstart,i)-tendprev-1);
-                                gsl_vector_free(input);
+                                gsl_vector_free(input); input = 0;
                         }
                         else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
                         {
@@ -1004,7 +1112,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                 message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
                                                                 EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                         }
-                                                        gsl_vector_free(input);
+                                                        gsl_vector_free(input); input = 0;
 
                                                         break;
                                                 }
@@ -1049,7 +1157,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                 EP_PRINT_ERROR(message,EPFAIL);
                                                         }
                                                         gsl_vector_set(*lb,i,gsl_vector_get(tstart,j+1)-tendprev-1);
-                                                        gsl_vector_free(input);
+                                                        gsl_vector_free(input); input = 0;
 
                                                         break;
                                                 }
@@ -1091,7 +1199,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                 message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
                                                                 EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                         }
-                                                        gsl_vector_free(input);
+                                                        gsl_vector_free(input); input = 0;
 
                                                         break;
                                                 }
@@ -1136,7 +1244,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                 message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
                                                                 EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                         }
-                                                        gsl_vector_free(input);
+                                                        gsl_vector_free(input); input = 0;
 
                                                         break;
                                                 }
@@ -1246,7 +1354,7 @@ int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int l
 		}
 		*pulseheight = ph;
 
-		gsl_vector_free(input);
+		gsl_vector_free(input); input = 0;
 	}
 
 	return(EPOK);
@@ -1383,7 +1491,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
 				gsl_vector_memcpy(modelFound_aux,modelAux);
-				gsl_vector_free(modelAux);
+				gsl_vector_free(modelAux); modelAux = 0;
 
 				break;
 			}
@@ -1394,7 +1502,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
 	gsl_vector_memcpy(*modelFound,&temp.vector);
 
-	gsl_vector_free(modelFound_aux);
+	gsl_vector_free(modelFound_aux); modelFound_aux = 0;
 
     return(EPOK);
 }
@@ -1491,8 +1599,8 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
 				
-				gsl_vector_free(modelA);
-                                gsl_vector_free(modelB);
+				gsl_vector_free(modelA); modelA = 0;
+                                gsl_vector_free(modelB); modelB = 0;
 
 				break;
 			}
@@ -1565,7 +1673,7 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
             
                 temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate,0,(*modelFound)->size);
                 gsl_vector_memcpy(*modelFound,&temp.vector);
-                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que habï¿½a un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
+                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que había un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
                 
                 //cout<<"Emin: "<<gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1)<<endl;
                 //cout<<"Emax: >"<<gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1)<<endl;
@@ -1578,6 +1686,8 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 			{
 				// Interpolate between the two corresponding rows in "models"
 				//gsl_vector_set_zero(modelFound_aux);
+                            
+                                //cout<<samp1DER<<" "<<gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i)<<" "<<gsl_vector_get(reconstruct_init->library_collection->samp1DERs,i+1)<<endl;
                             
                                 gsl_vector *modelA = gsl_vector_alloc((*modelFound)->size);
                                 gsl_vector *modelB = gsl_vector_alloc((*modelFound)->size);
@@ -1593,14 +1703,9 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 					message = "Cannot run interpolate_model with two rows in models";
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
-				
-				//cout<<"i: "<<i<<endl;
-                                //cout<<"i+1: "<<i+1<<endl;
-                                //cout<<"Emin: "<<gsl_vector_get(reconstruct_init->library_collection->energies,i)<<endl;
-                                //cout<<"Emax: "<<gsl_vector_get(reconstruct_init->library_collection->energies,i+1)<<endl;
-				
-				gsl_vector_free(modelA);
-                                gsl_vector_free(modelB);
+				gsl_vector_free(modelA); modelA = 0;
+                                gsl_vector_free(modelB); modelB = 0;
+
 
 				break;
 			}
@@ -1667,8 +1772,8 @@ int interpolate_model(gsl_vector **modelFound, double p_model, gsl_vector *model
         gsl_vector_memcpy(*modelFound,modelIn1Aux);
 	gsl_vector_add(*modelFound,modelIn2Aux);
 	
-	gsl_vector_free(modelIn1Aux);
-	gsl_vector_free(modelIn2Aux);
+	gsl_vector_free(modelIn1Aux); modelIn1Aux = 0;
+	gsl_vector_free(modelIn2Aux); modelIn2Aux = 0;
 
     return(EPOK);
 }
@@ -1679,8 +1784,8 @@ int interpolate_model(gsl_vector **modelFound, double p_model, gsl_vector *model
 * findPulsesCAL: This function is going to find the pulses in a record (in the CALibration mode) by using the function findTstartCAL
 *
 * - Declare variables
-* - First step to look for single pulses (call 'medianKappaClipping')
-*   	- Call 'findTstartCAL'
+* - Establish the threshold (call medianKappaClipping)
+* - Find pulses (call findTstartCAL)
 * - If at least a pulse is found
 * 	- Get the 'pulseheight' of each found pulse (in order to be used to build the pulse templates library)
 * - Free allocated GSL vectors
@@ -1741,7 +1846,7 @@ int findPulsesCAL
 	gsl_vector_set_zero(*quality);
 	gsl_vector_set_zero(*pulseheight);	// Pulse height of the single pulses
 
-	// First step to look for single pulses
+	// Establish the threshold
 	if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*scalefactor), &thresholdmediankappa))
 	{
 		message = "Cannot run medianKappaClipping looking for single pulses";
@@ -1749,6 +1854,7 @@ int findPulsesCAL
 	}
 	*threshold = thresholdmediankappa;
 
+        // Find pulses
 	if (findTstartCAL (reconstruct_init->maxPulsesPerRecord, vectorinDER, thresholdmediankappa, samplesUp, reconstruct_init, nPulses, tstart, quality, maxDERgsl))
 	{
 		message = "Cannot run findTstartCAL";
@@ -1792,8 +1898,8 @@ int findPulsesCAL
 			gsl_vector_set(*pulseheight,i,energyaux);
 		}
 
-		gsl_vector_free(Lbgsl);
-		gsl_vector_free(Bgsl);
+		gsl_vector_free(Lbgsl); Lbgsl = 0;
+		gsl_vector_free(Bgsl); Bgsl = 0;
 	}
 	
 	return(EPOK);
@@ -1862,7 +1968,7 @@ int findTstartCAL
 	
 	// Allocate GSL vectors
 	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
-	if (*tstartgsl)		gsl_vector_free(*tstartgsl);	
+	if (*tstartgsl)		gsl_vector_free(*tstartgsl);	 
 	*tstartgsl = gsl_vector_alloc(maxPulsesPerRecord);	
 	if (*flagTruncated)	gsl_vector_free(*flagTruncated);	
 	*flagTruncated = gsl_vector_alloc(maxPulsesPerRecord);
@@ -2000,8 +2106,8 @@ int findTstartCAL
 			gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
 		}
 
-		gsl_vector_free(tstartPulsei);
-		gsl_vector_free(model);
+		gsl_vector_free(tstartPulsei); tstartPulsei = 0;
+		gsl_vector_free(model); model = 0;
 	}
 
 	return (EPOK);
@@ -2014,7 +2120,7 @@ int findTstartCAL
 *
 * - Declare variables
 * - Stablish the threshold
-* - It is possible to find the tstart of the first pulse...
+* - It is necessary to find the tstart of the first pulse...
 *   Obtain tstart of the first pulse in the derivative if der_i>threshold
 * - ...or to use the tstart provided as input parameter
 *
@@ -2100,18 +2206,45 @@ int InitialTriggering
 
 /***** SECTION 14 ************************************************************
 * FindSecondaries function: This function runs after InitialTriggering to find all the events (except the first one) in the record first derivative 
-*                           of the (low-pass filtered) record
+*                           of the (low-pass filtered) record by using the Adjusted Derivative detection method
 *
 * - Declare variables
-* - It is possible to find the tstarts...
+* - Establishing the criteria of the slope of the derivative depending on the sampling rate
 * - It looks for an event and if a pulse is found (foundPulse==true), it looks for another event
+* 
 * 	- It looks for an event since the beginning (or the previous event) to the end of the record
 *         The first condition to detect an event is that the adjustedDerivative was over the threshold
+* 
+*           - Select the model of the found pulse from the libary by using the 1st sample of the derivative (samp1DER)
+*           - Dot product between the detected pulse and the pulse template in 3 different lags
+*            
+*               - If maximum of the dot product found => Stop calculating dot products in more lags
+*               - If maximum of the dot product not found => Calculate dot products in more lags (number of lags is limited to 5)
+*            
+*           - If maximum of the dot product not found => tstart is the first sample crossing above the threshold (without jitter)
+*              
+*               - Average of the first 4 samples of the derivative
+*               - Find model in order to subtract
+*
+*           - If maximum of the dot product found => Parabola analytically defined => Locate the maximum => New tstart (with jitter)
+*            
+*               - Iterative process in order to extract the best template from the library:
+*                   - samp1DER correction
+*                   - Find the model from the libary by using the corrected samp1DER
+*                   - Dot product in 3 lags
+*                   - Locate the maximum of the parabola
+*               - samp1DER correction
+*               - Find model in order to subtract
+*               - Template correction
+*               - Average of the first 4 samples of the derivative
+*                
+*           - The second condition to detect an event is meeting the criteria of the slope of the derivative
+* 
 * 	- Subtract the model from the adjusted derivative
+* 
 * 		- Select the model of the found event from the libary by using the first sample of the derivative
 * 		- Subtract
-* - ...or to use the tstart provided as input parameters
-* 	- Obtain the maxDERs of the events whose tstarts have been provided (by using the maximum of the derivative to find the model)
+*  
 * - Free allocated GSL vectors
 *
 * Parameters:
@@ -2119,15 +2252,17 @@ int InitialTriggering
 *
 * - adjustedDerivative: First derivative of the (low-pass filtered) record 
 * - adaptativethreshold: Threshold
+* - samprate: Sampling rate
 * - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
 *                     This function uses some parameters ('pulse_length', 'tstartPulsex', 'EnergyMethod') and the templates
 * - tstartFirstEvent: Tstart of the first event of the record (in samples) found by 'InitialTriggering'
 * - numberPulses: Number of found events
 * - tstartgsl: Staring time of the found events (in samples)
 * - flagTruncated: Flag indicating if the event is truncated (inside this function only initial truncated pulses are classified)
-* - maxDERgsl: Maximum of the first derivative of the (low-pass filtered) record inside each found event
+* - maxDERgsl: Maximum of the derivative of the event
 *              It is going to be used by 'find_matchfilter', 'find_matchfilterDAB', 'find_optimalfilter', 'find_optimalfilterDAB' and 'find_Esboundary'
-* - samp1DERgsl: First sample of the first derivative of the (low-pass filtered) record inside each found event 
+* - samp1DERgsl: Average of the first 4 samples of the derivative of the event
+* - lagsgsl: Number of necessary lags to establish the tstart (currently limited to 5)
 ****************************************/
 int FindSecondaries
 (
@@ -2146,9 +2281,7 @@ int FindSecondaries
 	gsl_vector **flagTruncated,
 	gsl_vector **maxDERgsl,
 	gsl_vector **samp1DERgsl,
-        gsl_vector **lagsgsl,
-
-        int firstRecord)
+        gsl_vector **lagsgsl)
 {
 	string message = "";
 	char valERROR[256];
@@ -2177,12 +2310,8 @@ int FindSecondaries
         double prev_samp1DER_Aux, next_samp1DER_Aux;
 	
 	// To provide the tstarts (or not)
-	bool findTstarts = true;
-	if (reconstruct_init->tstartPulse1 != 0)	findTstarts = false;
-        
-        //for (int i=1155;i<1165;i++) cout<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
-        //adaptativethreshold = 55;
-        //cout<<"adaptativethreshold: "<<adaptativethreshold<<endl;
+	//bool findTstarts = true;
+	//if (reconstruct_init->tstartPulse1 != 0)	findTstarts = false;
 	
 	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
 	gsl_vector *index_maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Index where the maximum of the first derivative of the (low-pass filtered) event is
@@ -2193,7 +2322,7 @@ int FindSecondaries
 	gsl_vector *convolutionLags;
 	int indexmax;
 	
-	gsl_vector_view temp;
+	//gsl_vector_view temp;
 	double a,b,c;
 	double xmax;
         bool exitLags = false;
@@ -2213,17 +2342,30 @@ int FindSecondaries
         
         int previouslyFalsePulse = -1;
         
+        // Establishing the criteria of the slope of the derivative depending on the sampling rate
         double criteriaDER_value;
         if (samprate == 156250)
-            criteriaDER_value = 86.7; // In degrees,  samprate = 156250 Hz
+            //criteriaDER_value = 86.7; // In degrees,  samprate = 156250 Hz
+            criteriaDER_value = 88; // In degrees,  samprate = 156250 Hz
         else if (samprate == 156250/2)
-            criteriaDER_value = 87.5; // In degrees, samprate/2 = 78125 Hz      
+            //criteriaDER_value = 87.5; // In degrees, samprate/2 = 78125 Hz
+            criteriaDER_value = 89; // In degrees, samprate/2 = 78125 Hz      
         
         double sum_samp1DER;
         int limitMin, limitMax;
+        
+        /*cout<<"Umbral:  "<<adaptativethreshold<<endl;
+        cout<<"994 "<<gsl_vector_get(adjustedDerivative,994)<<endl;
+        cout<<"995 "<<gsl_vector_get(adjustedDerivative,995)<<endl;
+        cout<<"996 "<<gsl_vector_get(adjustedDerivative,996)<<endl;
+        cout<<"997 "<<gsl_vector_get(adjustedDerivative,997)<<endl;
+        cout<<"998 "<<gsl_vector_get(adjustedDerivative,998)<<endl;
+        cout<<"999 "<<gsl_vector_get(adjustedDerivative,999)<<endl;
+        cout<<"1000 "<<gsl_vector_get(adjustedDerivative,1000)<<endl;
+        cout<<"1001 "<<gsl_vector_get(adjustedDerivative,1001)<<endl;*/
       
-	if (findTstarts == true)
-	{
+	//if (findTstarts == true)   // It is necessary to find the tstarts...
+	//{
                 gsl_vector_view temp;
                 
                 numlags = 3;
@@ -2244,7 +2386,8 @@ int FindSecondaries
 				if (foundPulse == false)
 				{	
                                         // The first condition to detect a pulse is that the adjustedDerivative was over the threshold
-					if (gsl_vector_get(adjustedDerivative,i) > adaptativethreshold)
+                                        if (gsl_vector_get(adjustedDerivative,i) > adaptativethreshold)
+					//if ((gsl_vector_get(adjustedDerivative,i) > adaptativethreshold) && (i>0))
 					{
                                                 if (*numberPulses == (*maxDERgsl)->size)
                                                 {
@@ -2262,6 +2405,14 @@ int FindSecondaries
                                                 *numberPulses = *numberPulses +1;
                                                 foundPulse = true;
                                                 //cout<<"Supera el umbral en "<<i<<" "<<gsl_vector_get(adjustedDerivative,i-1)<<" "<<gsl_vector_get(adjustedDerivative,i)<<" "<<adaptativethreshold<<endl;
+                                                /*if (i == 1998)
+                                                {
+                                                    cout<<1997<<" "<<gsl_vector_get(adjustedDerivative,1997)<<endl;
+                                                    cout<<1998<<" "<<gsl_vector_get(adjustedDerivative,1998)<<endl;
+                                                    cout<<1999<<" "<<gsl_vector_get(adjustedDerivative,1999)<<endl;
+                                                    cout<<2000<<" "<<gsl_vector_get(adjustedDerivative,2000)<<endl;
+                                                    cout<<2001<<" "<<gsl_vector_get(adjustedDerivative,2001)<<endl;
+                                                }*/
                                                 indexM = 0;
                                                 indexMin = gsl_vector_alloc(10);
                                                 indexMax = gsl_vector_alloc(10);
@@ -2299,6 +2450,7 @@ int FindSecondaries
                                                         
                                                         indexLags = 0;
                                                         
+                                                        // Dot product between the detected pulse and the pulse template in 3 different lags
                                                         for (int j=0;j<numlags;j++)
                                                         {
                                                                 for (int k=0;k<pulse_length_ToConvolve;k++)
@@ -2312,7 +2464,6 @@ int FindSecondaries
                                                                                 if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k < sizeRecord)
                                                                                 {                                                                                    
                                                                                         gsl_vector_set(convolutionLags,j,gsl_vector_get(convolutionLags,j)+gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)*gsl_vector_get(modelToConvolve,k));
-                                                                                        //cout<<k<<" "<<gsl_vector_get(*tstartgsl,*numberPulses-1)<<" "<<gsl_vector_get(lags_vector,j)<<" "<<gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k)<<" "<<gsl_vector_get(modelToConvolve,k)<<endl;
                                                                                 }
                                                                                 else
                                                                                         break;
@@ -2325,11 +2476,13 @@ int FindSecondaries
                                                         indexmax = gsl_vector_max_index(convolutionLags);
                                                         
                                                         if (indexmax == 1)
+                                                        // If maximum of the dot product found => Stop calculating dot products in more lags
                                                         {
                                                                 gsl_vector_set(*lagsgsl,*numberPulses-1,numlags);
                                                                 exitLags = true;
                                                         }
                                                         else
+                                                        // If maximum of the dot product not found => Calculate dot products in more lags (number of lags is limited to 5)
                                                         {
                                                                 do 
                                                                 {   
@@ -2398,7 +2551,9 @@ int FindSecondaries
                                                         //cout<<"lags: "<<gsl_vector_get(*lagsgsl,*numberPulses-1)<<endl;
     
                                                         if (exitLags == false)
+                                                        // If maximum of the dot product not found
                                                         {
+                                                                // tstart is the first sample crossing above the threshold (without jitter)
                                                                 tstartJITTER = gsl_vector_get(*tstartgsl,*numberPulses-1);
                                                                 //cout<<"tstartJITTER: "<<tstartJITTER<<endl;
                                                                 
@@ -2421,6 +2576,7 @@ int FindSecondaries
                                                                 }
                                                                 gsl_vector_set(*samp1DERgsl,*numberPulses-1,sum_samp1DER/4.0);
                                                                 
+                                                                // Find model in order to subtract
                                                                 if (find_model_samp1DERsNoReSCLD(gsl_vector_get(*samp1DERgsl,*numberPulses-1), reconstruct_init, &modelToSubtract,&indexMinNew,&indexMaxNew))
                                                                 {
                                                                         message = "Cannot run find_model_samp1DERs routine";
@@ -2428,14 +2584,19 @@ int FindSecondaries
                                                                 }
                                                         }
                                                         else
+                                                        // If maximum of the dot product found
                                                         {
+                                                                // Parabola analytically defined
                                                                 if (parabola3Pts (lags_vector, convolutionLags, &a, &b, &c))
                                                                 {
                                                                     message = "Cannot run routine parabola3Pts";
                                                                     EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                                 }
                                                     
+                                                                // Maximum of the parabola
                                                                 xmax = -b/(2*a);
+                                                                
+                                                                // New tstart (with jitter)
                                                                 tstartJITTER = gsl_vector_get(*tstartgsl,*numberPulses-1)+xmax;
                                                                 if (xmax >= 0)
                                                                 {
@@ -2451,8 +2612,10 @@ int FindSecondaries
                                                                 //cout<<"xmax0: "<<xmax<<endl;
                                                                 //cout<<"tstartJITTER0: "<<tstartJITTER<<endl;
                                                         
+                                                                // Iterative process in order to extract the best template from the library
                                                                 do 
                                                                 {
+                                                                        // samp1DER correction
                                                                         samp1DER_Aux = gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1));
                                                                         if (xmax < 0)
                                                                         {
@@ -2474,12 +2637,14 @@ int FindSecondaries
                                                                         gsl_vector_set(indexMin,indexM,indexMinNew);
                                                                         gsl_vector_set(indexMax,indexM,indexMaxNew);
                                                                         
+                                                                        // Find the model from the libary by using the corrected samp1DER
                                                                         if (find_model_samp1DERsNoReSCLD(gsl_vector_get(*samp1DERgsl,*numberPulses-1), reconstruct_init, &modelToConvolve,&indexMinNew,&indexMaxNew))
                                                                         {
                                                                             message = "Cannot run find_model_samp1DERs routine";
                                                                             EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                                         }
-                                                                                                                                        
+                                                                                                                                 
+                                                                        // Dot product in 3 lags
                                                                         for (int i=0;i<numlags;i++)	gsl_vector_set(lags_vector,i,-numlags/2+i);
                                                                         gsl_vector_set_zero(convolutionLags);
                                                                         for (int j=0;j<numlags;j++)
@@ -2504,6 +2669,7 @@ int FindSecondaries
                                                                                 //cout<<"lagCONV2="<<gsl_vector_get(lags_vector,j)<<", convolution="<<gsl_vector_get(convolutionLags,j)<<endl;
                                                                         }
                                                                         
+                                                                        // Locate the maximum of the parabola
                                                                         if (parabola3Pts (lags_vector, convolutionLags, &a, &b, &c))
                                                                         {
                                                                                 message = "Cannot run routine parabola3Pts";
@@ -2550,13 +2716,18 @@ int FindSecondaries
                                                                         
                                                                         indexM = indexM + 1;
                                                                 } while ((i_indexMin != i_indexMax) && (gsl_vector_get(*tstartgsl,*numberPulses-1)+1 < sizeRecord));
+                                                                
+
+                                                                //cout<<"tstartJITTER: "<<tstartJITTER<<endl;
                                                         
                                                                 if (indexMin != NULL) gsl_vector_free(indexMin);
                                                                 if (indexMax != NULL) gsl_vector_free(indexMax);
                                                             
                                                                 if ((tstartJITTER >= 0) && (tstartJITTER+1 < sizeRecord))
                                                                 {
+                                                                        // samp1der correction
                                                                         samp1DER_Aux = gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1));
+                                                                        //cout<<"Muestra SIN CORREGIR con la que buscar el modelo: "<<samp1DER_Aux<<endl;
                                                                         if (xmax < 0)
                                                                         {
                                                                                 prev_samp1DER_Aux = gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)-1);
@@ -2576,13 +2747,16 @@ int FindSecondaries
                                                                                                                                         
                                                                         if (reconstruct_init->detectSP == 1)
                                                                         {
-                                                                                gsl_vector *modelToSubtract_Aux = gsl_vector_alloc(pulse_length_ToSubtract);;
+                                                                                // Find model in order to subtract
+                                                                                gsl_vector *modelToSubtract_Aux = gsl_vector_alloc(pulse_length_ToSubtract);
+                                                                                //cout<<"Muestra con la que buscar el modelo: "<<gsl_vector_get(*samp1DERgsl,*numberPulses-1)<<endl;
                                                                                 if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,*numberPulses-1), reconstruct_init, &modelToSubtract_Aux))
                                                                                 {
                                                                                         message = "Cannot run find_model_samp1DERs routine";
                                                                                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                                                                 }
                                                                                 
+                                                                                // Template correction
                                                                                 for (int j=0;j<pulse_length_ToSubtract;j++)
                                                                                 {
                                                                                         if (xmax < 0)
@@ -2610,8 +2784,8 @@ int FindSecondaries
                                                                                         }
                                                                                 }
                                                                 
-                                                                                /*cout<<"modelToSubtract"<<endl;
-                                                                                for (int j=0;j<100;j++)
+                                                                                //cout<<"modelToSubtract"<<endl;
+                                                                                /*for (int j=0;j<10;j++)
                                                                                         cout<<j<<" "<<gsl_vector_get(modelToSubtract_Aux,j)<<" "<<gsl_vector_get(modelToSubtract,j)<<endl;*/
                                                                                 
                                                                                 gsl_vector_free(modelToSubtract_Aux);
@@ -2641,6 +2815,7 @@ int FindSecondaries
                                                         }
                                                 }
                                                 
+                                                // Slope of the straight line define by the tstart (digitized sample), and the preceding sample and the following one 
                                                 if ((tstartJITTER >= 0) && (tstartJITTER+2 < sizeRecord))
                                                 {
                                                         
@@ -2676,11 +2851,9 @@ int FindSecondaries
                                                 
                                                 //cout<<*numberPulses<<" angleS: "<<angleStart1<<endl;
                                                 
-                                                if ( ((*numberPulses>1)
-                                                		&& ((tstartJITTER<= gsl_vector_get(*tstartgsl,*numberPulses-2)) || (fabs(tstartJITTER*(1/samprate)-gsl_vector_get(*tstartgsl,*numberPulses-2)*(1/samprate)) < 10e-6)))
-														|| (tstartJITTER < 0)
-														|| (tstartJITTER >= sizeRecord)
-														|| (angleStart1<criteriaDER_value))
+                                                if ((*numberPulses > 1) && ((tstartJITTER<= gsl_vector_get(*tstartgsl,*numberPulses-2)) || (fabs(tstartJITTER*(1/samprate)-gsl_vector_get(*tstartgsl,*numberPulses-2)*(1/samprate)) < 10e-6)) || (tstartJITTER < 0) || (tstartJITTER >= sizeRecord) ||
+                                                (angleStart1<criteriaDER_value))
+                                                //(angleStart1<criteriaDER_value) || (gsl_vector_get(convolutionLags,1) < 0))    
                                                 {
                                                         previouslyFalsePulse = gsl_vector_get(*tstartgsl,*numberPulses-1);
                                                         *numberPulses = *numberPulses-1;
@@ -2691,6 +2864,7 @@ int FindSecondaries
                                                 {
                                                         if ((*numberPulses == 1) || ((*numberPulses > 1 ) && (tstartJITTER > gsl_vector_get(*tstartgsl,*numberPulses-2)))) 
                                                         {
+                                                                // Subtract the pulse template
                                                                 if ((gsl_vector_get(*tstartgsl,*numberPulses-1) < 0) || (min(gsl_vector_get(*tstartgsl,*numberPulses-1)+pulse_length_ToSubtract,(double) sizeRecord)-1 > adjustedDerivative->size-1))
                                                                 {
                                                                         sprintf(valERROR,"%d",__LINE__+9);
@@ -2703,13 +2877,11 @@ int FindSecondaries
                                                                 {
                                                                         gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(modelToSubtract,j-gsl_vector_get(*tstartgsl,*numberPulses-1)));
                                                                 }
+                                                                /*cout<<"afterSubtracting"<<endl;
+                                                                for (int j=0;j<10;j++)
+                                                                    cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<" "<<gsl_vector_get(adjustedDerivative,j)<<endl;*/
                                                                 gsl_vector_set(*tstartgsl,*numberPulses-1,tstartJITTER);  // This should be the new tstart
                                                                                                                                 
-                                                                /*cout<<"aD-model: "<<endl;
-                                                                for (int j=gsl_vector_get(*tstartgsl,*numberPulses-1)-2;j<gsl_vector_get(*tstartgsl,*numberPulses-1)+120;j++)
-                                                                        cout<<j<<" "<<gsl_vector_get(adjustedDerivative,j)<<endl;*/
-                                                                //for (int i=995;i<1025;i++) cout<<i<<" "<<gsl_vector_get(adjustedDerivative,i)<<endl;
-                                                                
                                                                 if (gsl_vector_get(*flagTruncated,*numberPulses-1) == 1)	i = 0;
                                                                 else
                                                                 {
@@ -2738,258 +2910,21 @@ int FindSecondaries
                 
                 gsl_vector_free(lags_vector);
                 gsl_vector_free(convolutionLags);
-	}
-	else // Use the tstartPulsei provided as input parameters
-	{
-                numlags = 1;
-                lags_vector = gsl_vector_alloc(numlags);
-                for (int i=0;i<numlags;i++)	gsl_vector_set(lags_vector,i,-numlags/2+i);
-                convolutionLags = gsl_vector_alloc(numlags);
-                gsl_vector_set_zero(convolutionLags);
-                
-		gsl_vector_view temp;
-
-		gsl_vector *tstartPulsei = gsl_vector_alloc(3);
-		gsl_vector_set(tstartPulsei,0,reconstruct_init->tstartPulse1);
-		gsl_vector_set(tstartPulsei,1,reconstruct_init->tstartPulse2);
-		gsl_vector_set(tstartPulsei,2,reconstruct_init->tstartPulse3);
-
-		if (reconstruct_init->tstartPulse2 == 0) 	*numberPulses = 1;
-		else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
-		else						*numberPulses = 3;
-
-                if (numlags == 1)
-                {
-                        for (int i=0;i<*numberPulses;i++)
-                        {
-                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
-                                gsl_vector_set(*lagsgsl,i,numlags);
-
-                                if (i != *numberPulses-1) 	
-                                {
-                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-                                                || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-                                        {
-                                                sprintf(valERROR,"%d",__LINE__+5);
-                                                string str(valERROR);
-                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                EP_PRINT_ERROR(message,EPFAIL);
-                                        }
-                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-                                }
-                                else	
-                                {
-                                        if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-                                                || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-                                        {
-                                                sprintf(valERROR,"%d",__LINE__+5);
-                                                string str(valERROR);
-                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                EP_PRINT_ERROR(message,EPFAIL);
-                                        }
-                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
-                                }
-
-                                if (i == 0)
-                                {	
-                                    
-                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
-                                        gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)));
-                                        //cout<<"samp1DERgsl: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
-                                        // Average of the first 4 samples of the derivative
-                                        sum_samp1DER = 0.0;
-                                        for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
-                                        {
-                                                sum_samp1DER = sum_samp1DER + gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
-
-                                        }                                                                                   
-                                        gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
-                                        //cout<<"samp1DERgsl/4: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
-                                }
-                                else
-                                {
-                                        if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init, &modelToSubtract))
-                                        //if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init,pulse_length_ToUse, &model))
-                                        {
-                                                message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
-                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                        }
-                                        
-                                        if ((gsl_vector_get(*tstartgsl,i-1) < 0) || (min(gsl_vector_get(*tstartgsl,i-1)+pulse_length_ToSubtract,(double) sizeRecord)-1 > adjustedDerivative->size-1))
-                                        {
-                                                sprintf(valERROR,"%d",__LINE__+7);
-                                                string str(valERROR);
-                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                                EP_PRINT_ERROR(message,EPFAIL);
-                                        }
-                                        
-                                        for (int j=gsl_vector_get(*tstartgsl,i-1);j<min(gsl_vector_get(*tstartgsl,i-1)+pulse_length_ToSubtract,(double) sizeRecord);j++)
-                                        {
-                                                gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(modelToSubtract,j-gsl_vector_get(*tstartgsl,i-1)));
-                                        }
-
-                                        if (i != *numberPulses-1)	
-                                        {
-                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-                                                        || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-                                                {
-                                                        sprintf(valERROR,"%d",__LINE__+5);
-                                                        string str(valERROR);
-                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                        EP_PRINT_ERROR(message,EPFAIL);
-                                                }
-                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
-                                        }
-                                        else
-                                        {
-                                                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-2)
-                                                        || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > adjustedDerivative->size-gsl_vector_get(tstartPulsei,i)))
-                                                {
-                                                        sprintf(valERROR,"%d",__LINE__+5);
-                                                        string str(valERROR);
-                                                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                        EP_PRINT_ERROR(message,EPFAIL);
-                                                }
-                                                temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
-                                        }
-                                        
-                                        gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
-                                        // Average of the first 4 samples of the derivative
-                                        sum_samp1DER = 0.0;
-                                        for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
-                                        {
-                                                sum_samp1DER = sum_samp1DER + gsl_vector_get(&temp.vector,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
-
-                                        }                                                                                   
-                                        gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
-                                }
-                        }
-                }
-                else 
-                {
-                        for (int i=0;i<*numberPulses;i++)
-                        {
-                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
-                                gsl_vector_set(*lagsgsl,i,numlags);
-                                
-                                while (gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)) < 0)
-                                {
-                                        if (i != *numberPulses-1)
-                                                if (gsl_vector_get(tstartPulsei,i)+1 > gsl_vector_get(tstartPulsei,i+1))        break;
-                                        else
-                                                if (gsl_vector_get(tstartPulsei,i)+1 > sizeRecord-1)                            break;
-                                    
-                                        gsl_vector_set(tstartPulsei,i,gsl_vector_get(tstartPulsei,i)+1);
-                                }
-                                    
-                                gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)));
-                                if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,i), reconstruct_init, &modelToConvolve))
-                                {
-                                        message = "Cannot run find_model_samp1DERs routine";
-                                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                }
-                                
-                                for (int j=0;j<numlags;j++)
-                                {
-                                        for (int k=0;k<pulse_length_ToConvolve;k++)
-                                        {
-                                                if (gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,j) < 0) 
-                                                        gsl_vector_set(convolutionLags,j,-999.0);
-                                                else if (gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,j) > sizeRecord) 
-                                                         gsl_vector_set(convolutionLags,j,-999.0);
-                                                else 	
-                                                {
-                                                        if (gsl_vector_get(*tstartgsl,*numberPulses-1)+gsl_vector_get(lags_vector,j)+k < sizeRecord)
-                                                        {
-                                                                gsl_vector_set(convolutionLags,j,gsl_vector_get(convolutionLags,j)+gsl_vector_get(adjustedDerivative,gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,j)+k)*gsl_vector_get(modelToConvolve,k));
-                                                        }
-                                                        else
-                                                                break;
-                                                }
-                                        }
-                                        //cout<<"lag="<<gsl_vector_get(lags_vector,j)<<", convolution="<<gsl_vector_get(convolutionLags,j)<<endl;
-                                }
-                                
-                                indexmax = gsl_vector_max_index(convolutionLags);
-                                gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i)+gsl_vector_get(lags_vector,indexmax));
-                                gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,i)));
-                                
-                                if (i != *numberPulses-1)
-                                {
-                                        if (find_model_samp1DERs(gsl_vector_get(*samp1DERgsl,i), reconstruct_init, &modelToSubtract))
-                                        {
-                                                message = "Cannot run find_model_samp1DERs routine";
-                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                        }
-                                        if ((gsl_vector_get(*tstartgsl,i) < 0) || (min(gsl_vector_get(*tstartgsl,i)+pulse_length_ToSubtract,(double) sizeRecord)-1 > adjustedDerivative->size-1))
-                                        {
-                                                sprintf(valERROR,"%d",__LINE__+7);
-                                                string str(valERROR);
-                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                                EP_PRINT_ERROR(message,EPFAIL);
-                                        }
-                                        for (int j=gsl_vector_get(*tstartgsl,i);j<min(gsl_vector_get(*tstartgsl,i)+pulse_length_ToSubtract,(double) sizeRecord);j++)
-                                        {
-                                                gsl_vector_set(adjustedDerivative,j,gsl_vector_get(adjustedDerivative,j)-gsl_vector_get(modelToSubtract,j-gsl_vector_get(*tstartgsl,i)));
-                                        }
-                                }
-                        }        
-                        
-                        for (int i=0;i<*numberPulses-1;i++)
-                        {
-                                if (i != *numberPulses-1)
-                                {
-                                        if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > sizeRecord-2)
-                                        || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) < 1) || (gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i) > sizeRecord-gsl_vector_get(*tstartgsl,i)))
-                                        {
-                                                sprintf(valERROR,"%d",__LINE__+5);
-                                                string str(valERROR);
-                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                EP_PRINT_ERROR(message,EPFAIL);
-                                        }
-                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),gsl_vector_get(*tstartgsl,i+1)-gsl_vector_get(*tstartgsl,i));
-                                }
-                                else
-                                {
-                                        if ((gsl_vector_get(*tstartgsl,i) < 0) || (gsl_vector_get(*tstartgsl,i) > sizeRecord-2)
-                                        || (sizeRecord-gsl_vector_get(*tstartgsl,i) < 1) || (sizeRecord-gsl_vector_get(*tstartgsl,i) > sizeRecord-gsl_vector_get(*tstartgsl,i)))
-                                        {
-                                                sprintf(valERROR,"%d",__LINE__+5);
-                                                string str(valERROR);
-                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                EP_PRINT_ERROR(message,EPFAIL);
-                                        }
-                                        temp = gsl_vector_subvector(adjustedDerivative,gsl_vector_get(*tstartgsl,i),sizeRecord-gsl_vector_get(*tstartgsl,i));
-                                }
-                                
-                                gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
-                                // Average of the first 4 samples of the derivative
-                                sum_samp1DER = 0.0;
-                                for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
-                                {
-                                        sum_samp1DER = sum_samp1DER + gsl_vector_get(&temp.vector,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
-
-                                }                                                                                   
-                                gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
-                        }
-                }
-
-		gsl_vector_free(tstartPulsei);
-                
-                gsl_vector_free(lags_vector);
-                gsl_vector_free(convolutionLags);
-	}
 
 	// Free allocated GSL vectors
-	gsl_vector_free(modelToSubtract);
-        gsl_vector_free(modelToConvolve);
-	gsl_vector_free(index_maxDERgsl);
+	//gsl_vector_free(model); model = 0;
+	gsl_vector_free(index_maxDERgsl); index_maxDERgsl = 0;
+	
+	gsl_vector_free(modelToSubtract);modelToSubtract = 0;
+        gsl_vector_free(modelToConvolve);modelToConvolve = 0;
         	
+        gsl_vector_free(sublags_vector); sublags_vector = 0;
+        gsl_vector_free(subconvolutionLags_vector); subconvolutionLags_vector = 0;
         gsl_vector_free(sublags_vector);
         gsl_vector_free(subconvolutionLags_vector);
         
-        gsl_vector_free(ThreePoints_x);
-        gsl_vector_free(ThreePoints_y);
+        gsl_vector_free(ThreePoints_x); ThreePoints_x = 0;
+        gsl_vector_free(ThreePoints_y); ThreePoints_y = 0;
 
 	return(EPOK);
 }
@@ -3049,8 +2984,8 @@ int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconst
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
 				
-				gsl_vector_free(modelA);
-                                gsl_vector_free(modelB);
+				gsl_vector_free(modelA); modelA = 0;
+                                gsl_vector_free(modelB); modelB = 0;
 
 				break;
 			}
@@ -3117,7 +3052,7 @@ int smoothDerivative (gsl_vector **invector, int N)
                         }
                 }
                 
-                gsl_vector_free(window);
+                gsl_vector_free(window); window = 0;
                 //cout<<"smoothDerivative1:"<<endl;
                 //for (int i=0;i<szVct;i++)   cout<<i<<" "<<gsl_vector_get(conv,i)<<endl;
                 
@@ -3143,7 +3078,7 @@ int smoothDerivative (gsl_vector **invector, int N)
                 temp = gsl_vector_subvector(conv,N,szVct-N);
 		gsl_vector_memcpy(*invector,&temp.vector);*/
                 
-                gsl_vector_free(conv);
+                gsl_vector_free(conv); conv = 0;
         }
 
 	return (EPOK);
@@ -3152,55 +3087,49 @@ int smoothDerivative (gsl_vector **invector, int N)
 
 
 /***** SECTION 17 ************************************************************
-* FindSecondariesA1 function: This function finds the pulses tstarts in the input vector (first derivative of the filtered record)
+* FindSecondariesSTC function: This function runs after InitialTriggering to find all the events (except the first one) in the record first derivative 
+*                           of the (low-pass filtered) record by using the Single Threshold Crossing detection method
 *
-* This function scans all values the derivative of the (low-pass filtered) record until it finds nSamplesUp consecutive values (due to the noise more than 1 value is
-* required) over the threshold. To look for more pulses, it finds nSamplesUp consecutive values
+* This function scans all values the derivative of the (low-pass filtered) record until it finds nSamplesUp consecutive values 
+* (due to the noise more than 1 value is required) over the threshold. To look for more pulses, it finds nSamplesUp consecutive values
 * (due to the noise) under the threshold and then, it starts to scan again.
 *
 * - Declare variables
-* - Allocate GSL vectors
-* - It is possible to find the tstarts...
-* 	- Obtain tstart of each pulse in the derivative:
-* 		- If der_i>threshold and foundPulse=false, it looks for nSamplesUp consecutive samples over the threshold
-*   			- If not, it looks again for a pulse crossing over the threshold
-*	        	- If yes, a pulse is found (truncated if it is at the beginning)
-*	   	- If der_i>threshold and foundPulse=true, it looks for a sample under the threshold
-*   	  		- If not, it looks again for a sample under the threshold
-*       		- If yes, it looks for nSamplesUp consecutive samples under the threshold and again it starts to look for a pulse
-* - ...or to use the tstart provided as input parameters
-* 	- Obtain the maxDERs of the pulses whose tstarts have been provided
+* - It looks for an event and if a pulse is found, it looks for another event
+*    
+*       - It looks for an event since the beginning (or the previous event) to the end of the record. 
+*         The condition to detect an event is that the adjustedDerivative was over the threshold at least nSamplesUp consecutive samples
 *
 * Parameters:
 * - maxPulsesPerRecord: Expected maximum number of pulses per record in order to not allocate the GSL variables with the size of the input vector
 * - der: First derivative of the (low-pass filtered) record
 * - adaptativethreshold: Threshold
-* - nSamplesUp: Number of consecutive samples over the threshold to 'find' a pulse
 * - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
 *                     This function uses 'pulse_length', 'tstartPulse1', 'tstartPulse2' and 'tstartPulse3'
+* - tstartFirstEvent: Tstart of the first event of the record (in samples) found by 'InitialTriggering'
 * - numberPulses: Number of found pulses
 * - tstartgsl: Pulses tstart (in samples)
 * - flagTruncated: Flag indicating if the pulse is truncated (inside this function only initial truncated pulses are classified)
-* - maxDERgsl: Maximum of the first derivative of the (low-pass filtered) record inside each found pulse
+* - maxDERgsl: Maximum of the derivative of the pulse
+* - samp1DERgsl: Average of the first 4 samples of the derivative of the event
 ******************************************************************************/
-int FindSecondariesA1
+int FindSecondariesSTC
 (
 	int maxPulsesPerRecord,
 
 	gsl_vector *der,
 	double adaptativethreshold,
-	int nSamplesUp,
 
 	ReconstructInitSIRENA *reconstruct_init,
+ 
+        int tstartFirstEvent,
 
 	int *numberPulses,
 	
 	gsl_vector **tstartgsl,
 	gsl_vector **flagTruncated,
 	gsl_vector **maxDERgsl,
-        gsl_vector **samp1DERgsl,
- 
-        int firstRecord
+        gsl_vector **samp1DERgsl
 )
 {
 	string message="";
@@ -3210,8 +3139,10 @@ int FindSecondariesA1
 	int szRw = der->size;	 // Size of segment to process
 	*numberPulses = 0;
 	bool foundPulse = false;
-	int i = 0;		// To go through the elements of a vector
+	//int i = 0;		// To go through the elements of a vector
+        int i = tstartFirstEvent;
 	
+	int nSamplesUp = reconstruct_init->samplesUp;
 	int nSamplesDown = reconstruct_init->samplesDown;
 	
 	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
@@ -3232,20 +3163,46 @@ int FindSecondariesA1
 	double possibleTstart;
 	double possiblemaxDER;
         double possiblesamp1DER;
+        
+        double sum_samp1DER;
+        int limitMin, limitMax;
 	
 	// To provide the tstarts (or not)
-	bool findTstarts = true;
-	if (reconstruct_init->tstartPulse1 != 0)	findTstarts = false;
-	
-        /*if (firstRecord == 1)
-        {
-                for (int i=990;i<2500;i++) cout<<gsl_vector_get(der,i)<<endl;
-                cout<<adaptativethreshold<<endl;
-        } */   
-	
-	if (findTstarts == true)
-	{
-		// It looks for a pulse
+	//bool findTstarts = true;
+	//if (reconstruct_init->tstartPulse1 != 0)	findTstarts = false;
+        
+        /*cout<<"Umbral:  "<<adaptativethreshold<<endl;
+        cout<<"996 "<<gsl_vector_get(der,996)<<endl;
+        cout<<"997 "<<gsl_vector_get(der,997)<<endl;
+        cout<<"998 "<<gsl_vector_get(der,998)<<endl;
+        cout<<"999 "<<gsl_vector_get(der,999)<<endl;
+        cout<<"1000 "<<gsl_vector_get(der,1000)<<endl;
+        cout<<"1001 "<<gsl_vector_get(der,1001)<<endl;
+        cout<<"1002 "<<gsl_vector_get(der,1002)<<endl;
+        cout<<"1003 "<<gsl_vector_get(der,1003)<<endl;
+        cout<<"1004 "<<gsl_vector_get(der,1004)<<endl;
+        cout<<"1005 "<<gsl_vector_get(der,1005)<<endl;
+        cout<<"1006 "<<gsl_vector_get(der,1006)<<endl;
+        cout<<"1007 "<<gsl_vector_get(der,1007)<<endl;
+        cout<<"1008 "<<gsl_vector_get(der,1008)<<endl;
+        cout<<"1009 "<<gsl_vector_get(der,1009)<<endl;
+        cout<<"1010 "<<gsl_vector_get(der,1010)<<endl;
+        cout<<"1011 "<<gsl_vector_get(der,1011)<<endl;
+        cout<<"1012 "<<gsl_vector_get(der,1012)<<endl;
+        cout<<"1013 "<<gsl_vector_get(der,1013)<<endl;
+        cout<<"1014 "<<gsl_vector_get(der,1014)<<endl;
+        cout<<"1015 "<<gsl_vector_get(der,1015)<<endl;
+        cout<<"1016 "<<gsl_vector_get(der,1016)<<endl;
+        cout<<"1017 "<<gsl_vector_get(der,1017)<<endl;
+        cout<<"1018 "<<gsl_vector_get(der,1018)<<endl;
+        cout<<"1019 "<<gsl_vector_get(der,1019)<<endl;
+        cout<<"1020 "<<gsl_vector_get(der,1020)<<endl;*/
+        
+        	
+	//if (findTstarts == true)
+        // It is necessary to find the tstarts... 
+	//{
+		// It looks for &tstartgsl,&qualitygsl, &maxDERgsl,&samp1DERgsla pulse
 		// If a pulse is found (foundPulse==true) => It looks for another pulse
 		do
 		{
@@ -3256,7 +3213,7 @@ int FindSecondariesA1
 			{
 				if (foundPulse == false)
 				{
-					// The first condition to detect a pulse is that the adjustedDerivative was over the threshold
+					// The condition to detect a pulse is that the adjustedDerivative was over the threshold at least nSamplesUp consecutive samples
 					if (gsl_vector_get(der,i) > adaptativethreshold)
 					{
 					        cntUp++;
@@ -3279,8 +3236,29 @@ int FindSecondariesA1
 							}
 							gsl_vector_set(*maxDERgsl,*numberPulses,possiblemaxDER);
 							gsl_vector_set(*tstartgsl,*numberPulses,possibleTstart);
+                                                        //cout<<"tstart0: "<<gsl_vector_get(*tstartgsl,*numberPulses)<<endl;
                                                         gsl_vector_set(*samp1DERgsl,*numberPulses,possiblesamp1DER);
-							//if (possibleTstart == 0)	gsl_vector_set(*flagTruncated,*numberPulses,1);
+                                                        
+                                                        // Average of the first 4 samples of the derivative
+                                                        sum_samp1DER = 0.0;
+                                                        limitMin = 0;
+                                                        limitMax = 3;
+                                                        for (int index_samp1DER=limitMin;index_samp1DER<=limitMax;index_samp1DER++)
+                                                        {
+                                                                if (gsl_vector_get(*tstartgsl,*numberPulses)+index_samp1DER > szRw-1)
+                                                                {
+                                                                        limitMax = index_samp1DER-1;
+                                                                        limitMin = limitMax-3;
+                                                                }
+                                                        }
+                                                        
+                                                        for (int index_samp1DER=limitMin;index_samp1DER<=limitMax;index_samp1DER++)
+                                                        {
+                                                                sum_samp1DER = sum_samp1DER + gsl_vector_get(der,gsl_vector_get(*tstartgsl,*numberPulses)+index_samp1DER);
+                                                        }
+                                                        gsl_vector_set(*samp1DERgsl,*numberPulses,sum_samp1DER/4.0);
+                                                        
+							if (possibleTstart == 0)	gsl_vector_set(*flagTruncated,*numberPulses,1);
 							*numberPulses = *numberPulses +1;
 							foundPulse = true;
 							cntUp = 0;
@@ -3298,10 +3276,8 @@ int FindSecondariesA1
 					else if (gsl_vector_get(der,i) < adaptativethreshold)
 					{
 						cntUp = 0;
-                                                //cout<<"cntDown: "<<cntDown<<" "<<i<<endl;
 						cntDown++;
-						//if (cntDown == nSamplesUp) // nSamplesUp samples under the threshold in order to look for another pulse
-                                                if (cntDown == nSamplesDown) // 1 sample under the threshold in order to look for another pulse
+                                                if (cntDown == nSamplesDown) // nSamplesUp sample under the threshold in order to look for another pulse
 						{
 							foundPulse = false; 
 							cntDown = 0;
@@ -3315,8 +3291,9 @@ int FindSecondariesA1
 				i++;
 			}
 		} while (foundPulse == true);
-	}
+	/*}
 	else
+        // ... Or to use the tstart provided as input parameters
 	{
 		gsl_vector_view temp;
 		// It is not necessary to check the allocation because 'reconstruct_init->pulse_length'='PulseLength'(input parameter) has been checked previously
@@ -3365,10 +3342,157 @@ int FindSecondariesA1
 			gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
 		}
 
+
 		gsl_vector_free(tstartPulsei);
 		gsl_vector_free(model);
-	}
+	}*/
 
 	return (EPOK);
 }
 /*xxxx end of SECTION 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 18 ************************************************************
+* noDetect function: This function runs if the starting time of the pulses are agiven as input parameters (tstartPulse1 != 0). 
+*                    It looks for the maximum of the derivative of the pulse and the average of the first 4 samples of the derivative of the pulse.
+*
+* Parameters:
+* - der: First derivative of the (low-pass filtered) record
+* - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
+*                     This function uses 'maxDERs', 'tstartPulse1', 'tstartPulse2' and 'tstartPulse3'
+* - numberPulses: Number of pulses
+* - tstartgsl: Pulses tstart (in samples)
+* - flagTruncated: Flag indicating if the pulse is truncated (inside this function only initial truncated pulses are classified)
+* - maxDERgsl: Maximum of the derivative of the pulse
+* - samp1DERgsl: Average of the first 4 samples of the derivative of the event
+******************************************************************************/
+int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **samp1DERgsl)
+{
+	string message="";
+	char valERROR[256];
+                
+        gsl_vector_view temp;
+        
+        int sizeRecord = der->size;
+        double sum_samp1DER;
+        
+        int pulse_length_ToSubtract = 100; // Instead of using pulse_length, because the results are equal
+        gsl_vector *modelToSubtract = gsl_vector_alloc(pulse_length_ToSubtract);
+
+	gsl_vector *tstartPulsei = gsl_vector_alloc(3);
+	gsl_vector_set(tstartPulsei,0,reconstruct_init->tstartPulse1);
+	gsl_vector_set(tstartPulsei,1,reconstruct_init->tstartPulse2);
+	gsl_vector_set(tstartPulsei,2,reconstruct_init->tstartPulse3);
+        
+        gsl_vector_set_zero(*flagTruncated);
+
+	if (reconstruct_init->tstartPulse2 == 0) 	*numberPulses = 1;
+	else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
+	else						*numberPulses = 3;
+
+        for (int i=0;i<*numberPulses;i++)
+        {
+            gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
+            
+            if (i != *numberPulses-1) 	
+            {
+                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > der->size-2)
+                    || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > der->size-gsl_vector_get(tstartPulsei,i)))
+                {
+                    sprintf(valERROR,"%d",__LINE__+5);
+                    string str(valERROR);
+                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                    EP_PRINT_ERROR(message,EPFAIL);
+                }
+                temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+            }
+            else	
+            {
+                if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > der->size-2)
+                    || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > der->size-gsl_vector_get(tstartPulsei,i)))
+                {
+                    sprintf(valERROR,"%d",__LINE__+5);
+                    string str(valERROR);
+                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                    EP_PRINT_ERROR(message,EPFAIL);
+                }
+                temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+            }
+            
+            if (i == 0)
+            {	
+                
+                gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(der,gsl_vector_get(tstartPulsei,i)));
+                
+                // Average of the first 4 samples of the derivative
+                sum_samp1DER = 0.0;
+                for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
+                {
+                    sum_samp1DER = sum_samp1DER + gsl_vector_get(der,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
+                    
+                }                                                                                   
+                gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
+                //cout<<"samp1DERgsl/4: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
+            }
+            else
+            {
+                if (find_model_maxDERs(gsl_vector_get(*maxDERgsl,i-1), reconstruct_init, &modelToSubtract))
+                {
+                    message = "Cannot run find_model routine for pulse i=" + boost::lexical_cast<std::string>(i) + " when newPulses = 1";
+                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                }
+                
+                if ((gsl_vector_get(*tstartgsl,i-1) < 0) || (min(gsl_vector_get(*tstartgsl,i-1)+pulse_length_ToSubtract,(double) sizeRecord)-1 > der->size-1))
+                {
+                    sprintf(valERROR,"%d",__LINE__+7);
+                    string str(valERROR);
+                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                    EP_PRINT_ERROR(message,EPFAIL);
+                }
+                
+                for (int j=gsl_vector_get(*tstartgsl,i-1);j<min(gsl_vector_get(*tstartgsl,i-1)+pulse_length_ToSubtract,(double) sizeRecord);j++)
+                {
+                    gsl_vector_set(der,j,gsl_vector_get(der,j)-gsl_vector_get(modelToSubtract,j-gsl_vector_get(*tstartgsl,i-1)));
+                }
+                
+                if (i != *numberPulses-1)	
+                {
+                    if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > der->size-2)
+                        || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) < 1) || (gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i) > der->size-gsl_vector_get(tstartPulsei,i)))
+                    {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
+                }
+                else
+                {
+                    if ((gsl_vector_get(tstartPulsei,i) < 0) || (gsl_vector_get(tstartPulsei,i) > der->size-2)
+                        || (sizeRecord-gsl_vector_get(tstartPulsei,i) < 1) || (sizeRecord-gsl_vector_get(tstartPulsei,i) > der->size-gsl_vector_get(tstartPulsei,i)))
+                    {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
+                }
+                
+                gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                // Average of the first 4 samples of the derivative
+                sum_samp1DER = 0.0;
+                for (int index_samp1DER=0;index_samp1DER<4;index_samp1DER++)
+                {
+                    sum_samp1DER = sum_samp1DER + gsl_vector_get(&temp.vector,gsl_vector_get(tstartPulsei,i)+index_samp1DER);
+                    
+                }                                                                                   
+                gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
+            }
+        }
+        
+        return (EPOK);
+}
+/*xxxx end of SECTION 18 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

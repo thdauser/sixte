@@ -16,8 +16,6 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
-   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
-                       Erlangen-Nuernberg
 */
 
 #include "teseventlist.h"
@@ -35,6 +33,10 @@ TesEventList* newTesEventList(int* const status){
 	event_list->event_indexes=NULL;
 	event_list->pulse_heights=NULL;
 	event_list->avgs_4samplesDerivative=NULL; //BEA
+	event_list->Es_lowres=NULL; //BEA
+	event_list->grading=NULL; //BEA
+	event_list->phis=NULL; //BEA
+	event_list->lagsShifts=NULL; //BEA
 	event_list->energies=NULL;
 	event_list->grades1=NULL;
 	event_list->grades2=NULL;
@@ -55,6 +57,10 @@ void freeTesEventList(TesEventList* event_list){
 		free(event_list->pulse_heights);
 		free(event_list->energies);
                 free(event_list->avgs_4samplesDerivative); //BEA
+                free(event_list->Es_lowres); //BEA
+		free(event_list->grading); //BEA
+		free(event_list->phis); //BEA
+		free(event_list->lagsShifts); //BEA
 		free(event_list->grades1);
 		free(event_list->grades2);
 		free(event_list->ph_ids);
@@ -99,6 +105,9 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 		if (NULL != event_list->energies) {
 			free(event_list->energies);
 			free(event_list->avgs_4samplesDerivative);
+			free(event_list->grading);
+			free(event_list->phis);
+			free(event_list->lagsShifts);
 			free(event_list->grades2);
 			if(NULL!= event_list->ph_ids){
 				free(event_list->ph_ids);
@@ -113,6 +122,34 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 
 		event_list->avgs_4samplesDerivative = malloc(event_list->size*sizeof*(event_list->avgs_4samplesDerivative)); //BEA
 		if (NULL == event_list->avgs_4samplesDerivative){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+		
+		event_list->Es_lowres = malloc(event_list->size*sizeof*(event_list->Es_lowres)); //BEA
+		if (NULL == event_list->Es_lowres){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+
+		event_list->grading = malloc(event_list->size*sizeof*(event_list->grading)); //BEA
+		if (NULL == event_list->grading){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+
+		event_list->phis = malloc(event_list->size*sizeof*(event_list->phis)); //BEA
+		if (NULL == event_list->phis){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+
+		event_list->lagsShifts = malloc(event_list->size*sizeof*(event_list->lagsShifts)); //BEA
+		if (NULL == event_list->lagsShifts){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
@@ -198,19 +235,22 @@ TesEventFile* newTesEventFile(int* const status){
 	file->nrows     =0;
 	file->timeCol   =1;
 	file->energyCol =2;
-	file->avg_4samplesDerivativeCol =3; //BEA
-	file->grade1Col =4;
-	file->grade2Col =5;
-	file->pixIDCol  =6;
-	file->phIDCol   =7;
-	file->raCol     =8;
-	file->decCol    =9;
-	file->detxCol   =10;
-	file->detyCol   =11;
-	file->gradingCol=12;
-	file->srcIDCol  =13;
-	file->nxtCol    =14;
-	file->extCol    =15;
+	file->avg_4samplesDerivativeCol =3; //BEA	
+	file->E_lowresCol =4; //BEA	
+	file->grade1Col =5;
+	file->grade2Col =6;
+	file->phiCol =7; //BEA
+	file->lagsShiftCol =8; //BEA
+	file->pixIDCol  =9;
+	file->phIDCol   =10;
+	file->raCol     =11;
+	file->decCol    =12;
+	file->detxCol   =13;
+	file->detyCol   =14;
+	file->gradingCol=15;
+	file->srcIDCol  =16;
+	file->nxtCol    =17;
+	file->extCol    =18;
 
 	return(file);
 }
@@ -274,11 +314,11 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char *ttype[]={"TIME","SIGNAL","AVG4SD","GRADE1","GRADE2","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //BEA
-	char *tform[]={"1D",  "1D",    "1D",    "1J",    "1J",    "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
-	char *tunit[]={"s",   "keV",   "",      "",      "",      "",     "",     "deg","deg","m","m","","","","keV"};
+	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //BEA
+	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J" ,  "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",       "",     "",     "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 15,		// BEA (15 instead of 14)
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 18,		// BEA (18 instead of 14)
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -312,6 +352,7 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->timeCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->energyCol, status);
         fits_get_colnum(file->fptr, CASEINSEN, "AVG4SD", &file->avg_4samplesDerivativeCol, status);  //BEA
+        fits_get_colnum(file->fptr, CASEINSEN, "ELOWRES", &file->E_lowresCol, status);  //BEA
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->grade1Col, status);
 	if (*status==COL_NOT_FOUND) {
 	  file->grade1Col=-1;
@@ -323,6 +364,10 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	  file->grade2Col=-1;
 	  *status=0;
 	}
+
+	fits_get_colnum(file->fptr, CASEINSEN, "PHI", &file->phiCol, status);  //BEA
+	fits_get_colnum(file->fptr, CASEINSEN, "LAGS", &file->lagsShiftCol, status);  //BEA
+
 	fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->pixIDCol, status);
 	if (*status==COL_NOT_FOUND) {
 	  file->pixIDCol=-1;
@@ -401,6 +446,26 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
  	fits_write_col(file->fptr, TDOUBLE, file->avg_4samplesDerivativeCol,
 					file->row, 1, event_list->index, event_list->avgs_4samplesDerivative, status);
 	CHECK_STATUS_VOID(*status);
+        
+        //Save Es_lowres (ELOWRES) column   //BEA
+ 	fits_write_col(file->fptr, TDOUBLE, file->E_lowresCol,
+					file->row, 1, event_list->index, event_list->Es_lowres, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save phis (PHI) column   //BEA
+ 	fits_write_col(file->fptr, TDOUBLE, file->phiCol,
+					file->row, 1, event_list->index, event_list->phis, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save lagsShifts (LAGS) column   //BEA
+ 	fits_write_col(file->fptr, TINT, file->lagsShiftCol,
+					file->row, 1, event_list->index, event_list->lagsShifts, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grading (GRADING) column   //BEA
+ 	fits_write_col(file->fptr, TINT, file->gradingCol,
+					file->row, 1, event_list->index, event_list->grading, status);
+	CHECK_STATUS_VOID(*status);
 
 	//Save grade1 column
 	fits_write_col(file->fptr, TINT, file->grade1Col,
@@ -421,7 +486,6 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 
 	file->row = file->row + event_list->index;
 	file->nrows+= event_list->index;
-
 }
 
 /** Updates the RA, DEC and DETX/Y columns with the given coordinates */
@@ -455,10 +519,16 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,in
 			file->row, 1, 1, &energy, status);
 	CHECK_STATUS_VOID(*status);
 
+        /*//Save avg_4samplesDerivative column  //BEA
+	double energy = (double)impact->energy;
+	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
+			file->row, 1, 1, &energy, status);
+=======
         //Save avg_4samplesDerivative column  //BEA
 	/*double avg_4samplesDerivative = (double)impact->avg_4samplesDerivative;
 	fits_write_col(file->fptr, TDOUBLE, file->avg_4samplesDerivativeCol,
 			file->row, 1, 1, &avg_4samplesDerivative, status);
+>>>>>>> bf8ce4341c3d8e276e191e58f674d692a0809835
 	CHECK_STATUS_VOID(*status);*/
 
 	//Save grade1 column
@@ -540,14 +610,18 @@ void addEmptyEvent(TesEventFile* file,PixImpact* impact, int* const status){
 
 /** Update signal and grading columns of an event */
 //void updateSignal(TesEventFile* file,long row,double energy,double avg_4samplesDerivative,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ //BEA
-void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){
+void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ 
 	//Save energy column
 	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
 			row, 1, 1, &energy, status);
 	CHECK_STATUS_VOID(*status);
 
+	/*//Save avg_4samplesDerivative column   //BEA
+	fits_write_col(file->fptr, TDOUBLE, file->avg4samplesDerivativeCol,
+=======
 	//Save avg_4samplesDerivative column   //BEA
 	/*fits_write_col(file->fptr, TDOUBLE, file->avg4samplesDerivativeCol,
+>>>>>>> bf8ce4341c3d8e276e191e58f674d692a0809835
 			row, 1, 1, &avg_4samplesDerivative, status);
 	CHECK_STATUS_VOID(*status);*/
 

@@ -59,7 +59,8 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
 		  testrigger.c integraSIRENA.cpp tasksSIRENA.cpp        \
           pulseprocess.cpp inoututils.cpp genutils.cpp          \
 		  crosstalk.c grading.c tescrosstalk.c linkedimplist.c  \
-		  masksystem.c mxs.c rndgen.c mt19937ar.c
+		  masksystem.c mxs.c rndgen.c mt19937ar.c               \
+		  scheduler.cpp log.cpp
 
 ############ HEADERS #################
 
@@ -91,4 +92,6 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		integraSIRENA.h tasksSIRENA.h pulseprocess.h            \
         inoututils.h genutils.h crosstalk.h grading.h           \
 		tescrosstalk.h tespixel.h linkedimplist.h sixt_main.c   \
-		masksystem.h  mxs.h rndgen.h mt19937ar.h
+		masksystem.h  mxs.h rndgen.h mt19937ar.h                \
+                scheduler.h log.h threadsafe_queue.h
+

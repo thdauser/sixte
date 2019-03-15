@@ -201,8 +201,8 @@ int FFT(gsl_vector *invector,gsl_vector_complex *outvector,double STD)
  	gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(1.0/sqrt(invector->size),0.0)); //Factor 1/sqrt(N), in the FFT expression
  	gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(sqrt(2*STD),0.0));
 
- 	gsl_fft_complex_wavetable_free(wavetable);
- 	gsl_fft_complex_workspace_free(work);
+ 	gsl_fft_complex_wavetable_free(wavetable); wavetable = 0;
+ 	gsl_fft_complex_workspace_free(work); work = 0;
 
  	return EPOK;
 }
@@ -238,8 +238,8 @@ int FFTinverse(gsl_vector_complex *invector,gsl_vector *outvector,double STD)
 	gsl_vector_scale(outvector,sqrt(invector->size)); //Factor 1/sqrt(N), in the FFT expression
 	gsl_vector_scale(outvector,1/sqrt(2*STD));
 
-	gsl_fft_complex_wavetable_free(wavetable);
-	gsl_fft_complex_workspace_free(work);
+	gsl_fft_complex_wavetable_free(wavetable); wavetable = 0;
+	gsl_fft_complex_workspace_free(work); work = 0;
 
  	return EPOK;
 }

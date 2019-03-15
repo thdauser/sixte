@@ -49,8 +49,9 @@ AC_ARG_WITH(gsl,
 # "-pg" for the compiler and linker to include information for gprof (Profiler)
 # "-std=c99 -D_GNU_SOURCE" for C99 syntax standards
 # "-openmp" to use openMP multicore functionality
-CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran"
+CFLAGS="$CFLAGS -g -ansi -std=c99 -pedantic -D_GNU_SOURCE -W -Wall -DHTRS_ARCPIXELS -Dg77Fortran -pthread"
 CPPFLAGS="$CPPCFLAGS -I$simput_dir/include"
+CXXFLAGS="$CXXFLAGS -pthread"
 
 # Linker Flags:
 LDFLAGS="$LDFLAGS -g -W -Wall  -L$simput_dir/lib"

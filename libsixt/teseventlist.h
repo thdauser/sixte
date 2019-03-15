@@ -16,8 +16,6 @@
 
 
    Copyright 2015 Philippe Peille, IRAP
-   Copyright 2016-2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
-                       Erlangen-Nuernberg
 */
 
 #ifndef TESEVENTLIST_H
@@ -41,7 +39,8 @@ typedef struct {
 	int index;
 
 	/** Index arrival time of the photons inside a record */
-	//int * event_indexes;
+
+	//int * event_indexes;	
 	double * event_indexes;	//BEA
 
 	/** Pulse height of the photons */
@@ -49,6 +48,18 @@ typedef struct {
 
 	/** Average of the first 4 samples of the derivative of the event (pulse) */
 	double * avgs_4samplesDerivative;  //BEA
+	
+	/** Low resolution energy estimator (4 samples-long filter) */
+	double * Es_lowres;  //BEA
+
+	/** Offset relative to the central point of the parabola */
+	double * phis;  //BEA
+
+	/** Number of samples shifted to find the maximum of the parabola */
+	int * lagsShifts;  //BEA
+
+	/** Pulse grade */
+	int * grading;  //BEA
 
 	/** Energy of the photons */
 	double * energies;
@@ -77,7 +88,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,avg_4samplesDerivativeCol,grade1Col,grade2Col,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //BEA
+	int timeCol,energyCol,avg_4samplesDerivativeCol,E_lowresCol,grade1Col,grade2Col,phiCol,lagsShiftCol,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //BEA
 
 } TesEventFile;
 

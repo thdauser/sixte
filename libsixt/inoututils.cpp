@@ -97,7 +97,7 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 
 			status = toGslVector((void **)&bufferD,&(*result),nRows,0,obj.type);
 
-			delete[] bufferD;
+			delete[] bufferD; bufferD = 0;
 			break;
 		case TINT:
 			bufferJ = new int [nRows];
@@ -107,7 +107,7 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 				EP_PRINT_ERROR(message,status);return(EPFAIL);
 			}
 			status = toGslVector((void **)&bufferJ,&(*result),nRows,0,obj.type);
-			delete[] bufferJ;
+			delete[] bufferJ; bufferJ = 0;
 			break;
 		case TSHORT:
 			bufferI = new short [nRows];
@@ -117,7 +117,7 @@ int readFitsSimple(IOData obj,gsl_vector **result)
 				EP_PRINT_ERROR(message,status);return(EPFAIL);
 			}
 			status = toGslVector((void **)&bufferI,&(*result),nRows,0,obj.type);
-			delete[] bufferI;
+			delete[] bufferI; bufferI = 0;
 			break;
 	}
 	
@@ -189,7 +189,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferD,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete[] bufferD;
+			delete[] bufferD; bufferD = 0;
 			break;
 		case TINT:
 			bufferJ = new int [matrixdim];
@@ -199,7 +199,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferJ,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete[] bufferJ;
+			delete[] bufferJ; bufferJ = 0;
 			break;
 		case TSHORT:
 			bufferI = new short [matrixdim];
@@ -209,7 +209,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferI,&(*result),nelemsInRow,nRows,obj.type,0);
-			delete[] bufferI;
+			delete[] bufferI; bufferI = 0;
 			break;
 	}
 
@@ -338,9 +338,12 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
 
-	if(bufferD) delete [] bufferD;
-	if(bufferI) delete [] bufferI;
-	if(bufferJ) delete [] bufferJ;
+	if(bufferD) { delete [] bufferD; bufferD = 0; 
+        }
+        if(bufferI) { delete [] bufferI; bufferI = 0; 
+        }
+        if(bufferJ) { delete [] bufferJ; bufferJ = 0; 
+        }
 	
 	return EPOK;
 }
@@ -490,9 +493,12 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 	      EP_PRINT_ERROR(message,EPFAIL);
 	}
 
-	if(bufferD) delete [] bufferD;
-	if(bufferI) delete [] bufferI;
-	if(bufferJ) delete [] bufferJ;
+	if(bufferD) { delete [] bufferD; bufferD = 0; 
+        }
+	if(bufferI) { delete [] bufferI; bufferI = 0; 
+        }
+	if(bufferJ) { delete [] bufferJ; bufferJ = 0; 
+        }
 	
 	return status;
 }
