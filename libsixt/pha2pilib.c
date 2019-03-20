@@ -132,6 +132,7 @@ Pha2Pi* initPha2Pi(const char* const filename, const char* const pirmf_filename,
 	char comment[MAXMSG];
 	char rmffile[MAXMSG];
 	fits_read_key(fptr, TSTRING, "RESPFILE", rmffile, comment, status);
+
 	CHECK_STATUS_RET(*status, p2p);
 	p2p->rmffile = (char*) malloc((strlen(rmffile) + 1) * sizeof(char));
 	CHECK_NULL_RET(p2p->rmffile, *status,
@@ -213,9 +214,6 @@ Pha2Pi* initPha2Pi(const char* const filename, const char* const pirmf_filename,
 Pha2Pi* initPha2Pi_from_GenInst(GenInst* const inst, const unsigned int seed,
 		int* const status) {
 
-	// Pha2Pi correction file
-	Pha2Pi* p2p=NULL;
-
 	// Initialize & load Pha2Pi File (NULL if not set)
 	char pha2pi_filename[MAXFILENAME];
 	if (inst->det->pha2pi_filename == NULL) {
@@ -224,8 +222,23 @@ Pha2Pi* initPha2Pi_from_GenInst(GenInst* const inst, const unsigned int seed,
 		strcpy(pha2pi_filename, inst->filepath);
 		strcat(pha2pi_filename, inst->det->pha2pi_filename);
 	}
-	p2p = initPha2Pi(pha2pi_filename, inst->det->pirmf_filename,
-			inst->det->specarf_filename, seed, &status);
+
+	char pirmf_filename[MAXFILENAME];
+	if (inst->det->pirmf_filename == NULL) {
+		*pirmf_filename = '\0';
+	} else {
+		strcpy(pirmf_filename, inst->det->pirmf_filename);
+	}
+
+	char specarf_filename[MAXFILENAME];
+	if (inst->det->specarf_filename == NULL) {
+		*specarf_filename = '\0';
+	} else {
+		strcpy(specarf_filename, inst->det->specarf_filename);
+	}
+
+	// Pha2Pi correction file
+	Pha2Pi* p2p = initPha2Pi(pha2pi_filename, pirmf_filename,specarf_filename, seed, status);
 
 	return (p2p);
 }
@@ -387,14 +400,15 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 	if (*status == EXIT_SUCCESS) {
 		fits_update_key(evtfile->fptr, TSTRING, "PHA2PI", p2p->pha2pi_filename,
 				"Pha2Pi correction file", status);
-		if (p2p->pirmf_filename != NULL && strlen(p2p->pirmf_filename)>0 ) {
+		if (p2p->pirmf_filename != NULL && strlen(p2p->pirmf_filename) > 0) {
 			fits_update_key(evtfile->fptr, TSTRING, "PIRMF",
 					p2p->pirmf_filename, "PI-RMF needed for PI values", status);
 		} else {
 			headas_chat(5,
 					" 'PIRMF' Key not written to eventfile as not given!\n");
 		}
-		if (p2p->specarf_filename != NULL && strlen(p2p->specarf_filename)>0 ) {
+		if (p2p->specarf_filename != NULL
+				&& strlen(p2p->specarf_filename) > 0) {
 			fits_update_key(evtfile->fptr, TSTRING, "SPECARF",
 					p2p->specarf_filename, "calibrated ARF for analysis",
 					status);
