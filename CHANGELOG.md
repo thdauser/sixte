@@ -1,3 +1,11 @@
+version [2.5.8]
+ - update & improve pha2pi correction handling
+   * detector xml now may include a PIRMF or SPECARF
+     entry to specify the pha2pi corrected RMF and the
+     calibrated ARF
+   * adjust makespec to automatically use PIRMF and
+     SPECARF if available
+
 version [2.5.7]
  - updates copyright and license notices
  - fixes bug in reading older vignetting files
