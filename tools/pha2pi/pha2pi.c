@@ -39,7 +39,7 @@ int pha2pi_main()
 
   // Register HEATOOL:
   set_toolname("pha2pi");
-  set_toolversion("0.01");
+  set_toolversion("0.02");
 
 
   do { // Beginning of the ERROR handling loop (will at most be run once).
@@ -57,6 +57,14 @@ int pha2pi_main()
     char pha2pi_filename[MAXFILENAME];
     strcpy(pha2pi_filename, par.Pha2Pi);
 
+    // Determine the PIRMF file.
+    char pirmf_filename[MAXFILENAME];
+    strcpy(pirmf_filename, par.PIRMF);
+
+    // Determine the SPECARF file.
+    char specarf_filename[MAXFILENAME];
+    strcpy(specarf_filename, par.SPECARF);
+
     // Determine the output file.
     char evtfile_filename[MAXFILENAME];
     strcpy(evtfile_filename, par.EvtFile);
@@ -72,7 +80,7 @@ int pha2pi_main()
     headas_chat(3, "start PHA to PI correction ...\n");
 
     // LOAD Pha2PI Correction File if existent
-    p2p = initPha2Pi(pha2pi_filename, seed, &status);
+    p2p = initPha2Pi(pha2pi_filename, pirmf_filename, specarf_filename, seed, &status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
     // Open the input event file for read and write.
@@ -106,6 +114,8 @@ int pha2pi_main()
 void pha2pi_getpar(struct Parameters* const par, int* const status){
   query_simput_parameter_file_name_buffer("EvtFile", par->EvtFile, MAXFILENAME, status);
   query_simput_parameter_file_name_buffer("Pha2Pi", par->Pha2Pi, MAXFILENAME, status);
+  query_simput_parameter_file_name_buffer("PIRMF", par->PIRMF, MAXFILENAME, status);
+  query_simput_parameter_file_name_buffer("SPECARF", par->SPECARF, MAXFILENAME, status);
   query_simput_parameter_file_name_buffer("RSPPath", par->RSPPath, MAXFILENAME, status);
   query_simput_parameter_file_name_buffer("RESPfile", par->RESPfile, MAXFILENAME, status);
   query_simput_parameter_int("Seed", &par->Seed, status );

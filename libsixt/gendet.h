@@ -126,6 +126,13 @@ typedef struct {
       for signal loss due to lower energy thresholds */
   char* pha2pi_filename;
 
+  /** PI RMF filename of RMF build for pha2pi corrected PI values */
+  char* pirmf_filename;
+
+  /** SPEC ARF filename of PSF-Chip coverage calibrated ARF.  */
+  char* specarf_filename;
+
+
   /** Detector response matrix. The RMF file that is originally loaded
       may also contain ARF contributions. But as these already have
       been taken into account in the generation of the input spectra

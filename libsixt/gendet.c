@@ -40,6 +40,8 @@ GenDet* newGenDet(int* const status) {
 	det->split = NULL;
 	det->line = NULL;
 	det->pha2pi_filename = NULL;
+	det->pirmf_filename = NULL;
+	det->specarf_filename = NULL;
 	det->rmf_filename = NULL;
 	det->rmf = NULL;
 	det->elf = NULL;
@@ -96,6 +98,13 @@ void destroyGenDet(GenDet** const det) {
 		if (NULL != (*det)->pha2pi_filename) {
 			free((*det)->pha2pi_filename);
 		}
+		if (NULL != (*det)->pirmf_filename) {
+			free((*det)->pirmf_filename);
+		}
+		if (NULL != (*det)->specarf_filename) {
+			free((*det)->specarf_filename);
+		}
+
 		if (NULL != (*det)->rmf_filename) {
 			free((*det)->rmf_filename);
 		}

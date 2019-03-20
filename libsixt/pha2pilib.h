@@ -27,6 +27,7 @@
 #include "event.h"
 #include "eventfile.h"
 #include "rmf.h"
+#include "geninst.h"
 
 #include <unistd.h>
 
@@ -42,6 +43,10 @@ typedef struct {
 
 	/** FILE NAME of PI-RMF for corrected PI values*/
 	char* pirmf_filename;
+
+	/** FILE NAME of SPEC ARF for PSF-Chip coverage calibrated ARF */
+	char* specarf_filename;
+
 
 	/** RANDOM NUMBER SEED */
 	int seed;
@@ -74,10 +79,16 @@ Pha2Pi* getPha2Pi(int* const status);
 /** Destructor. */
 void freePha2Pi(Pha2Pi** const p2p);
 
-/** Initialize RNG and Load Pha2Pi structure from File. */
-Pha2Pi* initPha2Pi(const char* const filename,
+/** Initialize RNG and Load Pha2Pi structure. */
+Pha2Pi* initPha2Pi(
+		const char* const filename,
+		const char* const pirmf_filename,
+		const char* const specarf_filename,
 		const unsigned int seed,
 		int* const status);
+
+/** Initialize RNG and Load Pha2Pi structure from GenInst structure. */
+Pha2Pi* initPha2Pi_from_GenInst( GenInst* const inst, const unsigned int seed, int* const status);
 
 
 /** Do the pha2pi correction on a single event. */

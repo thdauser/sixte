@@ -42,6 +42,8 @@
 struct Parameters {
   char EvtFile[MAXFILENAME];
   char Pha2Pi[MAXFILENAME];
+  char PIRMF[MAXFILENAME];
+  char SPECARF[MAXFILENAME];
   char RSPPath[MAXFILENAME];
   char RESPfile[MAXFILENAME];
 

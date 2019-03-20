@@ -51,7 +51,7 @@ int makespec_main() {
 
   // Register HEATOOL:
   set_toolname("makespec");
-  set_toolversion("0.14");
+  set_toolversion("0.16");
 
 
   do {  // Beginning of the ERROR handling loop.
@@ -141,6 +141,14 @@ int makespec_main() {
     fits_read_key(ef, TSTRING, "PIRMF", pirmf, comment, &status);
     if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST ){
     	strcpy(pirmf,"NONE");
+    	fits_clear_errmark();
+    	status = EXIT_SUCCESS;
+    }
+    /* Try to obtain optional key "SPECARF" being the calibrated ARF */
+    char specarf[MAXMSG];
+    fits_read_key(ef, TSTRING, "SPECARF", specarf, comment, &status);
+    if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST ){
+    	strcpy(specarf,"NONE");
     	fits_clear_errmark();
     	status = EXIT_SUCCESS;
     }
@@ -252,12 +260,24 @@ int makespec_main() {
     } else {                         // We use the same rmf as in the simulation
       strcpy(spcrespfile,rmffile);
     }
-    // Check the arf:
+
+    // Decide which ARF to use: [USER] ARFfile, [fitshdr] ANCRfile, or SPECARF
+	char arffile[MAXMSG];
+	if( strcasecmp("NONE",specarf)!=0 ){
+		strcpy( arffile, specarf );
+	} else {
+		strcpy( arffile, ancrfile );
+	}
+
+	// Check the user arf:
     char spcancrfile[MAXFILENAME];
     if (strcasecmp("NONE",par.ARFfile)){ // User demands a different arf
       strcpy(spcancrfile,par.ARFfile);
+      if( strcmp(spcancrfile,arffile)!=0 ){
+          headas_chat(5," *** WARNING: User ARF differs from expected ARF='%s'!\n",arffile);
+      }
     } else {                         // We use the same arf as in the simulation
-      strcpy(spcancrfile,ancrfile);
+      strcpy(spcancrfile,arffile);
     }
 
     // We put the paths to the rmf and the arf into
@@ -285,7 +305,8 @@ int makespec_main() {
     //      (TODO: this can be simplified)
     struct RMF* rmf = loadRMF(resppathname,&status);
     CHECK_STATUS_BREAK(status);
-    headas_chat(5," *** INFO : Loading RMF='%s'!\n",resppathname);
+    headas_chat(5," *** INFO : Using RMF='%s'!\n",resppathname);
+    headas_chat(5," *** INFO : Using ARF='%s'!\n",ancrpathname);
 
     // If different rmf and/or arf are required, we need to check that the binning
     // is compatible with the ones used for the simulation:
@@ -333,7 +354,6 @@ int makespec_main() {
       	// The file should be located in the working directory.
       	strcpy(simancrpathname, ancrfile);
       }
-      printf("path to the ancilliary file: %s\n", simancrpathname);
 
       // Load the ARFs.
       struct ARF* arf=loadARF(ancrpathname,&status);
