@@ -17,6 +17,7 @@ stages:
   - build
   - test
   - deploy
+  - update
 
 build:
   stage: build
@@ -27,7 +28,6 @@ build:
     - make install
   only:
     - master
-    - gitlab-ci
   artifacts:
     expire_in: 30 min
     paths:
@@ -43,7 +43,6 @@ test:
     - make test
   only:
     - master
-    - gitlab-ci
 
 provide:
   stage: deploy
@@ -51,3 +50,13 @@ provide:
     - git push /data/git/sixt.git HEAD:master
   only:
     - master
+
+update:
+  stage: update
+  script:
+    - make dist
+    - rsync -vhu sixte-?.?.?*.tar.gz /data/www/sixte_archive/sixte/
+  only:
+    - tags
+  except: 
+    - /^(?!master).+@/  # Ruby RegEx for anything not starting with 'master'
