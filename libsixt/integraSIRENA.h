@@ -281,6 +281,25 @@ typedef struct Grading
   
 } Grading;// To store the dara read from the XML File
 
+typedef struct I2RData
+{
+  double R0;
+  double I0_START;
+  double IMIN;
+  double IMAX;
+  double RPARA;
+  double TTR;
+  double LFILTER;
+  
+#ifdef __cplusplus
+  I2RData();
+  I2RData(const I2RData& other);
+  I2RData& operator=(const I2RData& other);
+  ~I2RData();
+#endif
+  
+} I2RData;
+
 typedef struct PulseDetected
 {
 	/** Pulse duration (maximum length) */
@@ -523,6 +542,8 @@ typedef struct ReconstructInitSIRENA
   
   /** grading info read from the XML File **/
   Grading *grading;
+  
+  I2RData *i2rdata;
 #ifdef __cplusplus
   ReconstructInitSIRENA();
   ReconstructInitSIRENA(const ReconstructInitSIRENA& other);

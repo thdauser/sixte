@@ -64,6 +64,8 @@ int tesreconstruction_main() {
     CHECK_STATUS_BREAK(status);  
     OptimalFilterSIRENA* optimalFilter = newOptimalFilterSIRENA(&status);
     CHECK_STATUS_BREAK(status);// define a second structure for calibration
+    int sf = 156250;
+    int div = 1;
     if(!strcmp(par.Rcmethod,"PP")){
 	  initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
     		par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
@@ -81,7 +83,7 @@ int tesreconstruction_main() {
 	  reconstruct_init_sirena->grading->ngrades = 0;
 	  reconstruct_init_sirena->grading->value  = NULL;
 	  reconstruct_init_sirena->grading->gradeData = NULL;
-	  
+          
 	  AdvDet *det = newAdvDet(&status);
 	  CHECK_STATUS_BREAK(status);
 	  det = loadAdvDet(par.XMLFile, &status);
@@ -91,20 +93,29 @@ int tesreconstruction_main() {
 		SIXT_ERROR("The provided XMLFile does not have the grading info");
 		return(EXIT_FAILURE);
   	  }
+  	  
+  	  // Read the sampling rate
+  	  sampling_rate = det->SampleFreq;
+          
+          // Checking the sampling rate of the .xml file and the sampling rate from the input FITS file
+          if (sampling_rate != 1/record_file->delta_t)
+          {
+                SIXT_ERROR("Sampling rate from the XML file and the FITS file do not match");
+                return(EXIT_FAILURE);
+          }
 	  
+	  div = sf/sampling_rate;
+        
 	  reconstruct_init_sirena->grading->ngrades=det->pix->ngrades;
-	  reconstruct_init_sirena->grading->value = gsl_vector_alloc(det->pix->ngrades);
+	  //reconstruct_init_sirena->grading->value = gsl_vector_alloc(det->pix->ngrades);
 	  reconstruct_init_sirena->grading->gradeData = gsl_matrix_alloc(det->pix->ngrades,2);
 	  for (int i=0;i<det->pix->ngrades;i++)
 	  {
-	      gsl_vector_set(reconstruct_init_sirena->grading->value,i,det->pix->grades[i].value);
-	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,det->pix->grades[i].gradelim_pre);
-	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,det->pix->grades[i].gradelim_post);
+	      //gsl_vector_set(reconstruct_init_sirena->grading->value,i,det->pix->(int) (grades[i].value/div));
+	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,(int) (det->pix->grades[i].gradelim_pre)/div);
+	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,(int) (det->pix->grades[i].gradelim_post)/div);
 	  }
 	  destroyAdvDet(&det);
-          
-          // Read the sampling rate
-  	  sampling_rate = det->SampleFreq;
     }  
     CHECK_STATUS_BREAK(status);
 
@@ -112,13 +123,6 @@ int tesreconstruction_main() {
     TesRecord* record = newTesRecord(&status);
     allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
     CHECK_STATUS_BREAK(status);
-    
-    // Checking the sampling rate of the .xml file and the sampling rate from the input FITS file
-    if (sampling_rate != 1/record_file->delta_t)
-    {
-        SIXT_ERROR("Sampling rate from the XML file and the FITS file do not match");
-        return(EXIT_FAILURE);
-    }
 
     // Build up TesEventList to recover the results of the reconstruction
     TesEventList* event_list = newTesEventList(&status);
@@ -204,14 +208,12 @@ int tesreconstruction_main() {
           //printf("\n%f - %ld", record->time, record->pixid);
 	  saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
 	  CHECK_STATUS_BREAK(status);
-          
 	  //Reinitialize event list
 	  event_list->index=0;
         }
       }
     }
     
-    // 
     if(is_threading()) {
       th_end(&reconstruct_init_sirena, &pulsesAll, &optimalFilter);
       int i = 1;

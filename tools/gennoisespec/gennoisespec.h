@@ -69,7 +69,7 @@
 
 	FILE *fileRef;				// Pointer for file which contains errors and warnings
 
-// INPUT KEYWORDS	int opmode,
+// INPUT KEYWORDS	
 
 	long eventcnt;		// Number of rows
 	long eventsz;		// TRIGGSZ
@@ -79,6 +79,14 @@
 	double ivcal;		// Just in case it would be necessary
 	double asquid;		// Just in case it would be necessary
 	double plspolar;	// Just in case it would be necessary
+	
+	double Imin;
+        double Imax;
+        double R0;
+        double Ibias;
+        double RPARA;
+        double TTR;
+        double LFILTER;
 
 // INPUT VECTORS
 
@@ -103,6 +111,8 @@
 	
 	char weightMSStr[4];		// WeightMS=yes then write output weight noise matrixes
 	int weightMS=0;
+        
+        char I2R[10];		        // 
 
 	char nameLog[255];		// Output log file name
 	int verbosity;			// Verbosity level of the output log file
