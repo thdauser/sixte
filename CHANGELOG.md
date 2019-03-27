@@ -1,3 +1,7 @@
+version [2.5.9]
+ - fixes bug in last version regarding pha2pi correction
+ - updates SIRENA to conform new file format of xifusim
+
 version [2.5.8]
  - update & improve pha2pi correction handling
    * detector xml now may include a PIRMF or SPECARF
