@@ -178,6 +178,11 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
 	//Move to the binary table
 	fits_movnam_hdu(file->fptr,ANY_HDU,"RECORDS",0, status);
+	if (*status != 0)
+	{
+		*status = 0;
+ 		fits_movnam_hdu(file->fptr,ANY_HDU,"TESRECORDS",0, status);
+	}
 	//Get number of rows
 	char comment[FLEN_COMMENT];
 	fits_read_key(file->fptr, TINT, "NAXIS2", &(file->nrows), comment, status);
