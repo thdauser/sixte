@@ -377,17 +377,17 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	//log_trace("Before runDetect");
         //cout<<"Before runDetect"<<endl;
 	// Detect pulses in record
-        reconstruct_init->i2rdata = NULL;
-        reconstruct_init->i2rdata = (I2RData*)malloc(sizeof(I2RData));
-	//reconstruct_init->i2rdata->R0 = -999;
-	reconstruct_init->i2rdata->I0_START = -999;
-        reconstruct_init->i2rdata->IMIN = -999;
-        reconstruct_init->i2rdata->IMAX = -999;
-        reconstruct_init->i2rdata->TTR = -999;
-        reconstruct_init->i2rdata->RPARA = -999;
-        reconstruct_init->i2rdata->LFILTER = -999;
         if (nRecord == 1)
         {
+                reconstruct_init->i2rdata = NULL;
+                reconstruct_init->i2rdata = (I2RData*)malloc(sizeof(I2RData));
+                //reconstruct_init->i2rdata->R0 = -999;
+                reconstruct_init->i2rdata->I0_START = -999;    
+                reconstruct_init->i2rdata->IMIN = -999;
+                reconstruct_init->i2rdata->IMAX = -999;
+                reconstruct_init->i2rdata->TTR = -999;
+                reconstruct_init->i2rdata->RPARA = -999;
+                reconstruct_init->i2rdata->LFILTER = -999;
                 if ((strcmp(reconstruct_init->EnergyMethod,"I2R") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RALL") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RNOL") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RFITTED") == 0)) 
                 {
                         char extname[20];
@@ -634,7 +634,6 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		
 	//cout<<"pulsesAll: "<<(*pulsesAll)->ndetpulses<<endl;
 	//cout<<"pulsesInRecord: "<<pulsesInRecord->ndetpulses<<endl;
-	//cout<<pulsesInRecord->ndetpulses<<endl;
 	
 	// Free & Fill TesEventList structure
 	event_list->index = pulsesInRecord->ndetpulses;
