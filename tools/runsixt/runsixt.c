@@ -686,37 +686,20 @@ int runsixt_getpar(struct Parameters* const par)
   strcpy(par->EvtFile, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_string("Mission", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the mission");
-    return(status);
-  }
-  strcpy(par->Mission, sbuffer);
-  free(sbuffer);
+  query_simput_parameter_file_name("XMLFile", &(par->XMLFile), &status);
 
-  status=ape_trad_query_string("Instrument", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the instrument");
-    return(status);
+  // only load Mission, Instrument and Mode if XMLFile is not given
+  if (par->XMLFile=='\0'){
+    query_simput_parameter_string("Mission", &(par->Mission), &status);
+    query_simput_parameter_string("Instrument", &(par->Instrument), &status);
+    query_simput_parameter_string("Mode", &(par->Mode), &status);
+  } else {
+	  // set to default values
+    par->Mission = NULL;
+    par->Instrument = NULL;
+    par->Mode = NULL;
+	  headas_chat(5, "using xml file: %s \n", par->XMLFile);
   }
-  strcpy(par->Instrument, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("Mode", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the instrument mode");
-    return(status);
-  }
-  strcpy(par->Mode, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("XMLFile", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the XML file");
-    return(status);
-  }
-  strcpy(par->XMLFile, sbuffer);
-  free(sbuffer);
 
   status=ape_trad_query_bool("Background", &par->Background);
   if (EXIT_SUCCESS!=status) {

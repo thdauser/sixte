@@ -101,29 +101,42 @@ void sixt_get_XMLFile(char* const filename,
   char Mission[MAXMSG];
   char Instrument[MAXMSG];
   char Mode[MAXMSG];
-  strncpy(Mission, mission,MAXMSG-1);
-  Mission[MAXMSG-1]='\0';
-  strncpy(Instrument, instrument,MAXMSG-1);
-  Instrument[MAXMSG-1]='\0';
-  strncpy(Mode, mode,MAXMSG-1);
-  Mode[MAXMSG-1]='\0';
+
+  if (mission == NULL) {
+    strcpy(Mission, "none");
+  } else {
+    strncpy(Mission, mission,MAXMSG-1);
+    Mission[MAXMSG-1]='\0';
+  }
+
+  if (instrument == NULL) {
+    strcpy(Instrument, "none");
+  } else {
+    strncpy(Instrument, instrument,MAXMSG-1);
+    Instrument[MAXMSG-1]='\0';
+  }
+
+  if (mode == NULL) {
+    strcpy(Mode, "none");
+  } else {
+    strncpy(Mode, mode,MAXMSG-1);
+    Mode[MAXMSG-1]='\0';
+  }
+
   strtoupper(Mission);
   strtoupper(Instrument);
   strtoupper(Mode);
 
   // Check the available missions, instruments, and modes.
-  char XMLFile[MAXFILENAME];
-  strncpy(XMLFile, xmlfile,MAXFILENAME-1);
-  XMLFile[MAXFILENAME-1]='\0';
-  strtoupper(XMLFile);
 
   // check whether XML filename has been given explicitly
-  if (0!=strcmp(XMLFile,"NONE")) {
-    // ... yes: just copy it and be happy
-    strcpy(filename,xmlfile);
-    return;
+  if (xmlfile != NULL) {
+    if (xmlfile[0] != '\0') {
+      // ... yes: just copy it and be happy
+      strcpy(filename,xmlfile);
+      return;
+    }
   }
-
 
   // Determine the base directory containing the XML
   // definition files.

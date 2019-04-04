@@ -54,14 +54,14 @@ struct Parameters {
   char ImpactList[MAXFILENAME];
   char EvtFile[MAXFILENAME];
   char RawData[MAXFILENAME];
-  char XMLFile[MAXFILENAME];
+  char* XMLFile;
   char* Attitude;
   char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
 
-  char Mission[MAXMSG];
-  char Instrument[MAXMSG];
-  char Mode[MAXMSG];
+  char* Mission;
+  char* Instrument;
+  char* Mode;
 
   char Background;
 
