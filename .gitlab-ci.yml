@@ -61,5 +61,3 @@ update:
     - rsync -vhu sixte-?.?.?*.tar.gz /data/www/sixte_archive/sixte/
   only:
     - tags
-  except: 
-    - /^?!master(.+@)/  # Ruby RegEx for anything not starting with 'master'
