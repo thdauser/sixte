@@ -2346,7 +2346,7 @@ int FindSecondaries
         double criteriaDER_value;
         if (samprate == 156250)
             //criteriaDER_value = 86.7; // In degrees,  samprate = 156250 Hz
-            criteriaDER_value = 88; // In degrees,  samprate = 156250 Hz
+            criteriaDER_value = 88.3; // In degrees,  samprate = 156250 Hz
         else if (samprate == 156250/2)
             //criteriaDER_value = 87.5; // In degrees, samprate/2 = 78125 Hz
             criteriaDER_value = 89; // In degrees, samprate/2 = 78125 Hz      
@@ -2389,6 +2389,7 @@ int FindSecondaries
                                         if (gsl_vector_get(adjustedDerivative,i) > adaptativethreshold)
 					//if ((gsl_vector_get(adjustedDerivative,i) > adaptativethreshold) && (i>0))
 					{
+                                                //if (i == 0) cout<<"gsl_vector_get(adjustedDerivative,0): "<<gsl_vector_get(adjustedDerivative,0)<<" adaptativethreshold: "<<adaptativethreshold<<endl;
                                                 if (*numberPulses == (*maxDERgsl)->size)
                                                 {
                                                         sprintf(valERROR,"%d",__LINE__+5);
@@ -2405,6 +2406,8 @@ int FindSecondaries
                                                 *numberPulses = *numberPulses +1;
                                                 foundPulse = true;
                                                 //cout<<"Supera el umbral en "<<i<<" "<<gsl_vector_get(adjustedDerivative,i-1)<<" "<<gsl_vector_get(adjustedDerivative,i)<<" "<<adaptativethreshold<<endl;
+                                                if (i == 0) 
+                                                        EP_PRINT_ERROR("FIRST sample is being above the threshold",-999);
                                                 /*if (i == 1998)
                                                 {
                                                     cout<<1997<<" "<<gsl_vector_get(adjustedDerivative,1997)<<endl;
@@ -2549,7 +2552,7 @@ int FindSecondaries
                                                                 } while ((exitLags == false) && (gsl_vector_get(*lagsgsl,*numberPulses-1) < 5));
                                                         }
                                                         //cout<<"lags: "<<gsl_vector_get(*lagsgsl,*numberPulses-1)<<endl;
-    
+                                                            
                                                         if (exitLags == false)
                                                         // If maximum of the dot product not found
                                                         {
@@ -2631,7 +2634,8 @@ int FindSecondaries
                                                                         }
                                                                         else
                                                                         {
-                                                                            gsl_vector_set(*samp1DERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-1)));
+                                                                                gsl_vector_set(*samp1DERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,gsl_vector_get(*tstartgsl,*numberPulses-
+1)));
                                                                         }
                                                                         
                                                                         gsl_vector_set(indexMin,indexM,indexMinNew);
@@ -3182,21 +3186,17 @@ int FindSecondariesSTC
         cout<<"1003 "<<gsl_vector_get(der,1003)<<endl;
         cout<<"1004 "<<gsl_vector_get(der,1004)<<endl;
         cout<<"1005 "<<gsl_vector_get(der,1005)<<endl;
-        cout<<"1006 "<<gsl_vector_get(der,1006)<<endl;
-        cout<<"1007 "<<gsl_vector_get(der,1007)<<endl;
-        cout<<"1008 "<<gsl_vector_get(der,1008)<<endl;
-        cout<<"1009 "<<gsl_vector_get(der,1009)<<endl;
-        cout<<"1010 "<<gsl_vector_get(der,1010)<<endl;
-        cout<<"1011 "<<gsl_vector_get(der,1011)<<endl;
-        cout<<"1012 "<<gsl_vector_get(der,1012)<<endl;
-        cout<<"1013 "<<gsl_vector_get(der,1013)<<endl;
-        cout<<"1014 "<<gsl_vector_get(der,1014)<<endl;
-        cout<<"1015 "<<gsl_vector_get(der,1015)<<endl;
-        cout<<"1016 "<<gsl_vector_get(der,1016)<<endl;
-        cout<<"1017 "<<gsl_vector_get(der,1017)<<endl;
-        cout<<"1018 "<<gsl_vector_get(der,1018)<<endl;
-        cout<<"1019 "<<gsl_vector_get(der,1019)<<endl;
-        cout<<"1020 "<<gsl_vector_get(der,1020)<<endl;*/
+        cout<<"...................................... "<<endl;
+        cout<<"1035 "<<gsl_vector_get(der,1035)<<endl;
+        cout<<"1036 "<<gsl_vector_get(der,1036)<<endl;
+        cout<<"1037 "<<gsl_vector_get(der,1037)<<endl;
+        cout<<"1038 "<<gsl_vector_get(der,1038)<<endl;
+        cout<<"1039 "<<gsl_vector_get(der,1039)<<endl;
+        cout<<"1040 "<<gsl_vector_get(der,1040)<<endl;
+        cout<<"1041 "<<gsl_vector_get(der,1041)<<endl;
+        cout<<"1042 "<<gsl_vector_get(der,1042)<<endl;
+        cout<<"1043 "<<gsl_vector_get(der,1043)<<endl;*/
+        
         
         	
 	//if (findTstarts == true)

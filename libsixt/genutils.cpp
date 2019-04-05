@@ -379,6 +379,7 @@ void exit_error(const char* const func, string msg, int status)
 	cout<<"Error in " <<string(func) << ": " << msg<<endl;
 	if (status > 10)  // CFITSIO Error
 	{
+                cout<<msg<<endl;
 		fits_report_error(stderr, status); // Print error report 
 		//exit( status );    		   // Terminate the program, returning error status 
 	}
@@ -403,6 +404,7 @@ void print_error(const char* const func, string message, int status)
 	}
 	else if (status > 10)  // CFITSIO Error
 	{
+                cout<<message<<endl;
 		fits_report_error(stderr, status); // print error report 
 	}
 	else if (status == -999)

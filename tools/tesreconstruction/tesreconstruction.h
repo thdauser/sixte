@@ -30,6 +30,9 @@
 #include "integraSIRENA.h"
 #include <gsl/gsl_vector.h>
 
+#include<stdio.h>
+#include<string.h>
+
 #define TOOLSUB tesreconstruction_main
 #include "headas_main.c"
 

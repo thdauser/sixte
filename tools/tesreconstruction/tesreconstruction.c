@@ -41,12 +41,82 @@ int tesreconstruction_main() {
     // Get program parameters.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
+    
+    // In order to have all the necessary keywords or info when working with xifusim simulated files
+    fitsfile* fptr = NULL;
+    fits_open_file(&fptr, par.RecordFile, READWRITE, &status);
+    int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
+    fits_get_num_hdus(fptr, &hdunum,&status);
+    int decimate_factor = -999;
+    double delta_t_key;
+    if (hdunum == 8)
+    {    
+        if (fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status))
+        {
+            CHECK_STATUS_BREAK(status);
+        }
+        long nettot_key;
+        fits_read_key(fptr,TLONG,"NETTOT", &nettot_key,NULL,&status);  // Read NETTOT keyword from "TESRECORDS" HDU
+        if (nettot_key == 0)
+        {
+            fits_movabs_hdu(fptr, 1, NULL, &status); // Move to "Primary" HDU
+            CHECK_STATUS_BREAK(status);
+            int numberkeywords;
+            char *headerPrimary;
+            fits_hdr2str(fptr, 0, NULL, 0,&headerPrimary, &numberkeywords, &status);   // Reading thee whole "Primary" HDU and store it in 'headerPrimary'
+            char * decimate_factor_pointer;
+            decimate_factor_pointer = strstr (headerPrimary,"decimate_factor=");    // Pointer to where the text "decimate_factor=" is
+            decimate_factor_pointer = decimate_factor_pointer + 16; // Pointer to the next character to "decimate_factor=" (which has 16 characters)   
+            char each_character_after_dcmt[125];		
+            snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
+            char characters_after_dcmt[125];
+            snprintf(characters_after_dcmt,125,"%c",*decimate_factor_pointer);
+            while (*decimate_factor_pointer != ' ')
+            {
+                decimate_factor_pointer = decimate_factor_pointer + 1;
+                snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
+                strcat(characters_after_dcmt,each_character_after_dcmt); 
+            }
+            
+            decimate_factor = atoi(characters_after_dcmt);
+            
+            long keyword_value;
+            long reclen_key;
+            fits_movnam_hdu(fptr, ANY_HDU,"TRIGGERPARAM", 0, &status);
+            fits_read_key(fptr,TLONG,"RECLEN", &reclen_key,NULL,&status);
+            
+            if (fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status))
+            {
+                CHECK_STATUS_BREAK(status);
+            }
+            
+            fits_write_key(fptr,TULONG,"TRIGGSZ",&reclen_key,NULL,&status);
+            
+            fits_read_key(fptr,TDOUBLE,"DELTA_T", &delta_t_key,NULL,&status);  // Read DELTA_T keyword from "TESRECORDS" HDU
+        
+            double keyvalue_double;
+            keyvalue_double = delta_t_key * decimate_factor;
+            fits_write_key(fptr,TDOUBLE,"DELTAT",&keyvalue_double,NULL,&status);
+            long naxis2_key;
+            fits_read_key(fptr,TLONG,"NAXIS2", &naxis2_key,NULL,&status);  // Read NAXIS2 keyword from "TESRECORDS" HDU
+            long nettot_key_long;
+            //nettot_key_long = naxis2_key*2;
+            nettot_key_long = naxis2_key*2;
+            fits_update_key(fptr,TLONG,"NETTOT", &nettot_key_long,NULL,&status);
+        }
+    }
+    fits_close_file(fptr,&status);
+    CHECK_STATUS_BREAK(status);
+    
     // Sixt standard keywords structure
     SixtStdKeywords* keywords = newSixtStdKeywords(&status);
     CHECK_STATUS_BREAK(status);
     // Open record file
     TesTriggerFile* record_file = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
     CHECK_STATUS_BREAK(status);
+    
+    if (decimate_factor != -999) record_file->delta_t = delta_t_key * decimate_factor;
+    
     //Open outfile
     TesEventFile * outfile = opennewTesEventFile(par.TesEventFile,
     		keywords,
@@ -104,7 +174,7 @@ int tesreconstruction_main() {
                 return(EXIT_FAILURE);
           }
 	  
-	  div = sf/sampling_rate;
+	  div = sf/sampling_rate;  // In order not to have different files with the grading info for different sampling rates
         
 	  reconstruct_init_sirena->grading->ngrades=det->pix->ngrades;
 	  //reconstruct_init_sirena->grading->value = gsl_vector_alloc(det->pix->ngrades);
@@ -140,7 +210,6 @@ int tesreconstruction_main() {
     while(getNextRecord(record_fileAux1,record,&status))
     {
         nrecord = nrecord + 1;
-        //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
         if(nrecord == record_file->nrows) lastRecord=1;
         
         //calculateAverageRecord(record,lastRecord,nrecord,&averageRecord,&status);

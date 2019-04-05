@@ -373,9 +373,6 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
     return;  // Ya no corre el resto de 'reconstructRecordSIRENA': 'runDetect', 'runEnergy'...
   }
 	
-	//cout<<"delta_t: "<<record->delta_t<<endl;
-	//log_trace("Before runDetect");
-        //cout<<"Before runDetect"<<endl;
 	// Detect pulses in record
         if (nRecord == 1)
         {
@@ -472,6 +469,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                                         EP_EXIT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",EPFAIL);
                                 }
                                 reconstruct_init->i2rdata->LFILTER = gsl_vector_get(vector,0);
+                                
                                 
                                 if (fits_movabs_hdu(reconstruct_init->record_file_fptr, hdunum, &hdutype, status))
                                 {

@@ -1327,7 +1327,7 @@ void th_runDetect(TesRecord* record,
 * - If it exists => Open it and set 'appendToLibrary' = true
 * - If it does not exist => Create it and set 'appendToLibrary' = false
 * 	- Write keyword 'EVENTCNT'=1 in the LIBRARY HDU
-* 	- Write info keywords about the running parameters in the Primary HDU
+* 	- Write the whole list of input parameters in "HISTORY" in the Primary HDU
 * 
 * Parameters:
 * - reconstruct_init: Member of 'ReconstructInitSIRENA' structure to initialize the reconstruction parameters (pointer and values)
@@ -1479,216 +1479,18 @@ int createLibrary(ReconstructInitSIRENA* reconstruct_init, bool *appendToLibrary
 			EP_PRINT_ERROR(message,status); return(EPFAIL);
 		}
 
-		strncpy(keyname,"PROC0",9);
+		strncpy(keyname,"PROC",9);
 		keyname[9]='\0';
-		const char * charproc= "PROC0 Starting parameter list";
-		strncpy(keyvalstr,charproc,999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
 
 		string strproc;
-		char comment[MAXMSG];
-				
-		sprintf(comment, "RecordFile = %s", reconstruct_init->record_file);
-		fits_write_comment(*inLibObject, comment, &status);
-		
-		sprintf(comment, "TesEventFile = %s", reconstruct_init->event_file);
-		fits_write_comment(*inLibObject, comment, &status);
-		
-		sprintf(comment, "LibraryFile = %s", reconstruct_init->library_file);
-		fits_write_comment(*inLibObject, comment, &status);
-		
-		sprintf(comment, "NoiseFile = %s", reconstruct_init->noise_file);
-		fits_write_comment(*inLibObject, comment, &status);
-
-		char str_opmode[125];		snprintf(str_opmode,125,"%d",reconstruct_init->opmode);
-		strproc = string("opmode = ") + string(str_opmode);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		strproc=string("FilterDomain = ") + reconstruct_init->FilterDomain;
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		strproc=string("FilterMethod = ") + reconstruct_init->FilterMethod;
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		strproc=string("EnergyMethod = ") + reconstruct_init->EnergyMethod;
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		char str_LagsOrNot[125];	snprintf(str_LagsOrNot,125,"%d",reconstruct_init->LagsOrNot);
-		strproc=string("LagsOrNot = ") + string(str_LagsOrNot);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-                
-                char str_nLags[125];	snprintf(str_nLags,125,"%d",reconstruct_init->nLags);
-		strproc=string("nLags = ") + string(str_nLags);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-                
-                char str_Parabola3OrFitting5[125];	snprintf(str_Parabola3OrFitting5,125,"%d",reconstruct_init->Fitting35);
-		strproc=string("Fitting35 = ") + string(str_Parabola3OrFitting5);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		char str_OFIter[125];		snprintf(str_OFIter,125,"%d",reconstruct_init->OFIter);
-		strproc=string("OFIter = ") + string(str_OFIter);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_OFLib[125];      	snprintf(str_OFLib,125,"%d",reconstruct_init->OFLib);
-		strproc=string("OFLib = ") + string(str_OFLib);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		strproc=string("OFInterp = ") + reconstruct_init->OFInterp;
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		strproc=string("OFStrategy = ") + reconstruct_init->OFStrategy;
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_OFLength[125];		snprintf(str_OFLength,125,"%d",reconstruct_init->OFLength);
-		strproc=string("OFLength = ") + string(str_OFLength);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_maxPulsesPerRecord[125];	snprintf(str_maxPulsesPerRecord,125,"%d",reconstruct_init->maxPulsesPerRecord);
-		strproc=string("maxPulsesPerRecord = ") + string(str_maxPulsesPerRecord);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		char str_pulse_length[125];	snprintf(str_pulse_length,125,"%d",inputPulseLength);
-		strproc=string("PulseLength = ") + string(str_pulse_length);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_scaleFactor[125];	snprintf(str_scaleFactor,125,"%f",reconstruct_init->scaleFactor);
-		strproc=string("scaleFactor = ") + string(str_scaleFactor);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		char str_samplesUp[125];	snprintf(str_samplesUp,125,"%f",reconstruct_init->samplesUp);
-		strproc=string("samplesUp = ") + string(str_samplesUp);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		char str_nSgms[125];	    	snprintf(str_nSgms,125,"%f",reconstruct_init->nSgms);
-		strproc=string("nSgms = ") + string(str_nSgms);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_LrsT[125];		snprintf(str_LrsT,125,"%e",reconstruct_init->LrsT);
-		strproc=string("LrsT = ") + string(str_LrsT);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_LbT[125];		snprintf(str_LbT,125,"%e",reconstruct_init->LbT);
-		strproc=string("LbT = ") + string(str_LbT);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		char str_monoenergy[125];	snprintf(str_monoenergy,125,"%f",reconstruct_init->monoenergy);
-		strproc=string("monoenergy = ") + string(str_monoenergy);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_hduPRECALWN[125];      snprintf(str_hduPRECALWN,125,"%d",reconstruct_init->hduPRECALWN);
-		strproc=string("hduPRECALWN = ") + string(str_hduPRECALWN);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_hduPRCLOFWM[125];      snprintf(str_hduPRCLOFWM,125,"%d",reconstruct_init->hduPRCLOFWM);
-		strproc=string("hduPRCLOFWM = ") + string(str_hduPRCLOFWM);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
 		
 		char str_largeFilter[125];	snprintf(str_largeFilter,125,"%d",reconstruct_init->largeFilter);
 		strproc=string("largeFilter = ") + string(str_largeFilter);
 		strncpy(keyvalstr,strproc.c_str(),999);
 		keyvalstr[999]='\0';
 		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-
-		char str_intermediate[125];     snprintf(str_intermediate,125,"%d",reconstruct_init->intermediate);
-		strproc=string("intermediate = ") + string(str_intermediate);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		sprintf(comment, "detectFile = %s", reconstruct_init->detectFile);
-		fits_write_comment(*inLibObject, comment, &status);
-		
-		sprintf(comment, "filterFile = %s", reconstruct_init->filterFile);
-		fits_write_comment(*inLibObject, comment, &status);
-		
-		char str_clobber[125];      	snprintf(str_clobber,125,"%d",reconstruct_init->clobber);
-		strproc=string("clobber = ") + string(str_clobber);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_SaturationValue[125];	snprintf(str_SaturationValue,125,"%e",reconstruct_init->SaturationValue);
-		strproc=string("SaturationValue = ") + string(str_SaturationValue);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_tstartPulse1[125];
-		if (reconstruct_init->tstartPulse1 == 0)			  	snprintf(str_tstartPulse1,125,"%d",reconstruct_init->tstartPulse1);
-		else if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") == 0)		snprintf(str_tstartPulse1,125,"%d",reconstruct_init->tstartPulse1+2);
-		else if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") != 0)		snprintf(str_tstartPulse1,125,"%d",reconstruct_init->tstartPulse1+1);
-		strproc=string("tstartPulse1 = ") + string(str_tstartPulse1);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_tstartPulse2[125];	
-		if (reconstruct_init->tstartPulse2 == 0)			  	snprintf(str_tstartPulse2,125,"%d",reconstruct_init->tstartPulse2);
-		else if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") == 0)		snprintf(str_tstartPulse2,125,"%d",reconstruct_init->tstartPulse2+2);
-		else if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") != 0)		snprintf(str_tstartPulse2,125,"%d",reconstruct_init->tstartPulse2+1);
-		strproc=string("tstartPulse2 = ") + string(str_tstartPulse2);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		char str_tstartPulse3[125];	
-		if (reconstruct_init->tstartPulse3 == 0)			  	snprintf(str_tstartPulse3,125,"%d",reconstruct_init->tstartPulse3);
-		else if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") == 0)		snprintf(str_tstartPulse3,125,"%d",reconstruct_init->tstartPulse3+2);
-		else if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") != 0)		snprintf(str_tstartPulse3,125,"%d",reconstruct_init->tstartPulse3+1);
-		strproc=string("tstartPulse3 = ") + string(str_tstartPulse3);
-		strncpy(keyvalstr,strproc.c_str(),999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
-		
-		charproc= "PROC0 Ending parameter list";
-		strncpy(keyvalstr,charproc,999);
-		keyvalstr[999]='\0';
-		fits_write_key(*inLibObject,TSTRING,keyname,keyvalstr,NULL,&status);
+	               
+                HDpar_stamp(*inLibObject, 0, &status);  // Write the whole list of input parameters in HISTORY
 		
 		if (status != 0)
 		{
@@ -2569,7 +2371,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
 		// 'energy' will be known after running 'runEnergy'
 		foundPulses->pulses_detected[i].quality = gsl_vector_get(qualitygsl,i);
                 foundPulses->pulses_detected[i].numLagsUsed = gsl_vector_get(lagsgsl,i);
-		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<", maxDER= "<<foundPulses->pulses_detected[i].maxDER<<" , samp1DER="<<gsl_vector_get(samp1DERgsl,i)<<", pulse_duration= "<<foundPulses->pulses_detected[i].pulse_duration<<",quality= "<<foundPulses->pulses_detected[i].quality<<" ,lags="<<gsl_vector_get(lagsgsl,i)<<endl;
+		//cout<<"Pulse "<<i<<" tstart="<<gsl_vector_get(tstartgsl,i)<<", maxDER= "<<foundPulses->pulses_detected[i].maxDER<<" , samp1DER="<<gsl_vector_get(samp1DERgsl,i)<<", pulse_duration= "<<foundPulses->pulses_detected[i].pulse_duration<<",quality= "<<foundPulses->pulses_detected[i].quality<<" ,lags="<<gsl_vector_get(lagsgsl,i)<<" , Tstart="<<foundPulses->pulses_detected[i].Tstart<<endl;
                 //log_debug("Pulse %d", i," tstart=%f",gsl_vector_get(tstartgsl,i), " maxDER=%f",foundPulses->pulses_detected[i].maxDER, " samp1DER=%f",gsl_vector_get(samp1DERgsl,i), " //pulse_duration=%d",foundPulses->pulses_detected[i].pulse_duration," quality=%d",foundPulses->pulses_detected[i].quality," lags=%f",gsl_vector_get(lagsgsl,i));
                 //log_debug("Pulse %i tstart=%f maxDER=%f samp1DER=%f pulse_duration=%i quality=%f lags=%f",i,gsl_vector_get(tstartgsl,i),foundPulses->pulses_detected[i].maxDER,gsl_vector_get(samp1DERgsl,i),foundPulses->pulses_detected[i].pulse_duration,foundPulses->pulses_detected[i].quality,gsl_vector_get(lagsgsl,i));
                 
@@ -10653,7 +10455,7 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
                                                 }
                                                     
                                                 //xmax = -b/(2*a);
-                                                cout<<"xmax= "<<xmax<<endl;
+                                                //cout<<"xmax= "<<xmax<<endl;
                                                 *tstartNewDev = xmax;
                                                 //cout<<"*tstartNewDev= "<<*tstartNewDev<<endl;
                                                 *calculatedEnergy = a*pow(xmax,2.0) + b*xmax +c;

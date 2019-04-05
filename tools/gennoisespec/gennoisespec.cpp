@@ -316,48 +316,79 @@ int main (int argc, char **argv)
         }*/
 
 	// Read and check input keywords
-	//strcpy(extname,"RECORDS");
 	if (fits_get_num_rows(infileObject,&eventcnt, &status))
 	{
 		message = "Cannot get number of rows in HDU " + string(extname);
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
-        
-        /*int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
-        int hdutype;
-        fits_get_hdu_num(infileObject, &hdunum);
-        fits_get_hdu_type(infileObject, &hdutype, &status);*/
 	
 	baseline = gsl_vector_alloc(eventcnt);
 	gsl_vector_set_all(baseline,-999.0);
 	sigma = gsl_vector_alloc(eventcnt);
 	gsl_vector_set_all(sigma,-999.0);
 	
-	strcpy(keyname,"TRIGGSZ");
-	if (fits_read_key(infileObject,TLONG,keyname, &eventsz,comment,&status))
-	{
-		message = "Cannot read keyword " + string(keyname) + " in input file";
-		EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
+        int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
+        fits_get_num_hdus(infileObject, &hdunum,&status);
+        if (hdunum == 8)    // Input files simulated with xifusim
+        {    
+                fits_movabs_hdu(infileObject, 1, NULL, &status); // Move to "Primary" HDU
+                int numberkeywords;
+                char *headerPrimary;
+                fits_hdr2str(infileObject, 0, NULL, 0,&headerPrimary, &numberkeywords, &status);   // Reading thee whole "Primary" HDU and store it in 'headerPrimary'
+                char * decimate_factor_pointer;
+                decimate_factor_pointer = strstr (headerPrimary,"decimate_factor=");    // Pointer to where the text "decimate_factor=" is
+                decimate_factor_pointer = decimate_factor_pointer + 16; // Pointer to the next character to "decimate_factor=" (which has 16 characters)   
+                char each_character_after_dcmt[125];		
+                snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
+                char characters_after_dcmt[125];
+                snprintf(characters_after_dcmt,125,"%c",*decimate_factor_pointer);
+                while (*decimate_factor_pointer != ' ')
+                {
+                    decimate_factor_pointer = decimate_factor_pointer + 1;
+                    snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
+                    strcat(characters_after_dcmt,each_character_after_dcmt); 
+                }
+                int decimate_factor = atoi(characters_after_dcmt);
+                
+                fits_movnam_hdu(infileObject, ANY_HDU,"TRIGGERPARAM", 0, &status);
+                fits_read_key(infileObject,TLONG,"RECLEN", &eventsz,NULL,&status);
+                
+                fits_movnam_hdu(infileObject, ANY_HDU,"TESRECORDS", 0, &status);
+                double delta_t_key;
+                fits_read_key(infileObject,TDOUBLE,"DELTA_T", &delta_t_key,NULL,&status);  // Read DELTA_T keyword from "TESRECORDS" HDU
+                samprate = 1/(delta_t_key * decimate_factor);
+        }
+        else    // Input files simulated with tessim
+        {
+                strcpy(keyname,"TRIGGSZ");
+                if (fits_read_key(infileObject,TLONG,keyname, &eventsz,comment,&status))
+                {
+                        message = "Cannot read keyword " + string(keyname) + " in input file";
+                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                }
+                
+                strcpy(keyname,"DELTAT");
+                if (fits_read_key(infileObject,TDOUBLE,keyname, &samprate,comment,&status))
+                {
+                        message = "Cannot read keyword " + string(keyname) + " in input file";
+                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                }
+                if (samprate <= 0)
+                {
+                        message = "Legal values for DELTAT (RECORDS) are real numbers greater than 0";
+                        writeLog(fileRef, "Error", verbosity, message);
+                        EP_EXIT_ERROR(message,EPFAIL);
+                }
+                samprate = 1/samprate;
+        }
+            
 	if (eventsz <= 0)
 	{
 		message = "Legal values for TRIGGSZ (RECORDS) are integer numbers greater than 0";
 		writeLog(fileRef, "Error", verbosity, message);
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
-	strcpy(keyname,"DELTAT");
-	if (fits_read_key(infileObject,TDOUBLE,keyname, &samprate,comment,&status))
-	{
-		message = "Cannot read keyword " + string(keyname) + " in input file";
-                EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
-	if (samprate <= 0)
-	{
-		message = "Legal values for DELTAT (RECORDS) are real numbers greater than 0";
-		writeLog(fileRef, "Error", verbosity, message);
-		EP_EXIT_ERROR(message,EPFAIL);
-	}
-	samprate = 1/samprate;
+	
 	ivcal=1.0;
 	asquid = 1.0;
 	/*strcpy(keyname,"MONOEN");
@@ -1499,8 +1530,10 @@ int createTPSreprFile ()
 		message = "Cannot move to HDU " + string(extname) + " in noise file " + string(gnoiseName);
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
+	 
+        HDpar_stamp(gnoiseObject, 0, &status);  // Write the wholw list of input parameters in HISTORY
 
-	strcpy(keyname,"HISTORY");
+	/*strcpy(keyname,"HISTORY");
 	const char * charhistory= "HISTORY Starting parameter list";
 	strcpy(keyvalstr,charhistory);
 	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
@@ -1638,7 +1671,7 @@ int createTPSreprFile ()
 	{
 		message = "Cannot write keyword " + string(keyname) + " in noise file " + string(gnoiseName);
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
+	}*/
 
 	return EPOK;
 }
