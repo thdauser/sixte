@@ -62,4 +62,4 @@ update:
   only:
     - tags
   except: 
-    - /^(?!master).+@/  # Ruby RegEx for anything not starting with 'master'
+    - /^?!master(.+@)/  # Ruby RegEx for anything not starting with 'master'
