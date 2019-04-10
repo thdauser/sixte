@@ -7168,10 +7168,21 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
 		// Filter
-		if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres))
+                if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                 {
-                    message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
-                    EP_EXIT_ERROR(message,EPFAIL);
+                    if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Ealpha_lowres, &Ebeta_lowres))
+                    {
+                        message = "Cannot run routine find_optimalfilter for filter interpolation";
+                        EP_EXIT_ERROR(message,EPFAIL);
+                    }
+                }
+                else
+                {
+                    if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres))
+                    {
+                        message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
+                        EP_EXIT_ERROR(message,EPFAIL);
+                    }
                 }
                 gsl_vector_set_all(optimalfilter_lowres,0);
                 if (TorF == 0)     gsl_vector_memcpy(optimalfilter_lowres,filtergsl_lowres);
@@ -7993,10 +8004,21 @@ void th_runEnergy(TesRecord* record,
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
 		// Filter
-		if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres))
+		if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                 {
-                    message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
-                    EP_EXIT_ERROR(message,EPFAIL);
+                    if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Ealpha_lowres, &Ebeta_lowres))
+                    {
+                        message = "Cannot run routine find_optimalfilter for filter interpolation";
+                        EP_EXIT_ERROR(message,EPFAIL);
+                    }
+                }
+                else
+                {
+                    if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres))
+                    {
+                        message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
+                        EP_EXIT_ERROR(message,EPFAIL);
+                    }
                 }
                 gsl_vector_set_all(optimalfilter_lowres,0);
                 if (TorF == 0)     gsl_vector_memcpy(optimalfilter_lowres,filtergsl_lowres);
@@ -10175,8 +10197,16 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
         string message = "";
 	char valERROR[256];
 
+        // To calculate Elowres (optimal filter length = 4 samples)
 	double LagsOrNot = reconstruct_init->LagsOrNot;
-        if (LowRes == 1)    LagsOrNot = 0;
+        char *OFNoise = reconstruct_init->OFNoise;
+        if (LowRes == 1)  
+        {
+            LagsOrNot = 0;
+            runEMethod = 0;  
+            strncpy(OFNoise,"NSD",4);
+        }
+        
         *tstartNewDev = 0;
     
         int numlags; // Different from numlags = nLags/2
@@ -10186,7 +10216,8 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
         
         double calculatedEnergy2 = 0.0;
 	
-        if ((vector->size <= numlags) && (runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"NSD") == 0))
+        //if ((vector->size <= numlags) && (runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"NSD") == 0))
+        if ((vector->size <= numlags) && (runEMethod == 0) && (strcmp(OFNoise,"NSD") == 0))
         {
                 *calculatedEnergy = -1.0;
         }
@@ -10198,7 +10229,8 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 	{*/
         else
         {
-		if ((runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"NSD") == 0))
+		//if ((runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"NSD") == 0))
+                if ((runEMethod == 0) && (strcmp(OFNoise,"NSD") == 0))
 		// OPTFILT	I2R or I2RALL or I2RNOL or I2RFITTED => OPTFILT
 		{
                         //cout<<"NSD"<<endl;
@@ -10754,7 +10786,8 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 			gsl_vector_free(lags_vector); lags_vector = 0;
 			gsl_vector_free(calculatedEnergy_vector); calculatedEnergy_vector = 0;
 		}
-		else if ((runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"WEIGHTM") == 0))
+		//else if ((runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"WEIGHTM") == 0))
+		else if ((runEMethod == 0) && (strcmp(OFNoise,"WEIGHTM") == 0))
 		{
 			gsl_vector *EB = gsl_vector_alloc(2);
 		

@@ -1354,7 +1354,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 			}
 		}
 	}
-	 	  
+
 	if (((opmode == 1) && ((strcmp(energy_method,"WEIGHTN") == 0) || (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0)
 		 || (strcmp(energy_method,"I2RNOL") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (strcmp(ofnoise,"NSD") == 0))))
 		 || ((opmode == 0) && (ntemplates >1)))  
@@ -1974,8 +1974,9 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 		gsl_matrix_free(matrixALL_PRCLOFWMx);
 	}
 
-	if ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0)                  || (strcmp(energy_method,"I2RNOL") == 0)
-	     || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(ofnoise,"NSD") == 0) && (oflib == 1))
+	//if ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RALL") == 0)                  || (strcmp(energy_method,"I2RNOL") == 0)
+	//     || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(ofnoise,"NSD") == 0) && (oflib == 1))
+	if ((opmode == 1) && (oflib == 1))
 	{ 
 	  	char str_length[125];
 		obj.iniRow = 1;

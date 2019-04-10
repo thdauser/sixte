@@ -3197,7 +3197,7 @@ int FindSecondariesSTC
         cout<<"1042 "<<gsl_vector_get(der,1042)<<endl;
         cout<<"1043 "<<gsl_vector_get(der,1043)<<endl;*/
         
-        
+        int nodetectSecondaries = 1;
         	
 	//if (findTstarts == true)
         // It is necessary to find the tstarts... 
@@ -3209,7 +3209,7 @@ int FindSecondariesSTC
 			foundPulse = false;
 			
 			// It looks for a pulse since the beginning (or the previous pulse) to the end of the record
-			while (i < szRw-1)
+			while ((i < szRw-1) && (nodetectSecondaries == 1))
 			{
 				if (foundPulse == false)
 				{
@@ -3262,6 +3262,7 @@ int FindSecondariesSTC
 							*numberPulses = *numberPulses +1;
 							foundPulse = true;
 							cntUp = 0;
+                                                        nodetectSecondaries = reconstruct_init->detectSP;
 						}
 						cntDown = 0;
 					}
