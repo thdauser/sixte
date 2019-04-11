@@ -144,11 +144,17 @@ EventFile* openNewEventFile(const char* const filename,
   fits_create_file(&fptr, buffer, status);
   CHECK_STATUS_RET(*status, NULL);
 
-  // Insert header keywords to 1st and 2nd HDU.
+  // Insert header keywords to 1st HDU
   sixt_add_fits_stdkeywords_obsolete(fptr, 1, telescop, instrume, filter,
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
   CHECK_STATUS_RET(*status, NULL);
+
+  fits_update_key(fptr, TSTRING, "HDUCLAS1", "EVENTS", "", status);
+  fits_update_key(fptr, TSTRING, "HDUCLASS", "OGIP", "", status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  // Insert header keywords to 2nd HDU.
   sixt_add_fits_stdkeywords_obsolete(fptr, 2, telescop, instrume, filter,
 			    ancrfile, respfile,
 			    mjdref, timezero, tstart, tstop, status);
