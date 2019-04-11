@@ -158,4 +158,16 @@ void getCurrentVelocity(const char* const filename, const Attitude* const ac,
 
 void convert_galLB2RAdec(double* world);
 
+/** Write an attitude to a FITS file */
+void write_attitude(Attitude* att, char* filename,
+                     double mjdref, int clobber, int* status);
+
+// calculate a lissajous pattern from time 0 to 1, with Amplitude ampl
+void lissajous_pattern(double ampl, double** t, double** x, double** y, int nt);
+
+// create an Attitude struct with a Lissajous pattern
+Attitude* get_default_attitude_lissajous(double ampl, double ra0, double dec0,
+		double tstart, double tstop, double mjdref, int* status);
+
+
 #endif /* ATTITUDE_H */

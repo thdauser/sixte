@@ -800,6 +800,7 @@ int fits_create_file_clobber(fitsfile **fptr, char *filename, int clobber, int *
       msg[MAXMSG-1]='\0';
       SIXT_ERROR(msg);
       *status=EXIT_FAILURE;
+      *fptr=NULL;
       CHECK_STATUS_RET(*status,0);
     }
   }

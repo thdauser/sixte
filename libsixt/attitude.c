@@ -563,3 +563,143 @@ void convert_galLB2RAdec(double* world){
 	world[1] =  asin( sin_d_ngp*sin_b + cos_d_ngp*cos_b*cos(l_ncp - l) )/M_PI*180.; // dec
 
 }
+
+// write an attitude to a FITS file
+void write_attitude(Attitude* att, char* filename,
+                     double mjdref,
+                     int clobber, int* status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  // open a FITS file
+  fitsfile *fptr;
+  fits_create_file_clobber(&fptr, filename, clobber, status);
+  CHECK_STATUS_VOID(*status);
+
+
+  // create an attitude extension
+  char *ttype[]={"TIME","RA","DEC","ROLLANG"};
+  char *tform[]={"1D","1D","1D","1D"};
+  char *tunit[]={"s","deg","deg","deg"};
+  long nrows = att->nentries;
+  fits_create_tbl(fptr, BINARY_TBL, nrows, 4,
+                  ttype, tform, tunit,
+                  "ATT", status);
+
+  // add header keywords
+  fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, NULL, status);
+  fits_update_key(fptr, TDOUBLE, "TSTART", &(att->tstart), NULL, status);
+  fits_update_key(fptr, TDOUBLE, "TSTOP", &(att->tstop), NULL, status);
+  char *align="NORTH";
+  fits_update_key(fptr, TSTRING, "ALIGNMEN", &align, NULL, status);
+  char *orig="ECAP";
+  fits_update_key(fptr, TDOUBLE, "ORIGIN", &orig, NULL, status);
+
+  // write the columns
+  // make empty arrays of time, ra, dec and angle
+  double* time = (double*) malloc(nrows * sizeof(double));
+  CHECK_MALLOC_VOID_STATUS(time, *status);
+  double* ra = (double*) malloc(nrows * sizeof(double));
+  CHECK_MALLOC_VOID_STATUS(ra, *status);
+  double* dec = (double*) malloc(nrows * sizeof(double));
+  CHECK_MALLOC_VOID_STATUS(dec, *status);
+  double* roll = (double*) malloc(nrows * sizeof(double));
+  CHECK_MALLOC_VOID_STATUS(roll, *status);
+
+  // loop over attitude entries
+  long ii;
+  for (ii=0; ii<nrows; ii++) {
+    AttitudeEntry entry = att->entry[ii];
+    // time and rollis just copied
+    time[ii] = entry.time;
+    roll[ii] = entry.roll_angle;
+
+    // ra and dec are calculated from nz and nx;
+    calculate_ra_dec(entry.nz, &ra[ii], &dec[ii]);
+    ra[ii] *= 180./M_PI;
+    dec[ii] *= 180./M_PI;
+  }
+
+  // dump into the file
+  fits_write_col(fptr, TDOUBLE, 1, 1, 1, nrows, time, status);
+  fits_write_col(fptr, TDOUBLE, 2, 1, 1, nrows, ra, status);
+  fits_write_col(fptr, TDOUBLE, 3, 1, 1, nrows, dec, status);
+  fits_write_col(fptr, TDOUBLE, 4, 1, 1, nrows, roll, status);
+
+  // free memory
+  free(time);
+  free(ra);
+  free(dec);
+  free(roll);
+
+  fits_close_file(fptr, status);
+
+  // check for FITS errors
+  if (*status!=EXIT_SUCCESS) {
+    char fits_err_msg[80];
+    fits_get_errstatus(*status, fits_err_msg);
+    SIXT_ERROR(fits_err_msg);
+    fits_clear_errmark();
+  }
+}
+
+// calculate a lissajous pattern from time 0 to 1, with Amplitude ampl
+void lissajous_pattern(double ampl, double** t, double** x, double** y, int nt){
+
+	  double afrac  = 3.0/4.;
+	  double bfrac  = 4.0/4.;
+
+	  double offset = M_PI/4.;
+
+	  for (int ii=0; ii<nt; ii++){
+		   (*t)[ii] = (1.0*ii) / (nt-1.0) ; //[0:1.0:#1000];
+		   (*x)[ii] = sin(afrac*(*t)[ii]*2*M_PI*4+offset)*ampl;
+		   (*y)[ii] = sin(bfrac*(*t)[ii]*2*M_PI*4)*ampl;
+	  }
+
+}
+
+// ampl given in [arcsec]
+Attitude* get_default_attitude_lissajous(double ampl, double ra0, double dec0,
+		double tstart, double tstop, double mjdref, int* status){
+
+	int nentries = 1000;  // for this setup 1000 points make a smooth curve
+
+	// initialize the attitude file
+	Attitude* ac = getAttitude(status);
+    CHECK_MALLOC_RET_NULL(ac);
+
+    ac->nentries = nentries;
+	ac->mjdref = mjdref;
+	ac->tstart = tstart;
+	ac->tstop  = tstop;
+
+    // Allocate memory for the entries in the catalog.
+    ac->entry=(AttitudeEntry*)malloc(nentries*sizeof(AttitudeEntry));
+    CHECK_MALLOC_RET_NULL(ac->entry);
+
+    double* t = (double*) malloc(sizeof(double)*nentries);
+    double* ra = (double*) malloc(sizeof(double)*nentries);
+    double* dec = (double*) malloc(sizeof(double)*nentries);
+
+    CHECK_MALLOC_RET_NULL_STATUS(t,*status);
+    CHECK_MALLOC_RET_NULL_STATUS(ra,*status);
+    CHECK_MALLOC_RET_NULL_STATUS(dec,*status);
+
+    lissajous_pattern(ampl, &t, &ra, &dec, nentries);
+
+    for (int ii=0; ii<nentries; ii++){
+    	ac->entry[ii] = initializeAttitudeEntry ();
+
+        ac->entry[ii].time = (tstop-tstart)*t[ii];
+        ac->entry[ii].time += tstart;
+
+        ac->entry[ii].nz = unit_vector(M_PI/180.*(ra[ii]+ra0), M_PI/180.*(dec[ii]+dec0));
+    }
+
+    free(t);
+    free(ra);
+    free(dec);
+
+    return ac;
+}
