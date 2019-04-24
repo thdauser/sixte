@@ -66,6 +66,10 @@ int tesreconstruction_main() {
             fits_hdr2str(fptr, 0, NULL, 0,&headerPrimary, &numberkeywords, &status);   // Reading thee whole "Primary" HDU and store it in 'headerPrimary'
             char * decimate_factor_pointer;
             decimate_factor_pointer = strstr (headerPrimary,"decimate_factor=");    // Pointer to where the text "decimate_factor=" is
+	    if(!decimate_factor_pointer){
+		SIXT_ERROR("Header of input file does not have the required HISTORY");
+		return(EXIT_FAILURE);
+	    }
             decimate_factor_pointer = decimate_factor_pointer + 16; // Pointer to the next character to "decimate_factor=" (which has 16 characters)   
             char each_character_after_dcmt[125];		
             snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
