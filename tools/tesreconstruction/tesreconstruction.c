@@ -28,171 +28,189 @@ int tesreconstruction_main() {
   
   // Error status.
   int status=EXIT_SUCCESS;
-  
-  double sampling_rate = -999.0;
 
   // Register HEATOOL:
   set_toolname("tesreconstruction");
   set_toolversion("0.05");
-
+  
   do { // Beginning of the ERROR handling loop (will at
        // most be run once).
     headas_chat(3, "initialize ...\n");
     // Get program parameters.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
-    
-    // In order to have all the necessary keywords or info when working with xifusim simulated files
+
+    // Read XML info
+    //--------------
+    AdvDet *det = newAdvDet(&status);
+    CHECK_STATUS_BREAK(status);
+    det = loadAdvDet(par.XMLFile, &status);
+    CHECK_STATUS_BREAK(status);
+    // Read the sampling rate from XML file
+    int sf = -999.; 
+    int div = 1;
+    sf = det->SampleFreq;
+
+    // Check input file header is complete to work with xifusim/tessim simulated files
+    // -------------------------------------------------------------------------------
     fitsfile* fptr = NULL;
     fits_open_file(&fptr, par.RecordFile, READWRITE, &status);
-    int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
+    CHECK_STATUS_BREAK(status);
+    int hdunum; // Number of HDUs (RECORDS-file or TESRECORDS-file)
     fits_get_num_hdus(fptr, &hdunum,&status);
-    int decimate_factor = -999;
-    double delta_t_key;
-    if (hdunum == 8)
-    {    
-        if (fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status))
-        {
-            CHECK_STATUS_BREAK(status);
-        }
+    //int decimate_factor = -999;
+    //double sampling_rate = -999.0;
+
+    if (hdunum == 8) //xifusim simulated file (with TESRECORDS)
+      {    
+        fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status);
+        CHECK_STATUS_BREAK(status);
+        
+	// Read NETTOT keyword from "TESRECORDS" HDU
+	// (used to check detection)
         long nettot_key;
-        fits_read_key(fptr,TLONG,"NETTOT", &nettot_key,NULL,&status);  // Read NETTOT keyword from "TESRECORDS" HDU
+        fits_read_key(fptr,TLONG,"NETTOT", &nettot_key,NULL,&status);  
         if (nettot_key == 0)
-        {
-            fits_movabs_hdu(fptr, 1, NULL, &status); // Move to "Primary" HDU
+	  {
+	    // Move to "Primary" HDU to obtain SAMPLING_RATE
+            fits_movabs_hdu(fptr, 1, NULL, &status); 
             CHECK_STATUS_BREAK(status);
-            int numberkeywords;
+            // and read full Primary HDU and store it in 'headerPrimary'
+	    int numberkeywords;
             char *headerPrimary;
-            fits_hdr2str(fptr, 0, NULL, 0,&headerPrimary, &numberkeywords, &status);   // Reading thee whole "Primary" HDU and store it in 'headerPrimary'
-            char * decimate_factor_pointer;
-            decimate_factor_pointer = strstr (headerPrimary,"decimate_factor=");    // Pointer to where the text "decimate_factor=" is
-	    if(!decimate_factor_pointer){
-		SIXT_ERROR("Header of input file does not have the required HISTORY");
-		return(EXIT_FAILURE);
-	    }
-            decimate_factor_pointer = decimate_factor_pointer + 16; // Pointer to the next character to "decimate_factor=" (which has 16 characters)   
-            char each_character_after_dcmt[125];		
-            snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
-            char characters_after_dcmt[125];
-            snprintf(characters_after_dcmt,125,"%c",*decimate_factor_pointer);
-            while (*decimate_factor_pointer != ' ')
-            {
-                decimate_factor_pointer = decimate_factor_pointer + 1;
-                snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
-                strcat(characters_after_dcmt,each_character_after_dcmt); 
+            fits_hdr2str(fptr, 0, NULL, 0,&headerPrimary, &numberkeywords, &status); 
+	    CHECK_STATUS_BREAK(status);
+
+	    // Pointer to where the text "sample_rate=" is in HISTORY block
+	    double sampling_rate = -999.0;
+	    char * sample_rate_pointer;
+            sample_rate_pointer = strstr (headerPrimary,"sample_rate=");    
+	    if(!sample_rate_pointer){
+	      // read it from xml file
+	      sampling_rate = sf;
+	    }else{
+	      // Pointer to the next character to "sample_rate=" (12 characters)   
+	      sample_rate_pointer = sample_rate_pointer + 12; 
+	      char each_character_after_srate[125];		
+	      snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
+
+	      char characters_after_srate[125];
+	      snprintf(characters_after_srate,125,"%c",*sample_rate_pointer);
+
+	      while (*sample_rate_pointer != ' ')
+		{
+		  sample_rate_pointer = sample_rate_pointer + 1;
+		  snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
+		  strcat(characters_after_srate,each_character_after_srate); 
+		}
+
+	      sampling_rate = atof(characters_after_srate)-1;
             }
-            
-            decimate_factor = atoi(characters_after_dcmt);
-            
-            long keyword_value;
+
+	    // Get RECORD LENGTH from TRIGGERPARAM
+	    //long keyword_value;
             long reclen_key;
             fits_movnam_hdu(fptr, ANY_HDU,"TRIGGERPARAM", 0, &status);
+	    CHECK_STATUS_BREAK(status);
             fits_read_key(fptr,TLONG,"RECLEN", &reclen_key,NULL,&status);
-            
-            if (fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status))
-            {
-                CHECK_STATUS_BREAK(status);
-            }
-            
-            fits_write_key(fptr,TULONG,"TRIGGSZ",&reclen_key,NULL,&status);
-            
-            fits_read_key(fptr,TDOUBLE,"DELTA_T", &delta_t_key,NULL,&status);  // Read DELTA_T keyword from "TESRECORDS" HDU
-        
-            double keyvalue_double;
-            keyvalue_double = delta_t_key * decimate_factor;
-            fits_write_key(fptr,TDOUBLE,"DELTAT",&keyvalue_double,NULL,&status);
+
+	    // Write missing/required keys to TESRECORDS
+            fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status);
+            CHECK_STATUS_BREAK(status);
+
+	    // Read DELTA_T keyword from "TESRECORDS" HDU
+	    double delta_t_key;            
+            fits_read_key(fptr,TDOUBLE,"DELTA_T", &delta_t_key,NULL,&status);  
+	    // Read NAXIS2 keyword from "TESRECORDS" HDU
             long naxis2_key;
-            fits_read_key(fptr,TLONG,"NAXIS2", &naxis2_key,NULL,&status);  // Read NAXIS2 keyword from "TESRECORDS" HDU
-            long nettot_key_long;
-            //nettot_key_long = naxis2_key*2;
+            fits_read_key(fptr,TLONG,"NAXIS2", &naxis2_key,NULL,&status);  
+	    long nettot_key_long;
             nettot_key_long = naxis2_key*2;
+	    // Write TRIGGSZ, DELTAT & NETTOT keywords in "TESRECORDS" HDU
+            fits_write_key(fptr,TULONG,"TRIGGSZ",&reclen_key,NULL,&status);
+            double keyvalue_double;
+            //keyvalue_double = delta_t_key * decimate_factor;
+	    keyvalue_double = 1./sampling_rate;
+	    fits_write_key(fptr,TDOUBLE,"DELTAT",&keyvalue_double,NULL,&status);
             fits_update_key(fptr,TLONG,"NETTOT", &nettot_key_long,NULL,&status);
         }
-    }
+    } //if hdunum==8 (xifusim file)
     fits_close_file(fptr,&status);
     CHECK_STATUS_BREAK(status);
-    
+
+        
     // Sixt standard keywords structure
+    //----------------------------------
     SixtStdKeywords* keywords = newSixtStdKeywords(&status);
     CHECK_STATUS_BREAK(status);
     // Open record file
+    // ----------------
     TesTriggerFile* record_file = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
     CHECK_STATUS_BREAK(status);
-    
-    if (decimate_factor != -999) record_file->delta_t = delta_t_key * decimate_factor;
-    
+
     //Open outfile
+    //------------
     TesEventFile * outfile = opennewTesEventFile(par.TesEventFile,
     		keywords,
     		par.clobber,
     		&status);
     CHECK_STATUS_BREAK(status);
     // Initialize PP data structures needed for pulse filtering
+    //---------------------------------------------------------
     ReconstructInit* reconstruct_init = newReconstructInit(&status);
     CHECK_STATUS_BREAK(status);
     
     // Initialize SIRENA data structures needed for pulse filtering
+    //-------------------------------------------------------------
     ReconstructInitSIRENA* reconstruct_init_sirena = newReconstructInitSIRENA(&status);
     CHECK_STATUS_BREAK(status);
     PulsesCollection* pulsesAll = newPulsesCollection(&status);
     CHECK_STATUS_BREAK(status);  
     OptimalFilterSIRENA* optimalFilter = newOptimalFilterSIRENA(&status);
     CHECK_STATUS_BREAK(status);// define a second structure for calibration
-    int sf = 156250;
-    int div = 1;
+
     if(!strcmp(par.Rcmethod,"PP")){
 	  initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
     		par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
     		par.DerivateExclusion,par.SaturationValue,&status);
     }else{
-	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, par.LibraryFile, par.TesEventFile, 
-		par.PulseLength, par.scaleFactor, par.samplesUp, par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, par.LbT, par.NoiseFile, 
-		par.FilterDomain, par.FilterMethod, par.EnergyMethod, par.filtEev, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength,
-		par.monoenergy, par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, par.filterFile, par.clobber, par.EventListSize, par.SaturationValue,
-		par.tstartPulse1, par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
-          // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
-	  reconstruct_init_sirena->grading = NULL;
-	  reconstruct_init_sirena->grading = (Grading*)malloc(sizeof(Grading));
-	  
-	  reconstruct_init_sirena->grading->ngrades = 0;
-	  reconstruct_init_sirena->grading->value  = NULL;
-	  reconstruct_init_sirena->grading->gradeData = NULL;
-          
-	  AdvDet *det = newAdvDet(&status);
-	  CHECK_STATUS_BREAK(status);
-	  det = loadAdvDet(par.XMLFile, &status);
-	  CHECK_STATUS_BREAK(status);
-	  if (det->pix->grades == NULL)
-	  {
-		SIXT_ERROR("The provided XMLFile does not have the grading info");
-		return(EXIT_FAILURE);
-  	  }
-  	  
-  	  // Read the sampling rate
-  	  sampling_rate = det->SampleFreq;
-          
-          // Checking the sampling rate of the .xml file and the sampling rate from the input FITS file
-          if (sampling_rate != 1/record_file->delta_t)
-          {
-                SIXT_ERROR("Sampling rate from the XML file and the FITS file do not match");
-                return(EXIT_FAILURE);
-          }
-	  
-	  div = sf/sampling_rate;  // In order not to have different files with the grading info for different sampling rates
-        
-	  reconstruct_init_sirena->grading->ngrades=det->pix->ngrades;
-	  //reconstruct_init_sirena->grading->value = gsl_vector_alloc(det->pix->ngrades);
-	  reconstruct_init_sirena->grading->gradeData = gsl_matrix_alloc(det->pix->ngrades,2);
-	  for (int i=0;i<det->pix->ngrades;i++)
-	  {
-	      //gsl_vector_set(reconstruct_init_sirena->grading->value,i,det->pix->(int) (grades[i].value/div));
-	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,(int) (det->pix->grades[i].gradelim_pre)/div);
-	      gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,(int) (det->pix->grades[i].gradelim_post)/div);
-	  }
-	  destroyAdvDet(&det);
+	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, 
+		par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
+		par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
+                par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
+                par.filtEev, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
+                par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength, par.monoenergy, 
+                par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, 
+                par.filterFile, par.clobber, par.EventListSize, par.SaturationValue, par.tstartPulse1, 
+                par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
     }  
     CHECK_STATUS_BREAK(status);
 
+    // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
+    reconstruct_init_sirena->grading = NULL;
+    reconstruct_init_sirena->grading = (Grading*)malloc(sizeof(Grading));
+ 
+    reconstruct_init_sirena->grading->ngrades = 0;
+    reconstruct_init_sirena->grading->value  = NULL;
+    reconstruct_init_sirena->grading->gradeData = NULL;
+    
+    if (det->pix->grades == NULL)
+      {
+	SIXT_ERROR("The provided XMLFile does not have the grading info");
+	return(EXIT_FAILURE);
+      }
+    div = sf/(1/record_file->delta_t);  // Grading info is unique in XML file -> adjust for different sf
+    reconstruct_init_sirena->grading->ngrades=det->pix->ngrades;
+    //reconstruct_init_sirena->grading->value = gsl_vector_alloc(det->pix->ngrades);
+    reconstruct_init_sirena->grading->gradeData = gsl_matrix_alloc(det->pix->ngrades,2);
+    for (int i=0;i<det->pix->ngrades;i++)
+      {
+	//gsl_vector_set(reconstruct_init_sirena->grading->value,i,det->pix->(int) (grades[i].value/div));
+	gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,(int) (det->pix->grades[i].gradelim_pre)/div);
+	gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,(int) (det->pix->grades[i].gradelim_post)/div);
+      }
+    destroyAdvDet(&det);
+    
     // Build up TesRecord to read the file
     TesRecord* record = newTesRecord(&status);
     allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
@@ -261,12 +279,13 @@ int tesreconstruction_main() {
 	    	status=1;
 	        CHECK_STATUS_BREAK(status);
 	    }*/
-	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) || (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
+	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) 
+		|| (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
 	    {
 	    	strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
 	    }
 	
-            //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
+            printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
 	    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
 				    lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
       }
@@ -274,7 +293,8 @@ int tesreconstruction_main() {
 
       if ((strcmp(par.EnergyMethod,"PCA") != 0) || ((strcmp(par.EnergyMethod,"PCA") == 0) && lastRecord == 1))
       {
-        // In THREADING mode, saveEventListToFile is not called until finishing with calculus (ordering is necessary previously)  
+        // In THREADING mode, saveEventListToFile is not called until finishing with calculus 
+	// (ordering is necessary previously)  
         if(!is_threading()){    
           //printf("\n %p - %f", outfile, record_file->delta_t);
           //printf("\nRecord single");
@@ -298,17 +318,18 @@ int tesreconstruction_main() {
       }
     }
     
-    if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0))  printf("%s","WARNING: no pulses have been detected\n");
+    if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0)) \
+      printf("%s","WARNING: no pulses have been detected\n");
     
     // Copy trigger keywords to event file
     copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
     CHECK_STATUS_BREAK(status);
     
     // Messages providing info of some columns
-    char keyword[9];
+    //char keyword[9];
     char keywordvalue[9];
     char comment[MAXMSG];
-    int keywordvalueint;
+    //int keywordvalueint;
     
     fits_movnam_hdu(outfile->fptr, ANY_HDU,"EVENTS", 0, &status);
     CHECK_STATUS_BREAK(status);
