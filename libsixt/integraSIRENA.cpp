@@ -1172,6 +1172,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 	
 	// It is not necessary to check the allocation because 'ntemplates' and 'template_duration' have been checked previously
 	gsl_matrix *matrixAux_PULSE = gsl_matrix_alloc(ntemplates,template_duration);
+        //cout<<"matrixAux_PULSE: "<<matrixAux_PULSE->size1<<" "<<matrixAux_PULSE->size2<<endl;
 	strcpy(obj.nameCol,"PULSE");
 	if (readFitsComplex (obj,&matrixAux_PULSE))
 	{
@@ -1916,7 +1917,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 			gsl_matrix *matrixAux_PRCLOFWMx = NULL;
 			index = 0;
 			strcpy(obj.nameTable,"PRCLOFWM");
-			for (int i=0;i<nOFs;i++)
+                        for (int i=0;i<nOFs;i++)
 			{
                                 if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
 				{
@@ -2350,6 +2351,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 		}
 		library_collection->nfixedfilters = nOFs;
 		
+                cout<<"nOFs: " <<nOFs<<endl;
+                cout<<"ncols: " <<ncols<<endl;
 		int lengthALL_PRCLOFWM = 0;
 		for (int i=0;i<nOFs;i++)
 		{
@@ -2385,6 +2388,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 				snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
 				matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
 			}
+			cout<<"size2: "<<pow(2,floor(log2(template_duration))-i+1)*2<<endl;
 						  
 			strcpy(obj.nameCol,(string("OFW")+string(str_length)).c_str());
 			if (readFitsComplex (obj,&matrixAux_PRCLOFWMx))
@@ -2411,6 +2415,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 			gsl_matrix_free(matrixAux_PRCLOFWMx);
 		}
 		
+		cout<<"ntemplates: "<<ntemplates<<endl;
+                cout<<"lengthALL_PRCLOFWM: "<<lengthALL_PRCLOFWM<<endl;
 		library_collection->PRCLOFWM = gsl_matrix_alloc(ntemplates, lengthALL_PRCLOFWM);
 		gsl_matrix_memcpy(library_collection->PRCLOFWM,matrixALL_PRCLOFWMx);
 		gsl_matrix_free(matrixALL_PRCLOFWMx);

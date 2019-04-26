@@ -150,7 +150,7 @@ int main (int argc, char **argv)
                 if (status != 0)
                 {
                         status = 0;
-                        
+                        cout<<"en TESRECORDS structure"<<endl;
                         strcpy(extname,"ADCPARAM");
                         if (fits_movnam_hdu(infileObject,ANY_HDU,extname, 0, &status))
                         {
@@ -237,6 +237,7 @@ int main (int argc, char **argv)
                         delete [] obj.nameTable;
                         delete [] obj.nameCol;
                         delete [] obj.unit;
+			cout<<"fuera TESRECORDS"<<endl;
                 }
                 else
                 {
@@ -326,7 +327,8 @@ int main (int argc, char **argv)
 	gsl_vector_set_all(baseline,-999.0);
 	sigma = gsl_vector_alloc(eventcnt);
 	gsl_vector_set_all(sigma,-999.0);
-	
+
+	double samprate = 156250.; //default xifusim value
         int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
         fits_get_num_hdus(infileObject, &hdunum,&status);
         if (hdunum == 8)    // Input files simulated with xifusim
@@ -335,28 +337,28 @@ int main (int argc, char **argv)
                 int numberkeywords;
                 char *headerPrimary;
                 fits_hdr2str(infileObject, 0, NULL, 0,&headerPrimary, &numberkeywords, &status);   // Reading thee whole "Primary" HDU and store it in 'headerPrimary'
-                char * decimate_factor_pointer;
-                decimate_factor_pointer = strstr (headerPrimary,"decimate_factor=");    // Pointer to where the text "decimate_factor=" is
-                decimate_factor_pointer = decimate_factor_pointer + 16; // Pointer to the next character to "decimate_factor=" (which has 16 characters)   
-                char each_character_after_dcmt[125];		
-                snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
-                char characters_after_dcmt[125];
-                snprintf(characters_after_dcmt,125,"%c",*decimate_factor_pointer);
-                while (*decimate_factor_pointer != ' ')
-                {
-                    decimate_factor_pointer = decimate_factor_pointer + 1;
-                    snprintf(each_character_after_dcmt,125,"%c",*decimate_factor_pointer);
-                    strcat(characters_after_dcmt,each_character_after_dcmt); 
-                }
-                int decimate_factor = atoi(characters_after_dcmt);
+                char * sample_rate_pointer;
+                sample_rate_pointer = strstr (headerPrimary,"sample_rate=");    // Pointer to where the text "sample_rate=" is
+		if(sample_rate_pointer){
+		  sample_rate_pointer = sample_rate_pointer + 12; // Pointer to the next character to "sample_rate=" (which has 12 characters)   
+		  char each_character_after_srate[125];		
+		  snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
+		  char characters_after_srate[125];
+		  snprintf(characters_after_srate,125,"%c",*sample_rate_pointer);
+		  while (*sample_rate_pointer != ' ')
+		    {
+		      sample_rate_pointer = sample_rate_pointer + 1;
+		      snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
+		      strcat(characters_after_srate,each_character_after_srate); 
+		    }
+		  samprate = atof(characters_after_srate);
+		}
                 
                 fits_movnam_hdu(infileObject, ANY_HDU,"TRIGGERPARAM", 0, &status);
                 fits_read_key(infileObject,TLONG,"RECLEN", &eventsz,NULL,&status);
-                
-                fits_movnam_hdu(infileObject, ANY_HDU,"TESRECORDS", 0, &status);
-                double delta_t_key;
-                fits_read_key(infileObject,TDOUBLE,"DELTA_T", &delta_t_key,NULL,&status);  // Read DELTA_T keyword from "TESRECORDS" HDU
-                samprate = 1/(delta_t_key * decimate_factor);
+                status = 0;
+		strcpy(extname,"TESRECORDS");
+		fits_movnam_hdu(infileObject, ANY_HDU,extname, extver, &status);
         }
         else    // Input files simulated with tessim
         {
@@ -551,19 +553,34 @@ int main (int argc, char **argv)
                                 
                                 tempm = gsl_matrix_submatrix(noiseIntervals,0,0,nintervals,gsl_vector_get(weightpoints,i));
                                 gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
-                                weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
-                        
-                                for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
-                                {
+                                //weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
+
+				if (matrixSize == 0){ //do all sizes
+				    weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
+				    for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
+				    {
                                         for (int k=0;k<gsl_vector_get(weightpoints,i);k++)
-                                        {
-                                                gsl_matrix_set(weightMatrixes,i,j*gsl_vector_get(weightpoints,i)+k,gsl_matrix_get(weightMatrix,j,k));
-                                        }
-                                }
-                                
-                                gsl_matrix_free(noiseIntervals_weightPoints);
-                                gsl_matrix_free(weightMatrix);
-                        }
+					{
+					    gsl_matrix_set(weightMatrixes,i,j*gsl_vector_get(weightpoints,i)+k,gsl_matrix_get(weightMatrix,j,k));
+					}
+				    }
+				    gsl_matrix_free(noiseIntervals_weightPoints);
+				    gsl_matrix_free(weightMatrix);
+
+				}else if (gsl_vector_get(weightpoints,i) == matrixSize){ // do only input param size
+				    weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
+				    for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
+				    {
+                                        for (int k=0;k<gsl_vector_get(weightpoints,i);k++)
+					{
+					    gsl_matrix_set(weightMatrixes,i,j*gsl_vector_get(weightpoints,i)+k,gsl_matrix_get(weightMatrix,j,k));
+					}
+				    }
+				    gsl_matrix_free(noiseIntervals_weightPoints);
+				    gsl_matrix_free(weightMatrix);
+				    break;
+				} // different matrix sizes ?
+                        } // foreach matrix size
                 }
                 else
                 {
@@ -726,7 +743,7 @@ int initModule(int argc, char **argv)
 
 	// Define GENNOISESPEC input parameters and assign values to variables
 	// Parameter definition and assignation of default values
-	const int npars = 16, npars1 = 17;
+	const int npars = 17, npars1 = 18;
 	inparam gennoisespecPars[npars];
 	int optidx =0, par=0, fst=0, ipar;
 	string message="";
@@ -765,7 +782,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[4].defValInt = 1000;
 	gennoisespecPars[4].type = "int";
 	gennoisespecPars[4].minValInt = 1;
-	gennoisespecPars[4].maxValInt = 210000;
+	gennoisespecPars[4].maxValInt = 300000;
 	gennoisespecPars[4].ValInt = gennoisespecPars[4].defValInt;
 
 	gennoisespecPars[5].name = "scaleFactor";
@@ -848,6 +865,15 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[15].defValStr = "no";
 	gennoisespecPars[15].type = "char";
 	gennoisespecPars[15].ValStr = gennoisespecPars[15].defValStr;
+
+	gennoisespecPars[16].name = "matrixSize";
+	gennoisespecPars[16].description = "Size of noise matrix if only one to be created";
+	gennoisespecPars[16].defValInt = 0;
+	gennoisespecPars[16].type = "int";
+	gennoisespecPars[16].minValInt = 2;
+	gennoisespecPars[16].maxValInt = 8192;
+	gennoisespecPars[16].ValInt = gennoisespecPars[16].defValInt;
+
 	
 	// Define structure for command line options
 	static struct option long_options[npars1];
@@ -988,6 +1014,10 @@ int initModule(int argc, char **argv)
 		else if(gennoisespecPars[i].name == "verbosity")
 		{
 			verbosity = gennoisespecPars[i].ValInt;
+		}
+		else if(gennoisespecPars[i].name == "matrixSize")
+		{
+			matrixSize = gennoisespecPars[i].ValInt;
 		}
 		else if (gennoisespecPars[i].name == "clobber")
 		{

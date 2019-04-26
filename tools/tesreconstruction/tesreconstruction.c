@@ -39,7 +39,7 @@ int tesreconstruction_main() {
     // Get program parameters.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
-
+    
     // Read XML info
     //--------------
     AdvDet *det = newAdvDet(&status);
@@ -50,111 +50,119 @@ int tesreconstruction_main() {
     int sf = -999.; 
     int div = 1;
     sf = det->SampleFreq;
-
+    
     // Check input file header is complete to work with xifusim/tessim simulated files
     // -------------------------------------------------------------------------------
     fitsfile* fptr = NULL;
-    fits_open_file(&fptr, par.RecordFile, READWRITE, &status);
+    if (strncmp(strndup(par.RecordFile+strlen(par.RecordFile)-5, 5),".fits",5) != 0)
+    {
+            FILE *filetxt = fopen(par.RecordFile, "r");
+            char filefits[256];
+            fgets(filefits, 256, filetxt);
+            strtok(filefits, "\n");     // To delete '/n' from filefits (if not, 'fits_open_file' can not open the file)
+            fits_open_file(&fptr, filefits, READWRITE, &status);
+            fclose(filetxt);
+    }
+    else
+            fits_open_file(&fptr, par.RecordFile, READWRITE, &status);
     CHECK_STATUS_BREAK(status);
     int hdunum; // Number of HDUs (RECORDS-file or TESRECORDS-file)
     fits_get_num_hdus(fptr, &hdunum,&status);
-    //int decimate_factor = -999;
-    //double sampling_rate = -999.0;
-
+    
     if (hdunum == 8) //xifusim simulated file (with TESRECORDS)
-      {    
+    {    
         fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status);
         CHECK_STATUS_BREAK(status);
         
-	// Read NETTOT keyword from "TESRECORDS" HDU
-	// (used to check detection)
+        // Read NETTOT keyword from "TESRECORDS" HDU
+        // (used to check detection)
         long nettot_key;
         fits_read_key(fptr,TLONG,"NETTOT", &nettot_key,NULL,&status);  
         if (nettot_key == 0)
-	  {
-	    // Move to "Primary" HDU to obtain SAMPLING_RATE
+        {
+            // Move to "Primary" HDU to obtain SAMPLING_RATE
             fits_movabs_hdu(fptr, 1, NULL, &status); 
             CHECK_STATUS_BREAK(status);
             // and read full Primary HDU and store it in 'headerPrimary'
-	    int numberkeywords;
+            int numberkeywords;
             char *headerPrimary;
             fits_hdr2str(fptr, 0, NULL, 0,&headerPrimary, &numberkeywords, &status); 
-	    CHECK_STATUS_BREAK(status);
-
-	    // Pointer to where the text "sample_rate=" is in HISTORY block
-	    double sampling_rate = -999.0;
-	    char * sample_rate_pointer;
+            CHECK_STATUS_BREAK(status);
+            
+            // Pointer to where the text "sample_rate=" is in HISTORY block
+            double sampling_rate = -999.0;
+            char * sample_rate_pointer;
             sample_rate_pointer = strstr (headerPrimary,"sample_rate=");    
-	    if(!sample_rate_pointer){
-	      // read it from xml file
-	      sampling_rate = sf;
-	    }else{
-	      // Pointer to the next character to "sample_rate=" (12 characters)   
-	      sample_rate_pointer = sample_rate_pointer + 12; 
-	      char each_character_after_srate[125];		
-	      snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
-
-	      char characters_after_srate[125];
-	      snprintf(characters_after_srate,125,"%c",*sample_rate_pointer);
-
-	      while (*sample_rate_pointer != ' ')
-		{
-		  sample_rate_pointer = sample_rate_pointer + 1;
-		  snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
-		  strcat(characters_after_srate,each_character_after_srate); 
-		}
-
-	      sampling_rate = atof(characters_after_srate)-1;
+            if(!sample_rate_pointer)
+            {
+                // read it from xml file
+                sampling_rate = sf;
             }
-
-	    // Get RECORD LENGTH from TRIGGERPARAM
-	    //long keyword_value;
+            else
+            {
+                // Pointer to the next character to "sample_rate=" (12 characters)   
+                sample_rate_pointer = sample_rate_pointer + 12; 
+                char each_character_after_srate[125];		
+                snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
+                
+                char characters_after_srate[125];
+                snprintf(characters_after_srate,125,"%c",*sample_rate_pointer);
+                
+                while (*sample_rate_pointer != ' ')
+                {
+                    sample_rate_pointer = sample_rate_pointer + 1;
+                    snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
+                    strcat(characters_after_srate,each_character_after_srate); 
+                }
+                
+                sampling_rate = atof(characters_after_srate)-1;
+            }
+            
+            // Get RECORD LENGTH from TRIGGERPARAM
             long reclen_key;
             fits_movnam_hdu(fptr, ANY_HDU,"TRIGGERPARAM", 0, &status);
-	    CHECK_STATUS_BREAK(status);
+            CHECK_STATUS_BREAK(status);
             fits_read_key(fptr,TLONG,"RECLEN", &reclen_key,NULL,&status);
-
-	    // Write missing/required keys to TESRECORDS
+            
+            // Write missing/required keys to TESRECORDS
             fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status);
             CHECK_STATUS_BREAK(status);
-
-	    // Read DELTA_T keyword from "TESRECORDS" HDU
-	    double delta_t_key;            
+            
+            // Read DELTA_T keyword from "TESRECORDS" HDU
+            double delta_t_key;            
             fits_read_key(fptr,TDOUBLE,"DELTA_T", &delta_t_key,NULL,&status);  
-	    // Read NAXIS2 keyword from "TESRECORDS" HDU
+            div = sf/(1/delta_t_key);  // Grading info is unique in XML file -> adjust for different sf
+            // Read NAXIS2 keyword from "TESRECORDS" HDU
             long naxis2_key;
             fits_read_key(fptr,TLONG,"NAXIS2", &naxis2_key,NULL,&status);  
-	    long nettot_key_long;
-            nettot_key_long = naxis2_key*2;
-	    // Write TRIGGSZ, DELTAT & NETTOT keywords in "TESRECORDS" HDU
+            //long nettot_key_long;
+            //nettot_key_long = naxis2_key*2;
+            // Write TRIGGSZ, DELTAT & NETTOT keywords in "TESRECORDS" HDU
             fits_write_key(fptr,TULONG,"TRIGGSZ",&reclen_key,NULL,&status);
             double keyvalue_double;
             //keyvalue_double = delta_t_key * decimate_factor;
-	    keyvalue_double = 1./sampling_rate;
-	    fits_write_key(fptr,TDOUBLE,"DELTAT",&keyvalue_double,NULL,&status);
-            fits_update_key(fptr,TLONG,"NETTOT", &nettot_key_long,NULL,&status);
+            keyvalue_double = 1./sampling_rate;
+            fits_write_key(fptr,TDOUBLE,"DELTAT",&keyvalue_double,NULL,&status);
+            //fits_update_key(fptr,TLONG,"NETTOT", &nettot_key_long,NULL,&status);
+            fits_update_key(fptr,TLONG,"NETTOT", &naxis2_key,NULL,&status);
         }
     } //if hdunum==8 (xifusim file)
     fits_close_file(fptr,&status);
     CHECK_STATUS_BREAK(status);
-
-        
+    
     // Sixt standard keywords structure
     //----------------------------------
     SixtStdKeywords* keywords = newSixtStdKeywords(&status);
     CHECK_STATUS_BREAK(status);
-    // Open record file
-    // ----------------
-    TesTriggerFile* record_file = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
-    CHECK_STATUS_BREAK(status);
-
+    
     //Open outfile
     //------------
     TesEventFile * outfile = opennewTesEventFile(par.TesEventFile,
-    		keywords,
-    		par.clobber,
-    		&status);
+                                                 keywords,
+                                                 par.clobber,
+                                                 &status);
     CHECK_STATUS_BREAK(status);
+    
     // Initialize PP data structures needed for pulse filtering
     //---------------------------------------------------------
     ReconstructInit* reconstruct_init = newReconstructInit(&status);
@@ -168,158 +176,287 @@ int tesreconstruction_main() {
     CHECK_STATUS_BREAK(status);  
     OptimalFilterSIRENA* optimalFilter = newOptimalFilterSIRENA(&status);
     CHECK_STATUS_BREAK(status);// define a second structure for calibration
-
-    if(!strcmp(par.Rcmethod,"PP")){
-	  initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
-    		par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
-    		par.DerivateExclusion,par.SaturationValue,&status);
-    }else{
-	  initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, 
-		par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
-		par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
-                par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
-                par.filtEev, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
-                par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength, par.monoenergy, 
-                par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, 
-                par.filterFile, par.clobber, par.EventListSize, par.SaturationValue, par.tstartPulse1, 
-                par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
-    }  
-    CHECK_STATUS_BREAK(status);
-
+    
     // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
     reconstruct_init_sirena->grading = NULL;
     reconstruct_init_sirena->grading = (Grading*)malloc(sizeof(Grading));
- 
+    
     reconstruct_init_sirena->grading->ngrades = 0;
     reconstruct_init_sirena->grading->value  = NULL;
     reconstruct_init_sirena->grading->gradeData = NULL;
     
     if (det->pix->grades == NULL)
-      {
-	SIXT_ERROR("The provided XMLFile does not have the grading info");
-	return(EXIT_FAILURE);
-      }
-    div = sf/(1/record_file->delta_t);  // Grading info is unique in XML file -> adjust for different sf
+    {
+        SIXT_ERROR("The provided XMLFile does not have the grading info");
+        return(EXIT_FAILURE);
+    }
+    //div = sf/(1/record_file->delta_t);  // Grading info is unique in XML file -> adjust for different sf
     reconstruct_init_sirena->grading->ngrades=det->pix->ngrades;
     //reconstruct_init_sirena->grading->value = gsl_vector_alloc(det->pix->ngrades);
     reconstruct_init_sirena->grading->gradeData = gsl_matrix_alloc(det->pix->ngrades,2);
     for (int i=0;i<det->pix->ngrades;i++)
-      {
-	//gsl_vector_set(reconstruct_init_sirena->grading->value,i,det->pix->(int) (grades[i].value/div));
-	gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,(int) (det->pix->grades[i].gradelim_pre)/div);
-	gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,(int) (det->pix->grades[i].gradelim_post)/div);
-      }
+    {
+        //gsl_vector_set(reconstruct_init_sirena->grading->value,i,det->pix->(int) (grades[i].value/div));
+        gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,(int) (det->pix->grades[i].gradelim_pre)/div);
+        gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,(int) (det->pix->grades[i].gradelim_post)/div);
+    }
     destroyAdvDet(&det);
     
-    // Build up TesRecord to read the file
-    TesRecord* record = newTesRecord(&status);
-    allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
-    CHECK_STATUS_BREAK(status);
-
     // Build up TesEventList to recover the results of the reconstruction
     TesEventList* event_list = newTesEventList(&status);
     allocateTesEventListTrigger(event_list,par.EventListSize,&status);
     CHECK_STATUS_BREAK(status);
-
-    // Iterate of records and do the averageRecord
-    //printf("%s %s", "averageRecord:","\n");
-    int lastRecord = 0, nrecord = 0;
-    int nrecordOK = 0;
-    TesTriggerFile* record_fileAux1 = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
-    gsl_vector * averageRecord = gsl_vector_alloc(record_fileAux1->trigger_size);
-    gsl_vector_set_zero(averageRecord);
-    CHECK_STATUS_BREAK(status);
-    while(getNextRecord(record_fileAux1,record,&status))
+            
+    TesTriggerFile* record_file;
+    TesRecord* record;
+    int lastRecord = 0, nrecord = 0, nrecord_filei = 0;    //last record required for SIRENA library creation
+    
+    if (strncmp(strndup(par.RecordFile+strlen(par.RecordFile)-5, 5),".fits",5) != 0)    // No es un FITS => Es un ASCII con un FITS por fila
     {
-        nrecord = nrecord + 1;
-        if(nrecord == record_file->nrows) lastRecord=1;
+            FILE *filetxt = fopen(par.RecordFile, "r");
+            char filefits[256];
+            int numfits = 0;
+            int ch = 0;
         
-        //calculateAverageRecord(record,lastRecord,nrecord,&averageRecord,&status);
-        calculateAverageRecord(record,lastRecord,&nrecordOK,&averageRecord,&status);
-    }
-    CHECK_STATUS_BREAK(status);
-    freeTesTriggerFile(&record_fileAux1,&status);
-    //printf("%s %d %s","recordsOK = ",nrecordOK,"\n");
-    
-    TesTriggerFile* record_fileAux2 = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
-    CHECK_STATUS_BREAK(status);
-    nrecord = 0;
-    while(getNextRecord(record_fileAux2,record,&status))
-    {
-        nrecord = nrecord + 1;
-        calculateRecordsError(record,nrecord,averageRecord,&status);
-    }
-    CHECK_STATUS_BREAK(status);
-    freeTesTriggerFile(&record_fileAux2,&status);
-    
-    // Iterate of records and do the reconstruction
-    //int lastRecord = 0, nrecord = 0; //last record required for SIRENA library creation
-    lastRecord = 0, nrecord = 0;
-    while(getNextRecord(record_file,record,&status))
-    {
-      if(!strcmp(par.Rcmethod,"PP"))
-      {
-            reconstructRecord(record,event_list,reconstruct_init,0,&status);
-      }
-      else
-      {
-	    nrecord = nrecord + 1;
-	    if(nrecord == record_file->nrows) lastRecord=1;
-	    /*if(nrecord < 10) 
+            while (!feof(filetxt))  // To know the number of FITS files
             {
-	      continue;
-	    }
-            else if(nrecord > 10)
+                    ch = fgetc(filetxt);
+                    if(ch == '\n')
+                    {
+                            numfits++;
+                    }
+            }
+        
+            for (int j=0;j<numfits;j++)   // For every FITS file
             {
-	      status=1;
-	      CHECK_STATUS_BREAK(status);
-	    }*/
-	    /*if(nrecord > 9)
-	    {
-	    	status=1;
-	        CHECK_STATUS_BREAK(status);
-	    }*/
-	    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) 
-		|| (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
-	    {
-	    	strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
-	    }
-	
-            printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
-	    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
-				    lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
-      }
-      CHECK_STATUS_BREAK(status);
+                    fgets(filefits, 256, filetxt);
+                    strtok(filefits, "\n");     // To delete '/n' from filefits (if not, 'fits_open_file' can not open the file)
+                    //printf("%s",filefits);
+            
+                    // Open record file
+                    // ----------------
+                    //TesTriggerFile* record_file = openexistingTesTriggerFile(filefits,keywords,&status);
+                    record_file = openexistingTesTriggerFile(filefits,keywords,&status);
+                    CHECK_STATUS_BREAK(status);
+                    
+                    if(!strcmp(par.Rcmethod,"PP"))
+                    {
+                            initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
+                                                    par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
+                                                    par.DerivateExclusion,par.SaturationValue,&status);
+                    }
+                    else
+                    {
+                            initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, 
+                                                    par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
+                                                    par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
+                                                    par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
+                                                    par.filtEev, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
+                                                    par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength, par.monoenergy, 
+                                                    par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, 
+                                                    par.filterFile, par.clobber, par.EventListSize, par.SaturationValue, par.tstartPulse1, 
+                                                    par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
+                    }  
+                    CHECK_STATUS_BREAK(status);
+                    
+                    // Build up TesRecord to read the file
+                    //TesRecord* record = newTesRecord(&status);
+                    record = newTesRecord(&status);
+                    allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
+                    CHECK_STATUS_BREAK(status);
+                    
+                    // Iterate of records and do the reconstruction
+                    //int lastRecord = 0, nrecord = 0;    //last record required for SIRENA library creation
+                    nrecord_filei = 0;
+                    while(getNextRecord(record_file,record,&status))
+                    {
+                            if(!strcmp(par.Rcmethod,"PP"))
+                            {
+                                    reconstructRecord(record,event_list,reconstruct_init,0,&status);
+                            }
+                            else
+                            {
+                                    nrecord = nrecord + 1;
+                                    nrecord_filei = nrecord_filei + 1;
+                                    if ((nrecord_filei == record_file->nrows) && (j == numfits-1)) lastRecord=1;  // lastRecord of all the FITS files
+                                   
+                                    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) 
+                                        || (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
+                                    {
+                                            strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
+                                    }
+                                
+                                    //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
+                                    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
+                                                            lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
+                            }
+                            CHECK_STATUS_BREAK(status);
 
-      if ((strcmp(par.EnergyMethod,"PCA") != 0) || ((strcmp(par.EnergyMethod,"PCA") == 0) && lastRecord == 1))
-      {
-        // In THREADING mode, saveEventListToFile is not called until finishing with calculus 
-	// (ordering is necessary previously)  
-        if(!is_threading()){    
-          //printf("\n %p - %f", outfile, record_file->delta_t);
-          //printf("\nRecord single");
-          //printf("\n%f - %ld", record->time, record->pixid);
-	  saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
-	  CHECK_STATUS_BREAK(status);
-	  //Reinitialize event list
-	  event_list->index=0;
-        }
-      }
+                            if ((strcmp(par.EnergyMethod,"PCA") != 0) || ((strcmp(par.EnergyMethod,"PCA") == 0) && lastRecord == 1))
+                            {
+                                    // In THREADING mode, saveEventListToFile is not called until finishing with calculus 
+                                    // (ordering is necessary previously)  
+                                    if(!is_threading()){    
+                                            //printf("\n %p - %f", outfile, record_file->delta_t);
+                                            //printf("\nRecord single");
+                                            //printf("\n%f - %ld", record->time, record->pixid);
+                                            saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
+                                            CHECK_STATUS_BREAK(status);
+                                            //Reinitialize event list
+                                            event_list->index=0;//////////////////////!!!!!!!!!!!!!!!!!!!!!OJO!!!!!!!!!!!!!!!!!!! Igual no hay que inicializarlo a 0
+                                    }
+                                    else
+                                            printf("%s","Not prepared to run in THREADING mode with a input ASCII file (with several FITS files)\n");
+                            }
+                    } // while getNextRecord
+                    
+                    if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0)) 
+                            printf("%s %s %s","WARNING: no pulses have been detected in the current FITS file: ", filefits,"\n");
+                    
+                    fits_close_file(record_file->fptr,&status);
+                    CHECK_STATUS_BREAK(status);
+            
+            }   // for every FITS file
+            
+            fclose(filetxt);
     }
-    
-    if(is_threading()) {
-      th_end(&reconstruct_init_sirena, &pulsesAll, &optimalFilter);
-      int i = 1;
-      int aux = 1;
-      while((aux = th_get_event_list(&event_list, &record)) == 1){
-        saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
-        CHECK_STATUS_BREAK(status);
-        ++i;
-      }
+    else
+    {
+            // Open record file
+            // ----------------
+            //TesTriggerFile* record_file = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
+            record_file = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
+            CHECK_STATUS_BREAK(status);
+
+            if(!strcmp(par.Rcmethod,"PP")){
+                initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
+                        par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
+                        par.DerivateExclusion,par.SaturationValue,&status);
+            }else{
+                initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, 
+                        par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
+                        par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
+                        par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
+                        par.filtEev, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
+                        par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength, par.monoenergy, 
+                        par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, 
+                        par.filterFile, par.clobber, par.EventListSize, par.SaturationValue, par.tstartPulse1, 
+                        par.tstartPulse2, par.tstartPulse3, par.energyPCA1, par.energyPCA2, par.XMLFile, &status);
+            }  
+            CHECK_STATUS_BREAK(status);
+            
+            // Build up TesRecord to read the file
+            //TesRecord* record = newTesRecord(&status);
+            record = newTesRecord(&status);
+            allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
+            CHECK_STATUS_BREAK(status);
+
+            /*// Build up TesEventList to recover the results of the reconstruction
+            TesEventList* event_list = newTesEventList(&status);
+            allocateTesEventListTrigger(event_list,par.EventListSize,&status);
+            CHECK_STATUS_BREAK(status);*/
+
+            // Iterate of records and do the averageRecord
+            //printf("%s %s", "averageRecord:","\n");
+            //int lastRecord = 0, nrecord = 0;
+            int nrecordOK = 0;
+            TesTriggerFile* record_fileAux1 = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
+            gsl_vector * averageRecord = gsl_vector_alloc(record_fileAux1->trigger_size);
+            gsl_vector_set_zero(averageRecord);
+            CHECK_STATUS_BREAK(status);
+            while(getNextRecord(record_fileAux1,record,&status))
+            {
+                nrecord = nrecord + 1;
+                if(nrecord == record_file->nrows) lastRecord=1;
+                
+                //calculateAverageRecord(record,lastRecord,nrecord,&averageRecord,&status);
+                calculateAverageRecord(record,lastRecord,&nrecordOK,&averageRecord,&status);
+            }
+            CHECK_STATUS_BREAK(status);
+            freeTesTriggerFile(&record_fileAux1,&status);
+            //printf("%s %d %s","recordsOK = ",nrecordOK,"\n");
+            
+            TesTriggerFile* record_fileAux2 = openexistingTesTriggerFile(par.RecordFile,keywords,&status);
+            CHECK_STATUS_BREAK(status);
+            nrecord = 0;
+            while(getNextRecord(record_fileAux2,record,&status))
+            {
+                nrecord = nrecord + 1;
+                calculateRecordsError(record,nrecord,averageRecord,&status);
+            }
+            CHECK_STATUS_BREAK(status);
+            freeTesTriggerFile(&record_fileAux2,&status);
+            
+            // Iterate of records and do the reconstruction
+            lastRecord = 0, nrecord = 0;    //last record required for SIRENA library creation
+            while(getNextRecord(record_file,record,&status))
+            {
+                    if(!strcmp(par.Rcmethod,"PP"))
+                    {
+                            reconstructRecord(record,event_list,reconstruct_init,0,&status);
+                    }
+                    else
+                    {
+                            nrecord = nrecord + 1;
+                            if(nrecord == record_file->nrows) lastRecord=1;
+                            //if(nrecord < 10) 
+                            //{
+                            //  continue;
+                            //}
+                            //else if(nrecord > 10)
+                            //{
+                            //  status=1;
+                            //  CHECK_STATUS_BREAK(status);
+                            //}
+                            //if(nrecord > 9)
+                            //{
+                            //	status=1;
+                            //    CHECK_STATUS_BREAK(status);
+                            //}
+                            if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) 
+                                || (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
+                            {
+                                strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
+                            }
+                        
+                            //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
+                            reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
+                                                    lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
+                    }
+                    CHECK_STATUS_BREAK(status);
+
+                    if ((strcmp(par.EnergyMethod,"PCA") != 0) || ((strcmp(par.EnergyMethod,"PCA") == 0) && lastRecord == 1))
+                    {
+                            // In THREADING mode, saveEventListToFile is not called until finishing with calculus 
+                            // (ordering is necessary previously)  
+                            if(!is_threading()){    
+                                    //printf("\n %p - %f", outfile, record_file->delta_t);
+                                    //printf("\nRecord single");
+                                    //printf("\n%f - %ld", record->time, record->pixid);
+                                    saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
+                                    CHECK_STATUS_BREAK(status);
+                                    //Reinitialize event list
+                                    event_list->index=0;
+                            }
+                    }
+            }
+            
+            if(is_threading()) 
+            {
+                    th_end(&reconstruct_init_sirena, &pulsesAll, &optimalFilter);
+                    int i = 1;
+                    int aux = 1;
+                    while((aux = th_get_event_list(&event_list, &record)) == 1)
+                    {
+                            saveEventListToFile(outfile,event_list,record->time,record_file->delta_t,record->pixid,&status);
+                            CHECK_STATUS_BREAK(status);
+                            ++i;
+                    }
+            }
+            
+            if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0)) 
+            printf("%s","WARNING: no pulses have been detected\n");
     }
-    
-    if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0)) \
-      printf("%s","WARNING: no pulses have been detected\n");
     
     // Copy trigger keywords to event file
     copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
@@ -358,7 +495,7 @@ int tesreconstruction_main() {
     GTI* gti=getGTIFromFileOrContinuous("none",keywords->tstart, keywords->tstop,keywords->mjdref, &status);
     saveGTIExt(outfile->fptr, "STDGTI", gti, &status);    
     CHECK_STATUS_BREAK(status);
-
+    
     //Free memory
     freeReconstructInit(reconstruct_init);
     freeReconstructInitSIRENA(reconstruct_init_sirena);
@@ -370,7 +507,7 @@ int tesreconstruction_main() {
     freeTesRecord(&record);
     freeSixtStdKeywords(keywords);
     CHECK_STATUS_BREAK(status);
-
+ 
   } while(0); // END of the error handling loop.
   
   if (EXIT_SUCCESS==status) 

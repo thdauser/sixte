@@ -108,6 +108,7 @@
 	double LbT;			// Baseline averaging length (in the RS filter case): T -> Time => Seconds
 	double Lrs;			// LrsT in samples
 	double Lb;			// LbT in samples
+        int matrixSize;                 // noise Matrix size if only one to be created
 	
 	char weightMSStr[4];		// WeightMS=yes then write output weight noise matrixes
 	int weightMS=0;

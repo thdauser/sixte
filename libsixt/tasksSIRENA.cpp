@@ -7110,7 +7110,7 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
                 //tstartSamplesRecordStartDOUBLE = ((*pulsesInRecord)->pulses_detected[i].Tstart-record->time)/record->delta_t-numlags2;
                 tstartSamplesRecordStartINT = tstartSamplesRecord-numlags2;
                 tstartSamplesRecordStartDOUBLE = tstartSamplesRecord-numlags2;              //He cambiado esto
-                //tstartSamplesRecordStartDOUBLE = tstartSamplesRecord-(numlags-1);
+                tstartSamplesRecordStartDOUBLE = tstartSamplesRecord-(numlags-1);
                 //cout<<"tstartSamplesRecord: "<<tstartSamplesRecord<<endl;
                 //cout<<"tstartSamplesRecordStartDOUBLE0: "<<tstartSamplesRecordStartDOUBLE<<endl;
                 
@@ -7242,6 +7242,10 @@ void runEnergy(TesRecord* record,ReconstructInitSIRENA** reconstruct_init, Pulse
 				message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
 				EP_EXIT_ERROR(message,EPFAIL); 
 			}
+                        /*cout<<"recordAux->size: "<<recordAux->size<<endl;
+                        cout<<"resize_mfNEW: "<<resize_mfNEW<<endl;
+                        cout<<"tstartSamplesRecordStartDOUBLE: "<<tstartSamplesRecordStartDOUBLE<<endl;*/
+                        
                         temp = gsl_vector_subvector(recordAux,tstartSamplesRecordStartDOUBLE,resize_mfNEW);
                         //cout<<"recordAux: "<<endl;
                         //for (int kk=0;kk<recordAux->size;kk++) cout<<kk<<" "<<gsl_vector_get(recordAux,kk)<<endl;
@@ -7955,7 +7959,7 @@ void th_runEnergy(TesRecord* record,
                 //tstartSamplesRecordStartDOUBLE = ((*pulsesInRecord)->pulses_detected[i].Tstart-record->time)/record->delta_t-numlags2;
                 tstartSamplesRecordStartINT = tstartSamplesRecord-numlags2;
                 tstartSamplesRecordStartDOUBLE = tstartSamplesRecord-numlags2;
-                //tstartSamplesRecordStartDOUBLE = tstartSamplesRecord-(numlags-1);
+                tstartSamplesRecordStartDOUBLE = tstartSamplesRecord-(numlags-1);
                 
                 //cout<<"tstart: "<<tstartSamplesRecord<<endl;
                 //cout<<"tstartRecord: "<<tstartRecord<<endl;
@@ -10552,6 +10556,7 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
                                                 {
                                                     *tstartNewDev = 0;
                                                     *calculatedEnergy = calculatedEnergy_Nolags;
+                                                    *lagsShift = 0;
                                                 }
                                                
 					}
@@ -10880,10 +10885,12 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
                                                 {
                                                     *tstartNewDev = 0;
                                                     *calculatedEnergy = calculatedEnergy_Nolags;
+                                                    *lagsShift = 0;
                                                 }
                                                 
                                                 //cout<<"*calculatedEnergy: "<<*calculatedEnergy<<endl;
-                                                //cout<<"*tstartNewDev= "<<*tstartNewDev<<endl;
+                                                /*cout<<"*tstartNewDev= "<<*tstartNewDev<<endl;
+                                                cout<<"lagsShift= "<<*lagsShift<<endl;*/
 					}
 					
 					gsl_vector_complex_free(calculatedEnergy_vectorcomplex); calculatedEnergy_vectorcomplex = 0;
@@ -10897,12 +10904,15 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 		else if ((runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"WEIGHTM") == 0))
 		//else if ((runEMethod == 0) && (strcmp(xxx,"WEIGHTM") == 0))
 		{
-                        cout<<"WEIGHTM"<<endl;
+                        cout<<"WEIGHTM: "<<PRCLOFWM->size1<<" "<<PRCLOFWM->size2<<endl;
                         gsl_vector *EB = gsl_vector_alloc(2);
+                        cout<<"0: "<<gsl_matrix_get(PRCLOFWM,0,0)<<" "<<gsl_matrix_get(PRCLOFWM,0,1)<<" "<<gsl_matrix_get(PRCLOFWM,0,2)<<"..."<<gsl_matrix_get(PRCLOFWM,0,PRCLOFWM->size2-1)<<endl;
+                        cout<<"1: "<<gsl_matrix_get(PRCLOFWM,1,0)<<" "<<gsl_matrix_get(PRCLOFWM,1,1)<<" "<<gsl_matrix_get(PRCLOFWM,1,2)<<"..."<<gsl_matrix_get(PRCLOFWM,1,PRCLOFWM->size2-1)<<endl;
 		
 			gsl_blas_dgemv(CblasNoTrans,1.0,PRCLOFWM,vector,0.0,EB);                           // [(R'WR)^(-1)]R'W\B7pulse
 			
 			*calculatedEnergy = gsl_vector_get(EB,0);
+                        cout<<"*calculatedEnergy: "<<*calculatedEnergy<<endl;
 		
 			//gsl_vector_free(P_Pab);
 			gsl_vector_free(EB); EB = 0;
