@@ -150,7 +150,7 @@ int main (int argc, char **argv)
                 if (status != 0)
                 {
                         status = 0;
-                        cout<<"en TESRECORDS structure"<<endl;
+                        //cout<<"en TESRECORDS structure"<<endl;
                         strcpy(extname,"ADCPARAM");
                         if (fits_movnam_hdu(infileObject,ANY_HDU,extname, 0, &status))
                         {
@@ -237,7 +237,7 @@ int main (int argc, char **argv)
                         delete [] obj.nameTable;
                         delete [] obj.nameCol;
                         delete [] obj.unit;
-			cout<<"fuera TESRECORDS"<<endl;
+			//cout<<"fuera TESRECORDS"<<endl;
                 }
                 else
                 {
@@ -328,7 +328,7 @@ int main (int argc, char **argv)
 	sigma = gsl_vector_alloc(eventcnt);
 	gsl_vector_set_all(sigma,-999.0);
 
-	double samprate = 156250.; //default xifusim value
+        samprate = 156250.; //default xifusim value
         int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
         fits_get_num_hdus(infileObject, &hdunum,&status);
         if (hdunum == 8)    // Input files simulated with xifusim
@@ -870,7 +870,7 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[16].description = "Size of noise matrix if only one to be created";
 	gennoisespecPars[16].defValInt = 0;
 	gennoisespecPars[16].type = "int";
-	gennoisespecPars[16].minValInt = 2;
+	gennoisespecPars[16].minValInt = 0;
 	gennoisespecPars[16].maxValInt = 8192;
 	gennoisespecPars[16].ValInt = gennoisespecPars[16].defValInt;
 

@@ -3187,15 +3187,15 @@ int FindSecondariesSTC
         cout<<"1004 "<<gsl_vector_get(der,1004)<<endl;
         cout<<"1005 "<<gsl_vector_get(der,1005)<<endl;
         cout<<"...................................... "<<endl;
-        cout<<"1035 "<<gsl_vector_get(der,1035)<<endl;
-        cout<<"1036 "<<gsl_vector_get(der,1036)<<endl;
-        cout<<"1037 "<<gsl_vector_get(der,1037)<<endl;
-        cout<<"1038 "<<gsl_vector_get(der,1038)<<endl;
-        cout<<"1039 "<<gsl_vector_get(der,1039)<<endl;
-        cout<<"1040 "<<gsl_vector_get(der,1040)<<endl;
-        cout<<"1041 "<<gsl_vector_get(der,1041)<<endl;
-        cout<<"1042 "<<gsl_vector_get(der,1042)<<endl;
-        cout<<"1043 "<<gsl_vector_get(der,1043)<<endl;*/
+        cout<<"3835 "<<gsl_vector_get(der,3835)<<endl;
+        cout<<"3836 "<<gsl_vector_get(der,3836)<<endl;
+        cout<<"3837 "<<gsl_vector_get(der,3837)<<endl;
+        cout<<"3838 "<<gsl_vector_get(der,3838)<<endl;
+        cout<<"3839 "<<gsl_vector_get(der,3839)<<endl;
+        cout<<"3840 "<<gsl_vector_get(der,3840)<<endl;
+        cout<<"3841 "<<gsl_vector_get(der,3841)<<endl;
+        cout<<"3842 "<<gsl_vector_get(der,3842)<<endl;
+        cout<<"3843 "<<gsl_vector_get(der,3843)<<endl;*/
         
         int nodetectSecondaries = 1;
         	

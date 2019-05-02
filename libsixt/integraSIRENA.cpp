@@ -378,7 +378,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
         {
                 reconstruct_init->i2rdata = NULL;
                 reconstruct_init->i2rdata = (I2RData*)malloc(sizeof(I2RData));
-                //reconstruct_init->i2rdata->R0 = -999;
+                reconstruct_init->i2rdata->R0 = -999;
                 reconstruct_init->i2rdata->I0_START = -999;    
                 reconstruct_init->i2rdata->IMIN = -999;
                 reconstruct_init->i2rdata->IMAX = -999;
@@ -593,6 +593,8 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
 		if (event_list->pulse_heights != NULL) 	delete [] event_list->pulse_heights;
 		if (event_list->ph_ids != NULL) 	delete [] event_list->ph_ids;
+                
+                if (event_list->event_indexes != NULL) 	delete [] event_list->event_indexes;    //!!!!!!!!!!!!!!!
 	
 		pulsesAllAux->ndetpulses = (*pulsesAll)->ndetpulses;
 		
@@ -645,6 +647,9 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	event_list->grades2  = new int[event_list->index];
 	event_list->pulse_heights  = new double[event_list->index];
 	event_list->ph_ids   = new long[event_list->index];
+        
+        event_list->event_indexes   = new double[event_list->index];   //!!!!!!!!!!!!
+        //cout<<"After runEnergy2"<<endl;
 	
 	if (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0)     // Different from PCA
 	{
@@ -671,7 +676,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			event_list->pulse_heights[ip]  = pulsesInRecord->pulses_detected[ip].pulse_height;
 			event_list->ph_ids[ip]   = 0;
 		}
-		if (lastRecord == 1)
+		/*if (lastRecord == 1)
                 {       
                         double numLagsUsed_mean;
                         double numLagsUsed_sigma;
@@ -686,8 +691,9 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                                 EP_EXIT_ERROR("Cannot run findMeanSigma routine for calculating numLagsUsed statistics",EPFAIL);
                         }
                  
+                        if (numLagsUsed_vector != NULL) gsl_vector_free(numLagsUsed_vector); numLagsUsed_vector = 0;
                         gsl_vector_free(numLagsUsed_vector);
-                }
+                }*/
 	}
 	else
 	{
@@ -732,10 +738,11 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			}
 		}
 	}
-        
+
 	delete pulsesAllAux; pulsesAllAux = 0;
 	delete [] pulsesInRecord->pulses_detected; pulsesInRecord->pulses_detected = 0;
 	delete pulsesInRecord; pulsesInRecord = 0;
+        delete reconstruct_init->i2rdata; reconstruct_init->i2rdata = 0;
 
 	return;
 }

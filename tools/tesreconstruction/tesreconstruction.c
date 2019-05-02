@@ -51,12 +51,23 @@ int tesreconstruction_main() {
     int div = 1;
     sf = det->SampleFreq;
     
+    char* firstchar = strndup(par.RecordFile, 1);
+    char firstchar2[2];
+    strcpy(firstchar2,firstchar);
+    
     // Check input file header is complete to work with xifusim/tessim simulated files
     // -------------------------------------------------------------------------------
     fitsfile* fptr = NULL;
-    if (strncmp(strndup(par.RecordFile+strlen(par.RecordFile)-5, 5),".fits",5) != 0)
+    //if (strncmp(strndup(par.RecordFile+strlen(par.RecordFile)-5, 5),".fits",5) != 0)
+    if (strcmp(firstchar2,"@") == 0)
     {
             FILE *filetxt = fopen(par.RecordFile, "r");
+            if (filetxt == NULL)    
+            {
+                    printf("%s","File given in RecordFile does not exist\n");
+                    status = 104;
+            }
+            CHECK_STATUS_BREAK(status);
             char filefits[256];
             fgets(filefits, 256, filetxt);
             strtok(filefits, "\n");     // To delete '/n' from filefits (if not, 'fits_open_file' can not open the file)
@@ -65,7 +76,10 @@ int tesreconstruction_main() {
     }
     else
             fits_open_file(&fptr, par.RecordFile, READWRITE, &status);
+            if (status != 0)    printf("%s","File given in RecordFile does not exist\n");
+    
     CHECK_STATUS_BREAK(status);
+    
     int hdunum; // Number of HDUs (RECORDS-file or TESRECORDS-file)
     fits_get_num_hdus(fptr, &hdunum,&status);
     
@@ -211,9 +225,10 @@ int tesreconstruction_main() {
     TesRecord* record;
     int lastRecord = 0, nrecord = 0, nrecord_filei = 0;    //last record required for SIRENA library creation
     
-    if (strncmp(strndup(par.RecordFile+strlen(par.RecordFile)-5, 5),".fits",5) != 0)    // No es un FITS => Es un ASCII con un FITS por fila
+    if (strcmp(firstchar2,"@") == 0)
     {
-            FILE *filetxt = fopen(par.RecordFile, "r");
+            //FILE *filetxt = fopen(par.RecordFile, "r");
+            FILE *filetxt = fopen(strndup(par.RecordFile+1, strlen(par.RecordFile)-1), "r");
             char filefits[256];
             int numfits = 0;
             int ch = 0;
@@ -279,6 +294,7 @@ int tesreconstruction_main() {
                                     nrecord = nrecord + 1;
                                     nrecord_filei = nrecord_filei + 1;
                                     if ((nrecord_filei == record_file->nrows) && (j == numfits-1)) lastRecord=1;  // lastRecord of all the FITS files
+                                    //if(nrecord == record_file->nrows) lastRecord=1;
                                    
                                     if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) 
                                         || (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
@@ -313,7 +329,45 @@ int tesreconstruction_main() {
                     if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0)) 
                             printf("%s %s %s","WARNING: no pulses have been detected in the current FITS file: ", filefits,"\n");
                     
-                    fits_close_file(record_file->fptr,&status);
+                    if (numfits == 0)
+                    {
+                            // Copy trigger keywords to event file
+                            copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
+                            CHECK_STATUS_BREAK(status);
+                            
+                            // Messages providing info of some columns
+                            //char keyword[9];
+                            char keywordvalue[9];
+                            char comment[MAXMSG];
+                            //int keywordvalueint;
+                            
+                            fits_movnam_hdu(outfile->fptr, ANY_HDU,"EVENTS", 0, &status);
+                            CHECK_STATUS_BREAK(status);
+                            
+                            fits_read_key(outfile->fptr, TSTRING, "TTYPE1", &keywordvalue, NULL, &status);
+                            strcpy(comment, "Starting time");
+                            fits_update_key(outfile->fptr, TSTRING, "TTYPE1", keywordvalue, comment, &status);
+                            
+                            fits_read_key(outfile->fptr, TSTRING, "TTYPE2", &keywordvalue, NULL, &status);
+                            strcpy(comment, "Reconstructed-uncalibrated energy");
+                            fits_update_key(outfile->fptr, TSTRING, "TTYPE2", keywordvalue, comment, &status);      
+                            
+                            fits_read_key(outfile->fptr, TSTRING, "TTYPE3", &keywordvalue, NULL, &status);
+                            strcpy(comment, "Average first 4 samples (derivative)");
+                            fits_update_key(outfile->fptr, TSTRING, "TTYPE3", keywordvalue, comment, &status);      
+                            
+                            fits_read_key(outfile->fptr, TSTRING, "TTYPE4", &keywordvalue, NULL, &status);
+                            strcpy(comment, "Optimal filter length");
+                            fits_update_key(outfile->fptr, TSTRING, "TTYPE4", keywordvalue, comment, &status);      
+                            
+                            fits_read_key(outfile->fptr, TSTRING, "TTYPE5", &keywordvalue, NULL, &status);
+                            strcpy(comment, "Starting time-starting time previous event");
+                            fits_update_key(outfile->fptr, TSTRING, "TTYPE5", keywordvalue, comment, &status);
+                    }
+                    
+                    
+                    freeTesTriggerFile(&record_file,&status);   // The record_file (every FITS file) is closed
+                    
                     CHECK_STATUS_BREAK(status);
             
             }   // for every FITS file
@@ -456,40 +510,42 @@ int tesreconstruction_main() {
             
             if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0)) 
             printf("%s","WARNING: no pulses have been detected\n");
+            
+            // Copy trigger keywords to event file
+            copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
+            CHECK_STATUS_BREAK(status);
+            
+            // Messages providing info of some columns
+            //char keyword[9];
+            char keywordvalue[9];
+            char comment[MAXMSG];
+            //int keywordvalueint;
+            
+            fits_movnam_hdu(outfile->fptr, ANY_HDU,"EVENTS", 0, &status);
+            CHECK_STATUS_BREAK(status);
+            
+            fits_read_key(outfile->fptr, TSTRING, "TTYPE1", &keywordvalue, NULL, &status);
+            strcpy(comment, "Starting time");
+            fits_update_key(outfile->fptr, TSTRING, "TTYPE1", keywordvalue, comment, &status);
+            
+            fits_read_key(outfile->fptr, TSTRING, "TTYPE2", &keywordvalue, NULL, &status);
+            strcpy(comment, "Reconstructed-uncalibrated energy");
+            fits_update_key(outfile->fptr, TSTRING, "TTYPE2", keywordvalue, comment, &status);      
+            
+            fits_read_key(outfile->fptr, TSTRING, "TTYPE3", &keywordvalue, NULL, &status);
+            strcpy(comment, "Average first 4 samples (derivative)");
+            fits_update_key(outfile->fptr, TSTRING, "TTYPE3", keywordvalue, comment, &status);      
+            
+            fits_read_key(outfile->fptr, TSTRING, "TTYPE4", &keywordvalue, NULL, &status);
+            strcpy(comment, "Optimal filter length");
+            fits_update_key(outfile->fptr, TSTRING, "TTYPE4", keywordvalue, comment, &status);      
+            
+            fits_read_key(outfile->fptr, TSTRING, "TTYPE5", &keywordvalue, NULL, &status);
+            strcpy(comment, "Starting time-starting time previous event");
+            fits_update_key(outfile->fptr, TSTRING, "TTYPE5", keywordvalue, comment, &status);
+            
+            freeTesTriggerFile(&record_file,&status);
     }
-    
-    // Copy trigger keywords to event file
-    copyTriggerKeywords(record_file->fptr,outfile->fptr,&status);
-    CHECK_STATUS_BREAK(status);
-    
-    // Messages providing info of some columns
-    //char keyword[9];
-    char keywordvalue[9];
-    char comment[MAXMSG];
-    //int keywordvalueint;
-    
-    fits_movnam_hdu(outfile->fptr, ANY_HDU,"EVENTS", 0, &status);
-    CHECK_STATUS_BREAK(status);
-    
-    fits_read_key(outfile->fptr, TSTRING, "TTYPE1", &keywordvalue, NULL, &status);
-    strcpy(comment, "Starting time");
-    fits_update_key(outfile->fptr, TSTRING, "TTYPE1", keywordvalue, comment, &status);
-    
-    fits_read_key(outfile->fptr, TSTRING, "TTYPE2", &keywordvalue, NULL, &status);
-    strcpy(comment, "Reconstructed-uncalibrated energy");
-    fits_update_key(outfile->fptr, TSTRING, "TTYPE2", keywordvalue, comment, &status);      
-    
-    fits_read_key(outfile->fptr, TSTRING, "TTYPE3", &keywordvalue, NULL, &status);
-    strcpy(comment, "Average first 4 samples (derivative)");
-    fits_update_key(outfile->fptr, TSTRING, "TTYPE3", keywordvalue, comment, &status);      
-    
-    fits_read_key(outfile->fptr, TSTRING, "TTYPE4", &keywordvalue, NULL, &status);
-    strcpy(comment, "Optimal filter length");
-    fits_update_key(outfile->fptr, TSTRING, "TTYPE4", keywordvalue, comment, &status);      
-    
-    fits_read_key(outfile->fptr, TSTRING, "TTYPE5", &keywordvalue, NULL, &status);
-    strcpy(comment, "Starting time-starting time previous event");
-    fits_update_key(outfile->fptr, TSTRING, "TTYPE5", keywordvalue, comment, &status);
     
     // Save GTI extension to event file
     GTI* gti=getGTIFromFileOrContinuous("none",keywords->tstart, keywords->tstop,keywords->mjdref, &status);
@@ -501,7 +557,7 @@ int tesreconstruction_main() {
     freeReconstructInitSIRENA(reconstruct_init_sirena);
     freePulsesCollection(pulsesAll);
     freeOptimalFilterSIRENA(optimalFilter);
-    freeTesTriggerFile(&record_file,&status);
+    //freeTesTriggerFile(&record_file,&status);
     freeTesEventFile(outfile,&status);
     freeTesEventList(event_list);
     freeTesRecord(&record);

@@ -10904,10 +10904,10 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
 		else if ((runEMethod == 0) && (strcmp(reconstruct_init->OFNoise,"WEIGHTM") == 0))
 		//else if ((runEMethod == 0) && (strcmp(xxx,"WEIGHTM") == 0))
 		{
-                        cout<<"WEIGHTM: "<<PRCLOFWM->size1<<" "<<PRCLOFWM->size2<<endl;
+                        //cout<<"WEIGHTM: "<<PRCLOFWM->size1<<" "<<PRCLOFWM->size2<<endl;
                         gsl_vector *EB = gsl_vector_alloc(2);
-                        cout<<"0: "<<gsl_matrix_get(PRCLOFWM,0,0)<<" "<<gsl_matrix_get(PRCLOFWM,0,1)<<" "<<gsl_matrix_get(PRCLOFWM,0,2)<<"..."<<gsl_matrix_get(PRCLOFWM,0,PRCLOFWM->size2-1)<<endl;
-                        cout<<"1: "<<gsl_matrix_get(PRCLOFWM,1,0)<<" "<<gsl_matrix_get(PRCLOFWM,1,1)<<" "<<gsl_matrix_get(PRCLOFWM,1,2)<<"..."<<gsl_matrix_get(PRCLOFWM,1,PRCLOFWM->size2-1)<<endl;
+                        //cout<<"0: "<<gsl_matrix_get(PRCLOFWM,0,0)<<" "<<gsl_matrix_get(PRCLOFWM,0,1)<<" "<<gsl_matrix_get(PRCLOFWM,0,2)<<"..."<<gsl_matrix_get(PRCLOFWM,0,PRCLOFWM->size2-1)<<endl;
+                        //cout<<"1: "<<gsl_matrix_get(PRCLOFWM,1,0)<<" "<<gsl_matrix_get(PRCLOFWM,1,1)<<" "<<gsl_matrix_get(PRCLOFWM,1,2)<<"..."<<gsl_matrix_get(PRCLOFWM,1,PRCLOFWM->size2-1)<<endl;
 		
 			gsl_blas_dgemv(CblasNoTrans,1.0,PRCLOFWM,vector,0.0,EB);                           // [(R'WR)^(-1)]R'W\B7pulse
 			
