@@ -134,7 +134,35 @@ void saveGTIExt(fitsfile* const fptr,
 		GTI* const gti,
 		int* const status)
 {
+  // Check if the EVENTS extension already exists and move fptr to that extension
+  fits_movnam_hdu(fptr, BINARY_TBL, "EVENTS", 0, status);
+  if (*status != EXIT_SUCCESS) {
+    char buffer[MAXMSG];
+    fits_get_errstatus(*status, buffer);
+    SIXT_WARNING(buffer);
+    CHECK_STATUS_VOID(*status);
+  }
+
+  // Read INSTRUME and TELESCOP keywords from EVENTS extension
+  char buffer_telescop[MAXMSG];
+  char buffer_instrume[MAXMSG];
+  fits_read_key(fptr, TSTRING, "INSTRUME", buffer_instrume, NULL, status);
+  fits_read_key(fptr, TSTRING, "TELESCOP", buffer_telescop, NULL, status);
+
   HDgti_write(fptr, gti, extname, "START", "STOP", status);
+
+  // Move to STDGTI extension
+  fits_movnam_hdu(fptr, BINARY_TBL, "STDGTI", 0, status);
+  if (*status != EXIT_SUCCESS) {
+    char buffer[MAXMSG];
+    fits_get_errstatus(*status, buffer);
+    SIXT_WARNING(buffer);
+    CHECK_STATUS_VOID(*status);
+  }
+
+  // Write TELESCOP and INSTRUME keywords to STDGTI extension
+  fits_update_key(fptr, TSTRING, "INSTRUME", buffer_instrume, NULL, status);
+  fits_update_key(fptr, TSTRING, "TELESCOP", buffer_telescop, NULL, status);
 }
 
 
