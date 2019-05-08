@@ -39,6 +39,7 @@ int tesreconstruction_main() {
     // Get program parameters.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
+    //printf("%s","Paso0\n");
     
     // Read XML info
     //--------------
@@ -54,29 +55,53 @@ int tesreconstruction_main() {
     char* firstchar = strndup(par.RecordFile, 1);
     char firstchar2[2];
     strcpy(firstchar2,firstchar);
-    
+        
+    //printf("%s %s %s","Fichero: ",par.RecordFile,"\n");
     // Check input file header is complete to work with xifusim/tessim simulated files
     // -------------------------------------------------------------------------------
     fitsfile* fptr = NULL;
-    //if (strncmp(strndup(par.RecordFile+strlen(par.RecordFile)-5, 5),".fits",5) != 0)
+    int numfits;
     if (strcmp(firstchar2,"@") == 0)
     {
-            FILE *filetxt = fopen(par.RecordFile, "r");
+            //printf("%s %s %s","Fichero: ",strndup(par.RecordFile+1, strlen(par.RecordFile)-1),"\n");
+            FILE *filetxt = fopen(strndup(par.RecordFile+1, strlen(par.RecordFile)-1), "r");
             if (filetxt == NULL)    
             {
                     printf("%s","File given in RecordFile does not exist\n");
                     status = 104;
             }
             CHECK_STATUS_BREAK(status);
+            
             char filefits[256];
             fgets(filefits, 256, filetxt);
             strtok(filefits, "\n");     // To delete '/n' from filefits (if not, 'fits_open_file' can not open the file)
-            fits_open_file(&fptr, filefits, READWRITE, &status);
+            
+            fits_open_file(&fptr, filefits, READONLY, &status);
+            if (status != 0)    printf("%s","FITS file read from ASCII file does not exist\n");
+            CHECK_STATUS_BREAK(status);  
+            
+            //printf("%s %s %s","FicheroFITS: ",filefits,"\n");
+            
+            fclose(filetxt);
+            
+            numfits = 0;
+                   
+            filetxt = fopen(strndup(par.RecordFile+1, strlen(par.RecordFile)-1), "r");
+            
+            while(fscanf(filetxt,"%s",filefits)!=EOF)
+            {
+                numfits++;
+            }
+            //printf("%s %d %s","numfits: ",numfits,"\n");
+            
             fclose(filetxt);
     }
     else
+    {
+            numfits = 1;
             fits_open_file(&fptr, par.RecordFile, READWRITE, &status);
             if (status != 0)    printf("%s","File given in RecordFile does not exist\n");
+    }
     
     CHECK_STATUS_BREAK(status);
     
@@ -85,6 +110,7 @@ int tesreconstruction_main() {
     
     if (hdunum == 8) //xifusim simulated file (with TESRECORDS)
     {    
+        //printf("%s","Paso1\n");
         fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status);
         CHECK_STATUS_BREAK(status);
         
@@ -145,7 +171,7 @@ int tesreconstruction_main() {
             // Read DELTA_T keyword from "TESRECORDS" HDU
             double delta_t_key;            
             fits_read_key(fptr,TDOUBLE,"DELTA_T", &delta_t_key,NULL,&status);  
-            div = sf/(1/delta_t_key);  // Grading info is unique in XML file -> adjust for different sf
+            div = sf/(1/delta_t_key);  // Grading i//strcpy(firstchar2,firstchar);nfo is unique in XML file -> adjust for different sf
             // Read NAXIS2 keyword from "TESRECORDS" HDU
             long naxis2_key;
             fits_read_key(fptr,TLONG,"NAXIS2", &naxis2_key,NULL,&status);  
@@ -227,26 +253,17 @@ int tesreconstruction_main() {
     
     if (strcmp(firstchar2,"@") == 0)
     {
-            //FILE *filetxt = fopen(par.RecordFile, "r");
             FILE *filetxt = fopen(strndup(par.RecordFile+1, strlen(par.RecordFile)-1), "r");
+            if (status != 0)    printf("%s","FITS file read from ASCII file does not exist\n");
+            CHECK_STATUS_BREAK(status);  
+            
             char filefits[256];
-            int numfits = 0;
-            int ch = 0;
-        
-            while (!feof(filetxt))  // To know the number of FITS files
-            {
-                    ch = fgetc(filetxt);
-                    if(ch == '\n')
-                    {
-                            numfits++;
-                    }
-            }
         
             for (int j=0;j<numfits;j++)   // For every FITS file
             {
                     fgets(filefits, 256, filetxt);
                     strtok(filefits, "\n");     // To delete '/n' from filefits (if not, 'fits_open_file' can not open the file)
-                    //printf("%s",filefits);
+                    //printf("%s %s %s","FITS file i: ",filefits,"\n");
             
                     // Open record file
                     // ----------------

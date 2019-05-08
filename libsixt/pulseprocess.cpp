@@ -364,9 +364,8 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 	int cnt;						// Number of points inside the excursion (mean+-excursion)
 	// It is not necessary to check the allocation because 'invector' size must already be > 0
 	gsl_vector *invectorNew = gsl_vector_alloc(size);	// Auxiliary vector
-        /*cout<<"Paso median1"<<endl;
         
-        gsl_vector *vector_prueba = gsl_vector_alloc(6);
+        /*gsl_vector *vector_prueba = gsl_vector_alloc(6);
         gsl_vector_set(vector_prueba,0,2);
         gsl_vector_set(vector_prueba,1,20);
         gsl_vector_set(vector_prueba,2,-2);
@@ -466,7 +465,6 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 
 	// Establish the threshold as mean+nSigmas*sigma
 	*threshold = mean2+nSigmas*sg2;	// HARDPOINT!!!!!!!!!!!!!!!!!!! (nSigmas)
-	//cout<<*threshold<<endl;
 	//cout<<"threshold="<<*threshold<<endl;
         //cout<<"mean2="<<mean2<<" sigma="<<sg2<<endl;
         	
