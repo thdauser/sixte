@@ -66,7 +66,7 @@ struct Parameters {
   char Background;
 
   /** Telescope pointing direction [deg]. */
-  float RA, Dec;
+  float RA, Dec, rollangle;
 
   char Simput[MAXFILENAME];
   char Simput2[MAXFILENAME];

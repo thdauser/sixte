@@ -352,7 +352,7 @@ int erosim_main() {
 		if (par.Attitude == NULL) {
 			// Set up a simple pointing attitude.
 			ac = getPointingAttitude(mjdref, tstart, tstop,
-					par.RA * M_PI / 180., par.Dec * M_PI / 180., &status);
+					par.RA * M_PI / 180., par.Dec * M_PI / 180., par.rollangle*M_PI/180.,&status);
 			CHECK_STATUS_BREAK(status);
 
 		} else {
@@ -1061,10 +1061,12 @@ int erosim_getpar(struct Parameters* const par) {
 	if (par->Attitude == NULL) {
 		query_simput_parameter_float("RA", &(par->RA), &status);
 		query_simput_parameter_float("Dec", &(par->Dec), &status);
+		query_simput_parameter_float("rollangle",&(par->rollangle),&status);
 	} else {
 		// set to default values
 		par->RA = 0.0;
 		par->Dec = 0.0;
+		par->rollangle=0.0;
 		headas_chat(3, "using Attitude File: %s \n", par->Attitude);
 	}
 

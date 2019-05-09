@@ -405,6 +405,7 @@ Attitude* getPointingAttitude(const double mjdref,
 			      const double tstop,
 			      const double ra,
 			      const double dec,
+			      const double roll_angle,
 			      int* const status)
 {
   // First allocate memory.
@@ -419,6 +420,7 @@ Attitude* getPointingAttitude(const double mjdref,
   ac->tstop =tstop;
   ac->entry[0].time=tstart;
   ac->entry[0].nz=unit_vector(ra, dec);
+  ac->entry[0].roll_angle=roll_angle;
 
   return(ac);
 }

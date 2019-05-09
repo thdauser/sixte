@@ -80,7 +80,7 @@ struct Parameters {
   char AdvXMLFile[MAXFILENAME]; //Advanced setup for coded mask systems
 
     //detector pointing direction
-  double RA, DEC;
+  double RA, DEC, rollangle;
 
   char Simput[MAXFILENAME];
 

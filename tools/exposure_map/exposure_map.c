@@ -283,7 +283,7 @@ static Attitude* get_attitude(struct Parameters par, int *status){
         // There is either no file or it's called NONE
 	// So set up a simple pointing attitude.
 	ac=getPointingAttitude(0., par.TSTART, par.TSTART+par.timespan,
-				par.RA*M_PI/180., par.Dec*M_PI/180., status);
+				par.RA*M_PI/180., par.Dec*M_PI/180., par.rollangle*M_PI/180., status);
 	CHECK_STATUS_RET(*status,NULL);
  	CHECK_NULL_RET(ac,*status,"Failed to read Attitudefile",NULL);
 	return ac;
@@ -762,8 +762,7 @@ int exposure_map_getpar(struct Parameters *par)
 
   query_simput_parameter_float("RA",&par->RA, &status);
   query_simput_parameter_float("Dec",&par->Dec, &status);
-
-
+  query_simput_parameter_float("rollangle",&(par->rollangle),&status);
 
   // Read the diameter of the FOV (in arcmin).(Todo: do we really need this??)
   query_simput_parameter_float("fov_diameter",&(par->fov_diameter), &status);

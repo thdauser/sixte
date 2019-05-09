@@ -47,7 +47,7 @@ struct Parameters {
   char Attitude[MAXFILENAME];
 
   /** [deg] */
-  float RA, Dec;
+  float RA, Dec, rollangle;
 
   char Simput[MAXFILENAME];
 

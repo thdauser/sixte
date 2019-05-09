@@ -38,7 +38,7 @@ struct Parameters {
   char Attitude[MAXFILENAME];
 
   /** [deg] */
-  float RA, Dec;
+  float RA, Dec,rollangle;
 
   /** Flag whether the time information of the photons should be
       copied to the output file. The time column might be omitted in

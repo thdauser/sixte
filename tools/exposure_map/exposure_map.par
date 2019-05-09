@@ -1,6 +1,7 @@
 Attitude,s,h,"none",,,"attitude file (overwrites RA and Dec)"
 RA,r,h,0.0,0.0,360.0,"right ascension of telescope pointing (degree)"
 Dec,r,h,0.0,-90.0,90.0,"declination of telescope pointing (degree)"
+rollangle,r,h,0.0,0.0,360.0,"roll angle of telescope pointing (degree)"
 Vignetting,s,lq,"erosita_vignetting_v2.fits",,,"Vignetting data file (FITS input file)"
 XMLFile,s,lq,"",,,"XML input file(s) with detector definition (multiple seperated with ';') "
 Exposuremap,f,lq,"exposure.fits",,,"exposure map file (FITS output file) "

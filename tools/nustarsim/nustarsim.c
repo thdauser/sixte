@@ -236,7 +236,7 @@ int nustarsim_main()
     if ((strlen(par.Attitude)==0)||(0==strcmp(ucase_buffer, "NONE"))) {
       // Set up a simple pointing attitude.
       ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
-			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
+			     par.RA*M_PI/180., par.Dec*M_PI/180., par.rollangle*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
 
     } else {
@@ -950,6 +950,9 @@ int nustarsim_getpar(struct Parameters* const par)
 	       "pointing");
     return(status);
   }
+  
+  query_simput_parameter_float("rollangle",&(par->rollangle),&status);
+
 
   status=ape_trad_query_file_name("Simput", &sbuffer);
   if (EXIT_SUCCESS!=status) {

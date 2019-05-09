@@ -137,6 +137,7 @@ Attitude* getPointingAttitude(const double mjdref,
 			      const double tstop,
 			      const double ra,
 			      const double dec,
+			      const double roll_angle,
 			      int* const status);
 
 /** Check if the interval specified by tstart and tstop with respect

@@ -57,6 +57,8 @@ struct Parameters {
   float RA;
   /** Declination of pointing [deg]. */
   float Dec;
+  /** Roll angle of pointing [deg]. */
+  float rollangle;
 
   char clobber;
 };

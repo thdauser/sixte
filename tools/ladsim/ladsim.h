@@ -63,7 +63,7 @@ struct Parameters {
   char ProgressFile[MAXFILENAME];
 
   /** [deg] */
-  float RA, Dec;
+  float RA, Dec, rollangle;
 
   double MJDREF;
   double TSTART;

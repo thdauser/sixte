@@ -39,7 +39,7 @@ struct Parameters {
   char ProgressFile[MAXFILENAME];
 
   /** Telescope Pointing direction [deg]. */
-  float RA, Dec;
+  float RA, Dec, rollangle;
 
   double TSTART;
   double timespan;
@@ -299,7 +299,7 @@ int ero_exposure_main()
     if (par.Attitude==NULL) {
       // Set up a simple pointing attitude.
       ac=getPointingAttitude(0., par.TSTART, par.TSTART+par.timespan,
-			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
+			     par.RA*M_PI/180., par.Dec*M_PI/180., par.rollangle*M_PI/180., &status);
       CHECK_STATUS_BREAK(status);
 
     } else {
@@ -518,11 +518,13 @@ int ero_exposure_getpar(struct Parameters *par)
   if (par->Attitude==NULL) {
 	  query_simput_parameter_float("RA",&(par->RA),&status);
 	  query_simput_parameter_float("Dec",&(par->Dec),&status);
+	  query_simput_parameter_float("rollangle",&(par->rollangle),&status);
 	  headas_chat(3, "using RA=%.3f, Dec=%.3f as no Attitude file is given\n",par->RA,par->Dec);
   } else {
 	  // set to default values
 	  par->RA=0.0;
 	  par->Dec=0.0;
+	  par->rollangle=0.0;
 	  headas_chat(3, "using Attitude File: %s \n",par->Attitude);
   }
 

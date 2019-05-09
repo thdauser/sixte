@@ -52,7 +52,7 @@ struct Parameters {
   char *XMLFile;
 
   /** Telescope Pointing direction [deg]. */
-  float RA, Dec;
+  float RA, Dec, rollangle;
 
   double TSTART;
   double timespan;

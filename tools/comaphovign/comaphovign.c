@@ -124,7 +124,9 @@ int comaphovign_main() {
     if (0==strcmp(ucase_buffer, "NONE")) {
       // Set up a simple pointing attitude.
       ac=getPointingAttitude(mjdref, tstart, tstop,
-			     par.RA*M_PI/180., par.Dec*M_PI/180., &status);
+			     par.RA*M_PI/180., par.Dec*M_PI/180.,
+			     par.rollangle*M_PI/180.,
+			     &status);
       CHECK_STATUS_BREAK(status);
 
     } else {
@@ -339,6 +341,9 @@ int comaphovign_getpar(struct Parameters* par)
     SIXT_ERROR("failed reading the declination of the telescope pointing");
     return(status);
   }
+  
+  query_simput_parameter_float("rollangle",&(par->rollangle),&status);
+
 
   status=ape_trad_query_bool("TimeColumn", &par->TimeColumn);
   if (EXIT_SUCCESS!=status) {
