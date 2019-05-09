@@ -497,8 +497,14 @@ PSF* newPSF(const char* const filename,
 
 	// Check whether units of PSF image are given in [m].
 	char cunit1[MAXMSG]="", cunit2[MAXMSG]="";
-	if (fits_read_key(fptr, TSTRING, "CUNIT1", cunit1, comment, status)) break;
-	if (fits_read_key(fptr, TSTRING, "CUNIT2", cunit2, comment, status)) break;
+	if (fits_read_key(fptr, TSTRING, "CUNIT1", cunit1, comment, status)) {
+    SIXT_ERROR("could not find the CUNIT1 keyword in the PSF");
+    break;
+  }
+	if (fits_read_key(fptr, TSTRING, "CUNIT2", cunit2, comment, status)) {
+    SIXT_ERROR("could not find the CUNIT2 keyword in the PSF");
+    break;
+  }
 
 	if ((!strcmp(cunit1, "arcsec")) && (!strcmp(cunit2, "arcsec"))) {
 	  // Convert from [arcsec] -> [m]
