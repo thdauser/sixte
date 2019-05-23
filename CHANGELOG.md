@@ -1,3 +1,16 @@
+version [2.5.10]
+ - adds new tool attgen_dither which creates a Lissajous attitude
+ - adds roll angle parameter for pointing observations via command line
+ - adds missing std header keys to conform HEASARC
+ - adjusts parameter input for runsixt. If an xml file is given,
+   the parameters "Mission", "Instrument" and "Mode" are not queried anymore
+ - SIRENA
+   * fixes several bugs reagarding writing/reading HEADER
+   * testriggerfile now compatible with RECORDS and
+     TESRECORDS HDU
+   * improves handling is no maximum is found for lags
+   * improves list of input files handling
+
 version [2.5.9]
  - fixes bug in last version regarding pha2pi correction
  - updates SIRENA to conform new file format of xifusim
