@@ -128,9 +128,15 @@ int ero_vis_main()
     	SimputSrc* src=getSimputSrc(cat, 1, &status);
     	CHECK_STATUS_BREAK(status);
 
+
+    	double ra_center_img=0.0;
+    	double dec_center_img=0.0;
+
+
     	// Determine its position and angular extension.
-    	refpos=unit_vector(src->ra, src->dec);
-    	cone_radius=getSimputSrcExt(cat, src, 0., 0., &status);
+    	// refpos=unit_vector(src->ra, src->dec);
+    	cone_radius=getSimputSrcExt(cat, src, &ra_center_img, &dec_center_img, 0., 0., &status);
+		refpos=unit_vector(ra_center_img, dec_center_img);
     	CHECK_STATUS_BREAK(status);
 
     	// Loop over all sources in the catalog.
@@ -141,8 +147,9 @@ int ero_vis_main()
     		CHECK_STATUS_BREAK(status);
 
     		// Determine its position and angular extension.
-    		Vector srcpos=unit_vector(src->ra, src->dec);
-    		float extension=getSimputSrcExt(cat, src, 0., 0., &status);
+    		// Vector srcpos=unit_vector(src->ra, src->dec);
+    		float extension=getSimputSrcExt(cat, src, &ra_center_img, &dec_center_img, 0., 0., &status);
+    		Vector srcpos=unit_vector(ra_center_img, dec_center_img);
     		CHECK_STATUS_BREAK(status);
 
     		// Determine the angle between the reference direction and
