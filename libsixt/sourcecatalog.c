@@ -84,13 +84,17 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
   unsigned long nextended =0;
   unsigned long npointlike=0;
   long ii;
+
+  double ra_center_img=0.0;
+  double dec_center_img=0.0;
+
   for (ii=0; ii<cat->simput->nentries; ii++) {
     // Get the source.
     SimputSrc* src=getSimputSrc(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
     // Determine the extension.
-    float extension=getSimputSrcExt(cat->simput, src, 0., 0., status);
+    float extension=getSimputSrcExt(cat->simput, src, &ra_center_img, &dec_center_img, 0., 0., status);
     CHECK_STATUS_BREAK(*status);
     if (extension>0.) {
       // This is an extended source.
@@ -125,7 +129,7 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
     SimputSrc* src=getSimputSrc(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
-    float extension=getSimputSrcExt(cat->simput, src, 0., 0., status);
+    float extension=getSimputSrcExt(cat->simput, src, &ra_center_img, &dec_center_img, 0., 0., status);
     CHECK_STATUS_BREAK(*status);
 
     if (extension>0.) {
@@ -133,10 +137,11 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
       cat->nextsources++;
       // Start with an empty Source object for this entry.
       cat->extsources[cat->nextsources-1] = *templatesrc;
-      // Set the properties from the SIMPUT catalog (position,
-      // extension, and row number in the catalog).
-      cat->extsources[cat->nextsources-1].ra  = src->ra;
-      cat->extsources[cat->nextsources-1].dec = src->dec;
+      // Set the properties from the SIMPUT catalog (position, extension, and row number in the catalog).
+
+      // we need the center pixels here of the image, as this is what the extensions refers to)
+      cat->extsources[cat->nextsources-1].ra  = ra_center_img;
+      cat->extsources[cat->nextsources-1].dec = dec_center_img;
       cat->extsources[cat->nextsources-1].row = ii+1;
       cat->extsources[cat->nextsources-1].extension = extension;
 
@@ -213,23 +218,25 @@ LinkedPhoListElement* genFoVXRayPhotons(SourceCatalog* const cat,
   // Loop over all extended sources.
   long ii;
   for (ii=0; ii<cat->nextsources; ii++) {
-    // Check if at least a part of the source lies within the FoV.
-    Vector location=unit_vector(cat->extsources[ii].ra,
-				cat->extsources[ii].dec);
-    double min_align = close_mult*(fov*0.5 + cat->extsources[ii].extension);
-    if (min_align > M_PI){
-    	min_align -= 2*M_PI;
-    }
-    if (0==check_fov(&location, pointing,min_align)) {
-      // Generate photons for this particular source.
-      LinkedPhoListElement* newlist=
-	getXRayPhotons(&(cat->extsources[ii]), cat->simput,
-		       t0, t1, mjdref, status);
-      CHECK_STATUS_RET(*status, list);
+	  // Check if at least a part of the source lies within the FoV.
+	  Vector location=unit_vector(cat->extsources[ii].ra,
+			  cat->extsources[ii].dec);
+	  double min_align = close_mult*(fov*0.5) + cat->extsources[ii].extension;
+	  if (min_align > M_PI){
+		  min_align -= 2*M_PI;
+	  }
 
-      // Merge the new photons into the existing list.
-      list=mergeLinkedPhoLists(list, newlist);
-    }
+	  if (0==check_fov(&location, pointing,cos(min_align))) {
+
+		  // Generate photons for this particular source.
+		  LinkedPhoListElement* newlist=
+				  getXRayPhotons(&(cat->extsources[ii]), cat->simput,
+						  t0, t1, mjdref, status);
+		  CHECK_STATUS_RET(*status, list);
+
+		  // Merge the new photons into the existing list.
+		  list=mergeLinkedPhoLists(list, newlist);
+	  }
   }
 
   return(list);
