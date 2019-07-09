@@ -40,15 +40,18 @@
 #include "phproj.h"
 #include "sourcecatalog.h"
 #include "vector.h"
+#include "namelist.h"
 
 #define TOOLSUB erosim_main
 #include "headas_main.c"
 
 
 /** Maximum number of SIMPUT catalogs. */
-#define MAX_N_SIMPUT 6
+#define MAX_N_SIMPUT 20
 
 #define NUM_TELS 7
+
+#define DELIM ','
 
 struct Parameters {
   char Prefix[MAXFILENAME];

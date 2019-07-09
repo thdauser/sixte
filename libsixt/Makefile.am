@@ -60,7 +60,7 @@ libsixt_la_SOURCES=genericdetector.c squarepixels.c eventlist.c		\
           pulseprocess.cpp inoututils.cpp genutils.cpp          \
 		  crosstalk.c grading.c tescrosstalk.c linkedimplist.c  \
 		  masksystem.c mxs.c rndgen.c mt19937ar.c               \
-		  scheduler.cpp log.cpp
+		  scheduler.cpp log.cpp namelist.c
 
 ############ HEADERS #################
 
@@ -93,5 +93,5 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
         inoututils.h genutils.h crosstalk.h grading.h           \
 		tescrosstalk.h tespixel.h linkedimplist.h sixt_main.c   \
 		masksystem.h  mxs.h rndgen.h mt19937ar.h                \
-                scheduler.h log.h threadsafe_queue.h
+                scheduler.h log.h threadsafe_queue.h namelist.h
 

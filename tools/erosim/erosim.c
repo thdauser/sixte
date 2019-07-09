@@ -368,57 +368,87 @@ int erosim_main() {
 		// END of setting up the attitude.
 
 		// Load the SIMPUT X-ray source catalogs.
-		srccat[0] = loadSourceCatalog(par.Simput, arf7, &status);
-		CHECK_STATUS_BREAK(status);
+		headas_chat(4, "Starting to get simput names\n");
+		headas_chat(5, "Simput1\n");
+		name_list_t *simput_names;
+		simput_names = split_list((const char *) par.Simput, DELIM);
+		CHECK_NULL_BREAK(simput_names, status, "Getting simput names failed");
+
 
 		// Optional 2nd catalog.
+		headas_chat(5, "Simput2\n");
 		if (strlen(par.Simput2) > 0) {
 			strcpy(ucase_buffer, par.Simput2);
 			strtoupper(ucase_buffer);
 			if (0 != strcmp(ucase_buffer, "NONE")) {
-				srccat[1] = loadSourceCatalog(par.Simput2, arf7, &status);
-				CHECK_STATUS_BREAK(status);
+			  	name_list_t *tmp_names = split_list((const char *) par.Simput2, DELIM);
+				simput_names = add_list_to_list(simput_names, tmp_names);
+				CHECK_NULL_BREAK(simput_names, status, "Getting simput names failed");
 			}
 		}
 
 		// Optional 3rd catalog.
+		headas_chat(5, "Simput3\n");
 		if (strlen(par.Simput3) > 0) {
 			strcpy(ucase_buffer, par.Simput3);
 			strtoupper(ucase_buffer);
 			if (0 != strcmp(ucase_buffer, "NONE")) {
-				srccat[2] = loadSourceCatalog(par.Simput3, arf7, &status);
-				CHECK_STATUS_BREAK(status);
+			  	name_list_t *tmp_names = split_list((const char *) par.Simput3, DELIM);
+				simput_names = add_list_to_list(simput_names, tmp_names);
+				CHECK_NULL_BREAK(simput_names, status, "Getting simput names failed");
 			}
 		}
 
 		// Optional 4th catalog.
+		headas_chat(5, "Simput4\n");
 		if (strlen(par.Simput4) > 0) {
 			strcpy(ucase_buffer, par.Simput4);
 			strtoupper(ucase_buffer);
 			if (0 != strcmp(ucase_buffer, "NONE")) {
-				srccat[3] = loadSourceCatalog(par.Simput4, arf7, &status);
-				CHECK_STATUS_BREAK(status);
+			  	name_list_t *tmp_names = split_list((const char *) par.Simput4, DELIM);
+				simput_names = add_list_to_list(simput_names, tmp_names);
+				CHECK_NULL_BREAK(simput_names, status, "Getting simput names failed");
 			}
 		}
 
 		// Optional 5th catalog.
+		headas_chat(5, "Simput5\n");
 		if (strlen(par.Simput5) > 0) {
 			strcpy(ucase_buffer, par.Simput5);
 			strtoupper(ucase_buffer);
 			if (0 != strcmp(ucase_buffer, "NONE")) {
-				srccat[4] = loadSourceCatalog(par.Simput5, arf7, &status);
-				CHECK_STATUS_BREAK(status);
+			  	name_list_t *tmp_names = split_list((const char *) par.Simput5, DELIM);
+				simput_names = add_list_to_list(simput_names, tmp_names);
+				CHECK_NULL_BREAK(simput_names, status, "Getting simput names failed");
 			}
 		}
 
 		// Optional 6th catalog.
+		headas_chat(5, "Simput6\n");
 		if (strlen(par.Simput6) > 0) {
 			strcpy(ucase_buffer, par.Simput6);
 			strtoupper(ucase_buffer);
 			if (0 != strcmp(ucase_buffer, "NONE")) {
-				srccat[5] = loadSourceCatalog(par.Simput6, arf7, &status);
-				CHECK_STATUS_BREAK(status);
+			  	name_list_t *tmp_names = split_list((const char *) par.Simput3, DELIM);
+				simput_names = add_list_to_list(simput_names, tmp_names);
+				CHECK_NULL_BREAK(simput_names, status, "Getting simput names failed");
 			}
+		}
+		headas_chat(5, "done\n");
+
+		if ( simput_names->num > MAX_N_SIMPUT )
+		{
+		  char msg[MAXMSG];
+		  sprintf(msg, "Too many simput files given (Maximal supported: %d)", MAX_N_SIMPUT);
+		  SIXT_ERROR(msg);
+		  status = EXIT_FAILURE;
+		}
+
+		for (int ii=0; ii<simput_names->num; ii++)
+		{
+		  headas_chat(2, "Reading source catalog from %s\n", simput_names->names[ii]);
+		  srccat[ii] = loadSourceCatalog(simput_names->names[ii], arf7, &status);
+		  CHECK_STATUS_BREAK(status);
 		}
 
 		// --- End of Initialization ---
@@ -1070,7 +1100,7 @@ int erosim_getpar(struct Parameters* const par) {
 		headas_chat(3, "using Attitude File: %s \n", par->Attitude);
 	}
 
-	status = ape_trad_query_file_name("Simput", &sbuffer);
+	status = ape_trad_query_string("Simput", &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the name of the SIMPUT file");
 		return (status);
@@ -1078,7 +1108,7 @@ int erosim_getpar(struct Parameters* const par) {
 	strcpy(par->Simput, sbuffer);
 	free(sbuffer);
 
-	status = ape_trad_query_file_name("Simput2", &sbuffer);
+	status = ape_trad_query_string("Simput2", &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the name of the second SIMPUT file");
 		return (status);
@@ -1086,7 +1116,7 @@ int erosim_getpar(struct Parameters* const par) {
 	strcpy(par->Simput2, sbuffer);
 	free(sbuffer);
 
-	status = ape_trad_query_file_name("Simput3", &sbuffer);
+	status = ape_trad_query_string("Simput3", &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the name of the third SIMPUT file");
 		return (status);
@@ -1094,7 +1124,7 @@ int erosim_getpar(struct Parameters* const par) {
 	strcpy(par->Simput3, sbuffer);
 	free(sbuffer);
 
-	status = ape_trad_query_file_name("Simput4", &sbuffer);
+	status = ape_trad_query_string("Simput4", &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the name of the forth SIMPUT file");
 		return (status);
@@ -1102,7 +1132,7 @@ int erosim_getpar(struct Parameters* const par) {
 	strcpy(par->Simput4, sbuffer);
 	free(sbuffer);
 
-	status = ape_trad_query_file_name("Simput5", &sbuffer);
+	status = ape_trad_query_string("Simput5", &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the name of the fifth SIMPUT file");
 		return (status);
@@ -1110,7 +1140,7 @@ int erosim_getpar(struct Parameters* const par) {
 	strcpy(par->Simput5, sbuffer);
 	free(sbuffer);
 
-	status = ape_trad_query_file_name("Simput6", &sbuffer);
+	status = ape_trad_query_string("Simput6", &sbuffer);
 	if (EXIT_SUCCESS != status) {
 		SIXT_ERROR("failed reading the name of the sixth SIMPUT file");
 		return (status);
