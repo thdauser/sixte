@@ -319,6 +319,9 @@ typedef struct PulseDetected
 	
 	/** Vector containing the pulse adc values */
 	gsl_vector *pulse_adc;
+        
+        /** Vector containing the pulse adc values and the preBuffer*/
+	gsl_vector *pulse_adc_preBuffer;
 
 	/** Start time of the Pulse */
 	double Tstart;
@@ -509,6 +512,9 @@ typedef struct ReconstructInitSIRENA
   
   //Optimal Filter length (taken into account if OFStrategy=FIXED) **/
   int OFLength;
+  
+  //0-padding filter if 0 (from pulseLength to OFLength filter filled in with 0's) or filter with a filter+preBuffer if different from 0
+  int preBuffer;
 
   /** Write intermediate files **/
   int intermediate;
@@ -529,9 +535,14 @@ typedef struct ReconstructInitSIRENA
   double SaturationValue;
   
   /** Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0) **/
-  int tstartPulse1;
+  //int tstartPulse1;
+  char tstartPulse1[256];  // Integer number: Sample where the first pulse starts 
+                           // or
+                           // _nameFile: File where is the tstart (in seconds) of every pulse
   int tstartPulse2;
   int tstartPulse3;
+  
+  gsl_vector *tstartPulse1_i; // If tstartPulse1=_nameFile, all the tstart in the file are stored in this matrix 
   
   /** Energies for PCA **/
   double energyPCA1;
@@ -600,14 +611,15 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
                                     double filtEev, char* ofnoise, 
                                     int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, 
                                     char *ofinterp, char* oflength_strategy, 
-                                    int oflength,
+                                    int oflength, int preBuffer,
                                     double monoenergy, char hduPRECALWN, 
                                     char hduPRCLOFWM, int largeFilter, 
                                     int interm, char* detectFile, 
                                     char* filterFile, char clobber, 
                                     int maxPulsesPerRecord, 
                                     double SaturationValue,
-                                    int tstartPulse1, int tstartPulse2, 
+                                    //int tstartPulse1, int tstartPulse2, 
+                                    char* const tstartPulse1, int tstartPulse2, 
                                     int tstartPulse3, double energyPCA1, 
                                     double energyPCA2, char * const XMLFile, 
                                     int* const status);
@@ -649,7 +661,7 @@ extern "C"
 void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 
-LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int* const status);
+LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, int* const status);
 
 NoiseSpec* getNoiseSpec(const char* const filename,int opmode,int hduPRCLOFWM,char *energy_method,char *ofnoise,char *filter_method,int* const status);
 

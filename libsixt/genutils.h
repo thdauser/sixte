@@ -111,5 +111,7 @@
 	bool fileExists (const std::string& name);
 	
 	int parabola3Pts (gsl_vector *x, gsl_vector *y, double *a, double *b, double *c);
+        
+        bool isNumber(string s);
 
 #endif /*GENUTILS_H_*/

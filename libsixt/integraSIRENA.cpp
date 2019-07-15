@@ -123,7 +123,10 @@ int _resize_array(int size, int pulses){ return (size * MUL_FAC  < pulses) ? pul
 * - clobber: Overwrite or not output files if exist (1/0)
 * - maxPulsesPerRecord: Default size of the event list
 * - SaturationValue: Saturation level of the ADC curves
-* - tstartPulse1: Tstart (samples) of the first pulse (different from 0 if the tstartPulsei input parameters are going to be used)
+* (- tstartPulse1: Tstart (samples) of the first pulse (different from 0 if the tstartPulsei input parameters are going to be used))
+* - tstartPulse1: If integer number => Sample where the first pulse starts 
+                  or
+                  if nameFile => File where is the tstart (in seconds) of every pulse
 * - tstartPulse2: Tstart (samples) of the second pulse
 * - tstartPulse3: Tstart (samples) of the third pulse (if 0 => PAIRS, if not 0 => TRIOS)
 * - energyPCA1: First energy (only for PCA) 
@@ -135,14 +138,17 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 		char* const library_file, char* const event_file, int pulse_length, double scaleFactor, double samplesUp, double samplesDown,
 		double nSgms, int detectSP, int opmode, char *detectionMode, double LrsT, double LbT, char* const noise_file, char* filter_domain, char* filter_method, 
 		char* energy_method, double filtEev, char *ofnoise, int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, char *ofinterp,
-		char* oflength_strategy, int oflength,
+		char* oflength_strategy, int oflength, int preBuffer,
 		double monoenergy, char hduPRECALWN, char hduPRCLOFWM, int largeFilter, int interm, char* const detectFile, char* const filterFile,
 		char clobber, int maxPulsesPerRecord, double SaturationValue,
-		int tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status)
+		//int tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status)
+                char* const tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status)
 {  
 	//gsl_set_error_handler_off();
 	/*string message = "";
 	char valERROR[256];*/
+        
+        string message = "";
 
 	// Load LibraryCollection structure if library file exists
 	int exists=0;
@@ -157,7 +163,7 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	{	
 		if (opmode == 1)		largeFilter = pulse_length;
                 
-		reconstruct_init->library_collection = getLibraryCollection(library_file, opmode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, lagsornot, status);
+		reconstruct_init->library_collection = getLibraryCollection(library_file, opmode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, lagsornot, preBuffer, status);
 		if (*status)
 		{
 			EP_EXIT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
@@ -225,7 +231,6 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 		if ((opmode == 1) && (strcmp(energy_method,"OPTFILT") == 0) && (strcmp(ofnoise,"WEIGHTM") == 0) 
 			&& (largeFilter > pow(2,reconstruct_init->noise_spectrum->weightMatrixes->size1)))
 		{
-			string message = "";
 			char valueAux[256];
 			sprintf(valueAux,"%d",largeFilter);
 			string str(valueAux);
@@ -233,6 +238,69 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 			EP_EXIT_ERROR(message,EPFAIL);
 		}
 	}
+	
+	// Fill in the matrix tstartPulse1_i because tstartPulse1 = nameFile
+        if (!isNumber(tstartPulse1))
+        {
+                fitsfile *tstartPulse1FileObject = NULL;
+                if (fits_open_file(&tstartPulse1FileObject,tstartPulse1,READONLY,status))
+                {
+                        message = "Cannot open tstartPulse1 file " + string(tstartPulse1);
+                        EP_EXIT_ERROR(message,EPFAIL);
+                }
+                char extname[20];
+                strcpy(extname,"PIXELIMPACT");
+                if (fits_movnam_hdu(tstartPulse1FileObject, ANY_HDU,extname, 0, status))
+                {
+                        message = "Cannot move to HDU " + string(extname) + " in tstartPulse1 file " + string(tstartPulse1);
+                        EP_EXIT_ERROR(message,EPFAIL);
+                }
+                long totalpulses = 0;
+                if (fits_get_num_rows(tstartPulse1FileObject,&totalpulses, status))
+                {
+                        message = "Cannot get number of rows in " + string(tstartPulse1);
+                         EP_EXIT_ERROR(message,EPFAIL);
+                }
+                //cout<<"totalpulses: "<<totalpulses<<endl;
+                
+                reconstruct_init->tstartPulse1_i = gsl_vector_alloc(totalpulses);
+                
+                char column_name[12];
+                int time_colnum = 0;
+                strcpy(column_name,"TIME");
+                if (fits_get_colnum(tstartPulse1FileObject, CASEINSEN,column_name, &time_colnum, status))
+                {
+                        message = "Cannot get column number for TIME in tstartPulse1 file";
+                        EP_EXIT_ERROR(message,EPFAIL);
+                }
+                IOData obj;
+                obj.inObject = tstartPulse1FileObject;
+                obj.nameTable = new char [255];
+                strcpy(obj.nameTable,"PIXELIMPACT");
+                obj.iniCol = 0;
+                obj.nameCol = new char [255];
+                obj.unit = new char [255];
+                strcpy(obj.nameCol,"TIME");
+                obj.type = TDOUBLE;
+                obj.iniRow = 1;
+                obj.endRow = totalpulses;
+                if (readFitsSimple (obj,&reconstruct_init->tstartPulse1_i))
+                {
+                        message = "Cannot run readFitsSimple in integraSIRENA.cpp";
+                        EP_EXIT_ERROR(message,EPFAIL);
+                }
+                //cout<<gsl_vector_get(reconstruct_init->tstartPulse1_i,0)<<" "<<gsl_vector_get(reconstruct_init->tstartPulse1_i,1)<<" "<<gsl_vector_get(reconstruct_init->tstartPulse1_i,2)<<" "<<gsl_vector_get(reconstruct_init->tstartPulse1_i,totalpulses-1)<<endl;
+            
+                delete [] obj.nameTable;
+                delete [] obj.nameCol;
+                delete [] obj.unit;
+
+                if (fits_close_file(tstartPulse1FileObject, status))
+                {
+                        message = "Error closing tstartPulse1 file";
+                        EP_EXIT_ERROR(message,EPFAIL);
+                }
+        }
 
 	// Fill in reconstruct_init
 	strncpy(reconstruct_init->record_file,record_file,255);
@@ -279,14 +347,20 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 	strcpy(reconstruct_init->OFInterp,ofinterp);
 	strcpy(reconstruct_init->OFStrategy,oflength_strategy);
 	reconstruct_init->OFLength      = oflength;
+        reconstruct_init->preBuffer      = preBuffer;
 	reconstruct_init->intermediate  = interm;
 	reconstruct_init->SaturationValue  = SaturationValue;
-	if (tstartPulse1 != 0)
+        
+        
+        strncpy(reconstruct_init->tstartPulse1,tstartPulse1,255);
+	reconstruct_init->tstartPulse1[255]='\0';
+	/*if (tstartPulse1 != 0)
 	{
 		if (strcmp(energy_method,"I2RALL") == 0)	reconstruct_init->tstartPulse1 = tstartPulse1-1-1;	// Because of the derivative
 		else 						reconstruct_init->tstartPulse1 = tstartPulse1-1;	// To be consistent in the GSL indexes which start from 0
 	}
-	else			reconstruct_init->tstartPulse1 = tstartPulse1;
+	else			reconstruct_init->tstartPulse1 = tstartPulse1;*/
+        
 	if (tstartPulse2 != 0)
 	{
 		if (strcmp(energy_method,"I2RALL") == 0)	reconstruct_init->tstartPulse2 = tstartPulse2-1-1;	// Because of the derivative
@@ -524,15 +598,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                                 //cout<<"LFILTER: "<<LFILTER<<endl;
                                 reconstruct_init->i2rdata->LFILTER = LFILTER;
                                 
-                                /*reconstruct_init->i2rdata->R0 = 0.00711552;
-                                reconstruct_init->i2rdata->I0_START = 1.3555e-05;
-                                reconstruct_init->i2rdata->IMIN = 1.35523e-06;
-                                reconstruct_init->i2rdata->IMAX = 1.39e-05;
-                                reconstruct_init->i2rdata->RPARA = 0.001;
-                                reconstruct_init->i2rdata->TTR = 0.9144;
-                                reconstruct_init->i2rdata->LFILTER = 2e-06;
-                                
-                                cout<<"Imin: "<<reconstruct_init->i2rdata->IMIN<<endl;
+                                /*cout<<"Imin: "<<reconstruct_init->i2rdata->IMIN<<endl;
                                 cout<<"Imax: "<<reconstruct_init->i2rdata->IMAX<<endl;
                                 cout<<"R0: "<<reconstruct_init->i2rdata->R0<<endl;
                                 cout<<"Ibias: "<<reconstruct_init->i2rdata->I0_START<<endl;
@@ -542,6 +608,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                         }
                 }
         }
+        //cout<<"Before runDetect"<<endl;
 	runDetect(record, lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
         //log_trace("After runDetect");
         //cout<<"After runDetect"<<endl;
@@ -555,7 +622,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	if ((reconstruct_init->opmode == 1) && (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0))
 	{
 		// Filter pulses and calculates energy
-		runEnergy(record, &reconstruct_init, &pulsesInRecord, optimalFilter);
+		runEnergy(record, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
 	}
 	//log_trace("After runEnergy");
         //cout<<"After runEnergy"<<endl;
@@ -631,10 +698,12 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			(*pulsesAll)->pulses_detected[i+pulsesAllAux->ndetpulses] = pulsesInRecord->pulses_detected[i];
 		}
 	}
+	//cout<<"After runEnergy1"<<endl;
 		
 	//cout<<"pulsesAll: "<<(*pulsesAll)->ndetpulses<<endl;
 	//cout<<"pulsesInRecord: "<<pulsesInRecord->ndetpulses<<endl;
 	
+        //if (event_list->energies != NULL)   cout<<"event_list->energies != NULL"<<endl;
 	// Free & Fill TesEventList structure
 	event_list->index = pulsesInRecord->ndetpulses;
 	event_list->energies = new double[event_list->index];
@@ -653,6 +722,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 	
 	if (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0)     // Different from PCA
 	{
+                //cout<<"After runEnergyA"<<endl;
 	   	for (int ip=0; ip<pulsesInRecord->ndetpulses; ip++)
 		{	  			
                         event_list->event_indexes[ip] = (pulsesInRecord->pulses_detected[ip].Tstart - record->time)/record->delta_t;	
@@ -676,8 +746,10 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			event_list->pulse_heights[ip]  = pulsesInRecord->pulses_detected[ip].pulse_height;
 			event_list->ph_ids[ip]   = 0;
 		}
-		/*if (lastRecord == 1)
+		//cout<<"After runEnergyB"<<endl;
+		if (lastRecord == 1)
                 {       
+                        //cout<<"After runEnergyC"<<endl;
                         double numLagsUsed_mean;
                         double numLagsUsed_sigma;
                         gsl_vector *numLagsUsed_vector = gsl_vector_alloc((*pulsesAll)->ndetpulses);
@@ -691,9 +763,10 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                                 EP_EXIT_ERROR("Cannot run findMeanSigma routine for calculating numLagsUsed statistics",EPFAIL);
                         }
                  
-                        if (numLagsUsed_vector != NULL) gsl_vector_free(numLagsUsed_vector); numLagsUsed_vector = 0;
                         gsl_vector_free(numLagsUsed_vector);
-                }*/
+                        //cout<<"After runEnergyD"<<endl;
+                }
+                //cout<<"After runEnergyE"<<endl;
 	}
 	else
 	{
@@ -738,11 +811,24 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 			}
 		}
 	}
-
+	//cout<<"After runEnergy3"<<endl;
+        
+        /*if(pulsesAllAux->ndetpulses == 0) 
+	{
+          delete pulsesAllAux; pulsesAllAux = 0;
+	}
+	if(pulsesInRecord->pulses_detected == 0) 
+	{
+          delete [] pulsesInRecord->pulses_detected; pulsesInRecord->pulses_detected = 0;
+	}
+	if(pulsesInRecord->ndetpulses == 0) 
+	{
+          delete pulsesInRecord; pulsesInRecord = 0;
+	}*/
 	delete pulsesAllAux; pulsesAllAux = 0;
 	delete [] pulsesInRecord->pulses_detected; pulsesInRecord->pulses_detected = 0;
 	delete pulsesInRecord; pulsesInRecord = 0;
-        delete reconstruct_init->i2rdata; reconstruct_init->i2rdata = 0;
+        //cout<<"After runEnergy4"<<endl;
 
 	return;
 }
@@ -889,7 +975,7 @@ extern "C" void freeOptimalFilterSIRENA(OptimalFilterSIRENA* OFilterColl)
 * - lagsornot: Lags (1) or no lags (0)
 * - status: Input/output status
 ******************************************************************************/
-LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char* filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int* const status)
+LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char* filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, int* const status)
 {  	
         // Create LibraryCollection structure
 	LibraryCollection* library_collection = new LibraryCollection;
@@ -2013,7 +2099,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 			{
 				int nOFs_aux;
 				nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
-				if (nOFs_aux == floor(log2(template_duration)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+				//if (nOFs_aux == floor(log2(template_duration)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+				if (nOFs_aux == floor(log2(template_duration - preBuffer)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
 				else 							nOFs = (nOFs-1)/2;	// /2 because the AB column
 			}
 			else 								nOFs = (nOFs-1)/2;	// /2 because the AB column
@@ -2032,7 +2119,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 					if (i==0)	lengthALL_F = lengthALL_F + template_durationPLSMXLFF*2;
 					else		lengthALL_F = lengthALL_F + pow(2,floor(log2(template_duration))-i+1)*2;
 				}
-				else	lengthALL_F = lengthALL_F + pow(2,floor(log2(template_duration))-i)*2;
+				//else	lengthALL_F = lengthALL_F + pow(2,floor(log2(template_duration))-i)*2;
+                                else	lengthALL_F = lengthALL_F + (pow(2,floor(log2(template_duration - preBuffer))-i) + preBuffer)*2;
 			}
 						
 			strcpy(obj.nameTable,"FIXFILTF");
@@ -2059,8 +2147,10 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 					}
 					else
 					{
-						snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
-						matrixAux_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
+						//snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
+                                                //matrixAux_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
+                                                snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)) + preBuffer);
+						matrixAux_OFFx = gsl_matrix_alloc(ntemplates,(pow(2,floor(log2(template_duration - preBuffer))-i) + preBuffer)*2);
 					}
 					strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
 					if (readFitsComplex (obj,&matrixAux_OFFx))
@@ -2081,7 +2171,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 						if (i==0)	index = index + template_durationPLSMXLFF*2;
 						else 		index = index + pow(2,floor(log2(template_duration))-i+1)*2;
 					}
-					else    index = index + pow(2,floor(log2(template_duration))-i)*2;
+					//else    index = index + pow(2,floor(log2(template_duration))-i)*2;
+					else    index = index + (pow(2,floor(log2(template_duration - preBuffer))-i) + preBuffer)*2;
 						
 					gsl_matrix_free(matrixAux_OFFx);
 				}
@@ -2179,7 +2270,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 			{
 				  int nOFs_aux;
 				  nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
-				  if (nOFs_aux == floor(log2(template_duration)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+				  //if (nOFs_aux == floor(log2(template_duration)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+				  if (nOFs_aux == floor(log2(template_duration - preBuffer)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
 				  else 								nOFs = (nOFs-1)/2;	// /2 because the AB column
 			}
 			else	  nOFs = (nOFs-1)/2;	// /2 because the AB column
@@ -2198,7 +2290,11 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 					if (i==0)	lengthALL_T = lengthALL_T + template_durationPLSMXLFF;
 					else  		lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration))-i+1);
 				}
-				else    lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration))-i);
+				//else    lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration))-i);
+				else    
+                                {
+                                        lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration - preBuffer))-i) + preBuffer;
+                                }
 			}
 		
 			strcpy(obj.nameTable,"FIXFILTT");
@@ -2225,15 +2321,19 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 					}
 					else
 					{
-						snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
-						matrixAux_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i));
+						//snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
+						//matrixAux_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i));
+                                                snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration - preBuffer))-i) + preBuffer));
+						matrixAux_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration - preBuffer))-i) + preBuffer);
 					}
 					strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
+                                        //cout<<"obj.nameCol: "<<obj.nameCol<<endl;
 					if (readFitsComplex (obj,&matrixAux_OFTx))
 					{
 						EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
 						*status=EPFAIL; return(library_collection);
 					}
+                                        
 					for (int j=0;j<matrixAux_OFTx->size1;j++)
 					{
 						for (int k=0;k<matrixAux_OFTx->size2;k++)
@@ -2247,7 +2347,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 						if (i==0)	index = index + template_durationPLSMXLFF;
 						else		index = index + pow(2,floor(log2(template_duration))-i+1);
 					}
-					else    index = index + pow(2,floor(log2(template_duration))-i);
+					//else    index = index + pow(2,floor(log2(template_duration))-i);
+					else    index = index + pow(2,floor(log2(template_duration -preBuffer))-i) + preBuffer;
 					
 					gsl_matrix_free(matrixAux_OFTx);
 				}
@@ -2358,8 +2459,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 		}
 		library_collection->nfixedfilters = nOFs;
 		
-                cout<<"nOFs: " <<nOFs<<endl;
-                cout<<"ncols: " <<ncols<<endl;
+                //cout<<"nOFs: " <<nOFs<<endl;
+                //cout<<"ncols: " <<ncols<<endl;
 		int lengthALL_PRCLOFWM = 0;
 		for (int i=0;i<nOFs;i++)
 		{
@@ -2395,7 +2496,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 				snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
 				matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
 			}
-			cout<<"size2: "<<pow(2,floor(log2(template_duration))-i+1)*2<<endl;
+			//cout<<"size2: "<<pow(2,floor(log2(template_duration))-i+1)*2<<endl;
 						  
 			strcpy(obj.nameCol,(string("OFW")+string(str_length)).c_str());
 			if (readFitsComplex (obj,&matrixAux_PRCLOFWMx))
@@ -2422,8 +2523,8 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 			gsl_matrix_free(matrixAux_PRCLOFWMx);
 		}
 		
-		cout<<"ntemplates: "<<ntemplates<<endl;
-                cout<<"lengthALL_PRCLOFWM: "<<lengthALL_PRCLOFWM<<endl;
+		//cout<<"ntemplates: "<<ntemplates<<endl;
+                //cout<<"lengthALL_PRCLOFWM: "<<lengthALL_PRCLOFWM<<endl;
 		library_collection->PRCLOFWM = gsl_matrix_alloc(ntemplates, lengthALL_PRCLOFWM);
 		gsl_matrix_memcpy(library_collection->PRCLOFWM,matrixALL_PRCLOFWMx);
 		gsl_matrix_free(matrixALL_PRCLOFWMx);
@@ -2804,11 +2905,12 @@ ReconstructInitSIRENA::ReconstructInitSIRENA():
   //OFInterp(""),
   //OFStrategy(""),
   OFLength(0),
+  preBuffer(0),
   //detectFile(""),
   //filterFile(""),
   clobber(0),
   SaturationValue(0.0f),
-  tstartPulse1(0),
+  //tstartPulse1(0),
   tstartPulse2(0),
   tstartPulse3(0),
   energyPCA1(0.0f),
@@ -2859,12 +2961,13 @@ ReconstructInitSIRENA::ReconstructInitSIRENA(const ReconstructInitSIRENA& other)
   //OFInterp(""),
   //OFStrategy(""),
   OFLength(other.OFLength),
+  preBuffer(other.preBuffer),
   intermediate(intermediate),
   clobber(other.clobber),
   //detectFile(""),
   //filterFile(""),
   SaturationValue(other.SaturationValue),
-  tstartPulse1(other.tstartPulse1),
+  //tstartPulse1(other.tstartPulse1),
   tstartPulse2(other.tstartPulse2),
   tstartPulse3(other.tstartPulse3),
   energyPCA1(other.energyPCA1),
@@ -2991,6 +3094,7 @@ ReconstructInitSIRENA::operator=(const ReconstructInitSIRENA& other)
     strcpy(OFStrategy, other.OFStrategy);
 
     OFLength = other.OFLength;
+    preBuffer = other.preBuffer;
     intermediate = other.intermediate;
     
     strcpy(detectFile, other.detectFile);
@@ -2999,7 +3103,8 @@ ReconstructInitSIRENA::operator=(const ReconstructInitSIRENA& other)
     clobber = other.clobber;
     maxPulsesPerRecord = other.maxPulsesPerRecord;
     SaturationValue = other.SaturationValue;
-    tstartPulse1 = other.tstartPulse1;
+    //tstartPulse1 = other.tstartPulse1;
+    strcpy(tstartPulse1,other.tstartPulse1);
     tstartPulse2 = other.tstartPulse2;
     tstartPulse3 = other.tstartPulse3;
     energyPCA1 = other.energyPCA1;
@@ -3108,6 +3213,7 @@ ReconstructInitSIRENA* ReconstructInitSIRENA::get_threading_object(int n_record)
   strcpy(ret->OFStrategy, this->OFStrategy);
     
   ret->OFLength = this->OFLength;
+  ret->preBuffer = this->preBuffer;
   ret->intermediate = this->intermediate;
   
   strcpy(ret->detectFile, this->detectFile);
@@ -3117,7 +3223,8 @@ ReconstructInitSIRENA* ReconstructInitSIRENA::get_threading_object(int n_record)
   ret->clobber = this->clobber;
   ret->maxPulsesPerRecord = this->maxPulsesPerRecord;
   ret->SaturationValue = this->SaturationValue;
-  ret->tstartPulse1 = this->tstartPulse1;
+  //ret->tstartPulse1 = this->tstartPulse1;
+  strcpy(ret->tstartPulse1, this->tstartPulse1);
   ret->tstartPulse2 = this->tstartPulse2;
   ret->tstartPulse3 = this->tstartPulse3;
   ret->energyPCA1 = this->energyPCA1;
@@ -3775,6 +3882,7 @@ PulseDetected::PulseDetected():
   grade2_1(0),
   pixid(0),
   pulse_adc(0),
+  pulse_adc_preBuffer(0),
   Tstart(0.0f),
   TstartSamples(0.0f),
   Tend(0.0f),
@@ -3802,6 +3910,7 @@ PulseDetected::PulseDetected(const PulseDetected& other):
   grade2_1(other.grade2_1),
   pixid(other.pixid),
   pulse_adc(0),
+  pulse_adc_preBuffer(0),
   Tstart(other.Tstart),
   TstartSamples(other.TstartSamples),
   Tend(other.Tend),
@@ -3823,6 +3932,10 @@ PulseDetected::PulseDetected(const PulseDetected& other):
     pulse_adc = gsl_vector_alloc(other.pulse_adc->size);
     gsl_vector_memcpy(pulse_adc, other.pulse_adc);
   }
+  if(other.pulse_adc_preBuffer){
+    pulse_adc_preBuffer = gsl_vector_alloc(other.pulse_adc_preBuffer->size);
+    gsl_vector_memcpy(pulse_adc_preBuffer, other.pulse_adc_preBuffer);
+  }
 }
 
 PulseDetected& PulseDetected::operator=(const PulseDetected& other)
@@ -3840,6 +3953,13 @@ PulseDetected& PulseDetected::operator=(const PulseDetected& other)
     if(other.pulse_adc){
       pulse_adc = gsl_vector_alloc(other.pulse_adc->size);
       gsl_vector_memcpy(pulse_adc, other.pulse_adc);
+    }
+    if(pulse_adc_preBuffer) {
+      gsl_vector_free(pulse_adc_preBuffer); pulse_adc_preBuffer = 0;
+    }
+    if(other.pulse_adc_preBuffer){
+      pulse_adc_preBuffer = gsl_vector_alloc(other.pulse_adc_preBuffer->size);
+      gsl_vector_memcpy(pulse_adc_preBuffer, other.pulse_adc_preBuffer);
     }
     Tstart = other.Tstart;
     TstartSamples = other.TstartSamples;
@@ -3865,6 +3985,9 @@ PulseDetected::~PulseDetected()
 {
   if(pulse_adc) {
     gsl_vector_free(pulse_adc); pulse_adc = 0;
+  }
+  if(pulse_adc_preBuffer) {
+    gsl_vector_free(pulse_adc_preBuffer); pulse_adc_preBuffer = 0;
   }
 }
 

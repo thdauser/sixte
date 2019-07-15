@@ -64,7 +64,8 @@ void energy_worker()
       th_runEnergy(data->rec, 
                    &(data->rec_init),
                    &(data->record_pulses),
-                   &(data->optimal_filter));
+                   //&(data->optimal_filter));
+                   &(data->optimal_filter),data->all_pulses);
       end_queue.push(data);
       std::unique_lock<std::mutex> lk(records_energy_mut);
       ++records_energy;
@@ -90,7 +91,8 @@ void energy_worker_v2()
       th_runEnergy(data->rec, 
                    &(data->rec_init),
                    &(data->record_pulses),
-                   &(data->optimal_filter));
+                   //&(data->optimal_filter);
+                   &(data->optimal_filter),data->all_pulses);
       end_queue.push(data);
       std::unique_lock<std::mutex> lk(records_energy_mut);
       ++records_energy;

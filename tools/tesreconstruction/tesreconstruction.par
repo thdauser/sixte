@@ -46,10 +46,15 @@ OFLib,b,h,no,,,"Work or not with a library with optimal filters (1/0)"
 #OFInterp,s,h,"MF",,,"Optimal Filter by using the Matched Filter or the DAB as matched filter (MF/DAB)"
 OFStrategy,s,h,"FREE",,,"Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED"
 OFLength,i,h,512,,,"Optimal Filter length (taken into account if OFStrategy=FIXED)"
+preBuffer,i,h,0,,,"0-padding filter if 0 (from pulseLength to OFLength filter filled in with 0's) or filter with a filter+preBuffer if different from 0"
 intermediate,i,h,0,,,"Write or not intermediate files (1/0)"
 detectFile,s,h,"detections.fits",,,"Intermediate detections file (if intermediate=1)"
 filterFile,s,h,"filters.fits",,,"Intermediate filters file (if intermediate=1)" 
-tstartPulse1,i,h,0,,,"Tstart (samples) of the first pulse (different from 0 if the tstartPulsei input parameters are going to be used)"
+#tstartPulse1,i,h,0,,,"Tstart (samples) of the first pulse (different from 0 if the tstartPulsei input parameters are going to be used)"
+#
+# tstartPulse1 can not start with '@' because the function HDpar_stamp which writes the parameter in the HISTORY output FITS file does not work
+#
+tstartPulse1,s,h,"0",,,"Integer number: Sample where the first pulse starts or nameFile: File where is the tstart (in seconds) of every pulse"
 tstartPulse2,i,h,0,,,"Tstart (samples) of the second pulse"
 tstartPulse3,i,h,0,,,"Tstart (samples) of the third pulse (if 0 => PAIRS, if not 0 => TRIOS)"
 energyPCA1,r,h,500,,,"First energy (only for PCA)"

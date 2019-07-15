@@ -42,6 +42,8 @@
 	#include <inoututils.h>
 
 	#include <integraSIRENA.h>
+	
+	#include <iomanip>      // std::setprecision
 
 	int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sampleRate);
 	int differentiate (gsl_vector **invector,int szVct);
@@ -116,9 +118,7 @@
 		int *tstart,
 		int *flagTruncated,
 
-		double *threshold,
-
-		int tstartProvided = 0);
+		double *threshold);
 	
 	int FindSecondaries
 	(
@@ -160,7 +160,9 @@
                 gsl_vector **maxDERgsl,
                 gsl_vector **samp1DERgsl);
         
-        int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **samp1DERgsl);
+        //int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **samp1DERgsl);
+        
+        int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **samp1DERgsl, long num_previousDetectedPulses, double samprate, double tstartRecord);
 
 	using namespace std;
 

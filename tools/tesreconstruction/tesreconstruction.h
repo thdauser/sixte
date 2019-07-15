@@ -104,7 +104,7 @@ struct Parameters {
 	int opmode;
         
         //DetectionMode: Adjusted Derivative(AD) or Single Threshold Crossing(STC)
-	char detectionMode[3];
+	char detectionMode[4];
 
 	/** Monochromatic energy for library creation **/
 	double monoenergy;
@@ -165,6 +165,9 @@ struct Parameters {
 
 	//Optimal Filter length (taken into account if OFStrategy=FIXED) **/
 	int OFLength;
+        
+        //0-padding filter if 0 (from pulseLength to OFLength filter filled in with 0's) or filter with a filter+preBuffer if different from 0 **/
+	int preBuffer;
 	
 	//Write intermediate files (Yes:1, No:0)
 	int intermediate;
@@ -176,7 +179,10 @@ struct Parameters {
 	char filterFile[256];
 	
 	// Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0)
-	int tstartPulse1;
+	//int tstartPulse1;
+        char tstartPulse1[MAXFILENAME]; // Integer number: Sample where the first pulse starts 
+                                        // or
+                                        // nameFile: File where is the tstart (in seconds) of every pulse
 	int tstartPulse2;
 	int tstartPulse3;
 	
