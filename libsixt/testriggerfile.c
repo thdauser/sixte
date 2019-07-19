@@ -173,9 +173,10 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 
 	//Open record file in READONLY mode
 	fits_open_file(&(file->fptr), filename, READONLY, status);
-	//Read standard keywords
-	//(shouldn't we read these from the record extension?)
-	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
+        
+        int hdunum;
+        fits_get_num_hdus(file->fptr, &hdunum,status);
+        
 	//Move to the binary table
 	fits_movnam_hdu(file->fptr,ANY_HDU,"RECORDS",0, status);
 	if (*status != 0)
@@ -183,19 +184,42 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 		*status = 0;
  		fits_movnam_hdu(file->fptr,ANY_HDU,"TESRECORDS",0, status);
 	}
+	//Read standard keywords
+	//(shouldn't we read these from the record extension?)
+	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
+        
 	//Get number of rows
 	char comment[FLEN_COMMENT];
 	fits_read_key(file->fptr, TINT, "NAXIS2", &(file->nrows), comment, status);
-	//Get trigger_size
-	fits_read_key(file->fptr, TULONG, "TRIGGSZ", &(file->trigger_size), comment, status);
-	//Get delta_t
-	fits_read_key(file->fptr, TDOUBLE, "DELTAT", &(file->delta_t), comment, status);
-	//Associate column numbers
+        
+        //Associate column numbers
 	fits_get_colnum(file->fptr, CASEINSEN,"TIME", &(file->timeCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"ADC", &(file->trigCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"PIXID", &(file->pixIDCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"PH_ID", &(file->ph_idCol), status);
 	CHECK_STATUS_RET(*status, NULL);
+        
+        if (hdunum != 8)
+        {
+                //Get trigger_size
+                fits_read_key(file->fptr, TULONG, "TRIGGSZ", &(file->trigger_size), comment, status);
+                //Get delta_t
+                fits_read_key(file->fptr, TDOUBLE, "DELTAT", &(file->delta_t), comment, status);
+        }
+        else
+        {
+                //Get trigger_size
+                fits_movnam_hdu(file->fptr,ANY_HDU,"TRIGGERPARAM",0, status);
+                fits_read_key(file->fptr, TULONG, "RECLEN", &(file->trigger_size), comment, status);
+                
+                fits_movnam_hdu(file->fptr,ANY_HDU,"RECORDS",0, status);
+                if (*status != 0)
+                {
+                        *status = 0;
+                        fits_movnam_hdu(file->fptr,ANY_HDU,"TESRECORDS",0, status);
+                }
+                file->delta_t = -999;
+        }
 
 	return(file);
 }
