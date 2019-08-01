@@ -139,7 +139,7 @@ AC_SEARCH_LIBS([posstring], [posstring], [], [AC_MSG_ERROR([ libposstring not fo
 AC_SEARCH_LIBS([nhinit], [labnh], [], [AC_MSG_ERROR([ liblabnh not found (should be part of simput)!])], [-lm -lposstring])
 AC_SEARCH_LIBS([headas_clobberfile], [hdutils], [], [AC_MSG_ERROR([ libhdutils not found (should be part of simput)!])], [-lm -lhdio])
 AC_SEARCH_LIBS([headas_init], [hdinit], [], [AC_MSG_ERROR([ libhdinit not found (should be part of simput)!])], [-lm -lhdio -lhdutils])
-AC_SEARCH_LIBS([freeRMF], [simput], [], [AC_MSG_ERROR([ libsimput not found! specify path with --with-libsimput-prefix])], [-lm -lape -lhdinit -lhdio -lhdutils -lhdinit] )
+AC_SEARCH_LIBS([freeRMF], [simput], [], [AC_MSG_ERROR([ libsimput not found! specify path with --with-libsimput])], [-lm -lape -lhdinit -lhdio -lhdutils -lhdinit] )
 
 
 # The following line tells 'configure' to create a header file 'config.h'
