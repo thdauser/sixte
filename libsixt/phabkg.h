@@ -46,6 +46,9 @@ typedef struct {
   /** PHA channel numbers. */
   long* channel;
 
+  /** Reference to RMF with corresponding energies */
+  struct RMF* rmf;
+
   /** Background event rate distribution [counts/s/bin/m^2]. */
   float* distribution;
 
@@ -73,7 +76,8 @@ typedef struct {
     RATE column represent the background event rate in this particular
     energy channel per second and per illuminated detector area
     [counts/s/bin/m^2]. */
-PHABkg* newPHABkg(const char* const filename, int* const status);
+PHABkg* newPHABkg(const char* const filename, struct RMF* rmf,
+                  int* const status);
 
 /** Destructor. */
 void destroyPHABkg(PHABkg** const phabkg);

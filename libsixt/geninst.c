@@ -766,6 +766,7 @@ static void GenInstXMLElementStart(void* parsedata, const char* el,
 			return;
 		}
 		xmlparsedata->inst->det->phabkg[ii] = newPHABkg(filepathname,
+                                xmlparsedata->inst->det->rmf,
 				&xmlparsedata->status);
 		CHECK_STATUS_VOID(xmlparsedata->status);
 

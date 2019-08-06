@@ -30,7 +30,8 @@
 ////////////////////////////////////////////////////////////////////
 
 
-PHABkg* newPHABkg(const char* const filename, int* const status)
+PHABkg* newPHABkg(const char* const filename, struct RMF* rmf,
+                  int* const status)
 {
   // Allocate memory.
   PHABkg* phabkg=(PHABkg*)malloc(sizeof(PHABkg));
@@ -45,6 +46,7 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
   phabkg->distribution=NULL;
   phabkg->vignetting  =NULL;
   phabkg->focal_length=NULL;
+  phabkg->rmf         =NULL;
 
   // Initialize values.
   phabkg->nbins=0;
@@ -106,6 +108,17 @@ PHABkg* newPHABkg(const char* const filename, int* const status)
     long ii;
     for (ii=1; ii<phabkg->nbins; ii++) {
       phabkg->distribution[ii]+=phabkg->distribution[ii-1];
+    }
+
+    // save a pointer to the given RMF
+    phabkg->rmf = rmf;
+    
+    // check if the no. of rows in the RMF match the no. of rows in the bkg file
+    // this uses rmf->NumberChannels
+    if (phabkg->rmf->NumberChannels != phabkg->nbins) {
+      SIXT_ERROR("Number of channels in background file must equal number of channels in RMF");
+      *status=EXIT_FAILURE;
+      break;
     }
 
   } while (0); // END of error handling loop
@@ -241,7 +254,7 @@ LinkedImpListElement* getPHABkglist(PHABkg* const phabkg, AdvDet* det, const flo
 
 		//Setting the value of the next events
 		imp->time=next_time;
-		imp->energy=getEBOUNDSEnergy(channel,det->pix[pixid].grades[0].rmf,status);
+		imp->energy=getEBOUNDSEnergy(channel,phabkg->rmf,status);
 		imp->ph_id=0;
 		imp->src_id=PHABKG_SRC_ID;
 		time_current=next_time;
