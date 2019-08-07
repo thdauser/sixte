@@ -134,35 +134,42 @@ void saveGTIExt(fitsfile* const fptr,
 		GTI* const gti,
 		int* const status)
 {
-  // Check if the EVENTS extension already exists and move fptr to that extension
-  fits_movnam_hdu(fptr, BINARY_TBL, "EVENTS", 0, status);
-  if (*status != EXIT_SUCCESS) {
-    char buffer[MAXMSG];
-    fits_get_errstatus(*status, buffer);
-    SIXT_WARNING(buffer);
-    CHECK_STATUS_VOID(*status);
-  }
+	char buffer_telescop[MAXMSG];
+	char buffer_instrume[MAXMSG];
 
-  // Read INSTRUME and TELESCOP keywords from EVENTS extension
-  char buffer_telescop[MAXMSG];
-  char buffer_instrume[MAXMSG];
-  fits_read_key(fptr, TSTRING, "INSTRUME", buffer_instrume, NULL, status);
-  fits_read_key(fptr, TSTRING, "TELESCOP", buffer_telescop, NULL, status);
 
-  HDgti_write(fptr, gti, extname, "START", "STOP", status);
+	// Check if the EVENTS extension already exists and move fptr to that extension
+	fits_movnam_hdu(fptr, BINARY_TBL, "EVENTS", 0, status);
+	if (*status != EXIT_SUCCESS) {
+		char msg[MAXMSG];
+		sprintf(msg, "Unable to write keywords INSTRUME, TELESCOP to %s extension!",extname);
+		SIXT_WARNING(msg);
 
-  // Move to STDGTI extension
-  fits_movnam_hdu(fptr, BINARY_TBL, "STDGTI", 0, status);
-  if (*status != EXIT_SUCCESS) {
-    char buffer[MAXMSG];
-    fits_get_errstatus(*status, buffer);
-    SIXT_WARNING(buffer);
-    CHECK_STATUS_VOID(*status);
-  }
+		fits_clear_errmsg();
+		*status=EXIT_SUCCESS;
+	}
+	else{
+		// Read INSTRUME and TELESCOP keywords from EVENTS extension
+		fits_read_key(fptr, TSTRING, "INSTRUME", buffer_instrume, NULL, status);
+		fits_read_key(fptr, TSTRING, "TELESCOP", buffer_telescop, NULL, status);
+	}
 
-  // Write TELESCOP and INSTRUME keywords to STDGTI extension
-  fits_update_key(fptr, TSTRING, "INSTRUME", buffer_instrume, NULL, status);
-  fits_update_key(fptr, TSTRING, "TELESCOP", buffer_telescop, NULL, status);
+	HDgti_write(fptr, gti, extname, "START", "STOP", status);
+
+	if( strlen(buffer_telescop) && strlen(buffer_instrume) ){
+		// Move to STDGTI extension
+		fits_movnam_hdu(fptr, BINARY_TBL, extname, 0, status);
+		if (*status != EXIT_SUCCESS) {
+			char buffer[MAXMSG];
+			fits_get_errstatus(*status, buffer);
+			SIXT_WARNING(buffer);
+			CHECK_STATUS_VOID(*status);
+		}
+
+		// Write TELESCOP and INSTRUME keywords to STDGTI extension
+		fits_update_key(fptr, TSTRING, "INSTRUME", buffer_instrume, NULL, status);
+		fits_update_key(fptr, TSTRING, "TELESCOP", buffer_telescop, NULL, status);
+	}
 }
 
 
