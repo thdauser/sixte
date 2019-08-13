@@ -842,6 +842,11 @@ int erosim_main() {
 			fflush(progressfile);
 		}
 
+                // Check if any photons were imaged
+                for (ii=0; ii< 7; ii++) {
+                  check_if_imaged(subinst[ii]->tel);
+                }
+
 		// Use parallel computation via OpenMP.
 		// #pragma omp parallel for reduction(+:status)
 		for (ii = 0; ii < 7; ii++) {

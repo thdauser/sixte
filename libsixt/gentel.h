@@ -57,6 +57,9 @@ typedef struct {
       file. */
   float fov_diameter;
 
+  /** Number of Photons imaged by this telescope */
+  long num_imaged;
+
 } GenTel;
 
 
@@ -73,6 +76,11 @@ GenTel* newGenTel(int* const status);
 /** Destructor. Releases all allocated memory and resets the pointer
     to the GenTel data structure to NULL. */
 void destroyGenTel(GenTel** const tel);
+
+/** Check if any photons have been imaged by this telescope
+    and print a warning if there weren't*/
+void check_if_imaged(const GenTel* const tel);
+
 
 
 #endif /* GENTEL_H */

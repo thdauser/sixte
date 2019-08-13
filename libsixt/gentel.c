@@ -47,6 +47,7 @@ GenTel* newGenTel(int* const status)
   // Set initial values.
   tel->focal_length=0.;
   tel->fov_diameter=0.;
+  tel->num_imaged=0;
 
   return(tel);
 }
@@ -66,3 +67,12 @@ void destroyGenTel(GenTel** const tel)
     *tel=NULL;
   }
 }
+
+void check_if_imaged(const GenTel* const tel) {
+  headas_chat(5, "Telescope imaged %ld photons\n", tel->num_imaged);
+
+  if (tel->num_imaged == 0) {
+    SIXT_WARNING("No photons imaged by the telescope! Check your pointing or exposure time");
+  }
+
+};

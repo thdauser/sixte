@@ -23,7 +23,7 @@
 #include "phimg.h"
 
 
-int phimg(const GenTel* const tel,
+int phimg(GenTel* const tel,
 	  Attitude* const ac,
 	  Photon* const ph,
 	  Impact* const imp,
@@ -73,6 +73,9 @@ int phimg(const GenTel* const tel,
 	imp->position=position;
 	imp->ph_id   =ph->ph_id;
 	imp->src_id  =ph->src_id;
+
+        // Imaged a photon
+        tel->num_imaged++;
 
 	return(1);
       } else {

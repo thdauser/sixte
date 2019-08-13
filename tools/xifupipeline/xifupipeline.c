@@ -813,6 +813,9 @@ int xifupipeline_main()
 		}
 		// End of loop over the individual GTI intervals.
 
+                // Check if any photons were imaged
+                check_if_imaged(inst->tel);
+
 		headas_chat(3, "\nstart sky projection ...\n");
 		event_file->row=1;
 		phproj_advdet(inst,det,ac,event_file,par.TSTART,par.Exposure,par.ProjCenter,&status);

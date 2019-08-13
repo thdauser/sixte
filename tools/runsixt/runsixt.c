@@ -544,6 +544,10 @@ int runsixt_main()
     	fflush(progressfile);
     }
 
+    // Check if any photons were imaged
+    check_if_imaged(inst->tel);
+
+
     // Perform a pattern analysis, only if split events are simulated.
     if (GS_NONE!=inst->det->split->type) {
     	// Pattern analysis.

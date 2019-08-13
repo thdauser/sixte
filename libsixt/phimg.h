@@ -36,7 +36,7 @@
 /////////////////////////////////////////////////////////////////
 
 
-int phimg(const GenTel* const tel,
+int phimg(GenTel* const tel,
 	  Attitude* const ac,
 	  Photon* const ph,
 	  Impact* const imp,

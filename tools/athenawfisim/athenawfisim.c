@@ -623,6 +623,11 @@ int athenapwfisim_main() {
 			fflush(progressfile);
 		}
 
+                // Check if any photons were imaged
+                // NOTE: Here you have to check the telescope of subinst[0],
+                // since only that one is used for imaging
+                check_if_imaged(subinst[0]->tel);
+
 		// Use parallel computation via OpenMP.
 		// #pragma omp parallel for reduction(+:status)
 		for (ii = 0; ii < nchips; ii++) {
