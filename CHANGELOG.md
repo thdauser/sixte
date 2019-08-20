@@ -1,3 +1,16 @@
+version [2.5.11]
+  - adds warning if no photons were imaged
+  - fixes crash upon writing INSTRUME/TELESCOP keys to GTI
+    extension
+  - fixes use of wrong RMF for PHA background energies if using
+    an Advanced Detector XML file
+  - updates erosim
+    * erosim can now be given a comma separated list of filenames
+      for each Simput parameter
+  - updates SIRENA
+    * 0-padding (8192-length filters filled in with 0's) and
+      filters with preBuffer
+
 version [2.5.10]
  - adds new tool attgen_dither which creates a Lissajous attitude
  - adds roll angle parameter for pointing observations via command line
