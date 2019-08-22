@@ -47,6 +47,7 @@ test:
 
 provide:
   stage: deploy
+  dependencies: []
   script:
     - git push /data/git/sixt.git HEAD:master
   only:
