@@ -15,7 +15,7 @@ characteristics in a flexible, human-readable XML-based format.
 
 Properties of X-ray sources to be simulated are described in 
 a detector-independent format called SIMPUT (SIMulation inPUT). That means the same input can be used for simulating 
-observations with all available instruments. The input files can be easily generated from standard data such as XSPEC spectral models or FITS images with tools provided with the SIXTE distribution. The input data scale well from single point sources up to very complicated setups. . It lists the basic parameters of the sources such as their flux in a reference band, their positions in a table and can also reference images, spectra and lightcurves. The software implementation of SIMPUT is required for the SIXTE simulator [(https://github.com/thdauser/simput)](https://github.com/thdauser/simput).
+observations with all available instruments. The input files can be easily generated from standard data such as XSPEC spectral models or FITS images with tools provided with the SIXTE distribution. The input data scale well from single point sources up to very complicated setups. It lists the basic parameters of the sources such as their flux in a reference band, their positions in a table and can also reference images, spectra and lightcurves. The software implementation of SIMPUT is required for the SIXTE simulator [(https://github.com/thdauser/simput)](https://github.com/thdauser/simput).
 
 ---
 
