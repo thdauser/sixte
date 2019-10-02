@@ -7,10 +7,10 @@ analyses and to produce simulated event files for mission- and science studies.
 The software strives to find a compromise between exactness of the simulation
 and speed. For many cases, by using calibration files such as the PSF, RMF and
 ARF, efficient simulations are possible at comparably high speed, even though
-they include nonlinear effects such as pileup. Setups for some current and future
-missions such as XMM-Newton or Athena are included in the package. Other setups
+they include non-linear effects such as pile-up. Setups for some current and future
+missions such as XMM-Newton, eROSITA or Athena are included in the package. Other setups
 can be easily added by the user through specifying the main instrument
-characteristics in a flexible, human-readable XML-based format.
+characteristics in a flexible, human-readable format.
 
 
 Properties of X-ray sources to be simulated are described in
@@ -23,3 +23,4 @@ observations with all available instruments. The input files can be easily gener
 
 
 Please send bug reports, problems and other comments to sixte-support@lists.fau.de.
+Updates on the SIXTE package are announced via the [SIXTE mailing list](https://lists.fau.de/cgi-bin/listinfo/sixte-users/).
