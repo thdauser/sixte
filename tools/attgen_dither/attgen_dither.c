@@ -36,7 +36,6 @@ struct Parameters {
   double amplitude;
   double ra, dec;
 
-
   double tstart;
   double expos;
   int nbins;  // dt will be calculated
@@ -107,6 +106,7 @@ int attgen_dither_getpar(struct Parameters *par) {
 
   query_simput_parameter_double("Exposure", &par->expos, &status);
   query_simput_parameter_double("TSTART", &par->tstart, &status);
+  query_simput_parameter_double("MJDREF", &par->mjdref, &status);
   query_simput_parameter_int("nbins", &par->nbins, &status);
   query_simput_parameter_bool("clobber", &par->clobber, &status);
 
