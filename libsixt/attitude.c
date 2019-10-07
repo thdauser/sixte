@@ -590,10 +590,10 @@ void write_attitude(Attitude* att, char* filename,
   fits_update_key(fptr, TDOUBLE, "MJDREF", &mjdref, NULL, status);
   fits_update_key(fptr, TDOUBLE, "TSTART", &(att->tstart), NULL, status);
   fits_update_key(fptr, TDOUBLE, "TSTOP", &(att->tstop), NULL, status);
-  char *align="NORTH";
+  char align[MAXMSG]="NORTH";
   fits_update_key(fptr, TSTRING, "ALIGNMEN", &align, NULL, status);
-  char *orig="ECAP";
-  fits_update_key(fptr, TDOUBLE, "ORIGIN", &orig, NULL, status);
+  char orig[MAXMSG]="ECAP";
+  fits_update_key(fptr, TSTRING, "ORIGIN", &orig, NULL, status);
 
   // write the columns
   // make empty arrays of time, ra, dec and angle
