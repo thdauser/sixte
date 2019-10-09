@@ -49,6 +49,10 @@ int get_psf_pos(struct Point2d* const position,
   // Calculate the azimuthal angle ([rad]) of the source position.
   double phi=atan2(scalar_product(&telescope.ny, &photon_direction),
 		   scalar_product(&telescope.nx, &photon_direction));
+  // phi returned by atan2 is within [-PI,PI], but must be in [0,2*PI] as in PSF
+  if( phi < 0.0){
+	  phi += 2.0*M_PI;
+  }
 
   // Get a random number to determine a random hitting position.
   double rnd=sixt_get_random_number(status);
