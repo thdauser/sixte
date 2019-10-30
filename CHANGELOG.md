@@ -1,3 +1,7 @@
+version [2.5.12]
+  - fix azimuthal angle range in get_psf_pos
+  - fix attgen_dither tool (MJDREF, ALIGNMEN keywords not set in 2.5.11)
+
 version [2.5.11]
   - adds warning if no photons were imaged
   - fixes crash upon writing INSTRUME/TELESCOP keys to GTI
