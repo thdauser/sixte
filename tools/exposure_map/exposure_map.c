@@ -208,30 +208,76 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
       return;
     }
 
-    wcs->naxis=2;
-    wcs->crpix[0]=par.ra_bins/2 +0.5;
-    wcs->crpix[1]=par.dec_bins/2+0.5;
-    wcs->crval[0]=0.5*(par.ra1 +par.ra2 )*180./M_PI;
-    wcs->crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;
-    wcs->cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
-    wcs->cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
+    if (par.naxis1 == 0) { // naxsis1 keyword not provided by user -> assume
+                            // default input, i.e., ra/dec interval
+
+      wcs->naxis=2;
+      wcs->crpix[0]=par.ra_bins/2 +0.5;
+      wcs->crpix[1]=par.dec_bins/2+0.5;
+      wcs->crval[0]=0.5*(par.ra1 +par.ra2 )*180./M_PI;
+      wcs->crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;
+      wcs->cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
+      wcs->cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
 
 
-    strcpy(wcs->cunit[0], "deg");
-    strcpy(wcs->cunit[1], "deg");
-    if ((1==par.projection)) {
-      strcpy(wcs->ctype[0], "RA---AIT");
-      strcpy(wcs->ctype[1], "DEC--AIT");
-    } else if (2==par.projection) {
-      strcpy(wcs->ctype[0], "RA---SIN");
-      strcpy(wcs->ctype[1], "DEC--SIN");
-    } else if (3==par.projection) {
-      strcpy(wcs->ctype[0], "GLON-AIT");
-      strcpy(wcs->ctype[1], "GLAT-AIT");
-    } else {
-      SIXT_ERROR("projection type not supported");
-      *status=EXIT_FAILURE;
-      return;
+      strcpy(wcs->cunit[0], "deg");
+      strcpy(wcs->cunit[1], "deg");
+      if ((1==par.projection)) {
+        strcpy(wcs->ctype[0], "RA---AIT");
+        strcpy(wcs->ctype[1], "DEC--AIT");
+      } else if (2==par.projection) {
+        strcpy(wcs->ctype[0], "RA---SIN");
+        strcpy(wcs->ctype[1], "DEC--SIN");
+      } else if (3==par.projection) {
+        strcpy(wcs->ctype[0], "GLON-AIT");
+        strcpy(wcs->ctype[1], "GLAT-AIT");
+      } else {
+        SIXT_ERROR("projection type not supported");
+        *status=EXIT_FAILURE;
+        return;
+      }
+
+    } else { // naxsis1 keyword provided by user -> assume
+             // alternative input, i.e., wcs keywords
+
+      // Copy wcs keywords
+      wcs->naxis=2;
+      wcs->crpix[0]=par.crpix1;
+      wcs->crpix[1]=par.crpix2;
+      wcs->crval[0]=par.crval1;
+      wcs->crval[1]=par.crval2;
+      wcs->cdelt[0]=par.cdelt1;
+      wcs->cdelt[1]=par.cdelt2;
+
+      // Determine the projection type.
+      strcpy(wcs->cunit[0], "deg");
+      strcpy(wcs->cunit[1], "deg");
+      if (0==par.coordinatesystem) {
+        strcpy(wcs->ctype[0], "RA---");
+        strcpy(wcs->ctype[1], "DEC--");
+      } else if (1==par.coordinatesystem) {
+        strcpy(wcs->ctype[0], "GLON-");
+        strcpy(wcs->ctype[1], "GLAT-");
+      }
+
+      strcat(wcs->ctype[0], par.projection_type);
+      strcat(wcs->ctype[1], par.projection_type);
+
+      if (strlen(wcs->ctype[0])!=8) {
+        *status=EXIT_FAILURE;
+        char msg[MAXMSG];
+        sprintf(msg, "invalid projection type: CTYPE1='%s'", wcs->ctype[0]);
+        SIXT_ERROR(msg);
+        return;
+      }
+      if (strlen(wcs->ctype[1])!=8) {
+        *status=EXIT_FAILURE;
+        char msg[MAXMSG];
+        sprintf(msg, "invalid projection type: CTYPE2='%s'", wcs->ctype[1]);
+        SIXT_ERROR(msg);
+        return;
+      }
+
     }
 
     return;
@@ -775,18 +821,52 @@ int exposure_map_getpar(struct Parameters *par)
   // Get the time step for the exposure map calculation.
   query_simput_parameter_double("dt",&(par->dt), &status);
 
-  // Get the position of the desired section of the sky
-  // (right ascension and declination range).
-  query_simput_parameter_double("ra1",&(par->ra1), &status);
-  query_simput_parameter_double("ra2",&(par->ra2), &status);
-  query_simput_parameter_double("dec1",&(par->dec1), &status);
-  query_simput_parameter_double("dec2",&(par->dec2), &status);
+  // Check input type (ra/dec interval or wcs keywords)
+  query_simput_parameter_long("NAXIS1", &(par->naxis1), &status);
 
-  // Get the number of x- and y-bins for the exposure map.
-  query_simput_parameter_int("ra_bins",&(par->ra_bins), &status);
-  query_simput_parameter_int("dec_bins",&(par->dec_bins), &status);
+  if (par->naxis1 == 0) { // naxsis1 keyword not provided by user -> assume
+                          // default input, i.e., ra/dec interval
 
-  query_simput_parameter_int("projection",&(par->projection), &status);
+    // Get the position of the desired section of the sky
+    // (right ascension and declination range).
+    query_simput_parameter_double("ra1",&(par->ra1), &status);
+    query_simput_parameter_double("ra2",&(par->ra2), &status);
+    query_simput_parameter_double("dec1",&(par->dec1), &status);
+    query_simput_parameter_double("dec2",&(par->dec2), &status);
+
+    // Get the number of x- and y-bins for the exposure map.
+    query_simput_parameter_int("ra_bins",&(par->ra_bins), &status);
+    query_simput_parameter_int("dec_bins",&(par->dec_bins), &status);
+
+    query_simput_parameter_int("projection",&(par->projection), &status);
+  } else { // naxsis1 keyword provided by user -> assume
+           // alternative input, i.e., wcs keywords
+
+    // Get coordinate system and projection
+    query_simput_parameter_int("CoordinateSystem", &(par->coordinatesystem), &status);
+    query_simput_parameter_string("projection_type", &(par->projection_type), &status);
+
+    // Get WCS keywords
+    query_simput_parameter_long("NAXIS2", &(par->naxis2), &status);
+    par->ra_bins = par->naxis1;
+    par->dec_bins = par->naxis2;
+    query_simput_parameter_string("CUNIT1", &(par->cunit1), &status);
+    query_simput_parameter_string("CUNIT2", &(par->cunit2), &status);
+    query_simput_parameter_float("CRVAL1", &(par->crval1), &status);
+    query_simput_parameter_float("CRVAL2", &(par->crval2), &status);
+    query_simput_parameter_float("CRPIX1", &(par->crpix1), &status);
+    query_simput_parameter_float("CRPIX2", &(par->crpix2), &status);
+    query_simput_parameter_float("CDELT1", &(par->cdelt1), &status);
+    query_simput_parameter_float("CDELT2", &(par->cdelt2), &status);
+
+    // Define left right ascension value of regarded section of the sky (radians)
+    par->ra1 = par->crval1 - par->naxis1*0.5*par->cdelt1;
+    par->ra2 = par->crval1 + par->naxis1*0.5*par->cdelt1;
+    par->dec1 = par->crval2 - par->naxis2*0.5*par->cdelt2;
+    par->dec2 = par->crval2 + par->naxis2*0.5*par->cdelt2;
+  }
+
+
   query_simput_parameter_int("intermaps",&(par->intermaps), &status);
 
   query_simput_parameter_int("seed",&(par->seed), &status);

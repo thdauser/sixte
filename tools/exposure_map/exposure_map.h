@@ -61,22 +61,37 @@ struct Parameters {
 
   int seed;
 
+  float fov_diameter;
+
+  /** Number of interim maps to be stored. */
+  int intermaps;
+
+  int clobber;
+
+  /** Default input: ra/dec range */
+
   /** Right ascension range [rad]. */
   double ra1 , ra2;
   /** Declination range [rad]. */
   double dec1, dec2;
   /** Number of pixels in right ascension and declination. */
   int ra_bins, dec_bins;
-
-  float fov_diameter;
-
   /** Projection method (1: AIT, 2: SIN). */
   int projection;
 
-  /** Number of interim maps to be stored. */
-  int intermaps;
+  /** Alternative input: wcs keywords */
 
-  int clobber;
+  /** Coordinate system (0: equatorial, 1: galactic) */
+  int coordinatesystem;
+  /** Projection method (AIT, SIN). */
+  char* projection_type;
+  /** WCS keywords */
+  long naxis1, naxis2;
+  char* cunit1;
+  char* cunit2;
+  float crval1, crval2;
+  float crpix1, crpix2;
+  float cdelt1, cdelt2;
 };
 
 typedef struct {
