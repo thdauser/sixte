@@ -9,4 +9,4 @@ SUBDIRS=phogen phoimg psfgen htrssim xms_pixtemp ero_fits2tm		\
         pulsetemplimport streamtotriggers runtes tesconstpileup tessim  \
 	comaimgPM comabackpro xml2svg tesreconstruction xifupipeline   \
 	gennoisespec exposure_map gradeddetection tesgenimpacts         \
-	pha2pi runmask sixteversion attgen_dither 
+	pha2pi radec2xy runmask sixteversion attgen_dither

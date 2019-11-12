@@ -20,19 +20,18 @@
                        Erlangen-Nuernberg
 */
 
-#ifndef ERO_CALEVENTS_H
-#define ERO_CALEVENTS_H 1
+#ifndef RADEC2XY_H
+#define RADEC2XY_H 1
 
 
 #include "sixt.h"
-#include "attitude.h"
 #include "event.h"
 #include "eventfile.h"
-#include "gti.h"
 #include "wcs.h"
+#include "parinput.h"
 #include "radec2xylib.h"
 
-#define TOOLSUB ero_calevents_main
+#define TOOLSUB radec2xy_main
 #include "headas_main.c"
 
 
@@ -43,52 +42,13 @@
 
 struct Parameters {
   char EvtFile[MAXFILENAME];
-  char eroEvtFile[MAXFILENAME];
-  char* Attitude;
-
-  int CCDNr;
-
   /** Projection type (usually SIN). */
-  char Projection[MAXMSG];
+  char Projection[MAXFILENAME];
   /** Right ascension of reference point [deg]. */
   float RefRA;
   /** Declination of reference point [deg]. */
   float RefDec;
-  /** Right ascension of pointing [deg]. */
-  float RA;
-  /** Declination of pointing [deg]. */
-  float Dec;
-  /** Roll angle of pointing [deg]. */
-  float rollangle;
-
-  char clobber;
 };
-
-
-/** Event entry in an eROSITA calibrated event file. */
-typedef struct {
-  double time; /* [s] */
-  long frame;
-
-  long pha; /* [adu] */
-  float energy; /* [eV] */
-
-  int rawx, rawy;
-  int subx, suby;
-
-  double ra, dec; /* [deg] */
-  long x, y;
-
-  long flag;
-
-  unsigned int pat_typ;
-  unsigned char pat_inf;
-
-  float ev_weight;
-
-  unsigned char ccdnr;
-
-} eroCalEvent;
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -97,7 +57,7 @@ typedef struct {
 
 
 // Reads the program parameters using PIL
-int getpar(struct Parameters* const parameters);
+void radec2xy_getpar(struct Parameters* const parameters, int* const status);
 
 
 #endif /* ERO_CALEVENTS_H */

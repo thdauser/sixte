@@ -194,6 +194,7 @@ AC_CONFIG_FILES([Makefile
 		tools/psfgen/Makefile
 		tools/pulsetemplgen/Makefile
 		tools/pulsetemplimport/Makefile
+		tools/radec2xy/Makefile
 		tools/runsixt/Makefile
 		tools/runtes/Makefile
 		tools/sixteversion/Makefile
