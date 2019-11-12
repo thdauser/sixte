@@ -68,18 +68,7 @@ struct Parameters {
 
   int clobber;
 
-  /** Default input: ra/dec range */
-
-  /** Right ascension range [rad]. */
-  double ra1 , ra2;
-  /** Declination range [rad]. */
-  double dec1, dec2;
-  /** Number of pixels in right ascension and declination. */
-  int ra_bins, dec_bins;
-  /** Projection method (1: AIT, 2: SIN). */
-  int projection;
-
-  /** Alternative input: wcs keywords */
+  /** Default input: wcs keywords */
 
   /** Coordinate system (0: equatorial, 1: galactic) */
   int coordinatesystem;
@@ -92,6 +81,17 @@ struct Parameters {
   float crval1, crval2;
   float crpix1, crpix2;
   float cdelt1, cdelt2;
+
+  /** Alternative input: ra/dec range */
+
+  /** Right ascension range [rad]. */
+  double ra1, ra2;
+  /** Declination range [rad]. */
+  double dec1, dec2;
+  /** Number of pixels in right ascension and declination. */
+  int ra_bins, dec_bins;
+  /** Projection method (1: AIT, 2: SIN). */
+  int projection;
 };
 
 typedef struct {

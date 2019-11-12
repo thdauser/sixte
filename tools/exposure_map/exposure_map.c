@@ -208,37 +208,8 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
       return;
     }
 
-    if (par.naxis1 == 0) { // naxsis1 keyword not provided by user -> assume
-                            // default input, i.e., ra/dec interval
-
-      wcs->naxis=2;
-      wcs->crpix[0]=par.ra_bins/2 +0.5;
-      wcs->crpix[1]=par.dec_bins/2+0.5;
-      wcs->crval[0]=0.5*(par.ra1 +par.ra2 )*180./M_PI;
-      wcs->crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;
-      wcs->cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
-      wcs->cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
-
-
-      strcpy(wcs->cunit[0], "deg");
-      strcpy(wcs->cunit[1], "deg");
-      if ((1==par.projection)) {
-        strcpy(wcs->ctype[0], "RA---AIT");
-        strcpy(wcs->ctype[1], "DEC--AIT");
-      } else if (2==par.projection) {
-        strcpy(wcs->ctype[0], "RA---SIN");
-        strcpy(wcs->ctype[1], "DEC--SIN");
-      } else if (3==par.projection) {
-        strcpy(wcs->ctype[0], "GLON-AIT");
-        strcpy(wcs->ctype[1], "GLAT-AIT");
-      } else {
-        SIXT_ERROR("projection type not supported");
-        *status=EXIT_FAILURE;
-        return;
-      }
-
-    } else { // naxsis1 keyword provided by user -> assume
-             // alternative input, i.e., wcs keywords
+    if (par.projection == 0) { // projection not specified by user -> assume
+                               // default input, i.e., wcs keywords
 
       // Copy wcs keywords
       wcs->naxis=2;
@@ -278,6 +249,33 @@ static void init_expo_wcs(struct Parameters par, struct wcsprm *wcs, int *status
         return;
       }
 
+    } else { // projection (1,2 or 3) specified by user -> assume
+             // alternative input, i.e., ra/dec interval
+
+      wcs->naxis=2;
+      wcs->crpix[0]=par.ra_bins/2 +0.5;
+      wcs->crpix[1]=par.dec_bins/2+0.5;
+      wcs->crval[0]=0.5*(par.ra1 +par.ra2 )*180./M_PI;
+      wcs->crval[1]=0.5*(par.dec1+par.dec2)*180./M_PI;
+      wcs->cdelt[0]=(par.ra2 -par.ra1 )*180./M_PI/par.ra_bins;
+      wcs->cdelt[1]=(par.dec2-par.dec1)*180./M_PI/par.dec_bins;
+
+      strcpy(wcs->cunit[0], "deg");
+      strcpy(wcs->cunit[1], "deg");
+      if ((1==par.projection)) {
+        strcpy(wcs->ctype[0], "RA---AIT");
+        strcpy(wcs->ctype[1], "DEC--AIT");
+      } else if (2==par.projection) {
+        strcpy(wcs->ctype[0], "RA---SIN");
+        strcpy(wcs->ctype[1], "DEC--SIN");
+      } else if (3==par.projection) {
+        strcpy(wcs->ctype[0], "GLON-AIT");
+        strcpy(wcs->ctype[1], "GLAT-AIT");
+      } else {
+        SIXT_ERROR("projection type not supported");
+        *status=EXIT_FAILURE;
+        return;
+      }
     }
 
     return;
@@ -821,32 +819,19 @@ int exposure_map_getpar(struct Parameters *par)
   // Get the time step for the exposure map calculation.
   query_simput_parameter_double("dt",&(par->dt), &status);
 
-  // Check input type (ra/dec interval or wcs keywords)
-  query_simput_parameter_long("NAXIS1", &(par->naxis1), &status);
+  // Check input type (wcs keywords or ra/dec interval)
+  // (projection (=1,2 or 3) is a hidden parameter, default set 0)
+  query_simput_parameter_int("projection",&(par->projection), &status);
 
-  if (par->naxis1 == 0) { // naxsis1 keyword not provided by user -> assume
-                          // default input, i.e., ra/dec interval
-
-    // Get the position of the desired section of the sky
-    // (right ascension and declination range).
-    query_simput_parameter_double("ra1",&(par->ra1), &status);
-    query_simput_parameter_double("ra2",&(par->ra2), &status);
-    query_simput_parameter_double("dec1",&(par->dec1), &status);
-    query_simput_parameter_double("dec2",&(par->dec2), &status);
-
-    // Get the number of x- and y-bins for the exposure map.
-    query_simput_parameter_int("ra_bins",&(par->ra_bins), &status);
-    query_simput_parameter_int("dec_bins",&(par->dec_bins), &status);
-
-    query_simput_parameter_int("projection",&(par->projection), &status);
-  } else { // naxsis1 keyword provided by user -> assume
-           // alternative input, i.e., wcs keywords
+  if (par->projection == 0) { // projection not specified by user -> assume
+                              // default input, i.e., wcs keywords
 
     // Get coordinate system and projection
     query_simput_parameter_int("CoordinateSystem", &(par->coordinatesystem), &status);
     query_simput_parameter_string("projection_type", &(par->projection_type), &status);
 
     // Get WCS keywords
+    query_simput_parameter_long("NAXIS1", &(par->naxis1), &status);
     query_simput_parameter_long("NAXIS2", &(par->naxis2), &status);
     par->ra_bins = par->naxis1;
     par->dec_bins = par->naxis2;
@@ -864,6 +849,21 @@ int exposure_map_getpar(struct Parameters *par)
     par->ra2 = par->crval1 + par->naxis1*0.5*par->cdelt1;
     par->dec1 = par->crval2 - par->naxis2*0.5*par->cdelt2;
     par->dec2 = par->crval2 + par->naxis2*0.5*par->cdelt2;
+
+  } else { // projection specified by user -> assume
+           // alternative input, i.e., ra/dec interval
+
+    // Get the position of the desired section of the sky
+    // (right ascension and declination range).
+    query_simput_parameter_double("ra1",&(par->ra1), &status);
+    query_simput_parameter_double("ra2",&(par->ra2), &status);
+    query_simput_parameter_double("dec1",&(par->dec1), &status);
+    query_simput_parameter_double("dec2",&(par->dec2), &status);
+
+    // Get the number of x- and y-bins for the exposure map.
+    query_simput_parameter_int("ra_bins", &(par->ra_bins), &status);
+    query_simput_parameter_int("dec_bins",&(par->dec_bins), &status);
+
   }
 
 
