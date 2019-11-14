@@ -1,3 +1,15 @@
+version [2.6.0]
+  - changes input parameters of exposure_map tool
+    * the exposure_map tool now uses WCS keyrecords to specify the grid on
+      which the exposure map is calculated instead of an RA/Dec
+      interval (previous input). See simulator manual (v1.3.10, p. 60), for
+      more details.
+    * for backward compatibility the old interface still works, but will not be
+      actively supported anymore in the future.
+  - adds new tool radec2xy
+    * calculates backprojected X,Y instrument coordinates from RA/Dec sky
+      coordinates and adds these coordinates to given event file.
+
 version [2.5.12]
   - fix azimuthal angle range in get_psf_pos
   - fix attgen_dither tool (MJDREF, ALIGNMEN keywords not set in 2.5.11)
