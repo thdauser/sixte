@@ -80,7 +80,7 @@ include_HEADERS=genericdetector.h squarepixels.h hexagonalpixels.h	\
 		sourcecatalog.h source.h linkedpholist.h		\
 		ladsignallist.h background.h pha2pilib.h phgen.h phimg.h	\
 		phdet.h phproj.h phpat.h lad.h xmlbuffer.h gti.h	\
-		sourceimage.h reconstruction.h eventarray.h		\
+		sourceimage.h radec2xylib.h reconstruction.h eventarray.h		\
 		fft_array.h balancing.h find_position.h			\
 		det_phi_max.h advdet.h 					\
 		pixelimpactfile.h pixelimpact.h tesdatastream.h 	\
