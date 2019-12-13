@@ -33,7 +33,7 @@
 struct Parameters {
   char EvtFile[MAXFILENAME];
   char LightCurve[MAXFILENAME];
-
+  
   /** Start time [s]. */
   double TSTART;
 
@@ -49,11 +49,16 @@ struct Parameters {
   /** Lower and upper boundary of the regarded channel range [adu]. */
   long Chanmin, Chanmax;
 
+  /** GTI file overwrites TSTART, length to write multiple output
+  lightcurves. */
+  char GTIFile[MAXFILENAME];
+  
   char clobber;
 };
 
 
 int makelc_getpar(struct Parameters *par);
-
-
+char *removeStrExt(char* myStr);
+char *get_filename_ext(char *filename);
+  
 #endif /* MAKELC_H */
