@@ -1,0 +1,60 @@
+#! /usr/bin/env python3
+
+"""
+Author: Ole Koenig
+Date: 2020-01-23
+
+This is a testing script for SIXTE's exposure_map tool. The reference
+exposure mas was created with SIXTE v2.6.0 on 2020-01-23.
+
+The script first tests for a fov_diameter=-1, meaning the default FoV
+from the XML (which covers the full dummy detector) and then
+calculates it with a fov_diameter smaller than the dummy chip, such
+that only a circle is visible.
+"""
+
+
+import subprocess
+import sys
+sys.path.append('../scripts/')
+import sixte
+
+sixte.check_pythonversion(3,6)
+
+defpath = sixte.defpath()
+print("   *** testing {}  *** ".format(defpath.testname))
+
+
+# Do first exposure_map test with FoV covering full chip
+print("          testing full fov")
+ret_val = sixte.exposure_map(defpath.testname_expmap,
+                             defpath.xml,
+                             logfile=defpath.log,
+                             test=1)
+
+sixte.check_returncode(ret_val,defpath.fullname)
+
+sixte.check_fdiff( defpath.ref_path + defpath.refname_expmap,
+                   defpath.testname_expmap,
+                   defpath.fullname)
+
+
+# Do second test with FoV smaller than chip
+print("          testing partial fov")
+ret_val = sixte.exposure_map(defpath.testname_expmap,
+                             defpath.xml,
+                             fov_diameter=1/30,
+                             logfile=defpath.log,
+                             test=1)
+
+sixte.check_returncode(ret_val,defpath.fullname)
+
+sixte.check_fdiff( defpath.ref_path+defpath.refname_expmap_fov,
+                   defpath.testname_expmap,
+                   defpath.fullname)
+
+# clean output
+sixte.clean_output()
+
+
+

@@ -28,6 +28,8 @@ class defvar:
         self.fname_implist="imp.fits"
         self.fname_rawlist="raw.fits"
         self.fname_evtlist="evt.fits"
+        self.fname_expmap="expmap.fits"
+        self.fname_expmap_fov="expmap_fov.fits" # for fov_diameter testing
 
         self.inst="dummy_inst"
         self.mode="dummy_mode"
@@ -45,12 +47,28 @@ class defvar:
         self.Dec=0.0
 
         self.expos=100
+        self.dt=1
 
+        self.coordsys=0
+        self.projection="TAN"
+        # Standard values taken from default_inst.xml
+        self.naxis1=9
+        self.naxis2=9
+        self.cunit1="deg"
+        self.cunit2="deg"
+        self.crval1=0
+        self.crval2=0
+        self.crpix1=5
+        self.crpix2=5
+        self.cdelt1=-100e-6
+        self.cdelt2=100e-6
+        
         self.simput_name="dummy.simput"
         self.simput_dir="data/dummy/"
         self.simput=self.simput_dir+self.simput_name
 
         self.attitude = "data/dummy/dummy_e2e.att"
+        self.vign = "data/dummy/dummy_vign.fits"
 
         self.seed=0
 
@@ -88,12 +106,16 @@ class defpath(defvar):
         self.testname_implist = self.get_testfile_prefix(subtestname)+self.fname_implist
         self.testname_rawlist = self.get_testfile_prefix(subtestname)+self.fname_rawlist
         self.testname_evtlist = self.get_testfile_prefix(subtestname)+self.fname_evtlist
-
+        self.testname_expmap = self.get_testfile_prefix(subtestname)+self.fname_expmap
+        
         self.refname_pholist = self.get_reffile_prefix(subtestname)+self.fname_pholist
         self.refname_implist = self.get_reffile_prefix(subtestname)+self.fname_implist
         self.refname_rawlist = self.get_reffile_prefix(subtestname)+self.fname_rawlist
         self.refname_evtlist = self.get_reffile_prefix(subtestname)+self.fname_evtlist
-
+        # There are two exposure maps (fov_diameter=-1, 1/30)
+        self.refname_expmap=self.get_reffile_prefix(subtestname)+self.fname_expmap
+        self.refname_expmap_fov=self.get_reffile_prefix(subtestname)+self.fname_expmap_fov
+        
     def get_testname_from_path(self):
         """
         Get name of test from last/working directory. Expects
@@ -315,6 +337,59 @@ def runsixt(xmlfile,
     del os.environ['SIXTE_USE_PSEUDO_RNG']
 
     return ret_val
+
+
+def exposure_map(exposuremap,xmlfile,
+                 ra=STDTEST.RA,dec=STDTEST.Dec,
+                 vignetting=STDTEST.vign,
+                 tstart=STDTEST.tstart,
+                 timespan=STDTEST.expos,
+                 dt=STDTEST.dt,
+                 fov_diameter=-1,
+                 coordsystem=STDTEST.coordsys, projection=STDTEST.projection,
+                 naxis1=STDTEST.naxis1, naxis2=STDTEST.naxis2,
+                 cunit1=STDTEST.cunit1, cunit2=STDTEST.cunit2,
+                 crval1=STDTEST.crval1, crval2=STDTEST.crval2,
+                 crpix1=STDTEST.crpix1, crpix2=STDTEST.crpix2,
+                 cdelt1=STDTEST.cdelt1, cdelt2=STDTEST.cdelt2,
+                 clobber="yes",
+                 logfile=-1,
+                 test=-1):
+    
+    if (test):
+        os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
+
+    str = f"""exposure_map \
+        RA={ra} Dec={dec} \
+        Vignetting={vignetting} \
+        XMLFile={xmlfile} \
+        Exposuremap={exposuremap} \
+        TSTART={tstart} \
+        timespan={timespan} \
+        dt={dt} \
+        fov_diameter={fov_diameter} \
+        CoordinateSystem={coordsystem} projection_type={projection} \
+        NAXIS1={naxis1} NAXIS2={naxis2} \
+        CUNIT1={cunit1} CUNIT2={cunit2} \
+        CRVAL1={crval1} CRVAL2={crval2} \
+        CRPIX1={crpix1} CRPIX2={crpix2} \
+        CDELT1={cdelt1} CDELT2={cdelt2} \
+        clobber={clobber}
+        """
+
+    if (logfile!=-1):
+        fp  = open(logfile,'w')
+        fp.write(f" *** RUNNING: '{str}'\n"+"="*80+"\n\n")
+        fp.close()
+        str = f"{str} >> {logfile}"
+
+    ret_val = subprocess.run(str,shell=True,
+                             stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+
+    del os.environ['SIXTE_USE_PSEUDO_RNG']
+
+    return ret_val
+
 
 
 
