@@ -20,6 +20,7 @@
                        Erlangen-Nuernberg
 */
 
+#include <stdio.h>
 #include "crosstalk.h"
 
 /** Adds a cross talk pixel to the matrix */
@@ -1307,20 +1308,22 @@ void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v, f
 	}
 	// check dimensions
 	if (naxes[0]!=n_samples || naxes[1]!=n_ener_p || naxes[2]!=n_ener_v ){
-		*status=EXIT_FAILURE;
-		printf(" error: wrong dimensions of the proportional data array [%ld %ld %ld] \n",
-				naxes[0],naxes[1],naxes[2]);
+        *status=EXIT_SUCCESS;
+		printf(" *** error: possibly wrong dimensions of the TDM crosstalk matrix \n expecting [%i %i %i], but extension %s has [%ld %ld %ld] \n ",
+				n_samples, n_ener_p, n_ener_v, extname, naxes[0],naxes[1],naxes[2]);
 	}
 
 
 	// actually read the table now
 	int anynul=0;
 	double* buf;
-	buf = (double*)malloc(n_samples*n_ener_v*n_ener_p*sizeof(double));
+
+	long nelem = n_samples*n_ener_v*n_ener_p;
+
+    buf = (double*)malloc(nelem*sizeof(double));
 	CHECK_MALLOC_VOID(buf);
 
 	double nullval=0.0;
-	long nelem = n_samples*n_ener_v*n_ener_p;
 	long fpixel[naxis];
 	for (int ii=0;ii<naxis;ii++){
 		fpixel[ii]=1;
@@ -1330,7 +1333,7 @@ void read_TDM_matrix(fitsfile* fptr,int n_samples, int n_ener_p, int n_ener_v, f
 	fits_report_error(stdout, *status);
 	CHECK_STATUS_VOID(*status);
 
-	headas_chat(7," start reading the proportional crosstalk matrix %s [%ld %ld %ld]",extname,n_samples,n_ener_p, n_ener_v);
+	headas_chat(5," start reading the TDM crosstalk matrix %s [%ld %ld %ld]",extname,n_samples,n_ener_p, n_ener_v);
 	for (int ii=0; ii<n_samples ; ii++){  // freq_s loop
 		for (int jj=0; jj<n_ener_p ; jj++){
 			for (int kk=0; kk<n_ener_v ; kk++){
@@ -1415,77 +1418,108 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 	//printf("Number of type 2 pixels %i \n", concerned_pixel->prop_cross_talk->type_2_pix);
 }
 
+static void load_tdm_xt_table(const AdvDet *det, char* filename, int k, int *status, TDMTab **tmp_TDM) {
+
+    char* EXTNAME_SAMPLES = "OFFSETS";
+    char* EXTNAME_ENER_VICTIM = "VENERGIES";
+    char* EXTNAME_ENER_PERTURBER = "PENERGIES";
+    char* COLNAME_SAMPLES = "OFFSET";
+    char* COLNAME_ENER_VICTIM = "VENERGY";
+    char* COLNAME_ENER_PERTURBER = "PENERGY";
+    char* EXTNAME_CROSSTALK_GRAD;
+
+    // Concatenating the grade
+    if (asprintf(&EXTNAME_CROSSTALK_GRAD,"CROSSTALK_%05ld",det->pix[0].grades[k].gradelim_post)== -1){
+      *status=EXIT_FAILURE;
+      printf(" *** error: allocating memory failed ");
+      return;
+    }
+
+    fitsfile *fptr=NULL;
+
+    do {
+        char fullfilename[MAXFILENAME];
+        strcpy(fullfilename,det->filepath);
+        strcat(fullfilename,filename);
+
+        // open the file
+        if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
+        headas_chat(5, "   ... reading the proportional crosstalk table %s, extension %s for grade %i \n",
+                fullfilename, EXTNAME_CROSSTALK_GRAD, k);
+
+        // read the extensions specifying the axes of the 3d matrix
+        int n_samples, n_ener_p, n_ener_v;
+        double* samples;
+        double* ener_v;
+        double* ener_p;
+        get_imodtable_axis(&n_samples,&samples,EXTNAME_SAMPLES,COLNAME_SAMPLES,fptr,status);
+        CHECK_STATUS_BREAK(*status);
+        get_imodtable_axis(&n_ener_v,&ener_v,EXTNAME_ENER_VICTIM,COLNAME_ENER_VICTIM,fptr,status);
+        CHECK_STATUS_BREAK(*status);
+        get_imodtable_axis(&n_ener_p,&ener_p,EXTNAME_ENER_PERTURBER,COLNAME_ENER_PERTURBER,fptr,status);
+        CHECK_STATUS_BREAK(*status);
+
+        /** *** Find the correct number of samples, used in the crosstalk matrix ***
+            - it varies from grade to grade, with its maximum length for high res events (i.e.
+              this matrix needs the full offset array  **/
+
+        // get the offset (time before the event)
+        // (we need the +0.5 for the integer conversion, as th column is read as double)
+        int offset =  (int)  ( -1*samples[0] + 0.5)  ;  // intrinsically a negative number, but offset defined as positive
+        assert(offset>0);
+
+        // subtract the offset, the +1 is to account for the bin with offset 0
+        int n_samples_used =  det->pix[0].grades[k].gradelim_post + offset + 1;
+
+        // initialize the elec crosstalk tables
+        initTDMTab(&(*tmp_TDM), n_samples_used, n_ener_p, n_ener_v, samples, ener_v, ener_p, status);
+        if (*status!=EXIT_SUCCESS){
+            SIXT_ERROR("initializing proportional crosstalk table in memory failed");
+            break;
+        }
+
+        read_TDM_matrix(fptr, n_samples_used, n_ener_p, n_ener_v,det->scaling,&(det->crosstalk_TDM_prop[k]),
+                EXTNAME_CROSSTALK_GRAD,status);
+        if (*status != EXIT_SUCCESS){
+            printf(" *** error: reading proportional crosstalk table %s  failed\n", fullfilename);
+            break;
+        }
+        free(samples);
+        free(ener_v);
+        free(ener_p);
+    } while(0); // END of Error handling loop
+
+    free(EXTNAME_CROSSTALK_GRAD);
+    if (fptr!=NULL) {fits_close_file(fptr,status);}
+}
+
 /** load the proportional crosstalk tables */
 void load_prop_table(AdvDet* det, int k ,int* status){
 
-	// check if the table exists
+    CHECK_STATUS_VOID(*status);
+
+    TDMTab* tmp_TDM=&(det->crosstalk_TDM_prop[k]);
+
+    // check if the table exists
 	CHECK_NULL_VOID(det->TDM_prop_file,*status,"no file for the proportional crosstalk table specified");
 
-	char* EXTNAME_SAMPLES = "OFFSETS";
-	char* EXTNAME_ENER_VICTIM = "VENERGIES";
-	char* EXTNAME_ENER_PERTURBER = "PENERGIES";
-	char* COLNAME_SAMPLES = "OFFSET";
-	char* COLNAME_ENER_VICTIM = "VENERGY";
-	char* COLNAME_ENER_PERTURBER = "PENERGY";
-	char* EXTNAME_PROP_CROSSTALK_GRAD;
+    load_tdm_xt_table(det, det->TDM_prop_file, k, status, &tmp_TDM);
 
-	// Concatenating the grade
-	if (asprintf(&EXTNAME_PROP_CROSSTALK_GRAD,"CROSSTALK_%05ld",det->pix[0].grades[k].gradelim_post)== -1){
-	  *status=EXIT_FAILURE;
-	  printf(" *** error: allocating memory failed ");
-	  return;
-	}
+}
 
-	fitsfile *fptr=NULL;
+/** load the proportional crosstalk tables */
+void load_der_table(AdvDet* det, int k ,int* status){
 
-	do {
-		char fullfilename[MAXFILENAME];
-		strcpy(fullfilename,det->filepath);
-		strcat(fullfilename,det->TDM_prop_file);
+    CHECK_STATUS_VOID(*status);
 
-		// open the file
-		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
-		headas_chat(5, "   ... reading the proportional crosstalk table %s for grade %i \n",fullfilename, k);
+    TDMTab* tmp_TDM=&(det->crosstalk_TDM_der[k]);
 
-		// read the extensions specifying the axes of the 3d matrix
-		int n_samples, n_ener_p, n_ener_v;
-		double* samples;
-		double* ener_v;
-		double* ener_p;
-		get_imodtable_axis(&n_samples,&samples,EXTNAME_SAMPLES,COLNAME_SAMPLES,fptr,status);
-		CHECK_STATUS_BREAK(*status);
-		get_imodtable_axis(&n_ener_v,&ener_v,EXTNAME_ENER_VICTIM,COLNAME_ENER_VICTIM,fptr,status);
-		CHECK_STATUS_BREAK(*status);
-		get_imodtable_axis(&n_ener_p,&ener_p,EXTNAME_ENER_PERTURBER,COLNAME_ENER_PERTURBER,fptr,status);
-		CHECK_STATUS_BREAK(*status);
+    // check if the table exists
+    CHECK_NULL_VOID(det->TDM_der_file,*status,"no file for the derivative crosstalk table specified");
 
-		//Find the correct number of samples, which varies from grade to grade
-		//For instance grade 1 has 1453 offset samples, grade 0 8181 etc... which are the samples + 1101 (the time before event)
-		n_samples=(n_samples-det->pix[0].grades[0].gradelim_post)+det->pix[0].grades[k].gradelim_post;
+    // load the table
+    load_tdm_xt_table(det, det->TDM_der_file, k, status, &tmp_TDM);
 
-		// initialize the elec crosstalk tables
-		TDMTab* tmp_TDM=&(det->crosstalk_TDM_prop[k]);
-		initTDMTab(&(tmp_TDM), n_samples, n_ener_p, n_ener_v, samples, ener_v, ener_p, status);
-		if (*status!=EXIT_SUCCESS){
-			SIXT_ERROR("initializing proportional crosstalk table in memory failed");
-			break;
-		}
-
-		read_TDM_matrix(fptr, n_samples, n_ener_p, n_ener_v,det->scaling,&(det->crosstalk_TDM_prop[k]),
-				EXTNAME_PROP_CROSSTALK_GRAD,status);
-		if (*status != EXIT_SUCCESS){
-			printf(" *** error: reading proportional crosstalk table %s  failed\n", fullfilename);
-			break;
-		}
-		free(samples);
-		free(ener_v);
-		free(ener_p);
-	} while(0); // END of Error handling loop
-
-	free(EXTNAME_PROP_CROSSTALK_GRAD);
-	if (fptr!=NULL) {fits_close_file(fptr,status);}
-
-	return;
 }
 
 void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
@@ -1547,79 +1581,6 @@ void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
 	assert(concerned_pixel->der_cross_talk->num_cross_talk_pixels==4); //There should be 4 wiring neighbors
 }
 
-/** load the proportional crosstalk tables */
-void load_der_table(AdvDet* det, int k ,int* status){
-
-	// check if the table exists
-	CHECK_NULL_VOID(det->TDM_der_file,*status,"no file for the derivative crosstalk table specified");
-
-	char* EXTNAME_SAMPLES = "OFFSETS";
-	char* EXTNAME_ENER_VICTIM = "VENERGIES";
-	char* EXTNAME_ENER_PERTURBER = "PENERGIES";
-	char* COLNAME_SAMPLES = "OFFSET";
-	char* COLNAME_ENER_VICTIM = "VENERGY";
-	char* COLNAME_ENER_PERTURBER = "PENERGY";
-	char* EXTNAME_DER_CROSSTALK_GRAD;
-
-	// Concatenating the grade
-	if (asprintf(&EXTNAME_DER_CROSSTALK_GRAD,"CROSSTALK_%05ld",det->pix[0].grades[k].gradelim_post)== -1){
-	  *status=EXIT_FAILURE;
-	  printf(" *** error: allocating memory failed ");
-	  return;
-	}
-
-	fitsfile *fptr=NULL;
-
-	do {
-		char fullfilename[MAXFILENAME];
-		strcpy(fullfilename,det->filepath);
-		strcat(fullfilename,det->TDM_der_file);
-
-		// open the file
-		if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
-		headas_chat(5, "   ... reading the derivative crosstalk table %s for grade %i \n",fullfilename, k);
-		/**headas_chat(5, "   ... reading the electrical crosstalk table %s \n",fullfilename);*/
-
-		// read the extensions specifying the axes of the 3d matrix
-		int n_samples, n_ener_p, n_ener_v;
-		double* samples;
-		double* ener_v;
-		double* ener_p;
-		get_imodtable_axis(&n_samples,&samples,EXTNAME_SAMPLES,COLNAME_SAMPLES,fptr,status);
-		CHECK_STATUS_BREAK(*status);
-		get_imodtable_axis(&n_ener_v,&ener_v,EXTNAME_ENER_VICTIM,COLNAME_ENER_VICTIM,fptr,status);
-		CHECK_STATUS_BREAK(*status);
-		get_imodtable_axis(&n_ener_p,&ener_p,EXTNAME_ENER_PERTURBER,COLNAME_ENER_PERTURBER,fptr,status);
-		CHECK_STATUS_BREAK(*status);
-
-		//Find the correct number of samples, which varies from grade to grade
-		//For instance grade 1 has 1453 offset samples, grade 0 8181 etc... which are the samples + 1101 (the time before event)
-		n_samples=(n_samples-det->pix[0].grades[0].gradelim_post)+det->pix[0].grades[k].gradelim_post;
-
-		// initialize the elec crosstalk tables
-		TDMTab* tmp_TDM=&(det->crosstalk_TDM_der[k]);
-		initTDMTab(&(tmp_TDM), n_samples, n_ener_p, n_ener_v, samples, ener_v, ener_p, status);
-		if (*status!=EXIT_SUCCESS){
-			SIXT_ERROR("initializing derivative crosstalk table in memory failed");
-			break;
-		}
-
-		read_TDM_matrix(fptr,n_samples, n_ener_p, n_ener_v,det->scaling,&(det->crosstalk_TDM_der[k]),
-				EXTNAME_DER_CROSSTALK_GRAD,status);
-		if (*status != EXIT_SUCCESS){
-			printf(" *** error: reading derivative crosstalk table %s  failed\n", fullfilename);
-			break;
-		}
-		free(samples);
-		free(ener_v);
-		free(ener_p);
-	} while(0); // END of Error handling loop
-
-	free(EXTNAME_DER_CROSSTALK_GRAD);
-	if (fptr!=NULL) {fits_close_file(fptr,status);}
-
-	return;
-}
 
 static int doCrosstalk(int id, AdvDet* det){
 	/** crosstalk "ALL" now exculdes the IMOD crosstalk (does not show a large effect) **/
