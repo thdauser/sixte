@@ -979,7 +979,7 @@ static void initImodTab(ImodTab* tab, int n_ampl, int n_dt, int n_freq,
 	tab->dt_max=dt[n_dt-1];
 
 	tab->freq = (double*) malloc(n_freq * sizeof(double));
-	CHECK_MALLOC_VOID_STATUS(tab->freq,*status);
+	CHECK_MALLOC_VOID_STATUS(tab->freq,*status)
 
 	for (int ii=0; ii<n_freq; ii++){
 		tab->freq[ii] = freq[ii];
@@ -1444,7 +1444,7 @@ static void load_tdm_xt_table(const AdvDet *det, char* filename, int k, int *sta
 
         // open the file
         if (fits_open_table(&fptr, fullfilename, READONLY, status)) break;
-        headas_chat(5, "   ... reading the proportional crosstalk table %s, extension %s for grade %i \n",
+        headas_chat(5, "   ... reading the tdm crosstalk table %s, extension %s for grade %i \n",
                 fullfilename, EXTNAME_CROSSTALK_GRAD, k);
 
         // read the extensions specifying the axes of the 3d matrix
@@ -1478,7 +1478,7 @@ static void load_tdm_xt_table(const AdvDet *det, char* filename, int k, int *sta
             break;
         }
 
-        read_TDM_matrix(fptr, n_samples_used, n_ener_p, n_ener_v,det->scaling,&(det->crosstalk_TDM_prop[k]),
+        read_TDM_matrix(fptr, n_samples_used, n_ener_p, n_ener_v,det->scaling,*tmp_TDM,
                 EXTNAME_CROSSTALK_GRAD,status);
         if (*status != EXIT_SUCCESS){
             printf(" *** error: reading proportional crosstalk table %s  failed\n", fullfilename);
@@ -1523,7 +1523,7 @@ void load_der_table(AdvDet* det, int k ,int* status){
 }
 
 void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
-	CHECK_STATUS_VOID(*status);
+	CHECK_STATUS_VOID(*status)
 	if (det->TDM_der_file==NULL){
 		*status = EXIT_FAILURE;
 		SIXT_ERROR("Tried to load derivative crosstalk with no corresponding file given at detector level");
@@ -1708,7 +1708,6 @@ static void add_pixel_to_readout(ReadoutChannels* read_chan, AdvPix* pix, int ic
 	read_chan->channels[ic-1].pixels[read_chan->channels[ic-1].num_pixels] = pix;
 	read_chan->channels[ic-1].num_pixels++;
 
-	return;
 }
 
 
