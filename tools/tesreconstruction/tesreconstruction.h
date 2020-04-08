@@ -28,6 +28,7 @@
 #include "testrigger.h"
 #include "gti.h"
 #include "integraSIRENA.h"
+//#include "inoututils.h"
 #include <gsl/gsl_vector.h>
 
 #include<stdio.h>
@@ -35,6 +36,24 @@
 
 #define TOOLSUB tesreconstruction_main
 #include "headas_main.c"
+
+#include "versionSIRENA.h"
+
+#include <time.h>
+
+/*struct IOData
+{
+    fitsfile *inObject;
+    char *nameTable[255];
+    char *nameCol[255];
+    char *unit[255];
+    //MC char *type;
+    int type;
+    int iniCol;
+    int endCol;
+    long iniRow;
+    long endRow;
+};*/
 
 struct Parameters {
 	//File containing the optimal filter
@@ -148,7 +167,7 @@ struct Parameters {
         //Number of lags (odd number) **/
 	int nLags;
         
-         //Using 3 lags to analytically calculate a parabola (3) or using 5 lags to fit (5) **/
+        //Using 3 lags to analytically calculate a parabola (3) or using 5 lags to fit (5) **/
 	int Fitting35;
 
 	//OFIter: Iterate == 1 or NOTIterate == 0 **/
@@ -177,6 +196,12 @@ struct Parameters {
 	
 	// File with the output filter (only in calibration)
 	char filterFile[256];
+        
+        // Additional error (in samples) added to the detected time"  (Logically, it changes the reconstructed energies) 
+	int errorT;
+        
+        //Sum0Filt: 0-padding: Subtract the sum of the filter (1) or not (0) **/
+	int Sum0Filt;
 	
 	// Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0)
 	//int tstartPulse1;

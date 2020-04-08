@@ -54,6 +54,60 @@ MAP OF SECTIONS IN THIS FILE:
 
 #include "inoututils.h"
 
+/*IOData::IOData():
+  ofilter_duration(0),
+  ofilter(0), 
+  energy(0.0f)
+{
+
+}
+
+IOData::IOData(const IOData& other):
+  ofilter_duration(other.ofilter_duration),
+  energy(other.energy),
+  ofilter(0)
+{
+  if(other.ofilter){
+    ofilter = gsl_vector_alloc(other.ofilter->size);
+    gsl_vector_memcpy(ofilter, other.ofilter);
+  }
+}
+
+IOData& 
+IOData::operator=(const IOData& other)
+{
+  if(this != &other){
+    ofilter_duration = other.ofilter_duration;
+    energy = other.energy;
+    if (ofilter) {
+      gsl_vector_free(ofilter); ofilter = 0;
+    }
+    if(other.ofilter){
+      ofilter = gsl_vector_alloc(other.ofilter->size);
+      gsl_vector_memcpy(ofilter, other.ofilter);
+    }
+  }
+  return *this;
+}
+
+IOData::~IOData()
+{
+  if(ofilter) {
+    gsl_vector_free(ofilter); ofilter = 0;
+  }
+}
+
+extern "C" IOData* newIOData(int* const status)
+{
+  IOData* xxx = new IOData;
+	return(xxx);
+}
+
+extern "C" void freeIOData(IOData* xxx)
+{
+  delete(xxx); xxx = 0;
+}*/
+
 /***** SECTION 1 ************************************
 * readFitsSimple function: This function reads values of a simple column of a FITS file. 
 *                          After that, the function puts them into a GSL vector for an easier processing.
@@ -62,27 +116,34 @@ MAP OF SECTIONS IN THIS FILE:
 * - obj: Input object for (simple) FITS column
 * - result: Output GSL vector
 ****************************************************/
-int readFitsSimple(IOData obj,gsl_vector **result)
+extern "C" int readFitsSimple(IOData obj,gsl_vector **result)
 {
 	long nRows = 0L;
-	int  type, status = EPOK;
+	//int  type, status = EPOK;
+        int  type, status = 0;
 	double *bufferD = NULL;
 	int *bufferJ = NULL;
 	short *bufferI = NULL;
 	int extver = 0, anynulls,colnum=0;
 	float nullval=-99;
 	string message="";
+        //cout<<"Hola1"<<endl;
+        //cout<<"obj.inObject: "<<obj.inObject<<endl;
+	//cout<<"obj.nameTable: "<<obj.nameTable<<endl;
 	
-	if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
+        fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status);
+	/*if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
 	{
 		message = "Cannot move to HDU " + string(obj.nameTable);
 		EP_PRINT_ERROR(message,status);
-	}
+	}*/
+	//cout<<"Hola2"<<endl;
 	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
 	{
 		message = "Cannot access column " + string(obj.nameCol) + "in table " + string(obj.nameTable);
 		EP_PRINT_ERROR(message,status);
 	}
+	//cout<<"Hola3"<<endl;
 	
 	nRows = obj.endRow - obj.iniRow + 1; // Number of rows to read
 	switch (obj.type)

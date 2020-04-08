@@ -57,6 +57,8 @@ MAP OF SECTIONS IN THIS FILE:
 #include <gennoisespec.h>
 #include <tasksSIRENA.h>
 
+#include "versionSIRENA.h"
+
 /***** SECTION 1 ************************************
 * MAIN function: This function calculates the current noise spectral density.
 *                If there are pulses in a record, the pulses are rejected and it is going to look for pulse-free intervals of a given size (intervalMin).
@@ -84,18 +86,23 @@ MAP OF SECTIONS IN THIS FILE:
 * - pulse_length: Pulse length (samples)
 * - LrsT: Running sum length in seconds (only in notcreationlib mode)
 * - LbT: Baseline averaging length in seconds (only in notcreationlib mode)
+* - weightMS: Calculate and write the weight matrixes if weightMS=yes
+* - I2R: Transform to resistance space (I2R, I2RALL, I2RNOL, I2RFITTED) or not (I)
 * - namelog: Output log file name
 * - verbosity: Verbosity level of the output log file
+* - clobber: Re-write output files if clobber=yes
+* - matrixSize: Size of noise matrix if only one to be created
 * 
 * Steps:
 * 
 * - Read input parameters
 * - Open input FITS file
+* - Read IMIN/IMAX to calculate ADUCNV
+* - Read keywords to transform to resistance space
 * - Read and check input keywords
 * - Get structure of input FITS file columns
 * - Initialize variables and transform from seconds to samples
 * - Pulse-free segments are divided into pulse-free intervals with intervalMinBins size
-* - Every single spectrum of each pulse-free interval is stored in a row of the EventSamplesFFT array
 * - Create structure to run Iteration: inDataIterator
 * 	- Read columns (TIME and ADC)
 * - Called iteration function: inDataIterator
@@ -200,8 +207,6 @@ int main (int argc, char **argv)
                         }
                 }
         }
-        //cout<<"IMIN: "<<Imin<<endl;
-        //cout<<"IMAX: "<<Imax<<endl;
 	
 	if (strcmp(I2R,"I") != 0)  // Transform to resistance space
         {
@@ -212,145 +217,87 @@ int main (int argc, char **argv)
                         status = 0;
                         strcpy(extname,"TESRECORDS");
                         fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status);
-                }
-                if (status != 0)
-                {
-                        status = 0;
-                        /*//cout<<"en TESRECORDS structure"<<endl;
-                        strcpy(extname,"ADCPARAM");
-                        if (fits_movnam_hdu(infileObject,ANY_HDU,extname, 0, &status))
+                        if (status == 0)
                         {
-                                message = "Cannot move to HDU " + string(extname) + " in " + string(infileName);
-                                EP_EXIT_ERROR(message,status);
-                        }
-                        strcpy(keyname,"IMIN");
-                        if (fits_read_key(infileObject,TDOUBLE,keyname, &Imin,comment,&status))
-                        {
-                                message = "Cannot read keyword " + string(keyname) + " in input file";
-                                EP_PRINT_ERROR(message,status); return(EPFAIL);
-                        }
-                        strcpy(keyname,"IMAX");
-                        if (fits_read_key(infileObject,TDOUBLE,keyname, &Imax,comment,&status))
-                        {
-                                message = "Cannot read keyword " + string(keyname) + " in input file";
-                                EP_PRINT_ERROR(message,status); return(EPFAIL);
-                        }*/
-                        
-                        IOData obj;
-                        obj.inObject = infileObject;
-                        obj.nameTable = new char [255];
-                        strcpy(obj.nameTable,"TESPARAM");
-                        obj.iniCol = 0;
-                        obj.nameCol = new char [255];
-                        obj.unit = new char [255];
-                        obj.type = TDOUBLE;
-                        obj.iniRow = 1;
-                        obj.endRow = 1;
-                        gsl_vector *vector = gsl_vector_alloc(1);
-                        strcpy(obj.nameCol,"R0");
-                        char colName[20];
-                        strcpy(colName,"R0");
-                        if (readFitsSimple (obj,&vector))
-                        {
-                                message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
-                                EP_PRINT_ERROR(message,status); return(EPFAIL);
-                        }
-                        R0 = gsl_vector_get(vector,0);
-                        strcpy(obj.nameCol,"I0_START");
-                        if (readFitsSimple (obj,&vector))
-                        {
-                                message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
-                                EP_PRINT_ERROR(message,status); return(EPFAIL);
-                        }
-                        Ibias = gsl_vector_get(vector,0);
-                        strcpy(obj.nameCol,"RPARA");
-                        if (readFitsSimple (obj,&vector))
-                        {
-                                message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
-                                EP_PRINT_ERROR(message,status); return(EPFAIL);
-                        }
-                        RPARA = gsl_vector_get(vector,0);
-                        strcpy(obj.nameCol,"TTR");
-                        if (readFitsSimple (obj,&vector))
-                        {
-                                message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
-                                EP_PRINT_ERROR(message,status); return(EPFAIL);
-                        }
-                        TTR = gsl_vector_get(vector,0);
-                        strcpy(obj.nameCol,"LFILTER");
-                        if (readFitsSimple (obj,&vector))
-                        {
-                                message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
-                                EP_PRINT_ERROR(message,status); return(EPFAIL);
-                        }
-                        LFILTER = gsl_vector_get(vector,0);
-                        /*cout<<"Imin: "<<Imin<<endl;
-                        cout<<"Imax: "<<Imax<<endl;
-                        cout<<"R0: "<<R0<<endl;
-                        cout<<"Ibias: "<<Ibias<<endl;
-                        cout<<"RPARA: "<<RPARA<<endl;
-                        cout<<"TTR: "<<TTR<<endl;
-                        cout<<"LFILTER: "<<LFILTER<<endl;*/
-                        
-                        strcpy(extname,"TESRECORDS");
-                        if (fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status))
-                        {
-                                message = "Cannot move to HDU " + string(extname) + " in " + string(infileName);
-                                EP_EXIT_ERROR(message,status);
-                        }
+                                status = 0;
                                 
-                        gsl_vector_free(vector);
-                        delete [] obj.nameTable;
-                        delete [] obj.nameCol;
-                        delete [] obj.unit;
-			//cout<<"fuera TESRECORDS"<<endl;
-                }
-                else
-                {
-                
-                        /*double R0;
-                        double I0_START;
-                        double RPARA;
-                        double TTR;
-                        double LFILTER;*/
+                                V0 = 0;
+                                R0 = 0;
+                                IOData obj;
+                                obj.inObject = infileObject;
+                                obj.nameTable = new char [255];
+                                strcpy(obj.nameTable,"TESPARAM");
+                                obj.iniCol = 0;
+                                obj.nameCol = new char [255];
+                                obj.unit = new char [255];
+                                obj.type = TDOUBLE;
+                                obj.iniRow = 1;
+                                obj.endRow = 1;
+                                gsl_vector *vector = gsl_vector_alloc(1);
+                                strcpy(obj.nameCol,"R0");
+                                if (readFitsSimple (obj,&vector))
+                                {
+                                        strcpy(obj.nameCol,"V0");
+                                        if (readFitsSimple (obj,&vector))
+                                        {
+                                            message = "Cannot read neither R0 nor V0 in " + string(extname) + " HDU in " + string(infileName);
+                                            EP_PRINT_ERROR(message,status); return(EPFAIL);
+                                        }
+                                        V0 = gsl_vector_get(vector,0);
+                                }
+                                if (V0 == 0)    R0 = gsl_vector_get(vector,0);
+                                strcpy(obj.nameCol,"I0_START");
+                                if (readFitsSimple (obj,&vector))
+                                {
+                                        message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
+                                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                                }
+                                Ibias = gsl_vector_get(vector,0);
+                                strcpy(obj.nameCol,"RPARA");
+                                if (readFitsSimple (obj,&vector))
+                                {
+                                        message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
+                                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                                }
+                                RPARA = gsl_vector_get(vector,0);
+                                strcpy(obj.nameCol,"TTR");
+                                if (readFitsSimple (obj,&vector))
+                                {
+                                        message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
+                                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                                }
+                                TTR = gsl_vector_get(vector,0);
+                                strcpy(obj.nameCol,"LFILTER");
+                                if (readFitsSimple (obj,&vector))
+                                {
+                                        message = "Cannot read " + string(obj.nameCol) + " in " + string(extname) + " HDU in " + string(infileName);
+                                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                                }
+                                LFILTER = gsl_vector_get(vector,0);
                                 
-                        strcpy(keyname,"R0");
-                        fits_read_key(infileObject,TDOUBLE,keyname, &R0,NULL,&status);
-                        //cout<<"R0: "<<R0<<endl;
-                        strcpy(keyname,"I0_START");
-                        fits_read_key(infileObject,TDOUBLE,keyname, &Ibias,NULL,&status);
-                        //cout<<"I0_START: "<<Ibias<<endl;
-                        /*strcpy(keyname,"IMIN");
-                        fits_read_key(infileObject,TDOUBLE,keyname, &Imin,NULL,&status);
-                        //cout<<"IMIN: "<<Imin<<endl;
-                        strcpy(keyname,"IMAX");
-                        fits_read_key(infileObject,TDOUBLE,keyname, &Imax,NULL,&status);*/
-                        //cout<<"IMAX: "<<Imax<<endl;
-                        strcpy(keyname,"RPARA");
-                        fits_read_key(infileObject,TDOUBLE,keyname, &RPARA,NULL,&status);
-                        //cout<<"RPARA: "<<RPARA<<endl;
-                        strcpy(keyname,"TTR");
-                        fits_read_key(infileObject,TDOUBLE,keyname, &TTR,NULL,&status);
-                        //cout<<"TTR: "<<TTR<<endl;
-                        strcpy(keyname,"LFILTER");
-                        fits_read_key(infileObject,TDOUBLE,keyname, &LFILTER,NULL,&status);
-                        //cout<<"LFILTER: "<<LFILTER<<endl;
-                        
-                        /*R0 = 0.00711552;
-                        Ibias = 1.3555e-05;
-                        Imin = 1.35523e-06;
-                        Imax = 1.39e-05;
-                        RPARA = 0.001;
-                        TTR = 0.9144;
-                        LFILTER = 2e-06;
-                        
-                        cout<<"Imin: "<<Imin<<endl;
-                        cout<<"Imax: "<<Imax<<endl;
-                        cout<<"R0: "<<R0<<endl;
-                        cout<<"Ibias: "<<Ibias<<endl;
-                        cout<<"RPARA: "<<RPARA<<endl;
-                        cout<<"TTR: "<<TTR<<endl;
-                        cout<<"LFILTER: "<<LFILTER<<endl;*/
+                                // V0=Ibias*(R0+RPARA/TTRÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ²)*TTR
+                                if (V0 != 0)    R0 = V0/(Ibias*TTR)-RPARA/(TTR*TTR);
+                                
+                                /*cout<<"Imin: "<<Imin<<endl;
+                                cout<<"Imax: "<<Imax<<endl;
+                                cout<<"R0: "<<R0<<endl;
+                                cout<<"Ibias: "<<Ibias<<endl;
+                                cout<<"RPARA: "<<RPARA<<endl;
+                                cout<<"TTR: "<<TTR<<endl;
+                                cout<<"LFILTER: "<<LFILTER<<endl;*/
+                                
+                                strcpy(extname,"TESRECORDS");
+                                if (fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status))
+                                {
+                                        message = "Cannot move to HDU " + string(extname) + " in " + string(infileName);
+                                        EP_EXIT_ERROR(message,status);
+                                }
+                                        
+                                gsl_vector_free(vector);
+                                delete [] obj.nameTable;
+                                delete [] obj.nameCol;
+                                delete [] obj.unit;
+                        }
                 }
         }
         else
@@ -368,19 +315,6 @@ int main (int argc, char **argv)
                     }
                 }
         }
-	
-	/*strcpy(extname,"RECORDS");
-	fits_movnam_hdu(infileObject, ANY_HDU,extname, extver, &status);
-	if (status != 0)
-        {
-            status = 0;
-            strcpy(extname,"TESRECORDS");
-            if (fits_movnam_hdu(infileObject, ANY_HDU,extname, extver, &status))
-            {
-		message = "Cannot move to HDU " + string(extname) + " in " + string(infileName);
-		EP_EXIT_ERROR(message,status);
-            }
-        }*/
 
 	// Read and check input keywords
 	if (fits_get_num_rows(infileObject,&eventcnt, &status))
@@ -397,7 +331,7 @@ int main (int argc, char **argv)
         samprate = 156250.; //default xifusim value
         int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
         fits_get_num_hdus(infileObject, &hdunum,&status);
-        if (hdunum == 8)    // Input files simulated with xifusim
+        if ((hdunum == 8) || (hdunum == 9))    // Input files simulated with xifusim
         {    
                 fits_movabs_hdu(infileObject, 1, NULL, &status); // Move to "Primary" HDU
                 int numberkeywords;
@@ -460,13 +394,6 @@ int main (int argc, char **argv)
 	ivcal=1.0;
         aducnv = (Imax-Imin)/65534;    // Quantification levels = 65534  // If this calculus changes => Change it also in TASKSSIRENA
 	asquid = 1.0;
-	/*strcpy(keyname,"MONOEN");
-	if (fits_read_key(infileObject,TDOUBLE,keyname, &energy,comment,&status))
-	{
-		message = "Cannot read keyword " + string(keyname) + " in input file";
-		EP_PRINT_ERROR(message,status); return(EPFAIL);
-	}
-	energy = energy*1e3;*/
 	plspolar = 1.0;
 
 	// Get structure of input FITS file columns
@@ -589,7 +516,164 @@ int main (int argc, char **argv)
 		writeLog(fileRef,"Log", verbosity,message);
 	}
 	
-	// sqrt(sum(FFT^2)/NumMeanSamplesCSD) => sqrt(A^2) = A and sqrt(1/NumMeanSamplesCSD)=1/sqrt(Hz)
+	// Histogram of the sigmas of the noise intervals
+	/*gsl_vector *interval = gsl_vector_alloc(noiseIntervals->size2);
+        double bsln, sgm;
+        int cnt = NumMeanSamples;
+        cout<<"cnt = "<<cnt<<endl;
+        cout<<"NumMeanSamples = "<<NumMeanSamples<<endl;
+        gsl_vector *sigmaInterval = gsl_vector_alloc(NumMeanSamples);
+        int index_minimumsgms;
+        double minimumsgms;
+        int nBins;
+        gsl_vector *xhisto;					// X-axis of the sigmas histogram
+        gsl_vector *yhisto;					// Y-axis of the sigmas histogram
+        char valERROR[256];
+        if (cnt == 0)
+        {
+                message = "No valid free-pulse intervals to calculate the noise spectrum";
+                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+        }
+	for (int i=0;i<NumMeanSamples;i++)
+        {
+                gsl_matrix_get_row(interval,noiseIntervals,i);
+                findMeanSigma(interval, &bsln, &sgm);
+                gsl_vector_set(sigmaInterval,i, sgm);
+                cout<<bsln<<" "<<sgm<<endl;
+        }
+        nBins = floor(sqrt(cnt))*500;
+        cout<<"nBins = "<<nBins<<endl;
+        if ((xhisto = gsl_vector_alloc(nBins)) == 0)	// X-axis of the sigmas histogram
+        {
+            sprintf(valERROR,"%d",__LINE__-2);
+            string str(valERROR);
+            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+        }
+        yhisto = gsl_vector_alloc(nBins);	// Y-axis of the sigmas histogram
+        //gsl_vector_scale(sigmaInterval,1.0/gsl_vector_min(sigmaInterval));
+        if (createHisto(sigmaInterval, nBins, &xhisto, &yhisto))
+        {
+            message = "Cannot run createHisto routine";
+            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+        }
+        cout<<"histo"<<endl;
+        for (int i=0;i<xhisto->size;i++) cout<<gsl_vector_get(xhisto,i)<<" "<<gsl_vector_get(yhisto,i)<<endl;
+        index_minimumsgms = gsl_vector_max_index(yhisto);
+        minimumsgms = gsl_vector_get(xhisto,index_minimumsgms);
+        cout<<"index_minimumsgms: "<<index_minimumsgms<<" minimumsgms: "<<minimumsgms<<endl;
+        
+        //gsl_vector_free(interval); interval = 0;
+        gsl_vector_free(xhisto); xhisto = 0;
+        gsl_vector_free(yhisto); yhisto = 0;
+    
+        gsl_vector *intervalsgmOK = gsl_vector_alloc(noiseIntervals->size1);
+        gsl_vector_set_all(intervalsgmOK,1);
+        double SelectedTimeDuration = SelectedTimeDuration = intervalMinBins/((double)samprate);
+        gsl_vector *EventSamples = gsl_vector_alloc(intervalMinBins);
+	gsl_vector *vector_aux;
+	gsl_vector_complex *vector_aux1;
+	vector_aux = gsl_vector_alloc(intervalMinBins);
+	vector_aux1 = gsl_vector_complex_alloc(intervalMinBins);
+        for (int i=0;i<NumMeanSamples;i++)
+        {
+                if ((gsl_vector_get(sigmaInterval,i) < minimumsgms-0.9*minimumsgms) || (gsl_vector_get(sigmaInterval,i) > minimumsgms+0.9*minimumsgms))
+                {
+                        cnt --;
+                        gsl_vector_set(intervalsgmOK,i,0);
+                        //cout<<"Intervalo que no se va a tener en cuenta: "<<k+1<<endl;
+                }
+                else
+                {
+                        gsl_matrix_get_row(interval,noiseIntervals,i);
+                        
+                        // FFT calculus (EventSamplesFFT)
+                        if(FFT(interval,vector_aux1,SelectedTimeDuration))
+                        {
+                            message = "Cannot run FFT routine for vector1";
+                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                        }
+                        gsl_vector_complex_absIFCA(vector_aux,vector_aux1);
+                        
+                        // Add to mean FFT samples
+                        gsl_vector_mul(vector_aux,vector_aux);
+                        gsl_vector_add(EventSamplesFFTMean,vector_aux);
+                }
+        }
+        cout<<"cntafterHISTO"<<cnt<<endl;
+        gsl_vector_free(sigmaInterval); sigmaInterval = 0;
+        gsl_vector_free(interval); interval = 0;
+        gsl_vector_free(vector_aux); vector_aux = 0;
+	gsl_vector_complex_free(vector_aux1); vector_aux1 = 0;*/
+           
+        //cout<<"NumMeanSamples0: "<<NumMeanSamples<<endl;
+        // Applying medianKappaClipping in order to remove the noise intervals with a high sigma
+        gsl_vector *interval = gsl_vector_alloc(noiseIntervals->size2);
+        double bsln, sgm;
+        gsl_vector *sigmaInterval = gsl_vector_alloc(NumMeanSamples);
+        int cnt = NumMeanSamples;   // After removing the noise intervals with a too high sigma, it is going to be the number of noise intervals with a proper sigma
+        //cout<<"cnt: "<<cnt<<endl;
+        double stopCriteriaMKC = 1.0;	// Used in medianKappaClipping
+	                               	// Given in %
+	double kappaMKC = 3;		// Used in medianKappaClipping
+	double meanThreshold;
+	double sgmThreshold;
+        for (int i=0;i<NumMeanSamples;i++)
+        {
+                gsl_matrix_get_row(interval,noiseIntervals,i);
+                findMeanSigma(interval, &bsln, &sgm);
+                gsl_vector_set(sigmaInterval,i, sgm);
+                //cout<<bsln<<" "<<sgm<<endl;
+        }
+        if (medianKappaClipping_noiseSigma (sigmaInterval, kappaMKC, stopCriteriaMKC, nSgms, &meanThreshold, &sgmThreshold))
+	{
+		message = "Cannot run medianKappaClipping_noiseSigma looking for mean and sigma of the noise sigmas";
+		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+	}
+        
+        gsl_vector *intervalsgmOK = gsl_vector_alloc(NumMeanSamples);
+        gsl_vector_set_all(intervalsgmOK,1);
+        gsl_vector *vector_aux;
+	gsl_vector_complex *vector_aux1;
+        vector_aux = gsl_vector_alloc(intervalMinBins);
+	vector_aux1 = gsl_vector_complex_alloc(intervalMinBins);
+        double SelectedTimeDuration = SelectedTimeDuration = intervalMinBins/((double)samprate);
+        double nSgms_sigmaInterval = 1;
+        //cout<<"meanThreshold: "<<meanThreshold<<" sgmThreshold: "<<sgmThreshold<<endl;
+        //cout<<"nSgms_sigmaInterval: "<<nSgms_sigmaInterval<<endl;
+        //cout<<"intervalMin: "<<meanThreshold-nSgms_sigmaInterval*sgmThreshold<<" intervalMax: "<<meanThreshold+nSgms_sigmaInterval*sgmThreshold<<endl;
+        for (int i=0;i<NumMeanSamples;i++)
+        {
+                if ((gsl_vector_get(sigmaInterval,i) < meanThreshold-nSgms_sigmaInterval*sgmThreshold) || (gsl_vector_get(sigmaInterval,i) > meanThreshold+nSgms_sigmaInterval*sgmThreshold))
+                {
+                        cnt --;
+                        gsl_vector_set(intervalsgmOK,i,0);
+                        //cout<<"Intervalo que no se va a tener en cuenta: "<<k+1<<endl;
+                }
+                else
+                {
+                        gsl_matrix_get_row(interval,noiseIntervals,i);
+                        
+                        // FFT calculus (EventSamplesFFT)
+                        if(FFT(interval,vector_aux1,SelectedTimeDuration))
+                        {
+                            message = "Cannot run FFT routine for vector1";
+                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                        }
+                        gsl_vector_complex_absIFCA(vector_aux,vector_aux1);
+                        
+                        // Add to mean FFT samples
+                        gsl_vector_mul(vector_aux,vector_aux);
+                        gsl_vector_add(EventSamplesFFTMean,vector_aux);
+                }
+        }
+        //cout<<"cntafterMedianKappaClipping"<<cnt<<endl;
+        gsl_vector_free(interval); interval = 0;
+        gsl_vector_free(sigmaInterval); sigmaInterval = 0;
+        gsl_vector_free(vector_aux); vector_aux = 0;
+	gsl_vector_complex_free(vector_aux1); vector_aux1 = 0;
+        
+        // sqrt(sum(FFT^2)/NumMeanSamplesCSD) => sqrt(A^2) = A and sqrt(1/NumMeanSamplesCSD)=1/sqrt(Hz)
 	gsl_vector_scale(EventSamplesFFTMean,(1.0/(double)NumMeanSamples));
 	for (int i=0;i<EventSamplesFFTMean->size;i++)
 	{
@@ -604,7 +688,30 @@ int main (int argc, char **argv)
         // Extra normalization (further than the FFT normalization factor,1/n) in order 
         // to get the apropriate noise level provided by Peille (54 pA/rHz)
         gsl_vector_scale(EventSamplesFFTMean,sqrt(2*intervalMinBins/samprate));
-        	
+        
+        // Load in noiseIntervals only those intervals with a proper sigma and NumMeanSamples = cnt
+        // (in order not to change excesively the code when weightMS)
+        gsl_matrix *matrixaux = gsl_matrix_alloc(noiseIntervals->size1,noiseIntervals->size2);
+        gsl_vector *vectoraux = gsl_vector_alloc(noiseIntervals->size2);
+        gsl_matrix_memcpy(matrixaux,noiseIntervals);
+        gsl_matrix_free(noiseIntervals); 
+        noiseIntervals = gsl_matrix_alloc(cnt,matrixaux->size2);
+        int ind = 0;
+        for (int i=0;i<intervalsgmOK->size;i++)
+        {
+                if (gsl_vector_get(intervalsgmOK,i) == 1)
+                {
+                        gsl_matrix_get_row(vectoraux,matrixaux,i);
+                        gsl_matrix_set_row(noiseIntervals,ind,vectoraux);
+                        ind++;
+                }
+        }
+        gsl_matrix_free(matrixaux); matrixaux = 0;
+        gsl_vector_free(vectoraux); vectoraux = 0;
+        NumMeanSamples = cnt;
+        //cout<<"NumMeanSamples: "<<NumMeanSamples<<endl;
+        //cout<<"noiseIntervals->size1: "<<noiseIntervals->size1<<" noiseIntervals->size2: "<<noiseIntervals->size2<<endl;
+            
         if (weightMS == 1)
         {
                 weightpoints = gsl_vector_alloc(floor(log2(intervalMinSamples)));
@@ -614,19 +721,23 @@ int main (int argc, char **argv)
                 gsl_matrix_view tempm;
                 gsl_matrix *noiseIntervals_weightPoints;
                 gsl_matrix *weightMatrix;
-                
+               
+                //cout<<"NumMeanSamples: "<<NumMeanSamples<<endl;
                 if (NumMeanSamples >= nintervals)
                 {
+                        //cout<<"matrixSizeA: "<<matrixSize<<endl;
                         for (int i=0;i<weightpoints->size;i++)
                         {	
                                 weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
-                                noiseIntervals_weightPoints = gsl_matrix_alloc(nintervals,gsl_vector_get(weightpoints,i));
+                                //noiseIntervals_weightPoints = gsl_matrix_alloc(nintervals,gsl_vector_get(weightpoints,i));
+                                noiseIntervals_weightPoints = gsl_matrix_alloc(cnt,gsl_vector_get(weightpoints,i));
                                 
                                 tempm = gsl_matrix_submatrix(noiseIntervals,0,0,nintervals,gsl_vector_get(weightpoints,i));
                                 gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
-                                //weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
-
+                                
 				if (matrixSize == 0){ //do all sizes
+                                    
+                                    //cout<<"matrixSize=0"<<endl;
 				    weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
 				    for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
 				    {
@@ -639,6 +750,7 @@ int main (int argc, char **argv)
 				    gsl_matrix_free(weightMatrix);
 
 				}else if (gsl_vector_get(weightpoints,i) == matrixSize){ // do only input param size
+                                    //cout<<"matrixSize!=0"<<endl;
 				    weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
 				    for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
 				    {
@@ -655,11 +767,95 @@ int main (int argc, char **argv)
                 }
                 else
                 {
-                        weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,0),gsl_vector_get(weightpoints,0));
+                        //cout<<"matrixSizeB: "<<matrixSize<<endl;
+                        for (int i=0;i<weightpoints->size;i++)
+                        {	
+                                weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
+                                noiseIntervals_weightPoints = gsl_matrix_alloc(NumMeanSamples,gsl_vector_get(weightpoints,i));
+                                
+                                tempm = gsl_matrix_submatrix(noiseIntervals,0,0,NumMeanSamples,gsl_vector_get(weightpoints,i));
+                                gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
+                                
+				if (matrixSize == 0){ //do all sizes
+                                    
+                                    //cout<<"matrixSize=0"<<endl;
+				    weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
+				    for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
+				    {
+                                        for (int k=0;k<gsl_vector_get(weightpoints,i);k++)
+					{
+					    gsl_matrix_set(weightMatrixes,i,j*gsl_vector_get(weightpoints,i)+k,gsl_matrix_get(weightMatrix,j,k));
+					}
+				    }
+				    gsl_matrix_free(noiseIntervals_weightPoints);
+				    gsl_matrix_free(weightMatrix);
+
+				}else if (gsl_vector_get(weightpoints,i) == matrixSize){ // do only input param size
+                                    //cout<<"matrixSize!=0"<<endl;
+                                    
+                                    int NumMeanSamplesNew;
+                                    gsl_matrix *matrixi;
+                                    gsl_matrix *noiseIntervalsAux;
+                                    	
+                                    weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
+                                    if (NumMeanSamples*pow(2,i) >= nintervals)	NumMeanSamplesNew = nintervals;
+                                    else 						NumMeanSamplesNew = NumMeanSamples*pow(2,i);
+                                    noiseIntervals_weightPoints = gsl_matrix_alloc(NumMeanSamplesNew,gsl_vector_get(weightpoints,i));
+                                        
+                                    noiseIntervalsAux = gsl_matrix_alloc(NumMeanSamples*pow(2,i),gsl_vector_get(weightpoints,i));
+                                    for (int ii=0;ii<pow(2,i);ii++)
+                                    {	
+                                        matrixi = gsl_matrix_alloc(NumMeanSamples,gsl_vector_get(weightpoints,i));
+                                        tempm = gsl_matrix_submatrix(noiseIntervals,0,ii*gsl_vector_get(weightpoints,i),NumMeanSamples,gsl_vector_get(weightpoints,i));
+                                        gsl_matrix_memcpy(matrixi,&tempm.matrix);
+                                        for (int j=0;j<matrixi->size1;j++)
+                                        {
+                                            for (int k=0;k<matrixi->size2;k++)
+                                            {
+                                                gsl_matrix_set(noiseIntervalsAux,j+ii*NumMeanSamples,k,gsl_matrix_get(matrixi,j,k));
+                                            }
+                                        }
+                                        gsl_matrix_free(matrixi);
+                                        
+                                        if (NumMeanSamples+NumMeanSamples*ii >= nintervals)	
+                                        {
+                                            tempm = gsl_matrix_submatrix(noiseIntervalsAux,0,0,nintervals,gsl_vector_get(weightpoints,i));
+                                            gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
+                                            
+                                            break;
+                                        }
+                                    }
+                                    gsl_matrix_free(noiseIntervalsAux);
+                                    
+                                    sprintf(str_stat,"%ld",noiseIntervals_weightPoints->size1);
+                                    sprintf(str_stat1,"%d",(int) gsl_vector_get(weightpoints,i));
+                                    message = "W" + string(str_stat1) + " matrix calculated with " + string(str_stat);
+                                    writeLog(fileRef,"Log", verbosity,message);
+                                    
+                                    weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
+                                    
+                                    for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
+                                    {
+                                        for (int k=0;k<gsl_vector_get(weightpoints,i);k++)
+                                        {
+                                            gsl_matrix_set(weightMatrixes,i,j*gsl_vector_get(weightpoints,i)+k,gsl_matrix_get(weightMatrix,j,k));
+                                        }
+                                    }
+                                    
+                                    gsl_matrix_free(noiseIntervals_weightPoints);
+                                    gsl_matrix_free(weightMatrix);
+                                    
+                                    break;
+                                    
+				} // different matrix sizes ?
+                        } // foreach matrix size
+                        
+                        /*weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,0),gsl_vector_get(weightpoints,0));
                         noiseIntervals_weightPoints = gsl_matrix_alloc(NumMeanSamples,gsl_vector_get(weightpoints,0));
                         
                         tempm = gsl_matrix_submatrix(noiseIntervals,0,0,NumMeanSamples,gsl_vector_get(weightpoints,0));
                         gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
+                        
                         weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
 
                         for (int j=0;j<gsl_vector_get(weightpoints,0);j++)
@@ -728,9 +924,10 @@ int main (int argc, char **argv)
                                     gsl_matrix_free(noiseIntervals_weightPoints);
                                     gsl_matrix_free(weightMatrix);
                             }
-                        }
+                        }*/
                 }
         }
+        gsl_vector_free(intervalsgmOK); intervalsgmOK = 0;
 	
 	// Create output FITS File: GENNOISESPEC representation file (*_noisespec.fits)
 	if(createTPSreprFile())
@@ -777,6 +974,7 @@ int main (int argc, char **argv)
 		EP_EXIT_ERROR(message,status);
 	}	
         gnoiseObject = 0;
+        
 	// Free memory
 	delete [] obj.nameTable; obj.nameTable = 0;
 	delete [] obj.nameCol; obj.nameCol = 0;
@@ -863,7 +1061,6 @@ int initModule(int argc, char **argv)
 	gennoisespecPars[5].description = "Scale factor to apply to make possible a varying cut-off frequency of the low-pass filter";
 	gennoisespecPars[5].defValReal = 0.0;
 	gennoisespecPars[5].type = "double";
-	//gennoisespecPars[5].minValReal = 1.E-50;
 	gennoisespecPars[5].minValReal = 0.0;
 	gennoisespecPars[5].maxValReal = 1.E+50;
 	gennoisespecPars[5].ValReal = gennoisespecPars[5].defValReal;
@@ -1155,21 +1352,19 @@ int initModule(int argc, char **argv)
 * 	- To avoid taking into account the pulse tails at the beginning of a record as part of a pulse-free interval
 * 	- Low-pass filtering
 *   	- Differentiate after filtering
-*   	- Finding the pulses: Pulses tstart are found (call findPulses)
-* - Finding the pulse-free intervals in each record
-*  	- If there are pulses => Call findInterval
-*	- No pulses => The whole event is going to be used (DIVIDING into intervals of intervalMinBins size) => Call findIntervalN
-* - CSD calculus (not filtered data):
-* 	- Baseline subtraction
-* 	- FFT calculus (each pulse-free interval)
-* 	- Every single spectrum of each pulse-free interval is stored in a row of the EventSamplesFFT array
-* 	- Add to mean FFT samples
+*   	- Finding the pulses: Pulses tstart are found (call findPulsesNoise)
+*       - Finding the pulse-free intervals in each record
+*  	    - If there are pulses => Call findInterval
+*	    - No pulses => The whole event is going to be used (DIVIDING into intervals of intervalMinBins size) => Call findIntervalN
+*       - CSD calculus (not filtered data):
+* 	    - FFT calculus (each pulse-free interval)
+*           - Add to mean FFT samples
 * - Free allocated GSL vectors
 ****************************************************************************/
 int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int ncols, iteratorCol *cols, void *user_strct)
 {
 	char val[256];
-
+        
 	string message = "";
 	int status = EPOK;
 	int extver=0;
@@ -1211,13 +1406,13 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
 
 	// To calculate the FFT
-	double SelectedTimeDuration;
+        //gsl_vector *baselinegsl = gsl_vector_alloc(EventSamples->size);
         gsl_vector *EventSamples = gsl_vector_alloc(intervalMinBins);
-        gsl_vector *baselinegsl = gsl_vector_alloc(EventSamples->size);
+        /*double SelectedTimeDuration;
 	gsl_vector *vector_aux;
 	gsl_vector_complex *vector_aux1;
 	vector_aux = gsl_vector_alloc(intervalMinBins);
-	vector_aux1 = gsl_vector_complex_alloc(intervalMinBins);
+	vector_aux1 = gsl_vector_complex_alloc(intervalMinBins);*/
 
 	// Allocate input GSL vectors
 	timegsl_block = gsl_vector_alloc(nrows);
@@ -1246,8 +1441,8 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	}
 	
 	// Pulse-free segments are divided into pulse-free intervals with intervalMinBins size
-        SelectedTimeDuration = intervalMinBins/((double)samprate);
-	
+        //SelectedTimeDuration = intervalMinBins/((double)samprate);
+        
 	// Processing each record
 	for (int i=0; i< nrows; i++)
 	{      
@@ -1263,7 +1458,8 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		message += " of " + string(straux) + " <------------------ ";
 		writeLog(fileRef,"Log", verbosity,message);
 		sprintf(val,"-------------> Record: %d of %ld <------------------ ",ntotalrows,eventcnt);
-
+                
+                
 		// Information has been read by blocks (with nrows per block)
 		// Now, information is going to be used by rows
 		gsl_vector_memcpy(timegsl,timegsl_block);
@@ -1272,6 +1468,15 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		
 		// Just in case the last record has been filled out with 0's => Last record discarded
 		if ((gsl_vector_get(ioutgsl,ioutgsl->size-1) == 0) && (gsl_vector_get(ioutgsl,ioutgsl->size-2) == 0))		break;
+                
+                if (strcmp(I2R,"I") != 0)
+                {
+                    if (convertI2R(I2R,R0,Ibias,Imin,Imax,TTR,LFILTER,RPARA,samprate,&ioutgsl))
+                    {
+                            message = "Cannot run routine convertI2R";
+                            EP_EXIT_ERROR(message,EPFAIL);
+                    }
+                }
 		
 		gsl_vector_scale(ioutgsl,aducnv);
 
@@ -1327,7 +1532,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 		
 		if ((pulseFound == 1) || (tail_duration != 0))
 		{
-			// Finding the pulse-free intervals in each record 
+                        // Finding the pulse-free intervals in each record 
 			if (findInterval(tail_duration, ioutgsl_aux, tstartgsl, nPulses, pulse_length, nplPF, intervalMinBins, &nIntervals, &startIntervalgsl))
 			{
 				message = "Cannot run routine findInterval";
@@ -1344,62 +1549,69 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 			}
 		}
 		
-		if (strcmp(I2R,"I") != 0)
-                {
-                    if (convertI2R(I2R,R0,Ibias,Imin,Imax,TTR,LFILTER,RPARA,samprate,&ioutgsl))
-                    {
-                            message = "Cannot run routine convertI2R";
-                            EP_EXIT_ERROR(message,EPFAIL);
-                    }
-                }
-		
 		gsl_vector *intervalsWithoutPulsesTogether = gsl_vector_alloc(nIntervals*intervalMinBins);
-		for (int i=0; i<nIntervals; i++)
+                for (int k=0; k<nIntervals; k++)
 		{
 			for (int j=0; j<intervalMinBins; j++)
 			{
-				gsl_vector_set(intervalsWithoutPulsesTogether,intervalMinBins*i+j,gsl_vector_get(ioutgsl,j+gsl_vector_get(startIntervalgsl,i)));
+				gsl_vector_set(intervalsWithoutPulsesTogether,intervalMinBins*k+j,gsl_vector_get(ioutgsl,j+gsl_vector_get(startIntervalgsl,k)));
 			}
 		}
 
-		findMeanSigma (intervalsWithoutPulsesTogether, &baselineIntervalFreeOfPulses, &sigmaIntervalFreeOfPulses);
-		gsl_vector_set(baseline,indexBaseline,baselineIntervalFreeOfPulses);
-		gsl_vector_set(sigma,indexBaseline,sigmaIntervalFreeOfPulses);
-		indexBaseline++;
+                if (nIntervals != 0)
+                {
+                    findMeanSigma (intervalsWithoutPulsesTogether, &baselineIntervalFreeOfPulses, &sigmaIntervalFreeOfPulses);
+                    gsl_vector_set(baseline,indexBaseline,baselineIntervalFreeOfPulses);
+                    gsl_vector_set(sigma,indexBaseline,sigmaIntervalFreeOfPulses);
+                    indexBaseline++;
+                }
 		gsl_vector_free(intervalsWithoutPulsesTogether); intervalsWithoutPulsesTogether = 0;
 
-		for (int i=0; i<nIntervals;i++)
+                //double bsln;
+                //double sgm;
+                
+                for (int k=0; k<nIntervals;k++)
 		{
-			if  (NumMeanSamples >= nintervals)	break;
-			  
-			temp = gsl_vector_subvector(ioutgsl,gsl_vector_get(startIntervalgsl,i), intervalMinBins);
-			gsl_vector_memcpy(EventSamples,&temp.vector);
-			
-			// Baseline subtraction
-			gsl_vector_set_all(baselinegsl,-1.0*baselineIntervalFreeOfPulses);
-			gsl_vector_add(EventSamples,baselinegsl);
-						
-			if (NumMeanSamples < nintervals)
-			{
-				// FFT calculus (EventSamplesFFT)
-				if(FFT(EventSamples,vector_aux1,SelectedTimeDuration))
-				{
-					message = "Cannot run FFT routine for vector1";
-					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-				}
-				gsl_vector_complex_absIFCA(vector_aux,vector_aux1);
-
-				// Add to mean FFT samples
-				gsl_vector_mul(vector_aux,vector_aux);
-				gsl_vector_add(EventSamplesFFTMean,vector_aux);
-				
-				gsl_matrix_set_row(noiseIntervals,NumMeanSamples,EventSamples);
-				
-				NumMeanSamples = NumMeanSamples + 1;
-			}
+                    if  (NumMeanSamples >= nintervals)	break;
+                    
+                    temp = gsl_vector_subvector(ioutgsl,gsl_vector_get(startIntervalgsl,k), intervalMinBins);
+                    gsl_vector_memcpy(EventSamples,&temp.vector);
+                    
+                    //findMeanSigma (EventSamples, &bsln, &sgm);
+                    ////cout<<bsln<<" "<<sgm<<endl;
+                    
+                    // Baseline subtraction
+                    //gsl_vector_set_all(baselinegsl,-1.0*baselineIntervalFreeOfPulses);
+                    //gsl_vector_add(EventSamples,baselinegsl);
+                    
+                    //if (sgm < 7e-9)
+                    //{
+                        if (NumMeanSamples < nintervals)
+                        {
+                            // FFT calculus (EventSamplesFFT)
+                            /*if(FFT(EventSamples,vector_aux1,SelectedTimeDuration))
+                            {
+                                message = "Cannot run FFT routine for vector1";
+                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                            }
+                            gsl_vector_complex_absIFCA(vector_aux,vector_aux1);
+                            
+                            // Add to mean FFT samples
+                            gsl_vector_mul(vector_aux,vector_aux);
+                            gsl_vector_add(EventSamplesFFTMean,vector_aux);*/
+                            
+                            gsl_matrix_set_row(noiseIntervals,NumMeanSamples,EventSamples);
+                            
+                            NumMeanSamples = NumMeanSamples + 1;
+                        }
+                    //}
 		}
+		gsl_vector_free(baselineInterval); baselineInterval = 0;
+                gsl_vector_free(sigmaInterval); sigmaInterval = 0;
 
 		ntotalrows++;
+                
+                //gsl_vector_free(sgmAUX); sgmAUX = 0;
 	}
 
 	// Free allocated GSL vectors
@@ -1408,8 +1620,8 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	gsl_vector_free(ioutgsl_aux); ioutgsl_aux = 0;
 	gsl_vector_free(timegsl_block); timegsl_block = 0;
 	gsl_matrix_free(ioutgsl_block); ioutgsl_block = 0;
-	gsl_vector_free(vector_aux); vector_aux = 0;
-	gsl_vector_complex_free(vector_aux1); vector_aux1 = 0;
+	//gsl_vector_free(vector_aux); vector_aux = 0;
+	//gsl_vector_complex_free(vector_aux1); vector_aux1 = 0;
 	gsl_vector_free(derSGN); derSGN = 0;
 	gsl_vector_free(tstartgsl); tstartgsl = 0;
 	gsl_vector_free(tstartDERgsl); tstartDERgsl = 0;
@@ -1418,7 +1630,7 @@ int inDataIterator(long totalrows, long offset, long firstrow, long nrows, int n
 	gsl_vector_free(tendDERgsl); tendDERgsl = 0;
 	
 	gsl_vector_free(EventSamples); EventSamples = 0;
-        gsl_vector_free(baselinegsl); baselinegsl = 0;
+        //gsl_vector_free(baselinegsl); baselinegsl = 0;
 
 	return (EPOK);
 }
@@ -1641,9 +1853,6 @@ int createTPSreprFile ()
 		message = "Cannot move to HDU " + string(extname) + " in noise file " + string(gnoiseName);
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
-	 
-        //HDpar_stamp(gnoiseObject, 1, &status);  // Write the whole list of input parameters in HISTORY
-        //cout<<"status: "<<status<<endl;
 
 	strcpy(keyname,"HISTORY");
 	const char * charhistory= "HISTORY Starting parameter list";
@@ -1825,6 +2034,26 @@ int createTPSreprFile ()
 		message = "Cannot write keyword " + string(keyname) + " in noise file " + string(gnoiseName);
 		EP_PRINT_ERROR(message,status); return(EPFAIL);
 	}
+	
+	strcpy(keyname,"CREADATE");
+        time_t rawtime;
+        struct tm * timeinfo;
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+	const char * chardate = asctime (timeinfo);  
+        strcpy(keyvalstr,chardate);
+	if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in noise file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+	
+	strcpy(keyvalstr,SIRENA_VERSION);
+        if (fits_write_key(gnoiseObject,TSTRING,"SIRENAV",keyvalstr,comment,&status))
+        {
+                message = "Cannot write keyword SIRENAV in noise file " + string(gnoiseName);
+                EP_PRINT_ERROR(message,status); return(EPFAIL);
+        }
 
 	return EPOK;
 }
@@ -1838,6 +2067,7 @@ int createTPSreprFile ()
 * - Write the data in the output FITS file (print only half of FFT to prevent aliasing)
 * - NOISE HDU only contains positive frequencies (=>Multiply by 2 the amplitude)
 * - NOISEALL HDU contains negative and positive frequencies => It is the HDU read to build the optimal filters
+* - WEIGHTMS HDU
 *****************************************************************************/
 int writeTPSreprExten ()
 {	string message = "";
@@ -1925,10 +2155,17 @@ int writeTPSreprExten ()
 	}
 	gsl_vector_free(sigmacsdgslnew); sigmacsdgslnew = 0;
 		
-	strcpy(keyname,"BASELINE");
+	strcpy(keyname,"BSLN0");       // Real calculated baseline
 	double sumBaseline;
 	gsl_vector_Sumsubvector(baseline, 0, indexBaseline, &sumBaseline);
-	double keyvaldouble = sumBaseline/indexBaseline;
+	double keyvaldouble;
+        keyvaldouble = (sumBaseline/indexBaseline)/aducnv;
+	if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
+	{
+		message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
+		EP_PRINT_ERROR(message,status); return(EPFAIL);
+	}
+        strcpy(keyname,"BASELINE");     // In order to be changed with test purposes
 	if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
 	{
 		message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
@@ -1938,7 +2175,7 @@ int writeTPSreprExten ()
 	strcpy(keyname,"NOISESTD");
 	double sumSigma;
 	gsl_vector_Sumsubvector(sigma, 0, indexBaseline, &sumSigma);
-	keyvaldouble = sumSigma/indexBaseline;
+        keyvaldouble = (sumSigma/indexBaseline)/aducnv;
 	if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
 	{
 		message = "Cannot write keyword " + string(keyname) + " in file " + string(gnoiseName);
@@ -1984,24 +2221,77 @@ int writeTPSreprExten ()
                 char str_length[125];
                 gsl_vector *weightMatrixesrow= gsl_vector_alloc(weightMatrixes->size2);
                 gsl_vector_view(temp);
+                
+                // With this 'for' (instead the following 'if (matrixSize == 0)'+'else') all the Wx (being x 'intervalMinSamples') columns appear in the WEIGHTMS HDU. 
+                // The Wx columns different from WmatrixSize will be filled in with 0's 
                 for (int i=0; i<weightpoints->size;i++)
                 {
-                        snprintf(str_length,125,"%d",(int) gsl_vector_get(weightpoints,i));
-                        strcpy(obj.nameCol,(string("W")+string(str_length)).c_str());
-                        obj.type = TDOUBLE;
-                        obj.unit = new char [255];
-                        strcpy(obj.unit," ");
-                        gsl_matrix_get_row(weightMatrixesrow,weightMatrixes,i);
-                        gsl_matrix *weightMatrixes_matrix = gsl_matrix_alloc(1,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
-                        temp = gsl_vector_subvector(weightMatrixesrow,0,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
-                        gsl_matrix_set_row(weightMatrixes_matrix,0,&temp.vector);
-                        if (writeFitsComplex(obj,weightMatrixes_matrix))
-                        {
-                                message = "Cannot run routine writeFitsSimple for weightMatrixes_matrix";
-                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                        }
-                        gsl_matrix_free(weightMatrixes_matrix); 
+                    snprintf(str_length,125,"%d",(int) gsl_vector_get(weightpoints,i));
+                    strcpy(obj.nameCol,(string("W")+string(str_length)).c_str());
+                    obj.type = TDOUBLE;
+                    obj.unit = new char [255];
+                    strcpy(obj.unit," ");
+                    gsl_matrix_get_row(weightMatrixesrow,weightMatrixes,i);
+                    gsl_matrix *weightMatrixes_matrix = gsl_matrix_alloc(1,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
+                    temp = gsl_vector_subvector(weightMatrixesrow,0,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
+                    gsl_matrix_set_row(weightMatrixes_matrix,0,&temp.vector);
+                    if (writeFitsComplex(obj,weightMatrixes_matrix))
+                    {
+                        message = "Cannot run routine writeFitsSimple for weightMatrixes_matrix";
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                    }
+                    gsl_matrix_free(weightMatrixes_matrix); 
                 }
+                    
+                // If the next 'if (matrixSize == 0)'+'else' (instead the previous 'for') only the WmatrixSize will be written in the noise spectrum FITS file.
+                // But it couldn't be read by getNoisespec
+                /*if (matrixSize == 0)
+                {
+                    for (int i=0; i<weightpoints->size;i++)
+                    {
+                            snprintf(str_length,125,"%d",(int) gsl_vector_get(weightpoints,i));
+                            strcpy(obj.nameCol,(string("W")+string(str_length)).c_str());
+                            obj.type = TDOUBLE;
+                            obj.unit = new char [255];
+                            strcpy(obj.unit," ");
+                            gsl_matrix_get_row(weightMatrixesrow,weightMatrixes,i);
+                            gsl_matrix *weightMatrixes_matrix = gsl_matrix_alloc(1,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
+                            temp = gsl_vector_subvector(weightMatrixesrow,0,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
+                            gsl_matrix_set_row(weightMatrixes_matrix,0,&temp.vector);
+                            if (writeFitsComplex(obj,weightMatrixes_matrix))
+                            {
+                                    message = "Cannot run routine writeFitsSimple for weightMatrixes_matrix";
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                            }
+                            gsl_matrix_free(weightMatrixes_matrix); 
+                    }
+                }
+                else
+                {
+                    for (int i=0; i<weightpoints->size;i++)
+                    {
+                        if (gsl_vector_get(weightpoints,i) == matrixSize)
+                        {
+                            snprintf(str_length,125,"%d",(int) gsl_vector_get(weightpoints,i));
+                            strcpy(obj.nameCol,(string("W")+string(str_length)).c_str());
+                            obj.type = TDOUBLE;
+                            obj.unit = new char [255];
+                            strcpy(obj.unit," ");
+                            gsl_matrix_get_row(weightMatrixesrow,weightMatrixes,i);
+                            gsl_matrix *weightMatrixes_matrix = gsl_matrix_alloc(1,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
+                            temp = gsl_vector_subvector(weightMatrixesrow,0,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
+                            gsl_matrix_set_row(weightMatrixes_matrix,0,&temp.vector);
+                            if (writeFitsComplex(obj,weightMatrixes_matrix))
+                            {
+                                    message = "Cannot run routine writeFitsSimple for weightMatrixes_matrix";
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                            }
+                            gsl_matrix_free(weightMatrixes_matrix); 
+                            
+                            break;
+                        }    
+                    }
+                }*/
                 gsl_vector_free(weightMatrixesrow);
         }
 
@@ -2156,7 +2446,6 @@ int findPulsesNoise
 	}
 	*threshold = thresholdmediankappa;
 
-	//if (findTstartNoise (100,vectorinDER, thresholdmediankappa, samplesup, 1, samplingRate, nPulses, &pulseFound, tstart, quality, &maxDERgsl, &index_maxDERgsl))
 	if (findTstartNoise (10000,vectorinDER, thresholdmediankappa, samplesup, nPulses, tstart, quality, &maxDERgsl))
 	{
 		message = "Cannot run findTstartNoise with two rows in models";
@@ -2225,8 +2514,6 @@ int findPulsesNoise
 * - der: First derivative of the (low-pass filtered) record
 * - adaptativethreshold: Threshold
 * - nSamplesUp: Number of consecutive samples over the threshold to 'find' a pulse
-* - reconstruct_init: Structure containing all the pointers and values to run the reconstruction stage
-*                     This function uses 'pulse_length', 'tstartPulse1', 'tstartPulse2' and 'tstartPulse3'
 * - numberPulses: Number of found pulses
 * - tstartgsl: Pulses tstart (in samples)
 * - flagTruncated: Flag indicating if the pulse is truncated (inside this function only initial truncated pulses are classified)
@@ -2326,6 +2613,7 @@ int findTstartNoise
 						foundPulse = false; 
 						cntDown = 0;
 					}
+					
 				}
 				else if (gsl_vector_get(der,i) > adaptativethreshold)
 				{
@@ -2403,9 +2691,9 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **weight)
 		elementValue1 = 0.0;
 		elementValue2 = 0.0;
 	}
-	/*cout<<"Final de la diagonal de la matriz "<<covariance->size1<<"x"<<covariance->size1<<endl;
+	/*cout<<"Matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size1<<endl;
         t = clock() - t;
-        cout<<"Consumidos "<<((float)t)/CLOCKS_PER_SEC<<" segundos"<<endl;*/
+        cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;*/
 
         //t = clock();
 	// Other elements
@@ -2435,20 +2723,19 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **weight)
 		}
 	}
 	
-	/*cout<<"Final de los elementos FUERA de la diagonal de la matriz "<<covariance->size1<<"x"<<covariance->size1<<endl;
+	/*cout<<"Elements out of the matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size1<<endl;
         t = clock() - t;
-        cout<<"Consumidos "<<((float)t)/CLOCKS_PER_SEC<<" segundos"<<endl;*/
+        cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;*/
 	
         //t = clock();
 	// Calculate the weight matrix
 	// It is not necessary to check the allocation because 'covarianze' size must already be > 0
 	gsl_matrix *covarianceaux = gsl_matrix_alloc(covariance->size1,covariance->size2);
 	gsl_matrix_memcpy(covarianceaux,covariance);
-        /*cout<<"Final de la preparacion de la inversion "<<covariance->size1<<"x"<<covariance->size1<<endl;
+        /*cout<<"Preparation to the inversion ended "<<covariance->size1<<"x"<<covariance->size1<<endl;
         t = clock() - t;
-        cout<<"Consumidos "<<((float)t)/CLOCKS_PER_SEC<<" segundos"<<endl;
+        cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
         t = clock();*/
-        //gsl_matrix_memcpy(*weight,covarianceaux);
 	gsl_linalg_LU_decomp(covarianceaux, perm, &s);
 	if (gsl_linalg_LU_invert(covarianceaux, perm, *weight) != 0) 
 	{
@@ -2464,4 +2751,125 @@ int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **weight)
 	
 	return (EPOK);
 }
-/*xxxx end of SECTION A11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 4 ************************************************************
+* medianKappaClipping function: This function provides the mean and the sigma of an input vector (with noise sigmas) 
+*                               by using a Kappa-clipping method (replacing points beyond mean+-Kappa*sigma with the
+*                               median).
+*
+* First, mean and sigma are calculated and invector values out of (mean+Kappa*sigma,mean-Kappa*sigma) are replaced
+* with the median (it is trying to look for the baseline). And this process is iteratively repeated until there are
+* no points beyond mean+-Kappa *sigma. Finally, the mean and sigma of the resulting vector are provided.
+*
+* - Declare variables
+* - Calculate the median
+* - Iterate until there are no points out of the maximum excursion (kappa*sigma)
+* - Establish the threshold as mean+nSigmas*sigma
+*
+* Parameters:
+* - invector: First derivative of the (filtered) record
+* - Kappa: To establish the range around of the mean
+* - stopCriteria: It is given in %
+* - nSigmas: Times sigma to calculate threshold (mean+nSigmas*sigma)
+* - boxLPF: Length of the low-pass filtering box-car
+* - mean: Mean value of the invector (no points beyond mean+-Kappa *sigma)
+* - sigma: Sigma value of the invector (no points beyond mean+-Kappa *sigma)
+******************************************************************************/
+int medianKappaClipping_noiseSigma (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, double *mean, double *sigma)
+{
+	string message = "";
+	char valERROR[256];
+
+	// Declare variables
+	int size = invector->size; // Size of the input vector
+	double mean1, sg1;
+	double mean2, sg2;
+	gsl_vector_view temp;
+	// Variables to remove input vector elements higher than the maximum excursion (kappa*sg)
+	int i;							// To go through the elements of a vector
+	int cnt;						// Number of points inside the excursion (mean+-excursion)
+	// It is not necessary to check the allocation because 'invector' size must already be > 0
+	gsl_vector *invectorNew = gsl_vector_alloc(size);	// Auxiliary vector
+        
+	double median;
+        int boxLPF = 0;
+
+        gsl_vector_memcpy(invectorNew,invector);
+        gsl_sort_vector(invectorNew);
+        if (size%2 == 0)	//Even
+        {
+            median = (gsl_vector_get(invectorNew,(int) (size/2)-1)+gsl_vector_get(invectorNew,(int) (size/2)))/2;
+        }
+        else                    //Odd
+        {
+            median = gsl_vector_get(invectorNew,(int) (size/2));
+        }
+
+	gsl_vector_memcpy(invectorNew,invector);
+
+	// Iterate until no points out of the maximum excursion (kappa*sigma)
+	do
+	{
+		if ((size-boxLPF-1 < 1) || (size-boxLPF-1 >invectorNew->size))
+		{
+			sprintf(valERROR,"%d",__LINE__+5);
+			string str(valERROR);
+			message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+			EP_PRINT_ERROR(message,EPFAIL);
+		}
+		temp = gsl_vector_subvector(invectorNew,0,size-boxLPF-1);
+		if (findMeanSigma (&temp.vector, &mean1, &sg1))
+		{
+			message = "Cannot run findMeanSigma routine for kappa-sigma iteration";
+			EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+		}
+		i = 0;
+		cnt = 0;
+
+		while (i<invectorNew->size)
+		{
+			if ((gsl_vector_get(invectorNew,i) >= mean1 + kappa*sg1) || (gsl_vector_get(invectorNew,i) <= mean1 - kappa*sg1))
+			// HARDPOINT!!!!!!!!!!!!!!!!!!! (kappa)
+			{
+				if ((i < 0) || (i >(invectorNew)->size-1))
+				{
+					sprintf(valERROR,"%d",__LINE__+5);
+					string str(valERROR);
+					message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+					EP_PRINT_ERROR(message,EPFAIL);
+				}
+				gsl_vector_set(invectorNew,i,median);
+				cnt++;
+			}
+			i++;
+		}
+
+		if (cnt != 0)
+		// Some points of the invector have been replaced with the median
+		{
+			temp = gsl_vector_subvector(invectorNew,0,size-boxLPF-1);
+			if (findMeanSigma (&temp.vector, &mean2, &sg2))
+			{
+				message = "Cannot run findMeanSigma routine for kappa-sigma iteration after replacement with the median";
+				EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+			}
+		}
+		else
+		// No points of the invector have been replaced with the median
+		{
+			mean2 =mean1;
+			sg2 = sg1;
+		}
+
+	} while (fabs((mean2-mean1)/mean1)>(stopCriteria/100.0));	// HARDPOINT!!!!!!!!!!!!!!!!!!! (stopCriteria)
+	
+        *mean = mean2;
+        *sigma =sg2;
+	
+	gsl_vector_free(invectorNew); invectorNew= 0;
+
+	return EPOK;
+}
+/*xxxx end of SECTION 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

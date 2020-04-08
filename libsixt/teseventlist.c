@@ -37,10 +37,12 @@ TesEventList* newTesEventList(int* const status){
 	event_list->grading=NULL; //BEA
 	event_list->phis=NULL; //BEA
 	event_list->lagsShifts=NULL; //BEA
+	event_list->bsln=NULL; //BEA
 	event_list->energies=NULL;
 	event_list->grades1=NULL;
 	event_list->grades2=NULL;
 	event_list->ph_ids=NULL;
+        event_list->pix_ids=NULL;//BEA
 
 	// Initialize values
 	event_list->size=0;
@@ -61,9 +63,11 @@ void freeTesEventList(TesEventList* event_list){
 		free(event_list->grading); //BEA
 		free(event_list->phis); //BEA
 		free(event_list->lagsShifts); //BEA
+		free(event_list->bsln); //BEA
 		free(event_list->grades1);
 		free(event_list->grades2);
 		free(event_list->ph_ids);
+                free(event_list->pix_ids);//BEA
 		free(event_list);
 		event_list=NULL;
 	}
@@ -108,10 +112,12 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 			free(event_list->grading);
 			free(event_list->phis);
 			free(event_list->lagsShifts);
+			free(event_list->bsln);
 			free(event_list->grades2);
 			if(NULL!= event_list->ph_ids){
 				free(event_list->ph_ids);
 			}
+			free(event_list->pix_ids);
 		}
 		event_list->energies = malloc(event_list->size*sizeof*(event_list->energies));
 		if (NULL == event_list->energies){
@@ -155,6 +161,13 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 			CHECK_STATUS_VOID(*status);
 		}
 
+		event_list->bsln = malloc(event_list->size*sizeof*(event_list->bsln)); //BEA
+		if (NULL == event_list->bsln){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+
 		event_list->grades2 = malloc(event_list->size*sizeof*(event_list->grades2));
 		if (NULL == event_list->grades2){
 			*status=EXIT_FAILURE;
@@ -169,6 +182,13 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 				SIXT_ERROR("memory allocation for ph_ids array in TesEventList failed");
 				CHECK_STATUS_VOID(*status);
 			}
+		}
+
+		event_list->pix_ids = malloc(event_list->size*sizeof*(event_list->pix_ids));
+		if (NULL == event_list->pix_ids){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for pix_ids array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
 		}
 
 		event_list->size_energy = event_list->size;
@@ -241,16 +261,17 @@ TesEventFile* newTesEventFile(int* const status){
 	file->grade2Col =6;
 	file->phiCol =7; //BEA
 	file->lagsShiftCol =8; //BEA
-	file->pixIDCol  =9;
-	file->phIDCol   =10;
-	file->raCol     =11;
-	file->decCol    =12;
-	file->detxCol   =13;
-	file->detyCol   =14;
-	file->gradingCol=15;
-	file->srcIDCol  =16;
-	file->nxtCol    =17;
-	file->extCol    =18;
+	file->bslnCol =9; //BEA
+	file->pixIDCol  =10;
+	file->phIDCol   =11;
+	file->raCol     =12;
+	file->decCol    =13;
+	file->detxCol   =14;
+	file->detyCol   =15;
+	file->gradingCol=16;
+	file->srcIDCol  =17;
+	file->nxtCol    =18;
+	file->extCol    =19;
 
 	return(file);
 }
@@ -305,6 +326,16 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	sixt_add_fits_stdkeywords(file->fptr,1,keywords,status);
 	CHECK_STATUS_RET(*status,file);
 
+        time_t rawtime;
+        struct tm * timeinfo;
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+	const char * chardate = asctime (timeinfo);  
+	char keyvalstr[1000];
+        strcpy(keyvalstr,chardate);
+	fits_write_key(file->fptr,TSTRING,"CREADATE",keyvalstr,NULL,status);
+	CHECK_STATUS_RET(*status,file);
+
 	//Write XML into header
 	//char comment[MAXMSG];
 	//sprintf(comment, "XMLFILE: %s", xmlfile);
@@ -314,11 +345,94 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //BEA
-	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J" ,  "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
-	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",       "",     "",     "deg","deg","m","m","","","","keV"};
+	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //BEA
+	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J", "1D" , "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",     "",       "",     "",     "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 18,		// BEA (18 instead of 14)
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 19,		// BEA (19 instead of 14)
+			ttype, tform, tunit,"EVENTS", status);
+	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
+	CHECK_STATUS_RET(*status,file);
+
+	int firstpix=0,lastpix=0,numberpix=0;
+	float monoen=-1.;
+	long nes_tot=0,net_tot=0;
+	fits_update_key(file->fptr, TINT, "FIRSTPIX", &firstpix, "First pixel in record file", status);
+	fits_update_key(file->fptr, TINT, "LASTPIX", &lastpix, "Last pixel in record file", status);
+	fits_update_key(file->fptr, TINT, "NPIX", &numberpix, "Number of pixels in record file", status);
+	fits_update_key(file->fptr, TFLOAT, "MONOEN", &monoen, "Monochromatic energy of photons [keV]", status);
+	fits_update_key(file->fptr, TLONG, "NESTOT", &nes_tot, "Total number of events simulated", status);
+	fits_update_key(file->fptr, TLONG, "NETTOT", &net_tot, "Total number of events actually triggered", status);
+	CHECK_STATUS_RET(*status,file);
+
+	return(file);
+
+}
+
+TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
+				  SixtStdKeywords* keywords,
+				  const char* const sirenaVersion,
+				  const char clobber,
+				  int* const status){
+	TesEventFile* file = newTesEventFile(status);
+	CHECK_STATUS_RET(*status, file);
+
+	int exists;
+	char buffer[MAXFILENAME];
+	sprintf(buffer,"%s",filename);
+	fits_file_exists(buffer, &exists, status);
+	CHECK_STATUS_RET(*status,file);
+	if (0!=exists) {
+		if (0!=clobber) {
+			// Delete the file.
+			remove(buffer);
+		} else {
+			// Throw an error.
+			char msg[MAXMSG];
+			sprintf(msg, "file '%s' already exists", buffer);
+			SIXT_ERROR(msg);
+			*status=EXIT_FAILURE;
+			CHECK_STATUS_RET(*status,file);
+		}
+	}
+	fits_create_file(&file->fptr,buffer, status);
+	CHECK_STATUS_RET(*status,file);
+	int logic=(int)'T';
+	int bitpix=8;
+	int naxis=0;
+	fits_update_key(file->fptr, TLOGICAL, "SIMPLE", &(logic), NULL, status);
+	fits_update_key(file->fptr, TINT, "BITPIX", &(bitpix), NULL, status);
+	fits_update_key(file->fptr, TINT, "NAXIS", &(naxis), NULL, status);
+	sixt_add_fits_stdkeywords(file->fptr,1,keywords,status);
+	CHECK_STATUS_RET(*status,file);
+
+        time_t rawtime;
+        struct tm * timeinfo;
+        time ( &rawtime );
+        timeinfo = localtime ( &rawtime );
+	const char * chardate = asctime (timeinfo);  
+	char keyvalstr[1000];
+        strcpy(keyvalstr,chardate);
+	fits_write_key(file->fptr,TSTRING,"CREADATE",keyvalstr,NULL,status);
+	CHECK_STATUS_RET(*status,file);
+
+	fits_write_key(file->fptr,TSTRING,"SIRENAV",sirenaVersion,NULL,status);
+	CHECK_STATUS_RET(*status,file);
+
+	//Write XML into header
+	//char comment[MAXMSG];
+	//sprintf(comment, "XMLFILE: %s", xmlfile);
+	//fits_write_comment(file->fptr, comment, status);
+	//CHECK_STATUS_RET(*status,file);
+
+	// Create table
+
+	//first column TIME
+	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //BEA
+	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J" , "1D", "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",      "",       "",     "", "deg","deg","m","m","","","","keV"};
+
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 19,		// BEA (19 instead of 14)
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -367,6 +481,7 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 
 	fits_get_colnum(file->fptr, CASEINSEN, "PHI", &file->phiCol, status);  //BEA
 	fits_get_colnum(file->fptr, CASEINSEN, "LAGS", &file->lagsShiftCol, status);  //BEA
+	fits_get_colnum(file->fptr, CASEINSEN, "BSLN", &file->bslnCol, status);  //BEA
 
 	fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->pixIDCol, status);
 	if (*status==COL_NOT_FOUND) {
@@ -427,8 +542,10 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 		time = start_time + delta_t*event_list->event_indexes[i];
 		fits_write_col(file->fptr, TDOUBLE, file->timeCol,
 					   file->row, 1, 1, &time, status);
-		fits_write_col(file->fptr, TLONG, file->pixIDCol,
-					   file->row, 1, 1, &pixID, status);
+		//fits_write_col(file->fptr, TLONG, file->pixIDCol,
+		//			   file->row, 1, 1, &pixID, status);
+		fits_write_col(file->fptr, TINT, file->pixIDCol,
+					file->row, 1, 1, &event_list->pix_ids[i], status);
 		fits_write_col(file->fptr, TINT, file->gradingCol,
 				file->row, 1, 1, &dummy_grading, status);
 		CHECK_STATUS_VOID(*status);
@@ -462,6 +579,11 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 					file->row, 1, event_list->index, event_list->lagsShifts, status);
 	CHECK_STATUS_VOID(*status);
 
+	//Save bsln (BSLN) column   //BEA
+ 	fits_write_col(file->fptr, TDOUBLE, file->bslnCol,
+					file->row, 1, event_list->index, event_list->bsln, status);
+	CHECK_STATUS_VOID(*status);
+
 	//Save grading (GRADING) column   //BEA
  	fits_write_col(file->fptr, TINT, file->gradingCol,
 					file->row, 1, event_list->index, event_list->grading, status);
@@ -483,6 +605,18 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 						file->row, 1, event_list->index, event_list->ph_ids, status);
 		CHECK_STATUS_VOID(*status);
 	}
+	//printf("%s %d %s","event_list->ph_ids:", event_list->ph_ids[0],"\n");
+	/*for (int i = 0 ; i<event_list->index ; i++){
+		printf("%s %d %s","event_list->pix_ids:", event_list->pix_ids[i],"\n");
+		printf("%s %e %s","event_list->energies:", event_list->energies[i],"\n");
+	}*/
+
+	//printf("%s %d %s","event_list->index:", event_list->index,"\n");
+	//printf("%s %d %s","file->row:", file->row,"\n");
+	//Save pix_ids column
+	//fits_write_col(file->fptr, TINT, file->pixIDCol,
+	//				file->row, 1, event_list->index, event_list->pix_ids, status);
+	//CHECK_STATUS_VOID(*status);
 
 	file->row = file->row + event_list->index;
 	file->nrows+= event_list->index;

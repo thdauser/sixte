@@ -120,6 +120,7 @@ void scheduler::push_detection(TesRecord* record,
                                TesEventList* event_list)
 {
   //log_trace("pushing detection data into the queue...");
+  log_trace("push_detection 1");
   sirena_data* input = new sirena_data;
   tesrecord* rec = new tesrecord(record);
   input->rec = rec->get_TesRecord();
@@ -129,14 +130,21 @@ void scheduler::push_detection(TesRecord* record,
   if (pulsesAll and pulsesAll->ndetpulses > 0){
     *input->all_pulses = *pulsesAll;
   }
+  log_trace("push_detection 2");
 
   input->record_pulses = *pulsesInRecord;
+  log_trace("push_detection 2_1");
   input->rec_init = *reconstruct_init;
+  log_trace("push_detection 2_2");
   input->optimal_filter = new OptimalFilterSIRENA;
+  log_trace("push_detection 2_3");
   input->event_list = new TesEventList;
+  log_trace("push_detection 2_4");
   input->event_list->size = event_list->size;
+  log_trace("push_detection 2_5");
 
   input->event_list->index = event_list->index;
+  log_trace("push_detection 2_6");
   input->event_list->size_energy = event_list->size_energy;
   input->event_list->event_indexes = new double[event_list->size];
   input->event_list->energies = new double[event_list->size];
@@ -149,7 +157,12 @@ void scheduler::push_detection(TesRecord* record,
   input->event_list->grading = new int[event_list->size];
   input->event_list->phis = new double[event_list->size];
   input->event_list->lagsShifts = new int[event_list->size];
+  input->event_list->bsln = new double[event_list->size];
+  input->event_list->pix_ids = new long[event_list->size];
+  input->event_list->ph_ids = new long[event_list->size];
+  log_trace("push_detection 3");
   detection_queue.push(input);
+  log_trace("push_detection 4");
   ++num_records;
 }
 
@@ -157,6 +170,7 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
                                       PulsesCollection** pulsesAll, 
                                       OptimalFilterSIRENA** optimalFilter)
 {
+  
   // Waits until all the records are detected
   // this works because this function should only be called
   // after all the records are queue
@@ -303,6 +317,9 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
         event_list->ph_ids[ip]   = 0;
         event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
         event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
+        event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
+        event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
+        event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
       }
       if (data_array[i]->last_record == 1) {
         //log_debug("eventlist last record");
@@ -346,10 +363,13 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
           event_list->ph_ids[ip]   = 0;    
           event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
           event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
+          event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
+          event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
+          event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
         }
       }
     }
-
+#if 0
     //log_debug("Eventlist from record %i", (i + 1) );
     //log_debug("%i, %i, %i",event_list->size, event_list->size_energy, event_list->index);
     for (int j = 0; j < event_list->index; ++j){
@@ -361,6 +381,7 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
                 event_list->grades2[j],
                 event_list->ph_ids[j]);*/
     }
+#endif
   }// for event_list
 }
 
@@ -411,10 +432,11 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
   if ((*pulsesAll)->pulses_detected){
     delete [] (*pulsesAll)->pulses_detected;
   }
-  
-  (*pulsesAll)->size = this->num_records;
+  log_debug("%d", this->num_records * 2);
+  (*pulsesAll)->size = this->num_records * 2;
+  //log_debug("%d", this->num_records);
   (*pulsesAll)->ndetpulses = 0;
-  (*pulsesAll)->pulses_detected = new PulseDetected[this->num_records];
+  (*pulsesAll)->pulses_detected = new PulseDetected[this->num_records * 2];
 
   //log_debug("Number of records %i", this->num_records);
   this->data_array = new sirena_data*[this->num_records];//+1];
@@ -434,6 +456,7 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
     PulsesCollection aux;
     if ((*pulsesAll)->size < 
         ((*pulsesAll)->ndetpulses + in_record->ndetpulses)){
+      log_debug("%d - %d - %d",(*pulsesAll)->size, (*pulsesAll)->ndetpulses, in_record->ndetpulses);
       aux = *(*pulsesAll);
       delete *pulsesAll;
       *pulsesAll = new PulsesCollection;
@@ -452,8 +475,9 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
   }// End reconstruction of the pulses array
 
   //log_debug("pulsesAll");
+  /*
   for (int i = 0; i < (*pulsesAll)->ndetpulses; ++i){
-    /*log_debug("data - %i, %i, %i, %i, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %i",
+    log_debug("data - %i, %i, %i, %i, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %i",
               (*pulsesAll)->pulses_detected[i].pulse_duration,
               (*pulsesAll)->pulses_detected[i].grade1,
               (*pulsesAll)->pulses_detected[i].grade2,
@@ -467,11 +491,11 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
               (*pulsesAll)->pulses_detected[i].samp1DER,
               (*pulsesAll)->pulses_detected[i].avg_4samplesDerivative,
               (*pulsesAll)->pulses_detected[i].quality,
-              (*pulsesAll)->pulses_detected[i].numLagsUsed);*/
+              (*pulsesAll)->pulses_detected[i].numLagsUsed);
     for (int j = 0; j < (*pulsesAll)->pulses_detected[i].pulse_adc->size; ++j){
       //log_debug("%d, ",*((*pulsesAll)->pulses_detected[i].pulse_adc->data));
     }
-  }
+  }*/
 
   //log_trace("Filling eventlist...");
   for(unsigned int i = 0; i < this->num_records; ++i){
@@ -515,6 +539,9 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
         event_list->ph_ids[ip]   = 0;
         event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
         event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
+        event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
+        event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
+        event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
       }
       if (data_array[i]->last_record == 1) {
         //log_debug("eventlist last record");
@@ -558,12 +585,16 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
           event_list->ph_ids[ip]   = 0;    
           event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
           event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
+          event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
+          event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
+          event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
         }
       }
     }
 
     //log_debug("Eventlist from record %i", (i + 1) );
     //log_debug("%i, %i, %i",event_list->size, event_list->size_energy, event_list->index);
+#if 0
     for (int j = 0; j < event_list->index; ++j){
       /*log_debug("%f, %f, %f, %f, %i %i, %ld", event_list->event_indexes[j],
                 event_list->pulse_heights[j],
@@ -573,7 +604,10 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
                 event_list->grades2[j],
                 event_list->ph_ids[j]);*/
     }
+#endif
   }// for event_list
+  //log_fatal("End"); 
+  log_test("End");
 }
 
 void scheduler::get_test_event(TesEventList** test_event, TesRecord** record)
@@ -638,6 +672,7 @@ scheduler::scheduler():
   data_array(0)
 {
   this->init_v2();
+  //this->init();
 }
 
 scheduler::~scheduler()
@@ -933,7 +968,7 @@ data::data(const data& other):
 
 data& data::operator=(const data& other)
 {
-  printf("operator = date\n");
+  //printf("operator = date\n");
   if(this != &other){
     n_record = other.n_record;
     last_record = other.last_record;

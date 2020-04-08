@@ -39,13 +39,12 @@
 #include <stdio.h>
 
 #include "tesrecord.h"
-//#include "testriggerfile.h"
 #include "teseventlist.h"
 
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 
-//typedef struct TesTriggerFile TesTriggerFile;
+#include <time.h>
 
 typedef struct MatrixStruct
 {
@@ -136,6 +135,9 @@ typedef struct LibraryCollection
 {
 	/** Number of templates & matched filters in the structure. */
 	int ntemplates;
+        
+        /** BASELINE read from the noise file and propagated to the library file**/
+        double baseline;
 	
 	/** Number of fixed length filters in the structure. */
 	int nfixedfilters;
@@ -241,7 +243,7 @@ typedef struct NoiseSpec
   /** Noise standard deviation */
   double noiseStd;
   
-  /** Baseline: BASELINE or BASELINR */
+  /** Baseline */
   double baseline;
   
   /** Duration of the noise spectrum */
@@ -316,6 +318,9 @@ typedef struct PulseDetected
 
 	/** PIX_ID of the detected pulse*/
 	int pixid;
+        
+        /** PH_ID of the detected pulse*/
+	int phid;
 	
 	/** Vector containing the pulse adc values */
 	gsl_vector *pulse_adc;
@@ -370,6 +375,9 @@ typedef struct PulseDetected
         
         /**Number of lags used in detection*/
         int numLagsUsed;
+        
+        /** Baseline calculated, in general, by using the previous Lb samples to the pulse */
+        double bsln;
 #ifdef __cplusplus
   PulseDetected();
   PulseDetected(const PulseDetected& other);
@@ -406,6 +414,9 @@ typedef struct ReconstructInitSIRENA
   /**                   **/
   /** SIRENA parameters **/
   /**                   **/
+  /** SIRENA Version **/
+  char sirenaVersion[10];
+  
   /** LibraryCollection structure (pulse templates and matched filters)*/
   LibraryCollection* library_collection;
   
@@ -525,6 +536,12 @@ typedef struct ReconstructInitSIRENA
   /** File with the optimal filter info **/
   char filterFile[256];
   
+  //Additional error (in samples) added to the detected time"  (Logically, it changes the reconstructed energies) 
+  int errorT;
+  
+  //Sum0Filt: 0-padding: Subtract the sum of the filter (1) or not (0) **/
+  int Sum0Filt;
+  
   /** Overwrite files? **/
   int clobber;
   
@@ -561,7 +578,6 @@ typedef struct ReconstructInitSIRENA
   ~ReconstructInitSIRENA();
   ReconstructInitSIRENA& operator=(const ReconstructInitSIRENA& other);
   ReconstructInitSIRENA* get_threading_object(int n_record);
-  //ReconstructInitSIRENA& operator=(ReconstructInitSIRENA& other);
 #endif
 
 } ReconstructInitSIRENA;
@@ -615,7 +631,7 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
                                     double monoenergy, char hduPRECALWN, 
                                     char hduPRCLOFWM, int largeFilter, 
                                     int interm, char* detectFile, 
-                                    char* filterFile, char clobber, 
+                                    char* filterFile, int errorT, int Sum0Filt, char clobber, 
                                     int maxPulsesPerRecord, 
                                     double SaturationValue,
                                     //int tstartPulse1, int tstartPulse2, 
@@ -624,17 +640,6 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
                                     double energyPCA2, char * const XMLFile, 
                                     int* const status);
 
-/*
-#ifdef __cplusplus
-extern "C"
-#endif
-void initializeCreationMode(){}
-
-#ifdef __cplusplus
-extern "C"
-#endif
-void initializeProductionMode(){}
-*/
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -664,11 +669,6 @@ void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, Reconst
 LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, int* const status);
 
 NoiseSpec* getNoiseSpec(const char* const filename,int opmode,int hduPRCLOFWM,char *energy_method,char *ofnoise,char *filter_method,int* const status);
-
-/*#ifdef __cplusplus
-extern "C"
-#endif
-void calculateAverageRecord(TesRecord* record, int lastRecord, int nrecord, gsl_vector **averageRecord, int* const status);*/
 
 #ifdef __cplusplus
 extern "C"

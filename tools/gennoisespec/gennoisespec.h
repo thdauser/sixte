@@ -44,6 +44,9 @@
 	
 	#include <time.h>
 
+	//int flag=0;
+        //gsl_vector *fila1;
+	
 // CFITSIO helpers
 
 	int  colnum=0, felem=0;
@@ -85,6 +88,7 @@
 	double Imin;
         double Imax;
         double R0;
+        double V0;
         double Ibias;
         double RPARA;
         double TTR;
@@ -151,6 +155,9 @@
 	gsl_matrix *noiseIntervals;
 	gsl_vector *weightpoints;
 	gsl_matrix *weightMatrixes;
+        
+        gsl_vector *baselineInterval;   // Baseline of each interval of a record
+        gsl_vector *sigmaInterval;      // Sigma of each interval of a record
 
 // OUTPUT FILE
 
@@ -206,10 +213,6 @@
 		double stopcriteriamkc,
 		double kappamkc,
 		double levelprvpulse);
-
-	/*int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
-		int allPulsesMode, double sampling, int *numberPulses, int *thereIsPulse,
-		gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl, gsl_vector **index_maxDERgsl);*/
 	
 	int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
 		int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
@@ -217,6 +220,8 @@
 	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *mean, double *sigma, double *baseline);
 	
 	int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **weight);
+        
+        int medianKappaClipping_noiseSigma (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, double *mean, double *sigma);
 
 	using namespace std;
 

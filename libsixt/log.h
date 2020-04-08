@@ -2,6 +2,7 @@
 #ifndef LOG_H
 #define LOG_H
 
+#undef log_test
 #undef log_trace
 #undef log_debug
 #undef log_info
@@ -10,6 +11,22 @@
 #undef log_fatal
 
 #define LOG
+#define TEST_LOG
+
+#ifndef TEST_LOG
+
+#define log_test(fmt, ...) ((void)0)
+
+#else
+
+#define log_test tlog::test
+
+namespace tlog 
+{
+  void test(const char* format, ...);
+}
+
+#endif
 
 #ifndef LOG
 

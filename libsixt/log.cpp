@@ -11,9 +11,46 @@
 #include <thread>
 #include <mutex>
 
+namespace tlog
+{
+  static std::mutex test_mutex;
+  static std::string test_header("%llu (thread id: %s: ");
+
+  static unsigned long long test_get_timestamp()
+  {
+    return static_cast<unsigned long long> (std::clock()/(CLOCKS_PER_SEC/1000));
+  }
+
+  static std::string test_get_thread_id()
+  {
+    std::thread::id id (std::this_thread::get_id());
+    std::stringstream ss;
+    ss << id;
+    return (ss.str());
+  }
+
+  static void test_log(const char* fmt, va_list args)
+  {
+    std::lock_guard<std::mutex> guard(test_mutex);
+    printf(test_header.c_str(),
+            test_get_timestamp(),test_get_thread_id().c_str());
+    std::string format(fmt);
+    format.append("\n");
+    vprintf(format.c_str(), args);
+  }
+
+  void test(const char* format, ...)
+  {
+    va_list args;
+    va_start(args, format);
+    test_log(format, args);
+    va_end(args);
+  }
+}
+
 namespace slog
 {
-  static const level default_level = level::TRACE;
+  static const level default_level = level::FATAL;
   static std::string header("%llu (thread id: %s [%7.7s]: ");
 
   static std::mutex level_mutex;
@@ -59,13 +96,13 @@ namespace slog
   static void log(level lvl, const char* fmt, va_list args)
   {
     std::lock_guard<std::mutex> guard(write_mutex);
-    /*if (lvl >= get_default_level()){
+    if (lvl >= get_default_level()){
       printf(header.c_str(),
              get_timestamp(),get_thread_id().c_str(),level_to_string(lvl));
       std::string format(fmt);
       format.append("\n");
       vprintf(format.c_str(), args);
-    }*/
+    }
   }
 
   void trace(const char* format, ...)

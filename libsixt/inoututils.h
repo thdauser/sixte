@@ -42,7 +42,10 @@
 	
 	using namespace std;
 
-	struct IOData
+        /*#ifdef __cplusplus
+        extern "C"
+        #endif*/
+        struct IOData
 	{
 		fitsfile *inObject;
 		char *nameTable;
@@ -55,7 +58,27 @@
 		long iniRow;
 		long endRow;
 	};
-
+	
+	/*typedef struct IOData
+	{
+		fitsfile *inObject;
+		char *nameTable;
+		char *nameCol;
+		char *unit;
+		//MC char *type;
+		int type;
+		int iniCol;
+		int endCol;
+		long iniRow;
+		long endRow;
+                #ifdef __cplusplus
+                    IOData();
+                    IOData(const IOData& other);
+                    IOData& operator=(const IOData& other);
+                    ~IOData();
+                #endif
+	} IOdata;*/
+        
 	// Structure to define input parameters
 	typedef struct
 	{
@@ -74,6 +97,9 @@
 		double defValReal;
 	} inparam;
 
+        #ifdef __cplusplus
+        extern "C"
+        #endif
 	int readFitsSimple(IOData obj, gsl_vector **result);
 	int readFitsComplex(IOData obj, gsl_matrix **result);
 

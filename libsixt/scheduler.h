@@ -8,6 +8,8 @@
 
 #include "integraSIRENA.h"
 
+#include <time.h>
+
 //struct TesTriggerFile;
 
 struct phidlist{

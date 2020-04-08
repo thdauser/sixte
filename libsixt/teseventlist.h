@@ -58,6 +58,9 @@ typedef struct {
 	/** Number of samples shifted to find the maximum of the parabola */
 	int * lagsShifts;  //BEA
 
+	/** Baseline calculated just previously to the pulse (in general)(see 'getB') */
+	double * bsln;  //BEA
+
 	/** Pulse grade */
 	int * grading;  //BEA
 
@@ -72,6 +75,15 @@ typedef struct {
 
 	/** PH_ID of the reconstructed photons */
 	long * ph_ids;
+
+	/** PIX_ID of the reconstructed photons */
+	long * pix_ids;
+
+	/** Tstart of the reconstructed photons (in time) */
+	double * tstarts;
+
+	/** Tend of the reconstructed photons (in time) */
+	double * tends;
 
 } TesEventList;
 
@@ -88,7 +100,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,avg_4samplesDerivativeCol,E_lowresCol,grade1Col,grade2Col,phiCol,lagsShiftCol,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //BEA
+	int timeCol,energyCol,avg_4samplesDerivativeCol,E_lowresCol,grade1Col,grade2Col,phiCol,lagsShiftCol,bslnCol,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //BEA
 
 } TesEventFile;
 
@@ -122,6 +134,12 @@ TesEventFile* newTesEventFile(int* const status);
 /** Create and open a new TesEventFile. */
 TesEventFile* opennewTesEventFile(const char* const filename,
 				  SixtStdKeywords* keywords,
+				  const char clobber,
+				  int* const status);
+
+TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
+				  SixtStdKeywords* keywords,
+			          const char* const sirenaVersion,
 				  const char clobber,
 				  int* const status);
 
