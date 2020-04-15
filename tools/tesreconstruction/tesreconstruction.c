@@ -641,13 +641,13 @@ int tesreconstruction_main() {
   {
 	headas_chat(3, "finished successfully!\n\n");
         time_t ttcurrent = time(0);
-        printf("End time: %f\n", ((float)(ttcurrent - ttstart)));
+        printf("Elapsed time: %f\n", ((float)(ttcurrent - ttstart)));
 	return(EXIT_SUCCESS);
   } 
   else 
   {
         time_t ttcurrent = time(0);
-        printf("End time: %f\n", ((float)(ttcurrent - ttstart)));
+        printf("Elapsed time: %f\n", ((float)(ttcurrent - ttstart)));
 	return(status);
   }
 }
