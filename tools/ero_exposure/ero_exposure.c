@@ -515,17 +515,17 @@ int ero_exposure_getpar(struct Parameters *par)
   query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 
   // only load RA,Dec if Attitude is not given
-  if (par->Attitude==NULL) {
-	  query_simput_parameter_float("RA",&(par->RA),&status);
-	  query_simput_parameter_float("Dec",&(par->Dec),&status);
-	  query_simput_parameter_float("rollangle",&(par->rollangle),&status);
-	  headas_chat(3, "using RA=%.3f, Dec=%.3f as no Attitude file is given\n",par->RA,par->Dec);
-  } else {
-	  // set to default values
+  if (par->Attitude) {
+    // set to default values
 	  par->RA=0.0;
 	  par->Dec=0.0;
 	  par->rollangle=0.0;
 	  headas_chat(3, "using Attitude File: %s \n",par->Attitude);
+  } else {
+	  query_simput_parameter_float("RA",&(par->RA),&status);
+	  query_simput_parameter_float("Dec",&(par->Dec),&status);
+	  query_simput_parameter_float("rollangle",&(par->rollangle),&status);
+	  headas_chat(3, "using RA=%.3f, Dec=%.3f as no Attitude file is given\n",par->RA,par->Dec);
   }
 
   // Get the filename of the vignetting data file (FITS file).

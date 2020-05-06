@@ -944,16 +944,16 @@ int getpar(struct Parameters *const par) {
     query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 
     // only load RA,Dec if Attitude is not given
-    if (par->Attitude == NULL) {
-        query_simput_parameter_float("RA", &(par->RA), &status);
-        query_simput_parameter_float("Dec", &(par->Dec), &status);
-        query_simput_parameter_float("rollangle", &(par->rollangle), &status);
+    if (par->Attitude) {
+      // set to default values
+      par->RA = 0.0;
+      par->Dec = 0.0;
+      par->rollangle = 0.0;
+      headas_chat(3, "using Attitude File: %s \n", par->Attitude);
     } else {
-        // set to default values
-        par->RA = 0.0;
-        par->Dec = 0.0;
-        par->rollangle = 0.0;
-        headas_chat(3, "using Attitude File: %s \n", par->Attitude);
+      query_simput_parameter_float("RA", &(par->RA), &status);
+      query_simput_parameter_float("Dec", &(par->Dec), &status);
+      query_simput_parameter_float("rollangle", &(par->rollangle), &status);
     }
 
 

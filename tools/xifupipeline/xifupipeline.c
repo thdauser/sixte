@@ -196,7 +196,7 @@ int xifupipeline_main()
 		setGenDetIgnoreBkg(inst->det, !par.Background);
 
 	    // Set up the Attitude.
-	    if (par.Attitude=='\0' ||(strlen(par.Attitude)==0)||(0==strcmp(par.Attitude, "NONE"))) {
+	    if (par.Attitude==NULL) {
 			// Set up a pointing attitude.
 			ac=getPointingAttitude(par.MJDREF, par.TSTART, par.TSTART+par.Exposure,
 					par.RA*M_PI/180., par.Dec*M_PI/180., par.rollangle*M_PI/180.,&status);
@@ -962,16 +962,16 @@ int xifupipeline_getpar(struct Parameters* const par)
 	query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 
 	// only load RA,Dec if Attitude is not given
-	if (par->Attitude=='\0'){
-		query_simput_parameter_float("RA",&(par->RA),&status);
-		query_simput_parameter_float("Dec",&(par->Dec),&status);
-		query_simput_parameter_float("rollangle",&(par->rollangle),&status);
-	} else {
-		// set to default values
+	if (par->Attitude){
+    // set to default values
 		par->RA=0.0;
 		par->Dec=0.0;
 		par->rollangle=0.0;
 		headas_chat(3, "using Attiude File: %s \n",par->Attitude);
+	} else {
+		query_simput_parameter_float("RA",&(par->RA),&status);
+		query_simput_parameter_float("Dec",&(par->Dec),&status);
+		query_simput_parameter_float("rollangle",&(par->rollangle),&status);
 	}
 
 	status=ape_trad_query_file_name("Simput", &sbuffer);
