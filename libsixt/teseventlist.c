@@ -32,17 +32,18 @@ TesEventList* newTesEventList(int* const status){
 	// Initialize pointers with NULL
 	event_list->event_indexes=NULL;
 	event_list->pulse_heights=NULL;
-	event_list->avgs_4samplesDerivative=NULL; //BEA
-	event_list->Es_lowres=NULL; //BEA
-	event_list->grading=NULL; //BEA
-	event_list->phis=NULL; //BEA
-	event_list->lagsShifts=NULL; //BEA
-	event_list->bsln=NULL; //BEA
+	event_list->avgs_4samplesDerivative=NULL; //SIRENA
+	event_list->Es_lowres=NULL; //SIRENA
+	event_list->grading=NULL; //SIRENA
+	event_list->phis=NULL; //SIRENA
+	event_list->lagsShifts=NULL; //SIRENA
+	event_list->bsln=NULL; //SIRENA
+	event_list->rmsbsln=NULL; //SIRENA
 	event_list->energies=NULL;
 	event_list->grades1=NULL;
 	event_list->grades2=NULL;
 	event_list->ph_ids=NULL;
-        event_list->pix_ids=NULL;//BEA
+        event_list->pix_ids=NULL;//SIRENA
 
 	// Initialize values
 	event_list->size=0;
@@ -58,16 +59,17 @@ void freeTesEventList(TesEventList* event_list){
 		free(event_list->event_indexes);
 		free(event_list->pulse_heights);
 		free(event_list->energies);
-                free(event_list->avgs_4samplesDerivative); //BEA
-                free(event_list->Es_lowres); //BEA
-		free(event_list->grading); //BEA
-		free(event_list->phis); //BEA
-		free(event_list->lagsShifts); //BEA
-		free(event_list->bsln); //BEA
+                free(event_list->avgs_4samplesDerivative); //SIRENA
+                free(event_list->Es_lowres); //SIRENA
+		free(event_list->grading); //SIRENA
+		free(event_list->phis); //SIRENA
+		free(event_list->lagsShifts); //SIRENA
+		free(event_list->bsln); //SIRENA
+		free(event_list->rmsbsln); //SIRENA
 		free(event_list->grades1);
 		free(event_list->grades2);
 		free(event_list->ph_ids);
-                free(event_list->pix_ids);//BEA
+                free(event_list->pix_ids);//SIRENA
 		free(event_list);
 		event_list=NULL;
 	}
@@ -113,6 +115,7 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 			free(event_list->phis);
 			free(event_list->lagsShifts);
 			free(event_list->bsln);
+			free(event_list->rmsbsln);
 			free(event_list->grades2);
 			if(NULL!= event_list->ph_ids){
 				free(event_list->ph_ids);
@@ -126,43 +129,50 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 			CHECK_STATUS_VOID(*status);
 		}
 
-		event_list->avgs_4samplesDerivative = malloc(event_list->size*sizeof*(event_list->avgs_4samplesDerivative)); //BEA
+		event_list->avgs_4samplesDerivative = malloc(event_list->size*sizeof*(event_list->avgs_4samplesDerivative)); //SIRENA
 		if (NULL == event_list->avgs_4samplesDerivative){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
 		
-		event_list->Es_lowres = malloc(event_list->size*sizeof*(event_list->Es_lowres)); //BEA
+		event_list->Es_lowres = malloc(event_list->size*sizeof*(event_list->Es_lowres)); //SIRENA
 		if (NULL == event_list->Es_lowres){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
 
-		event_list->grading = malloc(event_list->size*sizeof*(event_list->grading)); //BEA
+		event_list->grading = malloc(event_list->size*sizeof*(event_list->grading)); //SIRENA
 		if (NULL == event_list->grading){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
 
-		event_list->phis = malloc(event_list->size*sizeof*(event_list->phis)); //BEA
+		event_list->phis = malloc(event_list->size*sizeof*(event_list->phis)); //SIRENA
 		if (NULL == event_list->phis){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
 
-		event_list->lagsShifts = malloc(event_list->size*sizeof*(event_list->lagsShifts)); //BEA
+		event_list->lagsShifts = malloc(event_list->size*sizeof*(event_list->lagsShifts)); //SIRENA
 		if (NULL == event_list->lagsShifts){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
 
-		event_list->bsln = malloc(event_list->size*sizeof*(event_list->bsln)); //BEA
+		event_list->bsln = malloc(event_list->size*sizeof*(event_list->bsln)); //SIRENA
 		if (NULL == event_list->bsln){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+
+		event_list->rmsbsln = malloc(event_list->size*sizeof*(event_list->rmsbsln)); //SIRENA
+		if (NULL == event_list->rmsbsln){
 			*status=EXIT_FAILURE;
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
@@ -255,23 +265,24 @@ TesEventFile* newTesEventFile(int* const status){
 	file->nrows     =0;
 	file->timeCol   =1;
 	file->energyCol =2;
-	file->avg_4samplesDerivativeCol =3; //BEA	
-	file->E_lowresCol =4; //BEA	
+	file->avg_4samplesDerivativeCol =3; //SIRENA	
+	file->E_lowresCol =4; //SIRENA	
 	file->grade1Col =5;
 	file->grade2Col =6;
-	file->phiCol =7; //BEA
-	file->lagsShiftCol =8; //BEA
-	file->bslnCol =9; //BEA
-	file->pixIDCol  =10;
-	file->phIDCol   =11;
-	file->raCol     =12;
-	file->decCol    =13;
-	file->detxCol   =14;
-	file->detyCol   =15;
-	file->gradingCol=16;
-	file->srcIDCol  =17;
-	file->nxtCol    =18;
-	file->extCol    =19;
+	file->phiCol =7; //SIRENA
+	file->lagsShiftCol =8; //SIRENA
+	file->bslnCol =9; //SIRENA
+	file->rmsbslnCol =10; //SIRENA
+	file->pixIDCol  =11;
+	file->phIDCol   =12;
+	file->raCol     =13;
+	file->decCol    =14;
+	file->detxCol   =15;
+	file->detyCol   =16;
+	file->gradingCol=17;
+	file->srcIDCol  =18;
+	file->nxtCol    =19;
+	file->extCol    =20;
 
 	return(file);
 }
@@ -345,11 +356,11 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //BEA
-	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J", "1D" , "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
-	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",     "",       "",     "",     "deg","deg","m","m","","","","keV"};
+	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","RMSBSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //SIRENA
+	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J", "1D","1D" , "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",     "",     "",       "",     "",     "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 19,		// BEA (19 instead of 14)
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 20,		// SIRENA (20 instead of 14)
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -428,11 +439,11 @@ TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //BEA
-	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J" , "1D", "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
-	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",      "",       "",     "", "deg","deg","m","m","","","","keV"};
+	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","RMSBSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //SIRENA
+	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J" , "1D", "1D","1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",      "",        "",     "",     "", "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 19,		// BEA (19 instead of 14)
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 20,		// SIRENA (20 instead of 14)
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -465,8 +476,8 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	// Determine the column numbers.
 	fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->timeCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->energyCol, status);
-        fits_get_colnum(file->fptr, CASEINSEN, "AVG4SD", &file->avg_4samplesDerivativeCol, status);  //BEA
-        fits_get_colnum(file->fptr, CASEINSEN, "ELOWRES", &file->E_lowresCol, status);  //BEA
+        fits_get_colnum(file->fptr, CASEINSEN, "AVG4SD", &file->avg_4samplesDerivativeCol, status);  //SIRENA
+        fits_get_colnum(file->fptr, CASEINSEN, "ELOWRES", &file->E_lowresCol, status);  //SIRENA
 	fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->grade1Col, status);
 	if (*status==COL_NOT_FOUND) {
 	  file->grade1Col=-1;
@@ -479,9 +490,10 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	  *status=0;
 	}
 
-	fits_get_colnum(file->fptr, CASEINSEN, "PHI", &file->phiCol, status);  //BEA
-	fits_get_colnum(file->fptr, CASEINSEN, "LAGS", &file->lagsShiftCol, status);  //BEA
-	fits_get_colnum(file->fptr, CASEINSEN, "BSLN", &file->bslnCol, status);  //BEA
+	fits_get_colnum(file->fptr, CASEINSEN, "PHI", &file->phiCol, status);  //SIRENA
+	fits_get_colnum(file->fptr, CASEINSEN, "LAGS", &file->lagsShiftCol, status);  //SIRENA
+	fits_get_colnum(file->fptr, CASEINSEN, "BSLN", &file->bslnCol, status);  //SIRENA
+	fits_get_colnum(file->fptr, CASEINSEN, "RMSBSLN", &file->rmsbslnCol, status);  //SIRENA
 
 	fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->pixIDCol, status);
 	if (*status==COL_NOT_FOUND) {
@@ -559,32 +571,37 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 					file->row, 1, event_list->index, event_list->energies, status);
 	CHECK_STATUS_VOID(*status);
 
-	//Save avgs_4samplesDerivative (AVG4SD) column   //BEA
+	//Save avgs_4samplesDerivative (AVG4SD) column   //SIRENA
  	fits_write_col(file->fptr, TDOUBLE, file->avg_4samplesDerivativeCol,
 					file->row, 1, event_list->index, event_list->avgs_4samplesDerivative, status);
 	CHECK_STATUS_VOID(*status);
         
-        //Save Es_lowres (ELOWRES) column   //BEA
+        //Save Es_lowres (ELOWRES) column   //SIRENA
  	fits_write_col(file->fptr, TDOUBLE, file->E_lowresCol,
 					file->row, 1, event_list->index, event_list->Es_lowres, status);
 	CHECK_STATUS_VOID(*status);
 
-	//Save phis (PHI) column   //BEA
+	//Save phis (PHI) column   //SIRENA
  	fits_write_col(file->fptr, TDOUBLE, file->phiCol,
 					file->row, 1, event_list->index, event_list->phis, status);
 	CHECK_STATUS_VOID(*status);
 
-	//Save lagsShifts (LAGS) column   //BEA
+	//Save lagsShifts (LAGS) column   //SIRENA
  	fits_write_col(file->fptr, TINT, file->lagsShiftCol,
 					file->row, 1, event_list->index, event_list->lagsShifts, status);
 	CHECK_STATUS_VOID(*status);
 
-	//Save bsln (BSLN) column   //BEA
+	//Save bsln (BSLN) column   //SIRENA
  	fits_write_col(file->fptr, TDOUBLE, file->bslnCol,
 					file->row, 1, event_list->index, event_list->bsln, status);
 	CHECK_STATUS_VOID(*status);
 
-	//Save grading (GRADING) column   //BEA
+	//Save rmsbsln (RMSBSLN) column   //SIRENA
+ 	fits_write_col(file->fptr, TDOUBLE, file->rmsbslnCol,
+					file->row, 1, event_list->index, event_list->rmsbsln, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save grading (GRADING) column   //SIRENA
  	fits_write_col(file->fptr, TINT, file->gradingCol,
 					file->row, 1, event_list->index, event_list->grading, status);
 	CHECK_STATUS_VOID(*status);
@@ -653,12 +670,12 @@ void addRMFImpact(TesEventFile* file,PixImpact * impact,int grade1,int grade2,in
 			file->row, 1, 1, &energy, status);
 	CHECK_STATUS_VOID(*status);
 
-        /*//Save avg_4samplesDerivative column  //BEA
+        /*//Save avg_4samplesDerivative column  //SIRENA
 	double energy = (double)impact->energy;
 	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
 			file->row, 1, 1, &energy, status);
 =======
-        //Save avg_4samplesDerivative column  //BEA
+        //Save avg_4samplesDerivative column  //SIRENA
 	/*double avg_4samplesDerivative = (double)impact->avg_4samplesDerivative;
 	fits_write_col(file->fptr, TDOUBLE, file->avg_4samplesDerivativeCol,
 			file->row, 1, 1, &avg_4samplesDerivative, status);
@@ -743,17 +760,17 @@ void addEmptyEvent(TesEventFile* file,PixImpact* impact, int* const status){
 }
 
 /** Update signal and grading columns of an event */
-//void updateSignal(TesEventFile* file,long row,double energy,double avg_4samplesDerivative,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ //BEA
+//void updateSignal(TesEventFile* file,long row,double energy,double avg_4samplesDerivative,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ //SIRENA
 void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ 
 	//Save energy column
 	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
 			row, 1, 1, &energy, status);
 	CHECK_STATUS_VOID(*status);
 
-	/*//Save avg_4samplesDerivative column   //BEA
+	/*//Save avg_4samplesDerivative column   //SIRENA
 	fits_write_col(file->fptr, TDOUBLE, file->avg4samplesDerivativeCol,
 =======
-	//Save avg_4samplesDerivative column   //BEA
+	//Save avg_4samplesDerivative column   //SIRENA
 	/*fits_write_col(file->fptr, TDOUBLE, file->avg4samplesDerivativeCol,
 >>>>>>> bf8ce4341c3d8e276e191e58f674d692a0809835
 			row, 1, 1, &avg_4samplesDerivative, status);

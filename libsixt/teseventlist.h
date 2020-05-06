@@ -41,28 +41,31 @@ typedef struct {
 	/** Index arrival time of the photons inside a record */
 
 	//int * event_indexes;	
-	double * event_indexes;	//BEA
+	double * event_indexes;	//SIRENA
 
 	/** Pulse height of the photons */
 	double * pulse_heights;
 
 	/** Average of the first 4 samples of the derivative of the event (pulse) */
-	double * avgs_4samplesDerivative;  //BEA
+	double * avgs_4samplesDerivative;  //SIRENA
 	
 	/** Low resolution energy estimator (4 samples-long filter) */
-	double * Es_lowres;  //BEA
+	double * Es_lowres;  //SIRENA
 
 	/** Offset relative to the central point of the parabola */
-	double * phis;  //BEA
+	double * phis;  //SIRENA
 
 	/** Number of samples shifted to find the maximum of the parabola */
-	int * lagsShifts;  //BEA
+	int * lagsShifts;  //SIRENA
 
 	/** Baseline calculated just previously to the pulse (in general)(see 'getB') */
-	double * bsln;  //BEA
+	double * bsln;  //SIRENA
+
+        /** Rms of the baseline calculated just previously to the pulse (in general)(see 'getB') */
+	double * rmsbsln;  //SIRENA
 
 	/** Pulse grade */
-	int * grading;  //BEA
+	int * grading;  //SIRENA
 
 	/** Energy of the photons */
 	double * energies;
@@ -100,7 +103,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,avg_4samplesDerivativeCol,E_lowresCol,grade1Col,grade2Col,phiCol,lagsShiftCol,bslnCol,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //BEA
+	int timeCol,energyCol,avg_4samplesDerivativeCol,E_lowresCol,grade1Col,grade2Col,phiCol,lagsShiftCol,bslnCol,rmsbslnCol,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //SIRENA
 
 } TesEventFile;
 
