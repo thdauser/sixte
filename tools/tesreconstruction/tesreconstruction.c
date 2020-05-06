@@ -54,7 +54,7 @@ int tesreconstruction_main() {
     sf = det->SampleFreq;
     
     double sampling_rate;
-    //int trig_reclength;
+    int trig_reclength;
     
     char* firstchar = strndup(par.RecordFile, 1);
     char firstchar2[2];
@@ -140,6 +140,29 @@ int tesreconstruction_main() {
                         }
                             
                         div = sf/sampling_rate;  // Grading info is unique in XML file -> adjust for different sf
+                        
+                        // Pointer to where the text "trig_reclength=" is in HISTORY block
+                        trig_reclength = -999.0;
+                        char * trig_reclength_pointer;
+                        trig_reclength_pointer = strstr (headerPrimary,"trig_reclength=");    
+                
+                        // Pointer to the next character to "trig_reclength=" (15 characters)   
+                        trig_reclength_pointer = trig_reclength_pointer + 15; 
+                        char each_character_after_treclength[125];		
+                        snprintf(each_character_after_treclength,125,"%c",*trig_reclength_pointer);
+                        
+                        char characters_after_treclength[125];
+                        snprintf(characters_after_treclength,125,"%c",*trig_reclength_pointer);
+                        
+                        while (*trig_reclength_pointer != ' ')
+                        {
+                            trig_reclength_pointer = trig_reclength_pointer + 1;
+                            snprintf(each_character_after_treclength,125,"%c",*trig_reclength_pointer);
+                            strcat(characters_after_treclength,each_character_after_treclength); 
+                        }
+                        
+                        trig_reclength = atoi(characters_after_treclength);
+                        //printf("%s %d %s","trig_reclength: ",trig_reclength,"\n");
             
                     }//if ((hdunum == 8) || (hdunum == 9)) (xifusim file)
                     else
@@ -207,7 +230,7 @@ int tesreconstruction_main() {
                 
                 div = sf/sampling_rate;  // Grading info is unique in XML file -> adjust for different sf
                 
-                /*// Pointer to where the text "sample_rate=" is in HISTORY block
+                // Pointer to where the text "trig_reclength=" is in HISTORY block
                 trig_reclength = -999.0;
                 char * trig_reclength_pointer;
                 trig_reclength_pointer = strstr (headerPrimary,"trig_reclength=");    
@@ -228,7 +251,7 @@ int tesreconstruction_main() {
                 }
                 
                 trig_reclength = atoi(characters_after_treclength);
-                printf("%s %d %s","trig_reclength: ",trig_reclength,"\n");*/
+                //printf("%s %d %s","trig_reclength: ",trig_reclength,"\n");
                 
             }//if hdunum==8 (xifusim file)
             else //if hdunum!=8 (sixtefile)
@@ -376,7 +399,7 @@ int tesreconstruction_main() {
                                     }
                                 
                                     //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
-                                    reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
+                                    reconstructRecordSIRENA(record,trig_reclength,event_list,reconstruct_init_sirena,
                                                             lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
                             }
                             CHECK_STATUS_BREAK(status);
@@ -489,15 +512,18 @@ int tesreconstruction_main() {
             }
             CHECK_STATUS_BREAK(status);
             
-            /*printf("%s %d %s","record_file->trigger_size0: ", record_file->trigger_size,"\n");
-            if (record_file->trigger_size > trig_reclength)
-            {
-                record_file->trigger_size = trig_reclength;
-            }*/
+            //printf("%s %d %s","record_file->trigger_size0: ", record_file->trigger_size,"\n");
+            //printf("%s %d %s","trig_reclength: ", trig_reclength,"\n");
+            //if (record_file->trigger_size > trig_reclength)
+            //{
+            //    record_file->trigger_size = trig_reclength;
+            //    printf("%s","Entra \n");
+            //}
             // Build up TesRecord to read the file
             record = newTesRecord(&status);
             if (record_file->delta_t == -999) record_file->delta_t = 1./sampling_rate;
-            allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
+            //allocateTesRecord(record,record_file->trigger_size,record_file->delta_t,0,&status);
+            allocateTesRecord(record,trig_reclength,record_file->delta_t,0,&status);
             CHECK_STATUS_BREAK(status);
             
             // Iterate of records and do the reconstruction
@@ -533,10 +559,9 @@ int tesreconstruction_main() {
                             }
                         
                             //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
-                            //printf("%s %d %s","record->trigger_size1: ",record->trigger_size,"\n");
                             //printf("%s %d %s", "pixid: ",record->pixid,"\n");
                             //printf("%s %d %s","ph_id: ",record->phid_list->phid_array[0],"\n");
-                            reconstructRecordSIRENA(record,event_list,reconstruct_init_sirena,
+                            reconstructRecordSIRENA(record,trig_reclength, event_list,reconstruct_init_sirena,
                                                     lastRecord, nrecord, &pulsesAll, &optimalFilter, &status);
                     }
                     CHECK_STATUS_BREAK(status);

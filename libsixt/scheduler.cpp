@@ -34,7 +34,7 @@ void detection_worker()
     sirena_data* data;
     if(detection_queue.wait_and_pop(data)){
       //log_trace("Extracting detection data from queue...");
-      th_runDetect(data->rec,
+      th_runDetect(data->rec, data->trig_reclength,
                 data->last_record,
                 data->all_pulses,
                 &(data->rec_init),
@@ -61,7 +61,7 @@ void energy_worker()
     if(energy_queue.wait_and_pop(data)){
       //log_trace("Extracting energy data from queue...");
       //log_debug("Energy data in record %i",data->n_record);
-      th_runEnergy(data->rec, 
+      th_runEnergy(data->rec, data->trig_reclength,
                    &(data->rec_init),
                    &(data->record_pulses),
                    //&(data->optimal_filter));
@@ -88,7 +88,7 @@ void energy_worker_v2()
     if(detected_queue.wait_and_pop(data)){
       //log_trace("Extracting energy data from queue...");
       //log_debug("Energy data in record %i",data->n_record);
-      th_runEnergy(data->rec, 
+      th_runEnergy(data->rec, data->trig_reclength,
                    &(data->rec_init),
                    &(data->record_pulses),
                    //&(data->optimal_filter);
@@ -110,7 +110,7 @@ void energy_worker_v2()
 /* ****************************************************************************/
 /* Scheduler ******************************************************************/
 /* ****************************************************************************/
-void scheduler::push_detection(TesRecord* record, 
+void scheduler::push_detection(TesRecord* record, int trig_reclength,
                                int nRecord, 
                                int lastRecord, 
                                PulsesCollection *pulsesAll, 
@@ -124,6 +124,7 @@ void scheduler::push_detection(TesRecord* record,
   sirena_data* input = new sirena_data;
   tesrecord* rec = new tesrecord(record);
   input->rec = rec->get_TesRecord();
+  input->trig_reclength = trig_reclength;
   input->n_record = nRecord;
   input->last_record = lastRecord;
   input->all_pulses = new PulsesCollection;

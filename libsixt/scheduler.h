@@ -73,6 +73,7 @@ struct tesrecord{
 struct data
 { 
   TesRecord* rec;
+  int trig_reclength;
   ReconstructInitSIRENA* rec_init;
   int n_record;
   int last_record;
@@ -93,7 +94,7 @@ class scheduler
 {
  public:
 
-  void push_detection(TesRecord* record, 
+  void push_detection(TesRecord* record, int trig_reclength,
                       int nRecord, 
                       int lastRecord, 
                       PulsesCollection *pulsesAll, 

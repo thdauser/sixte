@@ -81,6 +81,7 @@ int _resize_array(int size, int pulses){ return (size * MUL_FAC  < pulses) ? pul
 * 
 * - Load LibraryCollection structure if library file exists
 * - Load NoiseSpec structure
+* - Fill in the matrix tstartPulse1_i if tstartPulse1 = nameFile
 * - Fill in reconstruct_init
 * 
 * Parameters:
@@ -106,12 +107,15 @@ int _resize_array(int size, int pulses){ return (size * MUL_FAC  < pulses) ? pul
 * - filtEev: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RALL, I2RNOL and I2RFITTED)
 * - ofnoise: Noise to use with Optimal Filtering: NSD or WEIGHTM
 * - lagsornot: Lags (1) or no lags (0)
+* - nLags: Number of lags (positive odd number)
+* - Fitting35: Number of lags to analytically calculate a parabola (3) or to fit a parabola (5)
 * - ofiter: Iterate (1) or not iterate (0)
 * - oflib: Work or not with a library with optimal filters (1/0)
 * - ofinterp: Optimal Filter by using the Matched Filter or the DAB as matched filter (MF/DAB)
 *             It has been fixed in 'tesreconstruction' as 'DAB'
 * - oflength_strategy: Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED
 * - oflength: Optimal Filter length (taken into account if :option:`OFStrategy`=FIXED)
+* - preBuffer: Some samples added before the starting time of a pulse
 * - monoenergy: Monochromatic energy of input file in eV (only for library creation)
 * - hduPRECALWN: Add or not the PRECALWN HDU in the library file (1/0) (only for library creation)
 * - hduPRCLOFWM: Add or not the PRCLOFWM HDU in the library file (1/0) (only for library creation)
@@ -119,6 +123,8 @@ int _resize_array(int size, int pulses){ return (size * MUL_FAC  < pulses) ? pul
 * - interm: Write or not intermediate files (1/0)
 * - detectFile: Intermediate detections file (if intermediate=1)
 * - filterFile: Intermediate filters file (if intermediate=1)
+* - errorT: Additional error (in samples) added to the detected time (logically, it changes the reconstructed energies)
+* - Sum0Filt: 0-padding: Subtract the sum of the filter (1) or not (0)
 * - clobber: Overwrite or not output files if exist (1/0)
 * - maxPulsesPerRecord: Default size of the event list
 * - SaturationValue: Saturation level of the ADC curves
@@ -397,18 +403,21 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 
 
 /***** SECTION 2 ************************************************************
-* reconstructRecordSIRENA: This function is the main wrapper function to detect, grade and calculate energy of pulses in input records.
+* reconstructRecordSIRENA: This function is the main wrapper function to detect, grade and calculate the energy of the pulses in the input records.
 *
 * - Inititalize PulsesCollection structure
 * - Check consistency of some input parameters
-* - Detect pulses in input record (runDetect()). Save information of detected pulses
-*      - If PCA, pulses energies are already written in the 'pulsesAll' structures
+* - If first record, read the necessary keywords and columns from the input file in order to convert from current to quasi-resistance space
+* - In case of running with threading
+* - Detect pulses in input record (runDetect()). 
 * - If in RECONSTRUCTION (:option:`opmode` = 1) and not PCA:
-* - Filter record and calculate energy of pulses (runEnergy())
+*       - Filter and calculate energy of pulses (runEnergy())
+* - Fill in the pulsesAll structure
 * - Populate output event list with pulses energies, arrival time and grading
 *
 * Parameters:
 * - record: Instance of TesRecord structure that contains the input record
+* - trig_reclength: Record size (just in case threading and input files with different 'ADC' lengths but the same record size indeed)
 * - event_list: Instance of TesEventList structure that contains the information of the reconstructed pulses
 * - reconstruct_init: Member of ReconstructInitSIRENA structure to initialize the reconstruction parameters (pointer and values)
 * - lastRecord: If record being analyzed is the last one, lastRecord = 1. Otherwise it is equal to 0
@@ -418,7 +427,7 @@ extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruc
 * - optimalFilter: Optimal filters used in reconstruction
 * - status:Input/output status
 ******************************************************************************/
-extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init,  int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status)
+extern "C" void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init,  int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status)
 {
         log_trace("reconstructRecordSIRENA: START");
 	// Inititalize PulsesCollection structure
@@ -439,22 +448,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                 EP_EXIT_ERROR("Pulse length is larger than record size",EPFAIL);
 	}
 	
-		// Detect pulses in record
-  
-  if (scheduler::get()->is_threading() 
-      && reconstruct_init->opmode == 1
-      && (strcmp(reconstruct_init->EnergyMethod, "PCA") != 0)){
-    log_trace("reconstructRecordSIRENA:  Threading mode...");
-    ReconstructInitSIRENA* rec = reconstruct_init->get_threading_object(nRecord);
-    log_trace("reconstructRecordSIRENA:  Threading mode...1");
-    scheduler::get()->push_detection(record, nRecord, lastRecord, 
-                                     *pulsesAll, &rec, &pulsesInRecord,
-                                     optimalFilter, event_list);
-    log_trace("reconstructRecordSIRENA:  Threading mode...2");
-    return;  // The rest of 'reconstructRecordSIRENA' is not going to run: 'runDetect', 'runEnergy'...
-  }
-	
-	// Detect pulses in record
+	// If first record, read the necessary keywords and columns from the input file in order to convert from current to quasi-resistance space
         if (nRecord == 1)
         {
                 reconstruct_init->i2rdata = NULL;
@@ -624,8 +618,24 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                         }
                 }
         }
+        
+        // In case of running with threading
+        if (scheduler::get()->is_threading() 
+            && reconstruct_init->opmode == 1
+            && (strcmp(reconstruct_init->EnergyMethod, "PCA") != 0)){
+            log_trace("reconstructRecordSIRENA:  Threading mode...");
+        ReconstructInitSIRENA* rec = reconstruct_init->get_threading_object(nRecord);
+        log_trace("reconstructRecordSIRENA:  Threading mode...1");
+        scheduler::get()->push_detection(record, trig_reclength, nRecord, lastRecord, 
+                                        *pulsesAll, &rec, &pulsesInRecord,
+                                        optimalFilter, event_list);
+        log_trace("reconstructRecordSIRENA:  Threading mode...2");
+        return;  // The rest of 'reconstructRecordSIRENA' is not going to run: 'runDetect', 'runEnergy'...
+            }
+        
+        // Detect pulses in record
         //log_trace("Before runDetect");
-	runDetect(record, lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
+	runDetect(record, trig_reclength,lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
         log_trace("After runDetect");
 	
 	if(pulsesInRecord->ndetpulses == 0) // No pulses found in record
@@ -636,11 +646,12 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
 		
 	if ((reconstruct_init->opmode == 1) && (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0))
 	{
-		// Filter pulses and calculates energy
-		runEnergy(record, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
+		// Filter and calculates energy
+		runEnergy(record, trig_reclength, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
 	}
 	log_trace("After runEnergy");
 	
+        // Fill in the pulsesAll structure
         if ((pulsesInRecord->ndetpulses != 0) && ((*pulsesAll)->ndetpulses == 0))
         //if (nRecord == 1)
 	{
@@ -671,6 +682,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                 if (event_list->phis != NULL) 	        delete [] event_list->phis;
                 if (event_list->lagsShifts != NULL) 	delete [] event_list->lagsShifts;
                 if (event_list->bsln != NULL) 	        delete [] event_list->bsln;
+                if (event_list->rmsbsln != NULL) 	delete [] event_list->rmsbsln;
                 if (event_list->grading != NULL) 	delete [] event_list->grading;
                 if (event_list->grades1 != NULL) 	delete [] event_list->grades1;
 		if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
@@ -730,6 +742,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
         event_list->phis = new double[event_list->index];
         event_list->lagsShifts = new int[event_list->index];
         event_list->bsln = new double[event_list->index];
+        event_list->rmsbsln = new double[event_list->index];
         event_list->grading  = new int[event_list->index];
 	event_list->grades1  = new int[event_list->index];
 	event_list->grades2  = new int[event_list->index];
@@ -761,6 +774,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                         event_list->phis[ip] = pulsesInRecord->pulses_detected[ip].phi;
                         event_list->lagsShifts[ip] = pulsesInRecord->pulses_detected[ip].lagsShift;
                         event_list->bsln[ip] = pulsesInRecord->pulses_detected[ip].bsln;
+                        event_list->rmsbsln[ip] = pulsesInRecord->pulses_detected[ip].rmsbsln;
                         event_list->grading[ip]  = pulsesInRecord->pulses_detected[ip].grading;
 			event_list->grades1[ip]  = pulsesInRecord->pulses_detected[ip].grade1;
 			event_list->grades2[ip]  = pulsesInRecord->pulses_detected[ip].grade2;
@@ -802,6 +816,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                         event_list->phis = new double[event_list->index];
                         event_list->lagsShifts = new int[event_list->index];
                         event_list->bsln = new double[event_list->index];
+                        event_list->rmsbsln = new double[event_list->index];
                         event_list->grading  = new int[event_list->index];
                         event_list->grades1  = new int[event_list->index];
 			event_list->grades2  = new int[event_list->index];
@@ -827,6 +842,7 @@ extern "C" void reconstructRecordSIRENA(TesRecord* record, TesEventList* event_l
                                 event_list->phis[ip] = (*pulsesAll)->pulses_detected[ip].phi;
                                 event_list->lagsShifts[ip] = (*pulsesAll)->pulses_detected[ip].lagsShift;
                                 event_list->bsln[ip] = (*pulsesAll)->pulses_detected[ip].bsln;
+                                event_list->rmsbsln[ip] = (*pulsesAll)->pulses_detected[ip].rmsbsln;
                                 event_list->grading[ip]  = (*pulsesAll)->pulses_detected[ip].grading;
 				event_list->grades1[ip]  = (*pulsesAll)->pulses_detected[ip].grade1;
 				event_list->grades2[ip]  = (*pulsesAll)->pulses_detected[ip].grade2;
@@ -2619,7 +2635,7 @@ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, 
 * getNoiseSpec: This function creates and retrieves a NoiseSpec from a file.
 * 
 * - Create *NoiseSpec* structure
-* - Open FITS file, move to the NOISE, NOISEALL and WEIGHTMS HDUs and get interesting keywords
+* - Open FITS file, move to the NOISE, NOISEALL and WEIGHTMS HDUs and get necessary keywords
 * - Allocate *NoiseSpec* structure
 * - Get noise spectrum (CSD), and noise frequencies (FREQ) column numbers
 * - Read column CSD and save it into the structure
@@ -3878,6 +3894,7 @@ PulseDetected::PulseDetected():
   avg_4samplesDerivative(0.0f),
   E_lowres(0.0f),
   bsln(0.0f),
+  rmsbsln(0.0f),
   phi(0.0f),
   lagsShift(0),
   quality(0.0f),
@@ -3908,6 +3925,7 @@ PulseDetected::PulseDetected(const PulseDetected& other):
   avg_4samplesDerivative(other.avg_4samplesDerivative),
   E_lowres(other.E_lowres),
   bsln(other.bsln),
+  rmsbsln(other.rmsbsln),
   phi(other.phi),
   lagsShift(other.lagsShift),
   quality(other.quality),
@@ -3960,6 +3978,7 @@ PulseDetected& PulseDetected::operator=(const PulseDetected& other)
     avg_4samplesDerivative = other.avg_4samplesDerivative;
     E_lowres = other.E_lowres;
     bsln = other.bsln;
+    rmsbsln = other.rmsbsln;
     phi = other.phi;
     lagsShift = other.lagsShift;
     quality = other.quality;

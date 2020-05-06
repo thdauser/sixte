@@ -1,4 +1,4 @@
-Rcmethod,s,lq,"SIRENA",,,"Reconstruction method (PP or SIRENA)"
+Rcmethod,s,h,"SIRENA",,,"Reconstruction method (PP or SIRENA)"
 RecordFile,s,lq,"record.fits",,,"Record FITS file"
 TesEventFile,s,lq,"event.fits",,,"Output event list file"
 PulseLength,i,lq,8192,,,"Pulse length"

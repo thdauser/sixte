@@ -45,12 +45,13 @@
 #include <time.h>
 
 void runDetect(TesRecord* record, 
+               int trig_reclength,
                int lastRecord, 
                PulsesCollection *pulsesAll, 
                ReconstructInitSIRENA** reconstruct_init, 
                PulsesCollection** pulsesInRecord);
 
-void th_runDetect(TesRecord* record, 
+void th_runDetect(TesRecord* record, int trig_reclength,
                   int lastRecord, 
                   PulsesCollection *pulsesAll, 
                   ReconstructInitSIRENA** reconstruct_init, 
@@ -80,9 +81,9 @@ int vector2matrix (gsl_vector *vectorin, gsl_matrix **matrixout);
 int convertI2R (char* EnergyMethod, double R0, double Ibias, double Imin, double Imax, double TTR, double LFILTER, double RPARA, double samprate, gsl_vector **invector);
 int filterByWavelets (ReconstructInitSIRENA* reconstruct_init, gsl_vector **invector, int length, int *onlyOnce);
 
-void runEnergy(TesRecord* record, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord, OptimalFilterSIRENA **optimalFilter,PulsesCollection *pulsesAll);
+void runEnergy(TesRecord* record, int trig_reclength, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord, OptimalFilterSIRENA **optimalFilter,PulsesCollection *pulsesAll);
 
-void th_runEnergy(TesRecord* record, 
+void th_runEnergy(TesRecord* record, int trig_reclength,
                   ReconstructInitSIRENA** reconstruct_init, 
                   PulsesCollection** pulsesInRecord, 
                   //OptimalFilterSIRENA **optimalFilter);

@@ -51,7 +51,7 @@
 	int findMeanSigma (gsl_vector *invector, double *mean, double *sigma);
 	int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, int boxLPF,double *threshold);
 
-	int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb, int sizepulse, gsl_vector **B);
+	int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb, int sizepulse, gsl_vector **B, gsl_vector **rmsB);
 	int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int lastPulse, double lrs, double lb, double B, int sizepulse, double *pulseheight);
 	int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *pulseheight);
 

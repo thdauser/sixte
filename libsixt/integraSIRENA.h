@@ -378,6 +378,9 @@ typedef struct PulseDetected
         
         /** Baseline calculated, in general, by using the previous Lb samples to the pulse */
         double bsln;
+        
+        /** Rms of the baseline calculated, in general, by using the previous Lb samples to the pulse */
+        double rmsbsln;
 #ifdef __cplusplus
   PulseDetected();
   PulseDetected(const PulseDetected& other);
@@ -663,7 +666,7 @@ void freeOptimalFilterSIRENA(OptimalFilterSIRENA* PulsesColl);
 #ifdef __cplusplus
 extern "C"
 #endif
-void reconstructRecordSIRENA(TesRecord* record,TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
+void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
 
 LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, int* const status);
