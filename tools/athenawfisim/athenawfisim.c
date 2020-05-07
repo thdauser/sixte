@@ -848,7 +848,7 @@ int athenapwfisim_getpar(struct Parameters* const par) {
 
 	// only load RA,Dec if Attitude is not given
 	if (par->Attitude) {
-    // set to default values
+        // set to default values
 		par->RA = 0.0;
 		par->Dec = 0.0;
 		par->rollangle=0.0;

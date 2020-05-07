@@ -1100,7 +1100,7 @@ int erosim_getpar(struct Parameters* const par) {
 		par->rollangle=0.0;
 		headas_chat(3, "using Attitude File: %s \n", par->Attitude);
 	} else {
-    query_simput_parameter_float("RA", &(par->RA), &status);
+        query_simput_parameter_float("RA", &(par->RA), &status);
 		query_simput_parameter_float("Dec", &(par->Dec), &status);
 		query_simput_parameter_float("rollangle",&(par->rollangle),&status);
 	}

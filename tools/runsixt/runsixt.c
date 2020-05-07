@@ -698,7 +698,7 @@ int runsixt_getpar(struct Parameters* const par)
     par->Mission = NULL;
     par->Instrument = NULL;
     par->Mode = NULL;
-	  headas_chat(5, "using xml file: %s \n", par->XMLFile);
+    headas_chat(5, "using xml file: %s \n", par->XMLFile);
   } else {
     query_simput_parameter_string("Mission", &(par->Mission), &status);
     query_simput_parameter_string("Instrument", &(par->Instrument), &status);
@@ -715,7 +715,7 @@ int runsixt_getpar(struct Parameters* const par)
 
   // only load RA,Dec if Attitude is not given
   if (par->Attitude){
-    // set to default values
+      // set to default values
 	  par->RA=0.0;
 	  par->Dec=0.0;
 	  par->rollangle=0.0;

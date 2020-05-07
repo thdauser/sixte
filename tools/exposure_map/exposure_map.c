@@ -300,17 +300,17 @@ static FILE* get_progressout(struct Parameters par,int *status){
 
 static Attitude* get_attitude(struct Parameters par, int *status){
 	Attitude *ac = NULL;
-  // Check if we have an attitude
+    // Check if we have an attitude
 	if (par.Attitude) {
 		// Load the attitude from the given file.
 		ac=loadAttitude(par.Attitude, status);
 		CHECK_STATUS_RET(*status,NULL);
 
 		// Check if the required time interval for the
-    // simulation is a subset of the time described by
-    // the attitude file.
-    // Note that MJDREF is assumed as the value from
-    // the attitude file.
+        // simulation is a subset of the time described by
+        // the attitude file.
+        // Note that MJDREF is assumed as the value from
+        // the attitude file.
 		checkAttitudeTimeCoverage(ac, ac->mjdref, par.TSTART,
 				par.TSTART+par.timespan, status);
 		CHECK_STATUS_RET(*status,NULL);
@@ -318,7 +318,7 @@ static Attitude* get_attitude(struct Parameters par, int *status){
 		return ac;
 	}
 
-  // There is either no file
+    // There is either no file
 	// So set up a simple pointing attitude.
 	ac=getPointingAttitude(0., par.TSTART, par.TSTART+par.timespan,
 				par.RA*M_PI/180., par.Dec*M_PI/180., par.rollangle*M_PI/180., status);
