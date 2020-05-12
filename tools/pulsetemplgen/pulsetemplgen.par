@@ -1,5 +1,5 @@
 Filename,s,lq,"Pulsetemplates.fits",,,"output file"
-clobber,b,h,no,,,"overwrite output files if exist?"
+clobber,b,h,yes,,,"overwrite output files if exist?"
 Version,s,lq,"Pulse1",,,"Version name"
 freq,r,lq,1.e6,,,"Sample frequency of pulses [Hz]"
 energy_low,r,lq,1.,,,"low energy of energy grid [keV]"

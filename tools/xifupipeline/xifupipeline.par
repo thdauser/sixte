@@ -44,7 +44,7 @@ scaling,f,h,1,,,"scaling factor for the thermal, electrical cross-talk, or TDM c
 saveCrosstalk,b,h,no,,,"option to save non-triggered crosstalk events to the event file"
 ProjCenter,b,h,no,,,"option to turn off the inside pixel position randomization during sky projection"
 chatter,i,lh,3,,,"verbosity"
-clobber,b,h,no,,,"overwrite output files if exist?"
+clobber,b,h,yes,,,"overwrite output files if exist?"
 history,b,lh,true,,,"write a history block with program parameters to each FITS file?"
 enable_mxs,b,h,n,,,"Enable modulated X-ray sources"
 mxs_frequency,r,h,121.3,,,"Frequency of the mxs flashes (Hz)"

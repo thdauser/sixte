@@ -9,5 +9,5 @@ EvtFile,s,h,"none",,,"cleaned event output file (equivalent to level 2 or filter
 SkipInvalids,b,h,no,,,"skip invalid patterns in the output file?"
 Seed,i,lh,-1,,,"seed for random number generator (-1: initialize with system time)"
 chatter,i,lh,3,,,"verbosity"
-clobber,b,h,no,,,"overwrite output files if exist?"
+clobber,b,h,yes,,,"overwrite output files if exist?"
 history,b,lh,true,,,"write a history block with program parameters to each FITS file?"

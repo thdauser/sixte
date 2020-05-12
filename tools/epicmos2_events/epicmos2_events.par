@@ -2,5 +2,5 @@ EvtFile,fre,lq,"evt.fits",,,"cleaned event output file (equivalent to level 2 or
 PatternList,s,h,"none",,,"Obsolete keyword, now called EvtFile! (event pattern list output file)"
 EPICmos2EventList,s,lq,"epicpn_events.fits",,,"output EPIC-mos2 event list (FITS file)"
 chatter,i,lh,3,,,"verbosity"
-clobber,b,h,no,,,"overwrite output files if exist?"
+clobber,b,h,yes,,,"overwrite output files if exist?"
 history,b,lh,true,,,"write a history block with program parameters to each FITS file?"

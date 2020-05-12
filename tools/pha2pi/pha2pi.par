@@ -5,5 +5,5 @@ RESPfile,s,h,"none",,,"Response file (the same used in the simulation is set by 
 Seed,i,lh,-1,,,"seed for random number generator (-1: initialize with system time)"
 PIRMF,s,h,"none",,,"PI RMF file name for PHA2PI corrected values"
 SPECARF,s,h,"none",,,"SPEC ARF file name for calibrated ARF"
-clobber,b,h,no,,,"overwrite output files if exist?"
+clobber,b,h,yes,,,"overwrite output files if exist?"
 chatter,i,lh,3,,,"verbosity"
