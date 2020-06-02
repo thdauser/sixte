@@ -339,7 +339,19 @@ int makespec_main() {
       	SIXT_ERROR("Required RMF has not the same binning as the original one");
       	break;
       }
+
+      // Check if FirstChannel is the same as in the RMF used for simulation.
+      if (rmf->FirstChannel != simrmf->FirstChannel) {
+      char msg[MAXFILENAME];
+      snprintf(msg, sizeof(msg),
+      		 "FirstChannel (=%li) of given RMF differs from FirstChannel (=%li) of RMF used for simulation",
+      		 rmf->FirstChannel, simrmf->FirstChannel);
+      status = EXIT_FAILURE;
+      SIXT_ERROR(msg);
+      break;
+      }
     }
+    
     // Check the ARF:
     if (strcasecmp("NONE",par.ARFfile)){
 
