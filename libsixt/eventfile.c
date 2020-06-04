@@ -139,9 +139,12 @@ EventFile* openNewEventFile(const char* const filename,
 
   // Create a new event list FITS file from the template file.
   char buffer[MAXFILENAME];
-  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH,
-	  "/templates/eventfile.tpl");
+  sprintf(buffer, "%s(%s%s)", filename, SIXT_DATA_PATH, "/templates/eventfile.tpl");
   fits_create_file(&fptr, buffer, status);
+  if (*status!=EXIT_SUCCESS) {
+      fits_report_error(stderr, *status);
+      fprintf(stderr,"failed opening file %s\n",buffer);
+  }
   CHECK_STATUS_RET(*status, NULL);
 
   // Insert header keywords to 1st HDU

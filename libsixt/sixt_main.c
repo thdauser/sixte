@@ -27,9 +27,6 @@
 
 // Otherwise the tool works identically to headas_main
 
-#ifndef TOOLSUB
-#error: TOOLSUB is not defined
-#endif
 
 /******************************************************************************
  * Header files.                                                              *
@@ -37,7 +34,7 @@
 #include "headas.h"
 /******************************************************************************/
 
-int sixt_argc=-1;
+int sixt_argc;
 char **sixt_argv;
 
 /* C/C++ compatibility. */
@@ -55,6 +52,11 @@ extern "C" {
 /* C/C++ compatibility. */
 #ifdef __cplusplus
 }
+#endif
+
+// TODO: why do we need this??
+#ifndef TOOLSUB
+#error: TOOLSUB is not defined
 #endif
 
 int TOOLSUB(void);

@@ -4,6 +4,11 @@ project(sixte)
 include_directories($ENV{SIMPUT}/include/)
 link_directories($ENV{SIMPUT}/lib/)
 
+set(CMAKE_SIXTE_LOCAL "-g -D_GNU_SOURCE -DHTRS_ARCPIXELS -DSIXT_DATA_PATH='\"$ENV{SIXTE}/share/sixte\"'")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_SIXTE_LOCAL}")
+
+message(" *** Using Simput at $ENV{SIMPUT} ")
+message(" *** Using Sixte at  $ENV{SIXTE} ")
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -56,12 +61,7 @@ include_directories(tools/xifupipeline)
 include_directories(tools/xml2svg)
 include_directories(tools/xms_pixtemp)
 
-add_executable(sixt_git
-        extlib/progressbar/include/progressbar.h
-        extlib/progressbar/include/statusbar.h
-        extlib/progressbar/lib/progressbar.c
-        extlib/progressbar/lib/statusbar.c
-        extlib/progressbar/test/demo.c
+set(SOURCE_FILES
         libsixt/advdet.c
         libsixt/advdet.h
         libsixt/arcpixels.c
@@ -210,7 +210,6 @@ add_executable(sixt_git
         libsixt/psf.h
         libsixt/pulseprocess.cpp
         libsixt/pulseprocess.h
-        libsixt/quickselect.c
         libsixt/radec2xylib.c
         libsixt/radec2xylib.h
         libsixt/reconstruction.c
@@ -223,7 +222,7 @@ add_executable(sixt_git
         libsixt/scheduler.h
         libsixt/sixt.c
         libsixt/sixt.h
-        libsixt/sixt_main.c
+ #       libsixt/sixt_main.c
         libsixt/sixtesvg.c
         libsixt/sixtesvg.h
         libsixt/skyimage.c
@@ -266,122 +265,142 @@ add_executable(sixt_git
         libsixt/testriggerfile.c
         libsixt/testriggerfile.h
         libsixt/threadsafe_queue.h
-        libsixt/torben.c
         libsixt/vignetting.c
         libsixt/vignetting.h
         libsixt/xmlbuffer.c
         libsixt/xmlbuffer.h
-        test/unit/random_number_gen.c
-        test/unit/test_genpixgrid.c
-        test/unit/test_vignetting.c
-        test/unit/unit_test_all.c
-        tools/athenawfisim/athenawfisim.c
-        tools/athenawfisim/athenawfisim.h
-        tools/attgen_dither/attgen_dither.c
-        tools/comabackpro/comabackpro.c
-        tools/comabackpro/comabackpro.h
-        tools/comadet/comadet.c
-        tools/comadet/comadet.h
-        tools/comaexp/comaexp.c
-        tools/comaimg/comaimg.c
-        tools/comaimg/comaimg.h
-        tools/comaimgPM/comaimgPM.c
-        tools/comaimgPM/comaimgPM.h
-        tools/comaphovign/comaphovign.c
-        tools/comaphovign/comaphovign.h
-        tools/comarecon/comarecon.c
-        tools/comarecon/comarecon.h
-        tools/epicmos1_events/epicmos1_events.c
-        tools/epicmos1_events/epicmos1_events.h
-        tools/epicmos2_events/epicmos2_events.c
-        tools/epicmos2_events/epicmos2_events.h
-        tools/epicpn_events/epicpn_events.c
-        tools/epicpn_events/epicpn_events.h
-        tools/ero_calevents/ero_calevents.c
-        tools/ero_calevents/ero_calevents.h
-        tools/ero_exposure/ero_exposure.c
-        tools/ero_fits2tm/ero_fits2tm.c
-        tools/ero_rawevents/ero_rawevents.c
-        tools/ero_rawevents/ero_rawevents.h
-        tools/ero_vis/ero_vis.c
-        tools/erosim/erosim.c
-        tools/erosim/erosim.h
-        tools/evpat/evpat.c
-        tools/evpat/evpat.h
-        tools/exposure_map/exposure_map.c
-        tools/exposure_map/exposure_map.h
-        tools/fudgexp/fudgexp.c
-        tools/fudgexp/fudgexp.h
-        tools/gendetsim/gendetsim.c
-        tools/gendetsim/gendetsim.h
-        tools/gennoisespec/gennoisespec.cpp
-        tools/gennoisespec/gennoisespec.h
-        tools/gradeddetection/gradeddetection.c
-        tools/gradeddetection/gradeddetection.h
-        tools/htrssim/htrssim.c
-        tools/htrssim/htrssim.h
-        tools/imgev/imgev.c
-        tools/ladsim/ladsim.c
-        tools/ladsim/ladsim.h
-        tools/makelc/makelc.c
-        tools/makelc/makelc.h
-        tools/makespec/makespec.c
-        tools/makespec/makespec.h
-        tools/nustarsim/nustarsim.c
-        tools/nustarsim/nustarsim.h
-        tools/orbatt/orbatt.c
-        tools/pha2pi/pha2pi.c
-        tools/pha2pi/pha2pi.h
-        tools/phogen/phogen.c
-        tools/phogen/phogen.h
-        tools/phoimg/phoimg.c
-        tools/phoimg/phoimg.h
-        tools/pixdetillum/pixdetillum.c
-        tools/pixdetillum/pixdetillum.h
-        tools/piximpacts/piximpacts.c
-        tools/piximpacts/piximpacts.h
-        tools/projev/projev.c
-        tools/psfgen/psfgen.c
-        tools/pulsetemplgen/pulsetemplgen.c
-        tools/pulsetemplgen/pulsetemplgen.h
-        tools/pulsetemplimport/pulsetemplimport.c
-        tools/pulsetemplimport/pulsetemplimport.h
-        tools/radec2xy/radec2xy.c
-        tools/radec2xy/radec2xy.h
-        tools/runmask/runmask.c
-        tools/runmask/runmask.h
-        tools/runsixt/runsixt.c
-        tools/runsixt/runsixt.h
-        tools/runtes/runtes.c
-        tools/runtes/runtes.h
-        tools/sixteversion/sixteversion.c
-        tools/streamtotriggers/streamtotriggers.c
-        tools/streamtotriggers/streamtotriggers.h
-        tools/tes_grades/tes_grades.c
-        tools/tes_grades/tes_grades.h
-        tools/tesconstpileup/tesconstpileup.c
-        tools/tesconstpileup/tesconstpileup.h
-        tools/tesgenimpacts/tesgenimpacts.c
-        tools/tesgenimpacts/tesgenimpacts.h
-        tools/tesreconstruction/tesreconstruction.c
-        tools/tesreconstruction/tesreconstruction.h
-        tools/tessim/tes_models.c
-        tools/tessim/tes_simulation.c
-        tools/tessim/tessim.c
-        tools/tessim/tessim.h
-        tools/tessim/tessim_bbfb.c
-        tools/tessim/tessim_datastream.c
-        tools/tessim/tessim_impactlist.c
-        tools/tessim/tessim_solvers.c
-        tools/tessim/tessim_tesrecord.c
-        tools/tessim/tessim_trigger.c
-        tools/tesstream/tesstream.c
-        tools/tesstream/tesstream.h
-        tools/xifupipeline/xifupipeline.c
-        tools/xifupipeline/xifupipeline.h
-        tools/xml2svg/xml2svg.c
-        tools/xml2svg/xml2svg.h
-        tools/xms_pixtemp/xms_pixtemp.c
-        tools/xms_pixtemp/xms_pixtemp.h
-        config.h
+#        test/unit/random_number_gen.c
+#        test/unit/test_genpixgrid.c
+#        test/unit/test_vignetting.c
+#        test/unit/unit_test_all.c
+#        config.h
         sixteconfig.h)
+
+
+#tools/athenawfisim/athenawfisim.c
+#tools/athenawfisim/athenawfisim.h
+#tools/attgen_dither/attgen_dither.c
+#tools/comabackpro/comabackpro.c
+#tools/comabackpro/comabackpro.h
+#tools/comadet/comadet.c
+#tools/comadet/comadet.h
+#tools/comaexp/comaexp.c
+#tools/comaimg/comaimg.c
+#tools/comaimg/comaimg.h
+#tools/comaimgPM/comaimgPM.c
+#tools/comaimgPM/comaimgPM.h
+#tools/comaphovign/comaphovign.c
+#tools/comaphovign/comaphovign.h
+#tools/comarecon/comarecon.c
+#tools/comarecon/comarecon.h
+#tools/epicmos1_events/epicmos1_events.c
+#tools/epicmos1_events/epicmos1_events.h
+#tools/epicmos2_events/epicmos2_events.c
+#tools/epicmos2_events/epicmos2_events.h
+#tools/epicpn_events/epicpn_events.c
+#tools/epicpn_events/epicpn_events.h
+#tools/ero_calevents/ero_calevents.c
+#tools/ero_calevents/ero_calevents.h
+#tools/ero_exposure/ero_exposure.c
+#tools/ero_fits2tm/ero_fits2tm.c
+#tools/ero_rawevents/ero_rawevents.c
+#tools/ero_rawevents/ero_rawevents.h
+#tools/ero_vis/ero_vis.c
+#tools/erosim/erosim.c
+#tools/erosim/erosim.h
+#tools/evpat/evpat.c
+#tools/evpat/evpat.h
+#tools/exposure_map/exposure_map.c
+#tools/exposure_map/exposure_map.h
+#tools/fudgexp/fudgexp.c
+#tools/fudgexp/fudgexp.h
+#tools/gendetsim/gendetsim.c
+#tools/gendetsim/gendetsim.h
+#tools/gennoisespec/gennoisespec.cpp
+#tools/gennoisespec/gennoisespec.h
+#tools/gradeddetection/gradeddetection.c
+#tools/gradeddetection/gradeddetection.h
+#tools/htrssim/htrssim.c
+#tools/htrssim/htrssim.h
+#tools/imgev/imgev.c
+#tools/ladsim/ladsim.c
+#tools/ladsim/ladsim.h
+#tools/makelc/makelc.c
+#tools/makelc/makelc.h
+#tools/makespec/makespec.c
+#tools/makespec/makespec.h
+#tools/nustarsim/nustarsim.c
+#tools/nustarsim/nustarsim.h
+#tools/orbatt/orbatt.c
+#tools/pha2pi/pha2pi.c
+#tools/pha2pi/pha2pi.h
+#tools/phogen/phogen.c
+#tools/phogen/phogen.h
+#tools/phoimg/phoimg.c
+#tools/phoimg/phoimg.h
+#tools/pixdetillum/pixdetillum.c
+#tools/pixdetillum/pixdetillum.h
+#tools/piximpacts/piximpacts.c
+#tools/piximpacts/piximpacts.h
+#tools/projev/projev.c
+#tools/psfgen/psfgen.c
+#tools/pulsetemplgen/pulsetemplgen.c
+#tools/pulsetemplgen/pulsetemplgen.h
+#tools/pulsetemplimport/pulsetemplimport.c
+#tools/pulsetemplimport/pulsetemplimport.h
+#tools/radec2xy/radec2xy.c
+#tools/radec2xy/radec2xy.h
+#tools/runmask/runmask.c
+#tools/runmask/runmask.h
+##        tools/runsixt/runsixt.c
+##        tools/runsixt/runsixt.h
+#tools/runtes/runtes.c
+#tools/runtes/runtes.h
+#tools/sixteversion/sixteversion.c
+#tools/streamtotriggers/streamtotriggers.c
+#tools/streamtotriggers/streamtotriggers.h
+#tools/tes_grades/tes_grades.c
+#tools/tes_grades/tes_grades.h
+#tools/tesconstpileup/tesconstpileup.c
+#tools/tesconstpileup/tesconstpileup.h
+#tools/tesgenimpacts/tesgenimpacts.c
+#tools/tesgenimpacts/tesgenimpacts.h
+#tools/tesreconstruction/tesreconstruction.c
+#tools/tesreconstruction/tesreconstruction.h
+#tools/tessim/tes_models.c
+#tools/tessim/tes_simulation.c
+#tools/tessim/tessim.c
+#tools/tessim/tessim.h
+#tools/tessim/tessim_bbfb.c
+#tools/tessim/tessim_datastream.c
+#tools/tessim/tessim_impactlist.c
+#tools/tessim/tessim_solvers.c
+#tools/tessim/tessim_tesrecord.c
+#tools/tessim/tessim_trigger.c
+#tools/tesstream/tesstream.c
+#tools/tesstream/tesstream.h
+#tools/xifupipeline/xifupipeline.c
+#tools/xifupipeline/xifupipeline.h
+#tools/xml2svg/xml2svg.c
+#tools/xml2svg/xml2svg.h
+#tools/xms_pixtemp/xms_pixtemp.c
+#tools/xms_pixtemp/xms_pixtemp.h
+
+
+set(EXEC_FILES runsixt )
+
+set(TOOL_DIR tools)
+
+
+set(SIMPUT_LIBS cfitsio simput ape atFunctions fftw3 hdinit hdio hdsp hdutils labnh posstring wcs)
+set(EXT_LIBS expat readline ncurses m gsl gslcblas)
+
+# special libraries
+find_package (Threads)
+set(EXT_LIBS ${EXT_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+
+foreach (execfile ${EXEC_FILES})
+    message(${execfile})
+    add_executable(${execfile} ${TOOL_DIR}/${execfile}/${execfile}.c ${TOOL_DIR}/${execfile}/${execfile}.h ${SOURCE_FILES})
+    target_link_libraries(${execfile} ${EXT_LIBS} ${SIMPUT_LIBS} )
+endforeach (execfile ${EXEC_FILES})

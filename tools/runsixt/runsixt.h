@@ -40,8 +40,6 @@
 #include "sourcecatalog.h"
 #include "vector.h"
 
-#define TOOLSUB runsixt_main
-#include "headas_main.c"
 
 
 /** Maximum number of SIMPUT catalogs. */

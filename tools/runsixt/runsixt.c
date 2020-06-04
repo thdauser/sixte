@@ -20,7 +20,14 @@
                        Erlangen-Nuernberg
 */
 
+#define TOOLSUB runsixt_main
+#include "headas_main.c"
+
 #include "runsixt.h"
+
+
+#include "headas_utils.h"
+
 #include "parinput.h"
 
 

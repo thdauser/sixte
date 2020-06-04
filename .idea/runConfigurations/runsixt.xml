@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="runsixt" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="XMLFile=$ProjectFileDir$/test/data/dummy/default_inst.xml Simput=$ProjectFileDir$/test/data/simput/uniform_1deg_RA0_Dec0.simput RA=0.0 Dec=0.0 Exposure=1.0" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="sixte" TARGET_NAME="runsixt" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="sixte" RUN_TARGET_NAME="runsixt">
+    <envs>
+      <env name="HEADASNOQUERY" value=" " />
+      <env name="HEADASPROMPT" value="/dev/null" />
+      <env name="PFILES" value="$USER_HOME$/pfiles/" />
+    </envs>
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>
