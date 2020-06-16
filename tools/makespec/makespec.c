@@ -325,10 +325,8 @@ int makespec_main() {
       	strcpy(simresppathname, respfile);
       }
 
-      // Load the EBOUNDS of the RMF.
-      struct RMF* simrmf=getRMF(&status);
-      CHECK_STATUS_BREAK(status);
-      loadEbounds(simrmf, simresppathname, &status);
+      // Load the the RMF.
+      struct RMF* simrmf=loadRMF(simresppathname,&status);
       CHECK_STATUS_BREAK(status);
 
       // We check the number of bins and the low and high energy:
@@ -337,21 +335,23 @@ int makespec_main() {
       	 (rmf->ChannelHighEnergy[rmf->NumberChannels-2] != simrmf->ChannelHighEnergy[simrmf->NumberChannels-2])){
       	status=EXIT_FAILURE;
       	SIXT_ERROR("Required RMF has not the same binning as the original one");
+        freeRMF(simrmf);
       	break;
       }
 
       // Check if FirstChannel is the same as in the RMF used for simulation.
       if (rmf->FirstChannel != simrmf->FirstChannel) {
-      char msg[MAXFILENAME];
-      snprintf(msg, sizeof(msg),
-      		 "FirstChannel (=%li) of given RMF differs from FirstChannel (=%li) of RMF used for simulation",
-      		 rmf->FirstChannel, simrmf->FirstChannel);
-      status = EXIT_FAILURE;
-      SIXT_ERROR(msg);
-      break;
+        char msg[MAXFILENAME];
+        snprintf(msg, sizeof(msg),
+        		 "FirstChannel (=%li) of given RMF differs from FirstChannel (=%li) of RMF used for simulation",
+        		 rmf->FirstChannel, simrmf->FirstChannel);
+        status = EXIT_FAILURE;
+        SIXT_ERROR(msg);
+        freeRMF(simrmf);
+        break;
       }
     }
-    
+
     // Check the ARF:
     if (strcasecmp("NONE",par.ARFfile)){
 
