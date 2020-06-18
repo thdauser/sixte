@@ -161,8 +161,7 @@ int makespec_main() {
 
 
     // Determine the column containing the signal information.
-    char pha2pi[MAXMSG];
-    pha2pi[0] = 0;
+    char* pha2pi;
 
     int csignal;
     int coltmp;
@@ -211,7 +210,7 @@ int makespec_main() {
 			CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
 			// now see if we find the PHA2PI information in the header used for pha2pi correction
-			fits_read_key(ef, TSTRING, "PHA2PI", pha2pi, NULL, &status);
+			fits_read_key_longstr(ef, "PHA2PI", &pha2pi, NULL, &status); // ffgkls wants char ** longstr type
 
 			if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST){
 				headas_chat(5," *** warning : 'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...\n");
@@ -495,12 +494,15 @@ int makespec_main() {
 		    "background file", &status);
     fits_update_key(sf, TLONG, "DETCHANS", &rmf->NumberChannels,
 		    "number of detector channels", &status);
-    fits_update_key(sf, TSTRING, "CORRFILE", &pha2pi,
-		    "Pha2Pi correction file", &status);
+    fits_update_key_longstr(sf, "CORRFILE", pha2pi,
+			    "Pha2Pi correction file", &status);
+    free(pha2pi);
     fits_update_key(sf, TDOUBLE, "EXPOSURE", &exposure,
 		    "exposure time", &status);
     fits_update_key(sf, TSTRING, "FilterExpr", par.EventFilter,
 		    "used filter expression", &status);
+    int logic=TRUE;
+    fits_update_key(sf, TLOGICAL, "POISSERR", &logic, "Poissonian error", &status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over all channels in the spectrum.

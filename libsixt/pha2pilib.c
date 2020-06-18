@@ -398,8 +398,8 @@ void pha2pi_correct_eventfile(EventFile* const evtfile, const Pha2Pi* const p2p,
 		freeEvent(&event);
 	}
 	if (*status == EXIT_SUCCESS) {
-		fits_update_key(evtfile->fptr, TSTRING, "PHA2PI", p2p->pha2pi_filename,
-				"Pha2Pi correction file", status);
+		fits_update_key_longstr(evtfile->fptr, "PHA2PI", p2p->pha2pi_filename,
+					"Pha2Pi correction file", status);
 		if (p2p->pirmf_filename != NULL && strlen(p2p->pirmf_filename) > 0) {
 			fits_update_key(evtfile->fptr, TSTRING, "PIRMF",
 					p2p->pirmf_filename, "PI-RMF needed for PI values", status);
