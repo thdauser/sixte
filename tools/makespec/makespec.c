@@ -494,9 +494,10 @@ int makespec_main() {
 		    "background file", &status);
     fits_update_key(sf, TLONG, "DETCHANS", &rmf->NumberChannels,
 		    "number of detector channels", &status);
-    fits_update_key_longstr(sf, "CORRFILE", pha2pi,
+    fits_update_key_longstr(sf, "PHA2PI", pha2pi,
 			    "Pha2Pi correction file", &status);
     free(pha2pi);
+    fits_update_key(sf, TSTRING, "CORRFILE", "NONE", "Correlation file", &status);
     fits_update_key(sf, TDOUBLE, "EXPOSURE", &exposure,
 		    "exposure time", &status);
     fits_update_key(sf, TSTRING, "FilterExpr", par.EventFilter,
