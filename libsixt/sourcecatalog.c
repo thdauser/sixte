@@ -93,10 +93,10 @@ SourceCatalog* loadSourceCatalog(const char* const filename,
     SimputSrc* src=getSimputSrc(cat->simput, ii+1, status);
     CHECK_STATUS_BREAK(*status);
 
-    // Determine the extension.
-    float extension=getSimputSrcExt(cat->simput, src, &ra_center_img, &dec_center_img, 0., 0., status);
+    // Determine whether the source is extended
+    int is_extended=isSimputSrcExtended(cat->simput, src, 0., 0., status);
     CHECK_STATUS_BREAK(*status);
-    if (extension>0.) {
+    if (is_extended) {
       // This is an extended source.
       nextended++;
     } else {
