@@ -88,6 +88,12 @@ typedef struct {
 	/** Tend of the reconstructed photons (in time) */
 	double * tends;
 
+	/** Rise time of the reconstructed photons (in time) */
+	double * risetimes;
+
+	/** Fall time of the reconstructed photons (in time) */
+	double * falltimes;
+
 } TesEventList;
 
 typedef struct {
@@ -103,7 +109,7 @@ typedef struct {
 	long nrows;
 
 	/** Column numbers for time, energy, grade1, grade2, pixID, RA and DEC columns */
-	int timeCol,energyCol,avg_4samplesDerivativeCol,E_lowresCol,grade1Col,grade2Col,phiCol,lagsShiftCol,bslnCol,rmsbslnCol,pixIDCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //SIRENA
+	int timeCol,energyCol,avg_4samplesDerivativeCol,E_lowresCol,grade1Col,grade2Col,phiCol,lagsShiftCol,bslnCol,rmsbslnCol,pixIDCol,riseCol,fallCol,phIDCol,raCol,decCol,detxCol,detyCol,gradingCol,srcIDCol,nxtCol,extCol; //SIRENA
 
 } TesEventFile;
 

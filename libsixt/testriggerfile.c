@@ -176,18 +176,38 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
         
         int hdunum;
         fits_get_num_hdus(file->fptr, &hdunum,status);
-        
-	//Move to the binary table
-	fits_movnam_hdu(file->fptr,ANY_HDU,"RECORDS",0, status);
-	if (*status != 0)
-	{
-		*status = 0;
- 		fits_movnam_hdu(file->fptr,ANY_HDU,"TESRECORDS",0, status);
-	}
+
+	// Check if input FITS file have been simulated with TESSIM or XIFUSIM
+        int tessimOrxifusim = -999;
+        fits_movnam_hdu(file->fptr, ANY_HDU,"RECORDS", 0, status);
+        if (*status != 0)
+        {
+            *status = 0;
+            fits_movnam_hdu(file->fptr, ANY_HDU,"TESRECORDS", 0, status);
+            if (*status != 0)                
+            {
+                printf("%s","Cannot move to TESRECORDS HDU in input FITS file\n");
+                CHECK_STATUS_RET(*status, NULL);
+            }
+            else
+            {
+                tessimOrxifusim = 1;
+            }
+        }
+        else 
+        {
+            tessimOrxifusim = 0;
+        }
+        if (tessimOrxifusim == -999)
+        {
+            printf("%s","Neither the 'RECORDS' nor 'TESRECORDS' HDUs are in the input FITS file\n");
+            CHECK_STATUS_RET(*status, NULL);
+        }
+	
 	//Read standard keywords
 	//(shouldn't we read these from the record extension?)
 	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
-        
+
 	//Get number of rows
 	char comment[FLEN_COMMENT];
 	fits_read_key(file->fptr, TINT, "NAXIS2", &(file->nrows), comment, status);
@@ -195,33 +215,175 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
         //Associate column numbers
 	fits_get_colnum(file->fptr, CASEINSEN,"TIME", &(file->timeCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"ADC", &(file->trigCol), status);
+    int colnum = file->trigCol;
+    //printf("%s %d %s","colnum: ",colnum,"\n");
 	fits_get_colnum(file->fptr, CASEINSEN,"PIXID", &(file->pixIDCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"PH_ID", &(file->ph_idCol), status);
 	CHECK_STATUS_RET(*status, NULL);
-        
-        if ((hdunum != 8) && (hdunum != 9))
-        {
-                //Get trigger_size
-                fits_read_key(file->fptr, TULONG, "TRIGGSZ", &(file->trigger_size), comment, status);
-                //Get delta_t
-                fits_read_key(file->fptr, TDOUBLE, "DELTAT", &(file->delta_t), comment, status);
-        }
-        else
-        {
-                //Get trigger_size
-                fits_movnam_hdu(file->fptr,ANY_HDU,"TRIGGERPARAM",0, status);
-                fits_read_key(file->fptr, TULONG, "RECLEN", &(file->trigger_size), comment, status);
-                
-                fits_movnam_hdu(file->fptr,ANY_HDU,"RECORDS",0, status);
-                if (*status != 0)
-                {
-                        *status = 0;
-                        fits_movnam_hdu(file->fptr,ANY_HDU,"TESRECORDS",0, status);
-                }
-                file->delta_t = -999;
-        }
 
-	return(file);
+    file->delta_t = -999;
+    int deltat_exists = 0;
+    int dec_fac_exists = 0;
+    int tclock_exists = 0;
+    int numrow_exists = 0;
+    int p_row_exists = 0;
+    // To get the sampling rate no matter the origin of the file
+    for (int i=0;i<hdunum;i++)
+    {
+        fits_movabs_hdu(file->fptr, i+1, NULL, status); 
+        fits_read_key(file->fptr,TDOUBLE,"DELTAT", &(file->delta_t),comment,status);
+        if (*status == 0)
+        {
+            deltat_exists = 1;
+            break;
+        }
+        else if ((*status != 0) && (i <= hdunum-1))
+        {
+            *status = 0;
+        }
+    }
+    //printf("%s %d %s","deltat_exists: ",deltat_exists,"\n");
+    //printf("%s %f %s","file->delta_t: ",file->delta_t,"\n");
+    double tclock;
+    if (deltat_exists == 0)
+    {
+        double dec_fac;
+        for (int i=0;i<hdunum;i++)
+        {
+            fits_movabs_hdu(file->fptr, i+1, NULL, status); 
+            fits_read_key(file->fptr,TDOUBLE,"DEC_FAC", &dec_fac,comment,status);
+            if (*status == 0)
+            {
+                dec_fac_exists = 1;
+                break;
+            }
+            else if ((*status != 0) && (i <= hdunum-1))
+            {
+                *status = 0;
+            }
+        }
+        for (int i=0;i<hdunum;i++)
+        {
+            fits_movabs_hdu(file->fptr, i+1, NULL, status); 
+            fits_read_key(file->fptr,TDOUBLE,"TCLOCK", &tclock,comment,status);
+            if (*status == 0)
+            {
+                tclock_exists = 1;
+                break;
+            }
+            else if ((*status != 0) && (i <= hdunum-1))
+            {
+                *status = 0;
+            }
+        }
+        file->delta_t = tclock*dec_fac;
+        //printf("%s %d %s","tclock_exists: ",tclock_exists,"\n");
+        //printf("%s %d %s","dec_fac_exists: ",dec_fac_exists,"\n");
+        //printf("%s %f %s","file->delta_t: ",file->delta_t,"\n");
+    }
+    if ((deltat_exists == 0) && ((tclock_exists == 0) || (dec_fac_exists == 0)))
+    {
+        int numrow;
+        for (int i=0;i<hdunum;i++)
+        {
+            fits_movabs_hdu(file->fptr, i+1, NULL, status); 
+            fits_read_key(file->fptr,TINT,"NUMROW", &numrow,comment,status);
+            if (*status == 0)
+            {
+                numrow_exists = 1;
+                break;
+            }
+            else if ((*status != 0) && (i <= hdunum-1))
+            {
+                *status = 0;
+            }
+        }
+        int p_row;
+        for (int i=0;i<hdunum;i++)
+        {
+            fits_movabs_hdu(file->fptr, i+1, NULL, status); 
+            fits_read_key(file->fptr,TINT,"P_ROW", &p_row,comment,status);
+            if (*status == 0)
+            {
+                p_row_exists = 1;
+                break;
+            }
+            else if ((*status != 0) && (i <= hdunum-1))
+            {
+                *status = 0;
+            }
+        }
+        file->delta_t = tclock*numrow*p_row;
+        //printf("%s %d %s","numrow_exists: ",numrow_exists,"\n");
+        //printf("%s %d %s","p_row_exists: ",p_row_exists,"\n");
+        //printf("%s %f %s","file->delta_t: ",file->delta_t,"\n");
+    }
+    /*if ((deltat_exists == 0) && ((dec_fac_exists == 0) || (tclock_exists == 0)) && ((numrow_exists == 0) || (p_row_exists == 0)))
+    {
+        printf("%s","Cannot read or get the sampling rate from the input file. Please, include the DELTAT keyword (inverse of sampling rate) in the input FITS file before running GENNOISESPEC again\n");
+        CHECK_STATUS_RET(*status, NULL);
+    }*/
+    
+    if (tessimOrxifusim == 0)	//TESSIM
+    {
+        fits_movnam_hdu(file->fptr, ANY_HDU,"RECORDS", 0, status);
+    }
+    else				//XIFUSIM
+    {
+        fits_movnam_hdu(file->fptr, ANY_HDU,"TESRECORDS", 0, status);
+        
+        if ((deltat_exists == 0) && ((dec_fac_exists == 0) || (tclock_exists == 0)) && ((numrow_exists == 0) || (p_row_exists == 0)))
+        {
+            file->delta_t = -999;
+        }
+    }
+    
+    // Get the trigger size
+    char keyname[10] = "TFORM";
+    
+    char colnumchar[10];
+    snprintf(colnumchar,10,"%d",colnum);
+    strcat(keyname,colnumchar);
+    
+    char readTFORMADC [10];
+    fits_read_key(file->fptr,TSTRING,keyname,readTFORMADC,comment,status);
+    //printf("%s %s %s","TFORM2: ",readTFORMADC,"\n");
+
+    char * pointerTFORM;
+    
+    pointerTFORM = strstr(readTFORMADC,"(");
+    
+    if (pointerTFORM) // There is a parenthesis
+    {
+        //printf("%s","YES (\n");
+        char each_character_after_paren[125];
+        char characters_after_paren[125];
+        
+        pointerTFORM = pointerTFORM + 1; // Pointer to the next character to "(" 
+        snprintf(each_character_after_paren,125,"%c",*pointerTFORM);
+        snprintf(characters_after_paren,125,"%c",*pointerTFORM);
+        while (*pointerTFORM != ')')
+        {
+            pointerTFORM = pointerTFORM + 1;
+            snprintf(each_character_after_paren,125,"%c",*pointerTFORM);
+            strcat(characters_after_paren,each_character_after_paren); 
+        }
+        file->trigger_size = atoi(characters_after_paren);
+        //printf("%s %d %s","eventsz: ",file->trigger_size,"\n");
+    }
+    else    // There is not a parenthesis
+    {   
+        //printf("%s","NO (\n");
+        
+        char *ptr;
+        long ret;
+
+        ret = strtol(readTFORMADC, &ptr, 10);
+        file->trigger_size = ret;
+        //printf("%s %d %s","eventsz: ",file->trigger_size,"\n");
+    }
+    
+    return(file);
 }
 
 /** Populates a TesRecord structure with the next record */

@@ -33,20 +33,73 @@
 *                                                                     
 ***********************************************************************/
 
-#ifndef GENNOISE_H_
-#define GENNOISE_H_
+#ifndef GENNOISE_H
+#define GENNOISE_H 1
 
 // Utils module
 
 	#include "genutils.h"
 	#include "pulseprocess.h"
 	#include "inoututils.h"
+
+	#define TOOLSUB gennoisespec_main
+        #include "headas_main.c"
 	
 	#include <time.h>
+        
+struct Parameters {
+    
+	//Input FITS file
+	char inFile[MAXFILENAME];
+        
+    //Output FITS file
+	char outFile[MAXFILENAME];
 
-	//int flag=0;
-        //gsl_vector *fila1;
+	//Base-2 minimum length of a pulse-free interval (samples)
+	int intervalMinSamples;
+        
+    //Number of pulse lengths after the end of the pulse to start the pulse-free interval searching
+	int nplPF;
+        
+        //Number of pulse-free intervals to use for the noise average
+	int nintervals;
+        
+    //Scale Factor
+	double scaleFactor;
 	
+	//Number of samples for threshold trespassing
+	int samplesUp;
+        	
+	//Number of standard deviations in the kappa-clipping process for threshold estimation
+	double nSgms;
+        
+    //Pulse length in samples
+	int pulse_length;
+        
+    //Running sum (RS) length for the RS-filtering for raw energy estimation, in seconds
+	double LrsT;
+	
+	//Baseline averaging length for the RS-filtering for raw energy estimation, in seconds
+	double LbT;
+        
+    //Calculate and write the weight matrixes if weightMS=yes
+	char weightMS;
+        
+    //Transform to resistance space (I2R, I2RALL, I2RNOL, I2RFITTED) or not (I)
+	char I2R[10];
+        
+    //Boolean to choose whether to erase an already existing event list
+	char clobber;
+        
+    //Size of noise matrix if only one to be created
+	int matrixSize;
+        
+    //Remove some noise intervals before calculating the noise spectrum if rmNoiseIntervals=yes
+	char rmNoiseIntervals;
+       
+	// END GENNOISESPEC input parameters
+};
+        	
 // CFITSIO helpers
 
 	int  colnum=0, felem=0;
@@ -68,66 +121,66 @@
 // INPUT FILES
 
 	fitsfile *infileObject = NULL;		// Object which contains information of the input FITS file
-	char infileName[255];			// Name of the input FITS file
+	//char infileName[255];			// Name of the input FITS file
 
 	FILE *fileRef;				// Pointer for file which contains errors and warnings
 
 // INPUT KEYWORDS	
 
-	long eventcnt;		// Number of rows
-	long eventsz;		// TRIGGSZ
-	double samprate;	// Related to DELTAT
-	double energy;		// Related to MONOEN
+	long eventcnt;		        // Number of rows
+	long eventsz;	         	// TRIGGSZ
+	double samprate = -999.0;       // Related to DELTAT or TCLOCK+DEC_FAC or NROW+P_ROW
+	double energy;		        // Related to MONOEN
 
+	double aducnv;
 	double ivcal;		// Just in case it would be necessary
 	double asquid;		// Just in case it would be necessary
 	double plspolar;	// Just in case it would be necessary
 	
-	double aducnv;
+	double adu_cnv = -999.0;
+    double i_bias = -999.0;
+    double adu_bias = -999.0;
+    int adu_cnv_exists = 0;
 	
-	double Imin;
-        double Imax;
-        double R0;
-        double V0;
-        double Ibias;
-        double RPARA;
-        double TTR;
-        double LFILTER;
+	double Imin = -999.0;
+    double Imax = -999.0;
+    double R0 = -999.0;
+    double V0 = -999.0;
+    double Ibias = -999.0;
+    double RPARA = -999.0;
+    double TTR = -999.0;
+    double LFILTER = -999.0;
+    int R0_error = 0;
+    int V0_error = 0;
+    int Ibias_error = 0;
+    int RPARA_error = 0;
+    int TTR_error = 0;
+    int LFILTER_error = 0;
 
 // INPUT VECTORS
 
 	gsl_vector *timegsl;	// GENNOISESPEC has to look at RECORDS
 	gsl_vector *ioutgsl;
-
+    
 //INPUT PARAMETERS
-
-	double intervalMin;		// Minimum length of a pulse-free interval (seconds)
+    
+    struct Parameters par;
+    
 	int intervalMinBins;		// Minimum length of a pulse-free interval (bins)
-	int intervalMinSamples;		// Minimum length of a pulse-free interval (samples)
-	int nplPF;			// Number of pulse lengths after ending the pulse to start the pulse-free interval
-	int nintervals; 		// Number of pulse-free intervals to use
-	double scaleFactor; 		// Scale factor to apply in order to calculate the box-car length
-	int samplesUp;			// Consecutive samples over the threshold to locate a pulse
-	double nSgms;			// Number of Sigmas to establish the threshold
-	int pulse_length;		// Pulse length (samples)
-	double LrsT;			// Running sum length (in the RS filter case): T -> Time => Seconds
-	double LbT;			// Baseline averaging length (in the RS filter case): T -> Time => Seconds
 	double Lrs;			// LrsT in samples
 	double Lb;			// LbT in samples
-        int matrixSize;                 // noise Matrix size if only one to be created
 	
-	char weightMSStr[4];		// WeightMS=yes then write output weight noise matrixes
 	int weightMS=0;
         
-        char I2R[10];		        // 
+        //char I2R[10];		        // 
 
-	char nameLog[255];		// Output log file name
-	int verbosity;			// Verbosity level of the output log file
-	char clobberStr[4];		// Clobber=yes then overwritte output files	
-	int clobber=0;
+	//char clobberStr[4];		// Clobber=yes then overwritte output files	
+	//int clobber=0;
 	
 //AUXILIARY VARIABLES
 
+    string message = " ";
+    
 	//To avoid the deprecate conversions
 	char *straux = new char[255];
 
@@ -153,16 +206,19 @@
 	gsl_vector *sigma;
 	
 	gsl_matrix *noiseIntervals;
-	gsl_vector *weightpoints;
-	gsl_matrix *weightMatrixes;
-        
-        gsl_vector *baselineInterval;   // Baseline of each interval of a record
-        gsl_vector *sigmaInterval;      // Sigma of each interval of a record
-
+    gsl_vector *weightpoints;
+    gsl_matrix *weightMatrixes;
+    
+    int tessimOrxifusim = -999;     // 0: tessim, 1: xifusim
+    
+    double deltat;
+    double tclock;
+    double dec_fac;
+    
 // OUTPUT FILE
 
 	fitsfile *gnoiseObject = NULL;	// Object which contains information of output FITS file
-	char gnoiseName[255];
+	char gnoiseName[MAXFILENAME];
 
 	char *unit=NULL, *comment=NULL;
 
@@ -177,8 +233,6 @@
 	gsl_vector *sigmacsdgsl;
 
 // FUNCTIONS
-
-	int initModule (int argc, char **argv);
 
 	int findInterval(int tail_duration, gsl_vector *invector, gsl_vector *startpulse, int npin, int pulse_length, int nPF, int interval, int *ni, gsl_vector **startinterval);
 	int findIntervalN(gsl_vector *invector, int interval, int *ni, gsl_vector **startinterval);
@@ -207,23 +261,21 @@
 		double lb,
 		double lrs,
 
-		gsl_matrix *librarymatrix,
-		gsl_matrix *modelsmatrix,
-
 		double stopcriteriamkc,
-		double kappamkc,
-		double levelprvpulse);
+		double kappamkc);
 	
 	int findTstartNoise (int maxPulsesPerRecord, gsl_vector *der, double adaptativethreshold, int nSamplesUp,
 		int *numberPulses, gsl_vector **tstartgsl, gsl_vector **flagTruncated, gsl_vector **maxDERgsl);
-
-	int find_baseline(gsl_vector *invector, double kappa, double stopCriteria, int boxLPF, double *mean, double *sigma, double *baseline);
 	
 	int weightMatrixNoise (gsl_matrix *intervalMatrix, gsl_matrix **weight);
         
         int medianKappaClipping_noiseSigma (gsl_vector *invector, double kappa, double stopCriteria, double nSigmas, double *mean, double *sigma);
+        
+        int getpar_noiseSpec(struct Parameters* const par);
 
-	using namespace std;
+        void MyAssert(int expr, char* msg);
+        
+        using namespace std;
 
 #endif /*GENNOISESPEC_H_*/
 

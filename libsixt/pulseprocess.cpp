@@ -147,6 +147,7 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sample
 		sprintf(valERROR,"%d",__LINE__+8);
 		string str(valERROR);
 		message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+        str.clear();
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
 	for (int i=0;i<invectorAux->size-boxLength;i++)
@@ -160,6 +161,7 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sample
 		sprintf(valERROR,"%d",__LINE__+8);
 		string str(valERROR);
 		message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+        str.clear();
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
 	for (int i=0;i<boxLength-1;i++)
@@ -179,6 +181,8 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sample
 	
 	if (boxLength == 1)	return(3);
 
+    message.clear();
+    
 	return (EPOK);
 }
 /*xxxx end of SECTION 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -324,6 +328,7 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 			sprintf(valERROR,"%d",__LINE__+5);
 			string str(valERROR);
 			message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+            str.clear();
 			EP_PRINT_ERROR(message,EPFAIL);
 		}
 		temp = gsl_vector_subvector(invectorNew,0,size-boxLPF-1);
@@ -345,6 +350,7 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 					sprintf(valERROR,"%d",__LINE__+5);
 					string str(valERROR);
 					message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                    str.clear();
 					EP_PRINT_ERROR(message,EPFAIL);
 				}
 				gsl_vector_set(invectorNew,i,median);
@@ -371,12 +377,13 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 		}
 
 	} while (fabs((mean2-mean1)/mean1)>(stopCriteria/100.0));	// HARDPOINT!!!!!!!!!!!!!!!!!!! (stopCriteria)
-	
 
 	// Establish the threshold as mean+nSigmas*sigma
 	*threshold = mean2+nSigmas*sg2;	// HARDPOINT!!!!!!!!!!!!!!!!!!! (nSigmas)
-
+	
 	gsl_vector_free(invectorNew); invectorNew= 0;
+    
+    message.clear();
 
 	return EPOK;
 }
@@ -440,6 +447,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                     sprintf(valERROR,"%d",__LINE__+8);
                     string str(valERROR);
                     message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                    str.clear();
                     EP_PRINT_ERROR(message,EPFAIL);
             }
 	
@@ -465,6 +473,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                     }
 
@@ -474,6 +483,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__+5);
                                             string str(valERROR);
                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
                                     temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
@@ -482,6 +492,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
 
@@ -508,6 +519,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                     }
 
@@ -516,6 +528,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__+5);
                                             string str(valERROR);
                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
                                     temp = gsl_vector_subvector(vectorin,0,gsl_vector_get(tstart,0));
@@ -524,6 +537,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
 
@@ -563,6 +577,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                             }
 
@@ -572,6 +587,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
@@ -580,6 +596,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
 
@@ -606,6 +623,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                             }
 
@@ -615,6 +633,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j)-tendprev-1);
@@ -623,6 +642,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             gsl_vector_set(*lb,0,gsl_vector_get(tstart,j)-tendprev-1);
@@ -662,6 +682,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                                                     }
 
@@ -671,6 +692,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__+5);
                                                                                             string str(valERROR);
                                                                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
                                                                                     temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
@@ -679,6 +701,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
 
@@ -704,6 +727,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                                                     }
 
@@ -713,6 +737,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__+5);
                                                                                             string str(valERROR);
                                                                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
                                                                                     temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
@@ -721,6 +746,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
 
@@ -735,6 +761,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__+5);
                                                                                             string str(valERROR);
                                                                                             message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
                                                                                     gsl_vector_set(*lb,0,gsl_vector_get(tstart,j+1)-tendprev-1);
@@ -759,6 +786,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                                                     }
 
@@ -768,6 +796,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__+5);
                                                                                             string str(valERROR);
                                                                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
                                                                                     temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,0));
@@ -776,6 +805,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
 
@@ -801,6 +831,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                                                     }
 
@@ -810,6 +841,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__+5);
                                                                                             string str(valERROR);
                                                                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
                                                                                     temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
@@ -818,6 +850,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__-2);
                                                                                             string str(valERROR);
                                                                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
                                                                                     if (/*(i < 0) || */(0 >(*lb)->size-1))
@@ -825,6 +858,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                                             sprintf(valERROR,"%d",__LINE__+5);
                                                                                             string str(valERROR);
                                                                                             message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                                            str.clear();
                                                                                             EP_PRINT_ERROR(message,EPFAIL);
                                                                                     }
                                                                                     gsl_vector_set(*lb,0,vectorin->size-tendprev-1);
@@ -868,6 +902,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                     }
                         
@@ -877,6 +912,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__+5);
                                             string str(valERROR);
                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
                                     temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
@@ -885,6 +921,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
 
@@ -910,6 +947,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                     }
                             
@@ -919,6 +957,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__+5);
                                             string str(valERROR);
                                             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
                                     temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,i)-tendprev-1);
@@ -927,6 +966,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__-2);
                                             string str(valERROR);
                                             message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
 
@@ -941,6 +981,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                             sprintf(valERROR,"%d",__LINE__+5);
                                             string str(valERROR);
                                             message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                            str.clear();
                                             EP_PRINT_ERROR(message,EPFAIL);
                                     }
                                     gsl_vector_set(*lb,i,gsl_vector_get(tstart,i)-tendprev-1);
@@ -971,6 +1012,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                             }
                                                 
@@ -980,6 +1022,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
@@ -988,6 +1031,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
 
@@ -1013,6 +1057,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                             }
                                                     
@@ -1022,6 +1067,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
@@ -1030,6 +1076,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
 
@@ -1044,6 +1091,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             gsl_vector_set(*lb,i,gsl_vector_get(tstart,j+1)-tendprev-1);
@@ -1068,6 +1116,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                             }
                                                     
@@ -1077,6 +1126,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,i));
@@ -1085,6 +1135,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
 
@@ -1110,6 +1161,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                                                             }
                                                     
@@ -1119,6 +1171,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
@@ -1127,6 +1180,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__-2);
                                                                     string str(valERROR);
                                                                     message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             if ((i < 0) || (i >(*lb)->size-1))
@@ -1134,6 +1188,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             gsl_vector_set(*lb,i,vectorin->size-tendprev-1);
@@ -1160,6 +1215,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                                     sprintf(valERROR,"%d",__LINE__+5);
                                                                     string str(valERROR);
                                                                     message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                                    str.clear();
                                                                     EP_PRINT_ERROR(message,EPFAIL);
                                                             }
                                                             gsl_vector_set(*lb,i,gsl_vector_get(*lb,i-1));
@@ -1176,6 +1232,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                             sprintf(valERROR,"%d",__LINE__+5);
                             string str(valERROR);
                             message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                            str.clear();
                             EP_PRINT_ERROR(message,EPFAIL);
                     }
                     gsl_vector_set(*B,i,Baux);
@@ -1183,6 +1240,8 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
             }//for
         }
 
+    message.clear();
+        
 	return(EPOK);
 }
 /*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -1250,6 +1309,7 @@ int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int l
 			sprintf(valERROR,"%d",__LINE__-2);
 			string str(valERROR);
 			message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+            str.clear();
 			EP_PRINT_ERROR(message,EPFAIL);
 		}
 
@@ -1264,6 +1324,8 @@ int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int l
 		gsl_vector_free(input); input = 0;
 	}
 
+	message.clear();
+    
 	return(EPOK);
 }
 /*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -1326,6 +1388,8 @@ int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *puls
 
 	Bp = B*lrs/lb;
 	*pulseheight = (Rs_max-Bp)/lrs;
+    
+    message.clear();
 
 	return EPOK;
 }
@@ -1357,7 +1421,8 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	{
 		sprintf(valERROR,"%d",__LINE__-2);
 		string str(valERROR);
-	        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+        str.clear();
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
 
@@ -1410,6 +1475,8 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	gsl_vector_memcpy(*modelFound,&temp.vector);
 
 	gsl_vector_free(modelFound_aux); modelFound_aux = 0;
+    
+    message.clear();
 
     return(EPOK);
 }
@@ -1438,7 +1505,7 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 
 	long nummodels = reconstruct_init->library_collection->ntemplates;
         
-        gsl_vector_view temp;
+    gsl_vector_view temp;
 
 	if (maxDER < gsl_vector_get(reconstruct_init->library_collection->maxDERs,0))
 	{
@@ -1489,6 +1556,8 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 			}
 		}
 	}
+	
+	message.clear();
 
     return(EPOK);
 }
@@ -1562,6 +1631,8 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 		}
 	}
 	
+	message.clear();
+    
     return(EPOK);
 }
 /*xxxx end of SECTION 9 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -1695,7 +1766,8 @@ int findPulsesCAL
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	*threshold = thresholdmediankappa;
-
+        //cout<<*threshold<<endl;
+        
         // Find pulses
 	if (findTstartCAL (reconstruct_init->maxPulsesPerRecord, vectorinDER, thresholdmediankappa, samplesUp, reconstruct_init, nPulses, tstart, quality, maxDERgsl))
 	{
@@ -1745,6 +1817,8 @@ int findPulsesCAL
 		gsl_vector_free(Bgsl); Bgsl = 0;
                 gsl_vector_free(sigmagsl); sigmagsl = 0;
 	}
+	
+	message.clear();
 	
 	return(EPOK);
 }
@@ -1859,6 +1933,7 @@ int findTstartCAL
 								sprintf(valERROR,"%d",__LINE__+5);
 								string str(valERROR);
 								message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                str.clear();
 								EP_PRINT_ERROR(message,EPFAIL);
 							}
 							gsl_vector_set(*maxDERgsl,*numberPulses,possiblemaxDER);
@@ -1926,6 +2001,7 @@ int findTstartCAL
 					sprintf(valERROR,"%d",__LINE__+5);
 					string str(valERROR);
 					message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                    str.clear();
 					EP_PRINT_ERROR(message,EPFAIL);
 				}
 				temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
@@ -1938,6 +2014,7 @@ int findTstartCAL
 					sprintf(valERROR,"%d",__LINE__+5);
 					string str(valERROR);
 					message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                    str.clear();
 					EP_PRINT_ERROR(message,EPFAIL);
 				}
 				temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),szRw-gsl_vector_get(tstartPulsei,i));
@@ -1949,6 +2026,8 @@ int findTstartCAL
 		gsl_vector_free(tstartPulsei); tstartPulsei = 0;
 		gsl_vector_free(model); model = 0;
 	}
+	
+	message.clear();
 
 	return (EPOK);
 }
@@ -2025,6 +2104,8 @@ int InitialTriggering
             
             i++;
         }
+        
+    message.clear();
 
 	return(EPOK);
 }
@@ -2210,6 +2291,7 @@ int FindSecondaries
                             sprintf(valERROR,"%d",__LINE__+5);
                             string str(valERROR);
                             message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                            str.clear();
                             EP_PRINT_ERROR(message,EPFAIL);
                         }
                         gsl_vector_set(*maxDERgsl,*numberPulses,gsl_vector_get(adjustedDerivative,i));
@@ -2685,6 +2767,7 @@ int FindSecondaries
                                     sprintf(valERROR,"%d",__LINE__+9);
                                     string str(valERROR);
                                     message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
                                     EP_PRINT_ERROR(message,EPFAIL);
                                 }
                                 
@@ -2740,6 +2823,8 @@ int FindSecondaries
         
         gsl_vector_free(ThreePoints_x); ThreePoints_x = 0;
         gsl_vector_free(ThreePoints_y); ThreePoints_y = 0;
+        
+    message.clear();
 
 	return(EPOK);
 }
@@ -2806,6 +2891,8 @@ int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconst
 			}
 		}
 	}
+	
+	message.clear();
 
     return(EPOK);
 }
@@ -2825,7 +2912,8 @@ int smoothDerivative (gsl_vector **invector, int N)
         {
                 string message = "";
                 message = "In the smoothDerivative function, N must be an even number)";
-		EP_PRINT_ERROR(message,EPFAIL);
+                EP_PRINT_ERROR(message,EPFAIL);
+                message.clear();
         }
         else            // Even number
         {
@@ -3014,6 +3102,7 @@ int FindSecondariesSTC
                                 sprintf(valERROR,"%d",__LINE__+5);
                                 string str(valERROR);
                                 message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                str.clear();
                                 EP_PRINT_ERROR(message,EPFAIL);
                             }
                             gsl_vector_set(*maxDERgsl,*numberPulses,possiblemaxDER);
@@ -3075,6 +3164,8 @@ int FindSecondariesSTC
             }
         } while (foundPulse == true);
 
+    message.clear();
+    
 	return (EPOK);
 }
 /*xxxx end of SECTION 17 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -3150,6 +3241,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                     sprintf(valERROR,"%d",__LINE__+5);
                     string str(valERROR);
                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                    str.clear();
                     EP_PRINT_ERROR(message,EPFAIL);
                 }
                 temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
@@ -3162,6 +3254,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                     sprintf(valERROR,"%d",__LINE__+5);
                     string str(valERROR);
                     message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                    str.clear();
                     EP_PRINT_ERROR(message,EPFAIL);
                 }
                 temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
@@ -3196,6 +3289,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                     sprintf(valERROR,"%d",__LINE__+7);
                     string str(valERROR);
                     message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                    str.clear();
                     EP_PRINT_ERROR(message,EPFAIL);
                 }
                 
@@ -3212,6 +3306,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                         sprintf(valERROR,"%d",__LINE__+5);
                         string str(valERROR);
                         message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
                         EP_PRINT_ERROR(message,EPFAIL);
                     }
                     temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),gsl_vector_get(tstartPulsei,i+1)-gsl_vector_get(tstartPulsei,i));
@@ -3224,6 +3319,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                         sprintf(valERROR,"%d",__LINE__+5);
                         string str(valERROR);
                         message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
                         EP_PRINT_ERROR(message,EPFAIL);
                     }
                     temp = gsl_vector_subvector(der,gsl_vector_get(tstartPulsei,i),sizeRecord-gsl_vector_get(tstartPulsei,i));
@@ -3240,6 +3336,8 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                 gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
             }
         }
+        
+        message.clear();
         
         return (EPOK);
 }

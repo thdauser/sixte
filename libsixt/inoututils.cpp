@@ -118,75 +118,74 @@ extern "C" void freeIOData(IOData* xxx)
 ****************************************************/
 extern "C" int readFitsSimple(IOData obj,gsl_vector **result)
 {
-	long nRows = 0L;
-	//int  type, status = EPOK;
-        int  type, status = 0;
-	double *bufferD = NULL;
-	int *bufferJ = NULL;
-	short *bufferI = NULL;
-	int extver = 0, anynulls,colnum=0;
-	float nullval=-99;
-	string message="";
-        //cout<<"Hola1"<<endl;
-        //cout<<"obj.inObject: "<<obj.inObject<<endl;
-	//cout<<"obj.nameTable: "<<obj.nameTable<<endl;
-	
-        fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status);
-	/*if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
-	{
-		message = "Cannot move to HDU " + string(obj.nameTable);
-		EP_PRINT_ERROR(message,status);
-	}*/
-	//cout<<"Hola2"<<endl;
-	if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
-	{
-		message = "Cannot access column " + string(obj.nameCol) + "in table " + string(obj.nameTable);
-		EP_PRINT_ERROR(message,status);
-	}
-	//cout<<"Hola3"<<endl;
-	
-	nRows = obj.endRow - obj.iniRow + 1; // Number of rows to read
-	switch (obj.type)
-	{
-		case TDOUBLE:
-			bufferD = new double [nRows];
-			if (fits_read_col(obj.inObject, TDOUBLE, colnum, obj.iniRow, 1, nRows, &nullval, bufferD, &anynulls, &status))
-			{
-				message = "Cannot read column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);return(EPFAIL);
-			}
-
-			status = toGslVector((void **)&bufferD,&(*result),nRows,0,obj.type);
-
-			delete[] bufferD; bufferD = 0;
-			break;
-		case TINT:
-			bufferJ = new int [nRows];
-			if (fits_read_col(obj.inObject, TINT, colnum, obj.iniRow, 1, nRows, &nullval, bufferJ, &anynulls, &status))
-			{
-				message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);return(EPFAIL);
-			}
-			status = toGslVector((void **)&bufferJ,&(*result),nRows,0,obj.type);
-			delete[] bufferJ; bufferJ = 0;
-			break;
-		case TSHORT:
-			bufferI = new short [nRows];
-			if (fits_read_col(obj.inObject, TSHORT, colnum, obj.iniRow, 1, nRows, &nullval, bufferI, &anynulls, &status))
-			{
-				message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
-				EP_PRINT_ERROR(message,status);return(EPFAIL);
-			}
-			status = toGslVector((void **)&bufferI,&(*result),nRows,0,obj.type);
-			delete[] bufferI; bufferI = 0;
-			break;
-	}
-	
-	if(status == EPFAIL)
-	{
-		message = "Cannot convert " + string(obj.nameCol) + " to GSL vector";
-		EP_PRINT_ERROR(message,EPFAIL);
-	}
+    long nRows = 0L;
+    //int  type, status = EPOK;
+    int  type, status = 0;
+    double *bufferD = NULL;
+    int *bufferJ = NULL;
+    short *bufferI = NULL;
+    int extver = 0, anynulls,colnum=0;
+    float nullval=-99;
+    string message="";
+    
+    fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status);
+    /*if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
+    {  
+        message = "Cannot move to HDU " + string(obj.nameTable);
+        EP_PRINT_ERROR(message,status);
+    }*/
+    
+    if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
+    {
+        message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+        EP_PRINT_ERROR(message,status);
+    }
+    
+    nRows = obj.endRow - obj.iniRow + 1; // Number of rows to read
+    switch (obj.type)
+    {
+        case TDOUBLE:
+            bufferD = new double [nRows];
+            if (fits_read_col(obj.inObject, TDOUBLE, colnum, obj.iniRow, 1, nRows, &nullval, bufferD, &anynulls, &status))
+            {
+                message = "Cannot read column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+                EP_PRINT_ERROR(message,status);return(EPFAIL);
+            }
+            
+            status = toGslVector((void **)&bufferD,&(*result),nRows,0,obj.type);
+            
+            delete[] bufferD; bufferD = 0;
+            break;
+        case TINT:
+            bufferJ = new int [nRows];
+            if (fits_read_col(obj.inObject, TINT, colnum, obj.iniRow, 1, nRows, &nullval, bufferJ, &anynulls, &status))
+            {
+                message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+                EP_PRINT_ERROR(message,status);return(EPFAIL);
+            }
+            status = toGslVector((void **)&bufferJ,&(*result),nRows,0,obj.type);
+            delete[] bufferJ; bufferJ = 0;
+            break;
+        case TSHORT:
+            bufferI = new short [nRows];
+            if (fits_read_col(obj.inObject, TSHORT, colnum, obj.iniRow, 1, nRows, &nullval, bufferI, &anynulls, &status))
+            {
+                message = "Cannot access column " + string(obj.nameCol) + " in table " + string(obj.nameTable);
+                EP_PRINT_ERROR(message,status);return(EPFAIL);
+            }
+            status = toGslVector((void **)&bufferI,&(*result),nRows,0,obj.type);
+            delete[] bufferI; bufferI = 0;
+            break;
+    }
+    
+    if(status == EPFAIL)
+    {
+        message = "Cannot convert " + string(obj.nameCol) + " to GSL vector";
+        EP_PRINT_ERROR(message,EPFAIL);
+    }
+    
+    message.clear();
+    
     return EPOK;
 }
 /*xxxx end of SECTION 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -246,7 +245,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 			bufferD = new double [matrixdim];
 			if (fits_read_col(obj.inObject, TDOUBLE, colnum, obj.iniRow, 1, matrixdim, &nullval, bufferD, &anynulls, &status))
 			{
-				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+				message = "Cannot read column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferD,&(*result),nelemsInRow,nRows,obj.type,0);
@@ -256,7 +255,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 			bufferJ = new int [matrixdim];
 			if (fits_read_col(obj.inObject, TINT, colnum, obj.iniRow, 1, nRows, &nullval, bufferJ, &anynulls, &status))
 			{
-				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+				message = "Cannot read column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferJ,&(*result),nelemsInRow,nRows,obj.type,0);
@@ -266,7 +265,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 			bufferI = new short [matrixdim];
 			if (fits_read_col(obj.inObject, TSHORT, colnum, obj.iniRow, 1, nRows, &nullval, bufferI, &anynulls, &status))
 			{
-				message = "Cannot read column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+				message = "Cannot read column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
 				EP_PRINT_ERROR(message,status);
 			}
 			status = toGslMatrix((void **)&bufferI,&(*result),nelemsInRow,nRows,obj.type,0);
@@ -279,6 +278,8 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
    		message = "Cannot convert " + string(obj.nameCol) + " to GSL vector";
    		EP_PRINT_ERROR(message,EPFAIL);
 	}
+	
+	message.clear();
 
 	return EPOK;
 }
@@ -356,12 +357,12 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
 		status=EPOK;
 		if (fits_get_num_cols(obj.inObject, &trgNcols, &status))
 		{
-			message = "Cannot access column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+			message = "Cannot access column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
 			EP_PRINT_ERROR(message,status);
 		}
 		if (fits_insert_col(obj.inObject, ++trgNcols, obj.nameCol, tform1, &status))
 		{
-			message = "Cannot add column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+			message = "Cannot add column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
 			EP_PRINT_ERROR(message,status);
 		}
 		sprintf(charcol,"%d",trgNcols);
@@ -369,12 +370,12 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
 		strcpy(keyname,strcol.c_str());
 		if (fits_write_key(obj.inObject, TSTRING, keyname, obj.unit, comment,&status))
 		{
-			message = "Cannot set units for column " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+			message = "Cannot set units for column " + string(obj.nameCol) + " in table" + string(obj.nameTable);
 			EP_PRINT_ERROR(message,status);
 		}
 		if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
 		{
-			message = "Cannot get column number for " + string(obj.nameCol) + "in table" + string(obj.nameTable);
+			message = "Cannot get column number for " + string(obj.nameCol) + " in table" + string(obj.nameTable);
 			EP_PRINT_ERROR(message,status);
 		}
 	}
@@ -406,6 +407,9 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
         if(bufferJ) { delete [] bufferJ; bufferJ = 0; 
         }
 	
+	strcol.clear();
+    message.clear();
+    
 	return EPOK;
 }
 /*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -560,6 +564,10 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
         }
 	if(bufferJ) { delete [] bufferJ; bufferJ = 0; 
         }
+        
+    strtf1.clear();
+    strcol.clear();
+    message.clear();
 	
 	return status;
 }
@@ -774,6 +782,8 @@ int interactivePars(inparam *taskPars, int np, string task)
 			}
 		}
 	}
+	
+	message.clear();
 
 	return EPOK;
 }

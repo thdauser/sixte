@@ -108,10 +108,10 @@ struct Parameters {
 	double scaleFactor;
 	
 	//Number of samples for threshold trespassing
-	double samplesUp;
+	int samplesUp;
         
         //Number of samples below the threshold to look for other pulse
-	double samplesDown;
+	int samplesDown;
 	
 	//Number of standard deviations in the kappa-clipping process for threshold estimation
 	double nSgms;

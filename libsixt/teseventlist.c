@@ -44,6 +44,8 @@ TesEventList* newTesEventList(int* const status){
 	event_list->grades2=NULL;
 	event_list->ph_ids=NULL;
         event_list->pix_ids=NULL;//SIRENA
+	event_list->risetimes=NULL;//SIRENA
+	event_list->falltimes=NULL;//SIRENA
 
 	// Initialize values
 	event_list->size=0;
@@ -70,6 +72,8 @@ void freeTesEventList(TesEventList* event_list){
 		free(event_list->grades2);
 		free(event_list->ph_ids);
                 free(event_list->pix_ids);//SIRENA
+		free(event_list->risetimes);//SIRENA
+		free(event_list->falltimes);//SIRENA
 		free(event_list);
 		event_list=NULL;
 	}
@@ -121,6 +125,8 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 				free(event_list->ph_ids);
 			}
 			free(event_list->pix_ids);
+			free(event_list->risetimes);
+			free(event_list->falltimes);
 		}
 		event_list->energies = malloc(event_list->size*sizeof*(event_list->energies));
 		if (NULL == event_list->energies){
@@ -201,6 +207,20 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 			CHECK_STATUS_VOID(*status);
 		}
 
+		event_list->risetimes = malloc(event_list->size*sizeof*(event_list->risetimes)); //SIRENA
+		if (NULL == event_list->risetimes){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+
+		event_list->falltimes = malloc(event_list->size*sizeof*(event_list->falltimes)); //SIRENA
+		if (NULL == event_list->falltimes){
+			*status=EXIT_FAILURE;
+			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
+			CHECK_STATUS_VOID(*status);
+		}
+
 		event_list->size_energy = event_list->size;
 	}
 }
@@ -275,14 +295,16 @@ TesEventFile* newTesEventFile(int* const status){
 	file->rmsbslnCol =10; //SIRENA
 	file->pixIDCol  =11;
 	file->phIDCol   =12;
-	file->raCol     =13;
-	file->decCol    =14;
-	file->detxCol   =15;
-	file->detyCol   =16;
-	file->gradingCol=17;
-	file->srcIDCol  =18;
-	file->nxtCol    =19;
-	file->extCol    =20;
+	file->riseCol   =13;
+	file->fallCol   =14;
+	file->raCol     =15;
+	file->decCol    =16;
+	file->detxCol   =17;
+	file->detyCol   =18;
+	file->gradingCol=19;
+	file->srcIDCol  =20;
+	file->nxtCol    =21;
+	file->extCol    =22;
 
 	return(file);
 }
@@ -356,11 +378,11 @@ TesEventFile* opennewTesEventFile(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","RMSBSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //SIRENA
-	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J", "1D","1D" , "1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
-	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",     "",     "",       "",     "",     "deg","deg","m","m","","","","keV"};
+	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","RMSBSLN","PIXID","PH_ID","RISETIME","FALLTIME","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //SIRENA
+	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J", "1D","1D" , "1J",   "1J", "1D","1D",  "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",     "",     "",       "",     "","s","s",     "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 20,		// SIRENA (20 instead of 14)
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 22,		// SIRENA (22 instead of 14)
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -439,11 +461,11 @@ TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
 	// Create table
 
 	//first column TIME
-	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","RMSBSLN","PIXID","PH_ID","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //SIRENA
-	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J" , "1D", "1D","1J",   "1J",   "1D","1D","1E","1E", "1I","1J","1I","1D"};
-	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",      "",        "",     "",     "", "deg","deg","m","m","","","","keV"};
+	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","RMSBSLN","PIXID","PH_ID","RISETIME","FALLTIME","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; //SIRENA
+	char *tform[]={"1D",  "1D",    "1D",    "1D",    "1J",    "1J", "1D", "1J" , "1D", "1D","1J",   "1J", "1D","1D",  "1D","1D","1E","1E", "1I","1J","1I","1D"};
+	char *tunit[]={"s",   "keV",   "",   "keV",      "",      "",      "",      "",      "",        "",     "",     "","s","s", "deg","deg","m","m","","","","keV"};
 
-	fits_create_tbl(file->fptr, BINARY_TBL, 0, 20,		// SIRENA (20 instead of 14)
+	fits_create_tbl(file->fptr, BINARY_TBL, 0, 22,		// SIRENA (22 instead of 14)
 			ttype, tform, tunit,"EVENTS", status);
 	sixt_add_fits_stdkeywords(file->fptr,2,keywords,status);
 	CHECK_STATUS_RET(*status,file);
@@ -505,6 +527,8 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	  file->phIDCol=-1;
 	  *status=0;
 	}
+	fits_get_colnum(file->fptr, CASEINSEN, "RISETIME", &file->riseCol, status);  //SIRENA
+	fits_get_colnum(file->fptr, CASEINSEN, "FALLTIME", &file->fallCol, status);  //SIRENA
 	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
 
@@ -634,6 +658,16 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
 	//fits_write_col(file->fptr, TINT, file->pixIDCol,
 	//				file->row, 1, event_list->index, event_list->pix_ids, status);
 	//CHECK_STATUS_VOID(*status);
+
+	//Save riseTime (RISETIME) column   //SIRENA
+ 	fits_write_col(file->fptr, TDOUBLE, file->riseCol,
+					file->row, 1, event_list->index, event_list->risetimes, status);
+	CHECK_STATUS_VOID(*status);
+
+	//Save fallTime (FALLTIME) column   //SIRENA
+ 	fits_write_col(file->fptr, TDOUBLE, file->fallCol,
+					file->row, 1, event_list->index, event_list->falltimes, status);
+	CHECK_STATUS_VOID(*status);
 
 	file->row = file->row + event_list->index;
 	file->nrows+= event_list->index;

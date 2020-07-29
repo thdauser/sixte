@@ -293,6 +293,10 @@ typedef struct I2RData
   double TTR;
   double LFILTER;
   
+  double ADU_CNV;
+  double I_BIAS;
+  double ADU_BIAS;
+  
 #ifdef __cplusplus
   I2RData();
   I2RData(const I2RData& other);
@@ -448,10 +452,10 @@ typedef struct ReconstructInitSIRENA
   double scaleFactor;
   
   /** Detection samplesUp (samples to confirm threshold overcoming) **/
-  double samplesUp;
+  int samplesUp;
   
-        /** A1 Detection samplesDown (samples below the threshold to look for other pulse) **/
-  double samplesDown;
+  /** STC Detection samplesDown (samples below the threshold to look for other pulse) **/
+  int samplesDown;
   
   /** Detection nSgms (sigmas to establish a threshold for detection) **/
   double nSgms;
@@ -536,9 +540,6 @@ typedef struct ReconstructInitSIRENA
   /** Intermediate file **/
   char detectFile[256];
   
-  /** File with the optimal filter info **/
-  char filterFile[256];
-  
   //Additional error (in samples) added to the detected time"  (Logically, it changes the reconstructed energies) 
   int errorT;
   
@@ -621,7 +622,7 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
                                     char* const library_file,
                                     char* const event_file,
                                     int pulse_length, double scaleFactor, 
-                                    double samplesUp, double samplesDown, 
+                                    int samplesUp, int samplesDown, 
                                     double nSgms, int detectSP,
                                     int opmode, char* detectionMode,double LrsT, 
                                     double LbT, char* const noise_file, 
@@ -634,7 +635,7 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
                                     double monoenergy, char hduPRECALWN, 
                                     char hduPRCLOFWM, int largeFilter, 
                                     int interm, char* detectFile, 
-                                    char* filterFile, int errorT, int Sum0Filt, char clobber, 
+                                    int errorT, int Sum0Filt, char clobber, 
                                     int maxPulsesPerRecord, 
                                     double SaturationValue,
                                     //int tstartPulse1, int tstartPulse2, 

@@ -5,7 +5,7 @@ AM_CPPFLAGS+=-I@top_srcdir@/extlib/progressbar/include
 
 # Directory where to install the PIL parameter files.
 pfilesdir=$(pkgdatadir)/pfiles
-#dist_pfiles_DATA=
+dist_pfiles_DATA=gennoisespec.par
 
 ############ BINARIES #################
 

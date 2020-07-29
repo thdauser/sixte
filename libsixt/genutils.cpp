@@ -372,12 +372,15 @@ int gsl_vector_Sumsubvector(gsl_vector *invector, long offset, long n, double *s
 		sprintf(valERROR,"%d",__LINE__+7);
 		string str(valERROR);
 		message = "Getting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+        str.clear();
 		EP_EXIT_ERROR(message,EPFAIL);
 	}
 	for (int i=offset; i<offset+n; i++)
 	{
 		*sum = *sum + gsl_vector_get(invector,i);
 	}
+	
+	message.clear();
 
 	return(EPOK);
 }
