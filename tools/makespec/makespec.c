@@ -161,78 +161,78 @@ int makespec_main() {
 
 
     // Determine the column containing the signal information.
-    char* pha2pi;
+    char* pha2pi=NULL;
 
     int csignal;
     int coltmp;
-	int usesignal = 0;
+    int usesignal = 0;
 
-	char rmffile[MAXMSG];
+    char rmffile[MAXMSG];
+    strcpy(rmffile, respfile );
+
+    fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
+    // Print a warning if we find a PHA column in an X-IFU event file.
+    if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
+      SIXT_WARNING("Event file contains a PHA column and is not compatible with this version of makespec");
+    }
+    if( par.usepha==-1 || status == COL_NOT_FOUND ){
+      /** if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
+	  SIXT_WARNING("'PHA' column not found! Falling back to 'signal' for spectra creation ...");
+	  SIXT_WARNING("The spectrum will not be calibrated. ");
+	  } **/
+      fits_clear_errmsg();
+      status = EXIT_SUCCESS;
+      fits_get_colnum(ef, CASEINSEN, "signal", &csignal, &status);
+      CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+      usesignal = 1;
+    }
+
+    CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+
+    if( usesignal==0 && par.usepha == 0 ){
+      fits_get_colnum(ef, CASEINSEN, "PI", &coltmp, &status);
+      // Print a warning if we find a PHA column in an X-IFU event file.
+      if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
+	SIXT_WARNING("Event file contains a PI column and is not compatible with this version of makespec");
+      }
+
+      if( status==COL_NOT_FOUND || status==KEY_NO_EXIST ){
+	if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
+	  SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
+	  SIXT_WARNING("The spectrum will not be calibrated. ");
+	}
+	// set default rmf file to nominal rmf used for simulation
 	strcpy(rmffile, respfile );
 
-	fits_get_colnum(ef, CASEINSEN, "PHA", &csignal, &status);
-	// Print a warning if we find a PHA column in an X-IFU event file.
-	if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
-		SIXT_WARNING("Event file contains a PHA column and is not compatible with this version of makespec");
-	}
-	if( par.usepha==-1 || status == COL_NOT_FOUND ){
-		/** if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
-			SIXT_WARNING("'PHA' column not found! Falling back to 'signal' for spectra creation ...");
-			SIXT_WARNING("The spectrum will not be calibrated. ");
-		} **/
-		fits_clear_errmsg();
-		status = EXIT_SUCCESS;
-		fits_get_colnum(ef, CASEINSEN, "signal", &csignal, &status);
-		CHECK_STATUS_BREAK_WITH_FITSERROR(status);
-		usesignal = 1;
-	}
-
+	fits_clear_errmsg();
+	status = EXIT_SUCCESS;
+      } else {
 	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
-	if( usesignal==0 && par.usepha == 0 ){
-		fits_get_colnum(ef, CASEINSEN, "PI", &coltmp, &status);
-		// Print a warning if we find a PHA column in an X-IFU event file.
-		if ( status == EXIT_SUCCESS && !strcmp(instrume, "XIFU") ) {
-			SIXT_WARNING("Event file contains a PI column and is not compatible with this version of makespec");
-		}
+	// now see if we find the PHA2PI information in the header used for pha2pi correction
+	fits_read_key_longstr(ef, "PHA2PI", &pha2pi, NULL, &status); // ffgkls wants char ** longstr type
 
-		if( status==COL_NOT_FOUND || status==KEY_NO_EXIST ){
-			if ( strcmp(instrume, "XIFU") ) { // Don't print these warnings for X-IFU event files.
-				SIXT_WARNING("'PI' column not found! Falling back to 'PHA' for spectra creation ...");
-				SIXT_WARNING("The spectrum will not be calibrated. ");
-			}
-			// set default rmf file to nominal rmf used for simulation
-			strcpy(rmffile, respfile );
+	if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST){
+	  headas_chat(5," *** warning : 'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...\n");
+	  fits_clear_errmsg();
+	  status = EXIT_SUCCESS;
 
-			fits_clear_errmsg();
-			status = EXIT_SUCCESS;
-		} else {
-			CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+	} else {
+	  // now we have the PI column and the correction, so we use it
+	  csignal = coltmp;
 
-			// now see if we find the PHA2PI information in the header used for pha2pi correction
-			fits_read_key_longstr(ef, "PHA2PI", &pha2pi, NULL, &status); // ffgkls wants char ** longstr type
-
-			if( status==VALUE_UNDEFINED || status==COL_NOT_FOUND || status==KEY_NO_EXIST){
-				headas_chat(5," *** warning : 'PHA2PI' key not found, but 'PI' column exits! Using 'PHA' values for spectra creation ...\n");
-				fits_clear_errmsg();
-				status = EXIT_SUCCESS;
-
-			} else {
-				// now we have the PI column and the correction, so we use it
-				csignal = coltmp;
-
-				// set default rmf file to the Monte Carlo PI RMF if PIRMF key is available
-				if( strcasecmp("NONE",pirmf)!=0 ){
-					strcpy( rmffile, pirmf );
-				} else {
-					strcpy( rmffile, respfile );
-					headas_chat(3," *** warning : 'PIRMF' key not found, but analyzing 'PI' column! Using nominal RMF used for simulation instead ...\n");
-					headas_chat(3,"\t\t ... Model deviations expected!\n");
-				}
-			}
-			CHECK_STATUS_BREAK_WITH_FITSERROR(status);
-		}
+	  // set default rmf file to the Monte Carlo PI RMF if PIRMF key is available
+	  if( strcasecmp("NONE",pirmf)!=0 ){
+	    strcpy( rmffile, pirmf );
+	  } else {
+	    strcpy( rmffile, respfile );
+	    headas_chat(3," *** warning : 'PIRMF' key not found, but analyzing 'PI' column! Using nominal RMF used for simulation instead ...\n");
+	    headas_chat(3,"\t\t ... Model deviations expected!\n");
+	  }
 	}
+	CHECK_STATUS_BREAK_WITH_FITSERROR(status);
+      }
+    }
 
     // Determine the number of rows.
     long nrows;
@@ -254,26 +254,26 @@ int makespec_main() {
     if (strcasecmp("NONE",par.RMFfile)){ // User demands a different rmf
       strcpy(spcrespfile,par.RMFfile);
       if( strcmp(spcrespfile,rmffile)!=0 ){
-          headas_chat(5," *** WARNING: User RMF differs from expected RMF='%s'!\n",rmffile);
+	headas_chat(5," *** WARNING: User RMF differs from expected RMF='%s'!\n",rmffile);
       }
     } else {                         // We use the same rmf as in the simulation
       strcpy(spcrespfile,rmffile);
     }
 
     // Decide which ARF to use: [USER] ARFfile, [fitshdr] ANCRfile, or SPECARF
-	char arffile[MAXMSG];
-	if( strcasecmp("NONE",specarf)!=0 ){
-		strcpy( arffile, specarf );
-	} else {
-		strcpy( arffile, ancrfile );
-	}
+    char arffile[MAXMSG];
+    if( strcasecmp("NONE",specarf)!=0 ){
+      strcpy( arffile, specarf );
+    } else {
+      strcpy( arffile, ancrfile );
+    }
 
-	// Check the user arf:
+    // Check the user arf:
     char spcancrfile[MAXFILENAME];
     if (strcasecmp("NONE",par.ARFfile)){ // User demands a different arf
       strcpy(spcancrfile,par.ARFfile);
       if( strcmp(spcancrfile,arffile)!=0 ){
-          headas_chat(5," *** WARNING: User ARF differs from expected ARF='%s'!\n",arffile);
+	headas_chat(5," *** WARNING: User ARF differs from expected ARF='%s'!\n",arffile);
       }
     } else {                         // We use the same arf as in the simulation
       strcpy(spcancrfile,arffile);
@@ -494,9 +494,11 @@ int makespec_main() {
 		    "background file", &status);
     fits_update_key(sf, TLONG, "DETCHANS", &rmf->NumberChannels,
 		    "number of detector channels", &status);
-    fits_update_key_longstr(sf, "PHA2PI", pha2pi,
-			    "Pha2Pi correction file", &status);
-    free(pha2pi);
+    if (pha2pi){
+      fits_update_key_longstr(sf, "PHA2PI", pha2pi,
+			      "Pha2Pi correction file", &status);
+      free(pha2pi);
+    }
     fits_update_key(sf, TSTRING, "CORRFILE", "NONE", "Correlation file", &status);
     fits_update_key(sf, TDOUBLE, "EXPOSURE", &exposure,
 		    "exposure time", &status);
