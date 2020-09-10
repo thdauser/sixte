@@ -309,8 +309,9 @@ int makespec_main() {
 
     // If different rmf and/or arf are required, we need to check that the binning
     // is compatible with the ones used for the simulation:
-    // Check the RMF:
-    if (strcasecmp("NONE",par.RMFfile)){
+    // Check the RMF (only necessary if using PHA/PI column, not if using signal
+    // column):
+    if (strcasecmp("NONE",par.RMFfile) && (usesignal != 1)){
 
       // Take the path to the rmf used in the simulation
       // we load the rmf used in the simulation:
