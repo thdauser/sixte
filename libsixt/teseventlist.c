@@ -485,6 +485,17 @@ TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
 
 }
 
+static int getColnumIfExists(fitsfile *fptr, int casesen, char* template, int* const status) {
+  int colnum = 0;
+  fits_get_colnum(fptr, casesen, template, &colnum, status);
+  if (*status == COL_NOT_FOUND) {
+    *status = 0;
+    return -1;
+  }
+
+  return colnum;
+}
+
 /** Opens a TES event file with the given mode */
 TesEventFile* openTesEventFile(const char* const filename,const int mode, int* const status){
 	TesEventFile * file = newTesEventFile(status);
@@ -496,82 +507,29 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	fits_get_num_rows(file->fptr, &(file->nrows), status);
 
 	// Determine the column numbers.
-	fits_get_colnum(file->fptr, CASEINSEN, "TIME", &file->timeCol, status);
-	fits_get_colnum(file->fptr, CASEINSEN, "SIGNAL", &file->energyCol, status);
-        fits_get_colnum(file->fptr, CASEINSEN, "AVG4SD", &file->avg_4samplesDerivativeCol, status);  //SIRENA
-        fits_get_colnum(file->fptr, CASEINSEN, "ELOWRES", &file->E_lowresCol, status);  //SIRENA
-	fits_get_colnum(file->fptr, CASEINSEN, "GRADE1", &file->grade1Col, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->grade1Col=-1;
-	  *status=0;
-	}
+	file->timeCol = getColnumIfExists(file->fptr, CASEINSEN, "TIME", status);
+	file->energyCol = getColnumIfExists(file->fptr, CASEINSEN, "SIGNAL", status);
+    file->avg_4samplesDerivativeCol = getColnumIfExists(file->fptr, CASEINSEN, "AVG4SD", status);  //SIRENA
+    file->E_lowresCol = getColnumIfExists(file->fptr, CASEINSEN, "ELOWRES", status);  //SIRENA
+	file->grade1Col = getColnumIfExists(file->fptr, CASEINSEN, "GRADE1", status);
+	file->grade2Col = getColnumIfExists(file->fptr, CASEINSEN, "GRADE2", status);
+	file->phiCol = getColnumIfExists(file->fptr, CASEINSEN, "PHI", status);  //SIRENA
+	file->lagsShiftCol = getColnumIfExists(file->fptr, CASEINSEN, "LAGS", status);  //SIRENA
+	file->bslnCol = getColnumIfExists(file->fptr, CASEINSEN, "BSLN", status);  //SIRENA
+	file->rmsbslnCol = getColnumIfExists(file->fptr, CASEINSEN, "RMSBSLN", status);  //SIRENA
+	file->pixIDCol = getColnumIfExists(file->fptr, CASEINSEN, "PIXID", status);
+	file->phIDCol = getColnumIfExists(file->fptr, CASEINSEN, "PH_ID", status);
+	file->riseCol = getColnumIfExists(file->fptr, CASEINSEN, "RISETIME", status);  //SIRENA
+	file->fallCol = getColnumIfExists(file->fptr, CASEINSEN, "FALLTIME", status);  //SIRENA
+	file->raCol = getColnumIfExists(file->fptr, CASEINSEN, "RA", status);
+	file->decCol = getColnumIfExists(file->fptr, CASEINSEN, "DEC", status);
+	file->detxCol = getColnumIfExists(file->fptr, CASEINSEN, "DETX", status);
+	file->detyCol = getColnumIfExists(file->fptr, CASEINSEN, "DETY", status);
+	file->gradingCol = getColnumIfExists(file->fptr, CASEINSEN, "GRADING", status);
+	file->srcIDCol = getColnumIfExists(file->fptr, CASEINSEN, "SRC_ID", status);
+	file->nxtCol = getColnumIfExists(file->fptr, CASEINSEN, "N_XT", status);
+	file->extCol = getColnumIfExists(file->fptr, CASEINSEN, "E_XT", status);
 
-	fits_get_colnum(file->fptr, CASEINSEN, "GRADE2", &file->grade2Col, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->grade2Col=-1;
-	  *status=0;
-	}
-
-	fits_get_colnum(file->fptr, CASEINSEN, "PHI", &file->phiCol, status);  //SIRENA
-	fits_get_colnum(file->fptr, CASEINSEN, "LAGS", &file->lagsShiftCol, status);  //SIRENA
-	fits_get_colnum(file->fptr, CASEINSEN, "BSLN", &file->bslnCol, status);  //SIRENA
-	fits_get_colnum(file->fptr, CASEINSEN, "RMSBSLN", &file->rmsbslnCol, status);  //SIRENA
-
-	fits_get_colnum(file->fptr, CASEINSEN, "PIXID", &file->pixIDCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->pixIDCol=-1;
-	  *status=0;
-	}
-	fits_get_colnum(file->fptr, CASEINSEN, "PH_ID", &file->phIDCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->phIDCol=-1;
-	  *status=0;
-	}
-	fits_get_colnum(file->fptr, CASEINSEN, "RISETIME", &file->riseCol, status);  //SIRENA
-  if (*status==COL_NOT_FOUND) {
-	  file->riseCol=-1;
-	  *status=0;
-	}
-	fits_get_colnum(file->fptr, CASEINSEN, "FALLTIME", &file->fallCol, status);  //SIRENA
-  if (*status==COL_NOT_FOUND) {
-	  file->fallCol=-1;
-	  *status=0;
-	}
-
-	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
-	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
-
-	fits_get_colnum(file->fptr, CASEINSEN, "DETX", &file->detxCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->detxCol=-1;
-	  *status=0;
-	}
-	fits_get_colnum(file->fptr, CASEINSEN, "DETY", &file->detyCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->detyCol=-1;
-	  *status=0;
-	}
-
-	fits_get_colnum(file->fptr, CASEINSEN, "GRADING", &file->gradingCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->gradingCol=-1;
-	  *status=0;
-	}
-	fits_get_colnum(file->fptr, CASEINSEN, "SRC_ID", &file->srcIDCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->srcIDCol=-1;
-	  *status=0;
-	}
-	fits_get_colnum(file->fptr, CASEINSEN, "N_XT", &file->nxtCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->nxtCol=-1;
-	  *status=0;
-	}
-	fits_get_colnum(file->fptr, CASEINSEN, "E_XT", &file->extCol, status);
-	if (*status==COL_NOT_FOUND) {
-	  file->extCol=-1;
-	  *status=0;
-	}
 	CHECK_STATUS_RET(*status, NULL);
 
 	return(file);
