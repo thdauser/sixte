@@ -141,7 +141,7 @@ void allocateWholeTesEventList(TesEventList* event_list,unsigned char allocate_p
 			SIXT_ERROR("memory allocation for energy array in TesEventList failed");
 			CHECK_STATUS_VOID(*status);
 		}
-		
+
 		event_list->Es_lowres = malloc(event_list->size*sizeof*(event_list->Es_lowres)); //SIRENA
 		if (NULL == event_list->Es_lowres){
 			*status=EXIT_FAILURE;
@@ -285,8 +285,8 @@ TesEventFile* newTesEventFile(int* const status){
 	file->nrows     =0;
 	file->timeCol   =1;
 	file->energyCol =2;
-	file->avg_4samplesDerivativeCol =3; //SIRENA	
-	file->E_lowresCol =4; //SIRENA	
+	file->avg_4samplesDerivativeCol =3; //SIRENA
+	file->E_lowresCol =4; //SIRENA
 	file->grade1Col =5;
 	file->grade2Col =6;
 	file->phiCol =7; //SIRENA
@@ -363,7 +363,7 @@ TesEventFile* opennewTesEventFile(const char* const filename,
         struct tm * timeinfo;
         time ( &rawtime );
         timeinfo = localtime ( &rawtime );
-	const char * chardate = asctime (timeinfo);  
+	const char * chardate = asctime (timeinfo);
 	char keyvalstr[1000];
         strcpy(keyvalstr,chardate);
 	fits_write_key(file->fptr,TSTRING,"CREADATE",keyvalstr,NULL,status);
@@ -443,7 +443,7 @@ TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
         struct tm * timeinfo;
         time ( &rawtime );
         timeinfo = localtime ( &rawtime );
-	const char * chardate = asctime (timeinfo);  
+	const char * chardate = asctime (timeinfo);
 	char keyvalstr[1000];
         strcpy(keyvalstr,chardate);
 	fits_write_key(file->fptr,TSTRING,"CREADATE",keyvalstr,NULL,status);
@@ -528,7 +528,16 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	  *status=0;
 	}
 	fits_get_colnum(file->fptr, CASEINSEN, "RISETIME", &file->riseCol, status);  //SIRENA
+  if (*status==COL_NOT_FOUND) {
+	  file->riseCol=-1;
+	  *status=0;
+	}
 	fits_get_colnum(file->fptr, CASEINSEN, "FALLTIME", &file->fallCol, status);  //SIRENA
+  if (*status==COL_NOT_FOUND) {
+	  file->fallCol=-1;
+	  *status=0;
+	}
+
 	fits_get_colnum(file->fptr, CASEINSEN, "RA", &file->raCol, status);
 	fits_get_colnum(file->fptr, CASEINSEN, "DEC", &file->decCol, status);
 
@@ -599,7 +608,7 @@ void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
  	fits_write_col(file->fptr, TDOUBLE, file->avg_4samplesDerivativeCol,
 					file->row, 1, event_list->index, event_list->avgs_4samplesDerivative, status);
 	CHECK_STATUS_VOID(*status);
-        
+
         //Save Es_lowres (ELOWRES) column   //SIRENA
  	fits_write_col(file->fptr, TDOUBLE, file->E_lowresCol,
 					file->row, 1, event_list->index, event_list->Es_lowres, status);
@@ -795,7 +804,7 @@ void addEmptyEvent(TesEventFile* file,PixImpact* impact, int* const status){
 
 /** Update signal and grading columns of an event */
 //void updateSignal(TesEventFile* file,long row,double energy,double avg_4samplesDerivative,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ //SIRENA
-void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){ 
+void updateSignal(TesEventFile* file,long row,double energy,long grade1,long grade2,int grading,int n_xt,double e_xt,int* const status){
 	//Save energy column
 	fits_write_col(file->fptr, TDOUBLE, file->energyCol,
 			row, 1, 1, &energy, status);
