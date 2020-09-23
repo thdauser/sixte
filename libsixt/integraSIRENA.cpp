@@ -175,10 +175,10 @@
          
          double double_oflength = (double) oflength;
          double log2_double_oflength = log2(double_oflength);            
-         if ((opmode == 1) && (oflib == 1) && (strcmp(oflength_strategy,"FIXED") == 0) && ((log2_double_oflength - (int) log2_double_oflength) != 0))
+         /*if ((opmode == 1) && (oflib == 1) && (strcmp(oflength_strategy,"FIXED") == 0) && ((log2_double_oflength - (int) log2_double_oflength) != 0))
          {
              EP_EXIT_ERROR("If OFLib=yes, OFLength must be a power of 2",EPFAIL);
-         }
+         }*/
          
          if ((opmode == 1) && (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration))
          {
@@ -2255,7 +2255,7 @@
              {
                  int nOFs_aux;
                  nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
-                 if (nOFs_aux == floor(log2(template_duration)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+                 if ((nOFs_aux == floor(log2(template_duration))) || (nOFs_aux == 1 + floor(log2(template_duration))))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
                  else 							nOFs = (nOFs-1)/2;	// /2 because the AB column
              }
              else 								nOFs = (nOFs-1)/2;	// /2 because the AB column
@@ -2417,14 +2417,16 @@
                  EP_PRINT_ERROR("Cannot get number of columns in library file",*status);
                  return(library_collection);
              }
+             
              if (ntemplates == 1)	
              {
                  int nOFs_aux;
                  nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
-                 if (nOFs_aux == floor(log2(template_duration)))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+                 if ((nOFs_aux == floor(log2(template_duration))) || (nOFs_aux == 1 + floor(log2(template_duration))))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
                  else 								nOFs = (nOFs-1)/2;	// /2 because the AB column
              }
              else	  nOFs = (nOFs-1)/2;	// /2 because the AB column
+             
              if (nOFs == 0)	
              {
                  EP_PRINT_ERROR("The library has no fixed optimal filters",EPFAIL); 

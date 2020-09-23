@@ -1417,34 +1417,86 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	char valERROR[256];
 	
 	gsl_vector *modelFound_aux;
-	if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
-	{
-		sprintf(valERROR,"%d",__LINE__-2);
-		string str(valERROR);
-        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-        str.clear();
-		EP_PRINT_ERROR(message,EPFAIL);
-	}
+    if ((*modelFound)->size <= reconstruct_init->library_collection->pulse_templates[0].template_duration)
+    {
+        if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
+        {
+            sprintf(valERROR,"%d",__LINE__-2);
+            string str(valERROR);
+            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+            str.clear();
+            EP_PRINT_ERROR(message,EPFAIL);
+        }
+    }
+    else if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+    {
+        if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)) == 0)
+        {
+            sprintf(valERROR,"%d",__LINE__-2);
+            string str(valERROR);
+            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+            str.clear();
+            EP_PRINT_ERROR(message,EPFAIL);
+        }
+    } 
 
 	long nummodels = reconstruct_init->library_collection->ntemplates;
 
 	if (energy < gsl_vector_get(reconstruct_init->library_collection->energies,0))
 	{
-		gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_B0[0].ptemplate);
-		gsl_vector_scale(modelFound_aux,energy/gsl_vector_get(reconstruct_init->library_collection->energies,0));
+        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        {
+            gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].ptemplate);
+            gsl_vector_add_constant(modelFound_aux,-1.0*reconstruct_init->library_collection->baseline);
+            gsl_vector_scale(modelFound_aux,energy/gsl_vector_get(reconstruct_init->library_collection->energies,0));
+        }
+        else
+        {
+            gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_B0[0].ptemplate);
+            gsl_vector_scale(modelFound_aux,energy/gsl_vector_get(reconstruct_init->library_collection->energies,0));
+        }
 	}
 	else if (energy > gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1))
 	{
-		gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_B0[nummodels-1].ptemplate);
-		gsl_vector_scale(modelFound_aux,energy/gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1));
+        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        {
+            gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[nummodels-1].ptemplate);
+            gsl_vector_add_constant(modelFound_aux,-1.0*reconstruct_init->library_collection->baseline);
+            gsl_vector_scale(modelFound_aux,energy/gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1));
+        }
+        else
+        {
+            gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_B0[nummodels-1].ptemplate);
+            gsl_vector_scale(modelFound_aux,energy/gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1));
+        }
 	}
 	else
 	{
+        gsl_matrix *pulse_templatesMaxLengthFixedFilter_B0;
+        
+        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        {
+            pulse_templatesMaxLengthFixedFilter_B0 = gsl_matrix_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration, nummodels);
+            for (int i=0;i<nummodels-1;i++)
+            {
+                gsl_matrix_set_row(pulse_templatesMaxLengthFixedFilter_B0,i,reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[i].ptemplate);
+            }
+            gsl_matrix_add_constant(pulse_templatesMaxLengthFixedFilter_B0,-1.0*reconstruct_init->library_collection->baseline);
+        }
+        
 		for (int i=0;i<nummodels-1;i++)
 		{
 			if (fabs(energy-gsl_vector_get(reconstruct_init->library_collection->energies,i))<1e-6)
 			{
-				gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_B0[i].ptemplate);
+                if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+                {
+                    gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[i].ptemplate);
+                    gsl_vector_add_constant(modelFound_aux,-1.0*reconstruct_init->library_collection->baseline);
+                }
+                else
+                {
+                    gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templates_B0[i].ptemplate);
+                }
 				gsl_vector_scale(modelFound_aux,energy/gsl_vector_get(reconstruct_init->library_collection->energies,i));
 
 				break;
@@ -1453,21 +1505,52 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 			{
 				// Interpolate between the two corresponding rows in "models"
 				// It is not necessary to check the allocation because the same kind of allocation has been checked previously
-				gsl_vector *modelAux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration);
+				gsl_vector *modelAux;
+				if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+                {
+                    modelAux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration);
+                }
+                else
+                {
+                    modelAux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration);
+                    
+                }
 				gsl_vector_set_zero(modelAux);
 
-				if (interpolate_model(&modelAux,energy,reconstruct_init->library_collection->pulse_templates_B0[i].ptemplate,gsl_vector_get(reconstruct_init->library_collection->energies,i),
+                if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+                {
+                    gsl_vector *pulse_templatesMaxLengthFixedFilter_B0row_i = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration);
+                    gsl_vector *pulse_templatesMaxLengthFixedFilter_B0row_iplus1 = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration); 
+                    gsl_matrix_get_row(pulse_templatesMaxLengthFixedFilter_B0row_i, pulse_templatesMaxLengthFixedFilter_B0,i);
+                    gsl_matrix_get_row(pulse_templatesMaxLengthFixedFilter_B0row_iplus1, pulse_templatesMaxLengthFixedFilter_B0,i+1);
+                    
+                    if (interpolate_model(&modelAux,energy,pulse_templatesMaxLengthFixedFilter_B0row_i,gsl_vector_get(reconstruct_init->library_collection->energies,i),
+					pulse_templatesMaxLengthFixedFilter_B0row_iplus1,gsl_vector_get(reconstruct_init->library_collection->energies,i+1)))
+                    {
+                        message = "Cannot run interpolate_model with two rows in models";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    gsl_vector_free(pulse_templatesMaxLengthFixedFilter_B0row_i); pulse_templatesMaxLengthFixedFilter_B0row_i = 0;
+                    gsl_vector_free(pulse_templatesMaxLengthFixedFilter_B0row_iplus1); pulse_templatesMaxLengthFixedFilter_B0row_iplus1 = 0;
+                }
+                else
+                {
+                    if (interpolate_model(&modelAux,energy,reconstruct_init->library_collection->pulse_templates_B0[i].ptemplate,gsl_vector_get(reconstruct_init->library_collection->energies,i),
 					reconstruct_init->library_collection->pulse_templates_B0[i+1].ptemplate,gsl_vector_get(reconstruct_init->library_collection->energies,i+1)))
-				{
-					message = "Cannot run interpolate_model with two rows in models";
-					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-				}
+                    {
+                        message = "Cannot run interpolate_model with two rows in models";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                }
+				
 				gsl_vector_memcpy(modelFound_aux,modelAux);
 				gsl_vector_free(modelAux); modelAux = 0;
 
 				break;
 			}
 		}
+		
+		gsl_matrix_free(pulse_templatesMaxLengthFixedFilter_B0); pulse_templatesMaxLengthFixedFilter_B0 = 0;
 	}
 
 	gsl_vector_view temp;

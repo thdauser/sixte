@@ -136,8 +136,8 @@ typedef struct LibraryCollection
 	/** Number of templates & matched filters in the structure. */
 	int ntemplates;
         
-        /** BASELINE read from the noise file and propagated to the library file**/
-        double baseline;
+    /** BASELINE read from the noise file and propagated to the library file**/
+    double baseline;
 	
 	/** Number of fixed length filters in the structure. */
 	int nfixedfilters;

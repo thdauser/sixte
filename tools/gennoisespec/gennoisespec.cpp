@@ -902,10 +902,13 @@
      }
      
      //cout<<"sigmaInterval->size: "<<sigmaInterval->size<<endl;
-     if (medianKappaClipping_noiseSigma (sigmaInterval, kappaMKC, stopCriteriaMKC, par.nSgms, &meanThreshold, &sgmThreshold))
+     if ((NumMeanSamples > 1) && (par.rmNoiseIntervals == 1))
      {
-         message = "Cannot run medianKappaClipping_noiseSigma looking for mean and sigma of the noise sigmas";
-         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+        if (medianKappaClipping_noiseSigma (sigmaInterval, kappaMKC, stopCriteriaMKC, par.nSgms, &meanThreshold, &sgmThreshold))
+        {
+            message = "Cannot run medianKappaClipping_noiseSigma looking for mean and sigma of the noise sigmas";
+            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+        }
      }
      //cout<<"meanThreshold: "<<meanThreshold<<endl;
      //cout<<"sgmThreshold: "<<sgmThreshold<<endl;
@@ -926,7 +929,7 @@
      {
          //if (gsl_vector_get(sigmaInterval,i) > meanThreshold+nSgms_sigmaInterval*sgmThreshold)
          //if ((par.rmNoiseIntervals == 1) && (gsl_vector_get(sigmaInterval,i) > meanThreshold+nSgms_sigmaInterval*sgmThreshold))
-         if ((par.rmNoiseIntervals == 1) && ((gsl_vector_get(sigmaInterval,i) > meanThreshold+nSgms_sigmaInterval*sgmThreshold)||(gsl_vector_get(sigmaInterval,i) < meanThreshold-nSgms_sigmaInterval*sgmThreshold)))
+         if ((par.rmNoiseIntervals == 1) && (NumMeanSamples > 1) && ((gsl_vector_get(sigmaInterval,i) > meanThreshold+nSgms_sigmaInterval*sgmThreshold)||(gsl_vector_get(sigmaInterval,i) < meanThreshold-nSgms_sigmaInterval*sgmThreshold)))
          {
              // Interval not to be taken account
              cnt --;
@@ -2403,9 +2406,9 @@
                      {
                          if (*numberPulses == maxPulsesPerRecord)
                          {
-                             sprintf(valERROR,"%d",__LINE__+5);
+                             sprintf(valERROR,"%d",__LINE__+6);
                              string str(valERROR);
-                             message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                             message = "Found pulses in record>'EventListSize'(input parameter) => Change EventListSize or check if the threshold is too low => Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")"; 
                              str.clear();
                              EP_PRINT_ERROR(message,EPFAIL);
                          }
@@ -2638,8 +2641,7 @@
          {
              sprintf(valERROR,"%d",__LINE__+5);
              string str(valERROR);
-             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-             str.clear();
+             message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";  str.clear();
              EP_PRINT_ERROR(message,EPFAIL);
          }
          temp = gsl_vector_subvector(invectorNew,0,size-boxLPF-1);
@@ -2660,8 +2662,7 @@
                  {
                      sprintf(valERROR,"%d",__LINE__+5);
                      string str(valERROR);
-                     message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                     str.clear();
+                     message = "Setting with <= 0 size in line " + str + " (" + __FILE__ + ")"; str.clear();
                      EP_PRINT_ERROR(message,EPFAIL);
                  }
                  gsl_vector_set(invectorNew,i,median);

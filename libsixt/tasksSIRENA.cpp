@@ -142,7 +142,7 @@
 void runDetect(TesRecord* record, int trig_reclength, int lastRecord, PulsesCollection *pulsesAll, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord)
 {       
     // Declare variables
-    if ((*reconstruct_init)->opmode == 0)	(*reconstruct_init)->pulse_length = (*reconstruct_init)->largeFilter;
+    //if ((*reconstruct_init)->opmode == 0)	(*reconstruct_init)->pulse_length = (*reconstruct_init)->largeFilter;
     int inputPulseLength = (*reconstruct_init)->pulse_length;
     
     string message="";
@@ -353,7 +353,7 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, PulsesColl
         }
         
         (*reconstruct_init)->pulse_length = inputPulseLength;
-        
+
         log_trace("Writing the library...");
         if (writeLibrary(reconstruct_init, 1/record->delta_t, pulseheighttemplate, pulsetemplate, covariance, weight, appendToLibrary, &inLibObject, pulsetemplateMaxLengthFixedFilter))
         {
@@ -2318,7 +2318,8 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
     gsl_vector_view temp;
     
     double scaleFactor = (*reconstruct_init)->scaleFactor;
-    int sizePulse_b = (*reconstruct_init)->pulse_length;
+    //int sizePulse_b = (*reconstruct_init)->pulse_length;
+    int sizePulse_b = ((*reconstruct_init)->pulse_length,(*reconstruct_init)->largeFilter);
     int samplesUp = (*reconstruct_init)->samplesUp;
     double nSgms = (*reconstruct_init)->nSgms;
     double Lrs = (int) ((*reconstruct_init)->LrsT*samprate);	// Running sum length (in the RS filter case): 'LrsT' in samples
@@ -2601,6 +2602,7 @@ gsl_vector_memcpy(recordDERIVATIVE,record);*/
     {
         //foundPulses->pulses_detected[i].pulse_duration = floor(gsl_vector_get(tendgsl,i)-gsl_vector_get(tstartgsl,i));
         foundPulses->pulses_detected[i].pulse_duration = floor(gsl_vector_get(tendgsl,i)-(gsl_vector_get(tstartgsl,i)-preBuffer));
+        //cout<<"foundPulses->pulses_detected[i].pulse_duration: "<<foundPulses->pulses_detected[i].pulse_duration<<endl;
         
         foundPulses->pulses_detected[i].avg_4samplesDerivative = gsl_vector_get(samp1DERgsl,i);
         foundPulses->pulses_detected[i].E_lowres = -999;
@@ -3122,7 +3124,10 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
     
     bool firstnonpileupPulse = true;
     // It is not necessary because 'reconstruct_init->pulse_length'='PulseLength' (input parameter) has been checked previously
-    gsl_vector *pulse = gsl_vector_alloc(reconstruct_init->pulse_length);
+    //gsl_vector *pulse = gsl_vector_alloc(reconstruct_init->pulse_length);
+    int pulseLengthCT = max(reconstruct_init->pulse_length,reconstruct_init->largeFilter);
+    gsl_vector *pulse = gsl_vector_alloc(pulseLengthCT);
+    gsl_vector *pulseaverageCT = gsl_vector_alloc(pulseLengthCT);
     
     double tstartnext;
     
@@ -3212,19 +3217,22 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
             // It is note necessary to check 'memcpy' because it is the non pile-up case
             if (i < pulsesAll->ndetpulses)
             {
-                temp = gsl_vector_subvector(pulsesAll->pulses_detected[i].pulse_adc_preBuffer,0,inputPulseLength);
+                //temp = gsl_vector_subvector(pulsesAll->pulses_detected[i].pulse_adc_preBuffer,0,inputPulseLength);
+                temp = gsl_vector_subvector(pulsesAll->pulses_detected[i].pulse_adc_preBuffer,0,pulseLengthCT);
                 gsl_vector_memcpy(pulse,&temp.vector);
             }
             else
             {
-                temp = gsl_vector_subvector(pulsesInRecord->pulses_detected[i-pulsesAll->ndetpulses].pulse_adc_preBuffer,0,inputPulseLength);
+                //temp = gsl_vector_subvector(pulsesInRecord->pulses_detected[i-pulsesAll->ndetpulses].pulse_adc_preBuffer,0,inputPulseLength);
+                temp = gsl_vector_subvector(pulsesInRecord->pulses_detected[i-pulsesAll->ndetpulses].pulse_adc_preBuffer,0,pulseLengthCT);
                 gsl_vector_memcpy(pulse,&temp.vector);
             }
             
             // Non piled-up pulses => Align and average them
             if (firstnonpileupPulse == true)
             {
-                gsl_vector_memcpy(*pulseaverage,pulse);
+                //gsl_vector_memcpy(*pulseaverage,pulse);
+                gsl_vector_memcpy(pulseaverageCT,pulse);
             }
             else
             {
@@ -3233,7 +3241,8 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
                 //	message = "Cannot run align for pulse " + boost::lexical_cast<std::string>(i) + " when 1st pulse is piled-up";
                 //	EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                 //}
-                gsl_vector_add(*pulseaverage,pulse);
+                //gsl_vector_add(*pulseaverage,pulse);
+                gsl_vector_add(pulseaverageCT,pulse);
             }
             *pulseaverageHeight = *pulseaverageHeight + gsl_vector_get(pulseheight,i);
             if (firstnonpileupPulse == true)	firstnonpileupPulse = false;
@@ -3241,12 +3250,16 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
     }
     
     //cout<<"Number of pulses to average: "<<nonpileupPulses<<endl;
-    gsl_vector_scale(*pulseaverage,1.0/(nonpileupPulses));
+    //gsl_vector_scale(*pulseaverage,1.0/(nonpileupPulses));
+    gsl_vector_scale(pulseaverageCT,1.0/(nonpileupPulses));
     
-    gsl_vector_memcpy(*pulseaverageMaxLengthFixedFilter, *pulseaverage);
+    /*gsl_vector_memcpy(*pulseaverageMaxLengthFixedFilter, *pulseaverage);
     gsl_vector_free(*pulseaverage);
     *pulseaverage = gsl_vector_alloc(inputPulseLength);
     temp = gsl_vector_subvector(*pulseaverageMaxLengthFixedFilter,0,inputPulseLength);
+    gsl_vector_memcpy(*pulseaverage,&temp.vector);*/
+    gsl_vector_memcpy(*pulseaverageMaxLengthFixedFilter, pulseaverageCT);
+    temp = gsl_vector_subvector(pulseaverageCT,0,reconstruct_init->pulse_length);
     gsl_vector_memcpy(*pulseaverage,&temp.vector);
     
     if (reconstruct_init->hduPRECALWN == 1)
@@ -3271,6 +3284,7 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
     gsl_vector_free(xhisto); xhisto = 0;
     gsl_vector_free(yhisto); yhisto = 0;
     gsl_vector_free(pulse); pulse = 0;
+    gsl_vector_free(pulseaverageCT); pulseaverageCT = 0;
     
     message.clear();
     
@@ -3280,7 +3294,7 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
 
 
 /***** SECTION A9 ************************************************************
- * createHisto function: This function builds the histogram of the input vector.
+//  * createHisto function: This function builds the histogram of the input vector.
  *                       Histogram x-axis values are the different input vector values (pulseheights).
  *                       Histogram y-axis values are the the number of cases per unit of the variable on the horizontal axis.
  *
@@ -7971,7 +7985,7 @@ resize_mf_lowres = 4;
                 EP_EXIT_ERROR(message,EPFAIL);
             }
             (*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
-            resize_mf = resize_mf + preBuffer;
+            //resize_mf = resize_mf + preBuffer;
             log_debug("resize_mf (after pulseGrading): %i",resize_mf);
             
             // Pulse: Load the proper piece of the record in *pulse*
@@ -7985,7 +7999,7 @@ resize_mf_lowres = 4;
             }
             if ((tstartSamplesRecord-preBuffer < 0) ||(tstartSamplesRecord-preBuffer+resize_mf > recordAux->size-1))    
             {
-                sprintf(valERROR,"%d",__LINE__+5);
+                sprintf(valERROR,"%d",__LINE__+6);
                 string str(valERROR);
                 message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
                 str.clear();
@@ -8938,8 +8952,7 @@ resize_mf_lowres = 4;
                 EP_EXIT_ERROR(message,EPFAIL);
             }
             (*pulsesInRecord)->pulses_detected[i].grade1 = resize_mf;
-            resize_mf = resize_mf + preBuffer;
-            
+            //resize_mf = resize_mf + preBuffer;
             
             // Pulse: Load the proper piece of the record in 'pulse'
             if ((pulse = gsl_vector_alloc(resize_mf)) == 0)
@@ -8952,13 +8965,12 @@ resize_mf_lowres = 4;
             }
             if ((tstartSamplesRecord-preBuffer < 0) ||(tstartSamplesRecord-preBuffer+resize_mf > recordAux->size-1))  
             {
-                sprintf(valERROR,"%d",__LINE__+5);
+                sprintf(valERROR,"%d",__LINE__+6);
                 string str(valERROR);
                 message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
                 str.clear();
                 EP_EXIT_ERROR(message,EPFAIL); 
             }
-            
             temp = gsl_vector_subvector(recordAux,tstartSamplesRecord-preBuffer,resize_mf);
             if (gsl_vector_memcpy(pulse, &temp.vector) != 0)
             {
@@ -11329,13 +11341,13 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
     if (vector->size < filter->size) minimo = vector->size;
     else                             minimo = filter->size;
     /*if (LowRes== 0)
-     *        {
-     *            //for (int i=0;i<minimo;i++)
-     *            for (int i=0;i<10;i++)
-     *            {
-     *                cout<<i<<" "<<gsl_vector_get(vector,i)<<" "<<gsl_vector_get(filter,i)<<endl;
-}
-}*/
+    {
+        for (int i=0;i<minimo;i++)
+        //for (int i=0;i<10;i++)
+        {
+            cout<<i<<" "<<gsl_vector_get(vector,i)<<" "<<gsl_vector_get(filter,i)<<endl;
+        }
+    }*/
     
     string message = "";
     char valERROR[256];

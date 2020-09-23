@@ -124,6 +124,21 @@ AdvPix* newAdvPix(int* const status){
   return(pix);
 }
 
+AdvRecons* newAdvRecons(int* const status){     //SIRENA
+  // Allocate memory
+  AdvRecons* recons=(AdvRecons*)malloc(sizeof(AdvRecons));
+  if(recons==NULL){
+    *status=EXIT_FAILURE;
+    SIXT_ERROR("Unable to allocate memory for reconstruction info");
+    return(recons);
+  }
+  // Initialize values and pointers
+  recons->ngrades=0;
+  recons->grades=NULL;
+  
+  return(recons);
+}
+
 
 void freeAdvPix(AdvPix* pix){
   if(NULL!=pix){
@@ -137,6 +152,13 @@ void freeAdvPix(AdvPix* pix){
   }
 }
 
+void freeAdvRecons(AdvRecons* recons){      //SIRENA
+  if(NULL!=recons){
+    //int g=recons->ngrades;
+    freeGradingRecons(recons);
+  }
+}
+
 void freeGrading(AdvPix* pix){
     for (int i=0;i<pix->ngrades;i++){
     	free(pix->grades[i].rmffile);
@@ -145,6 +167,12 @@ void freeGrading(AdvPix* pix){
     pix->ngrades=0;
     pix->grades=NULL;
     pix->global_grading=0;
+}
+
+void freeGradingRecons(AdvRecons* recons){      //SIRENA
+    free(recons->grades);
+    recons->ngrades=0;
+    recons->grades=NULL;
 }
 
 /** Free the FDM System Structure */
@@ -334,11 +362,13 @@ AdvDet* newAdvDet(int* const status){
 
   // Initialize all pointers with NULL.
   det->pix=NULL;
+  det->recons=NULL;     //SIRENA
   det->filename=NULL;
   det->filepath=NULL;
   det->sx=0.;
   det->sy=0.;
   det->npix=0;
+  det->nrecons=0;   //SIRENA
   det->cpix=0;
   det->SampleFreq=-1.0;
   det->tesnoisefilter=0;
@@ -398,6 +428,14 @@ void destroyAdvDet(AdvDet **det){
 				freeAdvPix(&(*det)->pix[i]);
 			}
 			free((*det)->pix);
+		}
+		//int grRecons=0;
+		if(NULL!=(*det)->recons){             //SIRENA
+			//grRecons =(*det)->recons[0].ngrades;
+			for(int i=0;i<(*det)->nrecons;i++){
+				freeAdvRecons(&(*det)->recons[i]);
+			}
+			free((*det)->recons);
 		}
 		if(NULL!=(*det)->filename){
 			free((*det)->filename);
@@ -494,7 +532,7 @@ void parseAdvDetXML(AdvDet* const det,
 	       int* const status){
 
   headas_chat(5, "read advanced detector setup from XML file '%s' ...\n", filename);
-
+  
   // Read the XML data from the file.
   // Open the specified file.
   printf("Read file %s\n", filename);
@@ -581,7 +619,8 @@ void parseAdvDetXML(AdvDet* const det,
   }
 
   // Check that the correct number of pixels was found
-  if(det->cpix!=det->npix){
+  if ((det->nrecons == 0) && (det->cpix!=det->npix)){     // SIRENA
+  //if(det->cpix!=det->npix){
 	  *status = EXIT_FAILURE;
 	  SIXT_ERROR("Number of pixels given at pixdetector level does not match the number of pixel subelements");
 	  det->npix=det->cpix;
@@ -591,7 +630,6 @@ void parseAdvDetXML(AdvDet* const det,
   if (EXIT_SUCCESS!=xmlparsedata.status) {
     *status=xmlparsedata.status;
   }
-
 
   // Release memory.
   XML_ParserFree(parser);
@@ -603,7 +641,7 @@ void parseAdvDetXML(AdvDet* const det,
 static void AdvDetXMLElementStart(void* parsedata,
 				   const char* el,
 				   const char** attr)
-{
+{    
 	struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
 	// Check if an error has occurred previously.
@@ -620,6 +658,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 		char npix[MAXMSG];
 		char readout[MAXMSG];
 		getXMLAttributeString(attr, "NPIX", npix);
+        
 		xmlparsedata->det->npix=atoi(npix);
 		if(xmlparsedata->det->npix<1){
 			SIXT_ERROR("Number of pixels in advanced detector description less than 1.");
@@ -630,6 +669,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 			SIXT_ERROR("Unable to allocate memory for advanced detector pixel array.");
 			return;
 		}
+		
 		xmlparsedata->det->sx=getXMLAttributeDouble(attr, "XOFF");
 		xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");
 		getXMLAttributeString(attr, "READOUT", readout);
@@ -657,8 +697,17 @@ static void AdvDetXMLElementStart(void* parsedata,
 			xmlparsedata->det->pix[ii].prop_cross_talk=NULL;
 			xmlparsedata->det->pix[ii].der_cross_talk=NULL;
 		}
+    } else if (!strcmp(Uelement, "RECONSTRUCTION")) {   //SIRENA
+		xmlparsedata->det->nrecons = 1;
+        xmlparsedata->det->recons=(AdvRecons*)malloc(xmlparsedata->det->nrecons*sizeof(AdvRecons));
+		
+		for (int ii=0;ii<xmlparsedata->det->nrecons;ii++){
+            xmlparsedata->det->recons[ii].grades=NULL;
+            xmlparsedata->det->recons[ii].ngrades=0;
+		}
 	} else if (!strcmp(Uelement, "PIXEL")) {
-		if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
+		//if ((xmlparsedata->det->cpix) >= (xmlparsedata->det->npix)) {
+        if ((xmlparsedata->det->cpix) > (xmlparsedata->det->npix)) {    //SIRENA
 			xmlparsedata->status=EXIT_FAILURE;
 			SIXT_ERROR("Number of pixels given at pixdetector level lower than the number of pixel subelements");
 			return;
@@ -838,46 +887,84 @@ static void AdvDetXMLElementStart(void* parsedata,
 			}
 		}
 	}  else if (!strcmp(Uelement,"GRADING")){
-		if (xmlparsedata->det->inpixel){
-			if (xmlparsedata->det->pix[xmlparsedata->det->cpix].global_grading) {
-				freeGrading(&(xmlparsedata->det->pix[xmlparsedata->det->cpix]));
-				xmlparsedata->det->pix[xmlparsedata->det->cpix].global_grading=0;
-			}
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades=realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades,
-					(xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades+1)*sizeof(*(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades)));
-			if (xmlparsedata->det->pix[xmlparsedata->det->cpix].grades==NULL){
-				xmlparsedata->status=EXIT_FAILURE;
-				SIXT_ERROR("Realloc of grading array failed.");
-				return;
-			}
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].value=getXMLAttributeInt(attr, "NUM");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmf=NULL;
-			char rmffile[MAXFILENAME];
-			getXMLAttributeString(attr, "RMF", rmffile);
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
-			xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades++;
-		} else {
-			for (int i=0;i<xmlparsedata->det->npix;i++){
-				xmlparsedata->det->pix[i].grades=realloc(xmlparsedata->det->pix[i].grades,
-						(xmlparsedata->det->pix[i].ngrades+1)*sizeof(*(xmlparsedata->det->pix[i].grades)));
-				if (xmlparsedata->det->pix[i].grades==NULL){
-					xmlparsedata->status=EXIT_FAILURE;
-					SIXT_ERROR("Realloc of grading array failed.");
-					return;
-				}
-				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].value=getXMLAttributeInt(attr, "NUM");
-				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
-				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
-				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmf=NULL;
-				char rmffile[MAXFILENAME];
-				getXMLAttributeString(attr, "RMF", rmffile);
-				xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
-				xmlparsedata->det->pix[i].ngrades++;
-				xmlparsedata->det->pix[i].global_grading=1;
-			}
-		}
+        if (xmlparsedata->det->nrecons == 1)    //SIRENA
+        {
+            if (xmlparsedata->det->inpixel){
+                xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades=realloc(xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades,
+                                                                               (xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades+1)*sizeof(*(xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades)));
+                if (xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades==NULL){
+                    xmlparsedata->status=EXIT_FAILURE;
+                    SIXT_ERROR("Realloc of grading array failed.");
+                    return;
+                }
+                xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].value=getXMLAttributeInt(attr, "NUM");
+                xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
+                xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                
+                xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades++;
+            } else {
+                for (int i=0;i<xmlparsedata->det->nrecons;i++){
+                    xmlparsedata->det->recons[i].grades=realloc(xmlparsedata->det->recons[i].grades,
+                                                             (xmlparsedata->det->recons[i].ngrades+1)*sizeof(*(xmlparsedata->det->recons[i].grades)));
+                    if (xmlparsedata->det->recons[i].grades==NULL){
+                        xmlparsedata->status=EXIT_FAILURE;
+                        SIXT_ERROR("Realloc of grading array failed.");
+                        return;
+                    }
+                    xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].value=getXMLAttributeInt(attr, "NUM");
+                    xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
+                    xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                    xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].rmf=NULL;
+                    
+                    xmlparsedata->det->recons[i].ngrades++;
+                }
+            }
+        }
+        else
+        {
+            if (xmlparsedata->det->inpixel){
+                if (xmlparsedata->det->pix[xmlparsedata->det->cpix].global_grading) {
+                    freeGrading(&(xmlparsedata->det->pix[xmlparsedata->det->cpix]));
+                    xmlparsedata->det->pix[xmlparsedata->det->cpix].global_grading=0;
+                }
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].grades=realloc(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades,
+                                                                               (xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades+1)*sizeof(*(xmlparsedata->det->pix[xmlparsedata->det->cpix].grades)));
+                if (xmlparsedata->det->pix[xmlparsedata->det->cpix].grades==NULL){
+                    xmlparsedata->status=EXIT_FAILURE;
+                    SIXT_ERROR("Realloc of grading array failed.");
+                    return;
+                }
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].value=getXMLAttributeInt(attr, "NUM");
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmf=NULL;
+                
+                char rmffile[MAXFILENAME];
+                getXMLAttributeString(attr, "RMF", rmffile);
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades++;
+            } else {
+                for (int i=0;i<xmlparsedata->det->npix;i++){
+                    xmlparsedata->det->pix[i].grades=realloc(xmlparsedata->det->pix[i].grades,
+                                                             (xmlparsedata->det->pix[i].ngrades+1)*sizeof(*(xmlparsedata->det->pix[i].grades)));
+                    if (xmlparsedata->det->pix[i].grades==NULL){
+                        xmlparsedata->status=EXIT_FAILURE;
+                        SIXT_ERROR("Realloc of grading array failed.");
+                        return;
+                    }
+                    xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].value=getXMLAttributeInt(attr, "NUM");
+                    xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
+                    xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                    xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmf=NULL;
+                    
+                    char rmffile[MAXFILENAME];
+                    getXMLAttributeString(attr, "RMF", rmffile);
+                    xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
+                    xmlparsedata->det->pix[i].ngrades++;
+                    xmlparsedata->det->pix[i].global_grading=1;
+                }
+            }
+        }
 	} else if(!strcmp(Uelement, "TESPROFILE")){
 		getXMLAttributeString(attr, "FILENAME", xmlparsedata->det->tesproffilename);
 		double new_samplefreq=getXMLAttributeDouble(attr, "SAMPLEFREQ");
@@ -930,7 +1017,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 			return;
 		}
 	} else if(!strcmp(Uelement, "THERMALCROSSTALK"))  {
-
 		xmlparsedata->det->xt_dist_thermal = realloc(xmlparsedata->det->xt_dist_thermal,
 				(xmlparsedata->det->xt_num_thermal+1)*sizeof(double));
 		CHECK_MALLOC_VOID(xmlparsedata->det->xt_dist_thermal);
@@ -973,7 +1059,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 		xmlparsedata->det->xt_num_thermal++;
 
 	} else if(!strcmp(Uelement, "ELECTRICALCROSSTALK")){
-
 		xmlparsedata->det->crosstalk_elec_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_elec_file);
 		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
@@ -1007,7 +1092,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 		free(tmp_path_2);
 
 	} else if(!strcmp(Uelement, "INTERMODULATION"))  {
-
 		xmlparsedata->det->crosstalk_intermod_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->crosstalk_intermod_file);
 		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
@@ -1025,7 +1109,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 		free(tmp_path);
 
 	} else if(!strcmp(Uelement, "PROPCROSSTALK")){
-
 		xmlparsedata->det->TDM_prop_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->TDM_prop_file);
 		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
@@ -1046,7 +1129,6 @@ static void AdvDetXMLElementStart(void* parsedata,
 		xmlparsedata->det->prop_TDM_scaling_2=getXMLAttributeDouble(attr,"SCALING2");
 
 	} else if(!strcmp(Uelement, "DERCROSSTALK")){
-
 		xmlparsedata->det->TDM_der_file=(char*)malloc(MAXFILENAME*sizeof(char));
 		CHECK_MALLOC_VOID(xmlparsedata->det->TDM_der_file);
 		char* tmp_path=(char*)malloc(2*MAXFILENAME*sizeof(char));
@@ -1093,6 +1175,7 @@ static void AdvDetXMLElementEnd(void* parsedata, const char* el)
 		xmlparsedata->det->inpixel=0;
 		xmlparsedata->det->cpix++;
 	}
+    
 	// Check if an error has occurred previously.
 	CHECK_STATUS_VOID(xmlparsedata->status);
 }
@@ -1141,7 +1224,6 @@ AdvDet* loadAdvDet(const char* const filename,
     strcpy(det->filepath, rootname);
   }
   // END of storing the filename and filepath.
-
 
   // Read in the XML definition of the detector.
   parseAdvDetXML(det, filename, status);

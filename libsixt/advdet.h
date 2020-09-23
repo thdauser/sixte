@@ -192,6 +192,15 @@ struct AdvPix{
 
 }; typedef struct AdvPix AdvPix;
 
+struct AdvRecons{       //SIRENA
+
+  /** Number of grades for this pixel */
+  int ngrades;
+
+  /** Different grades for this pixel */
+  TESGrade* grades;
+
+}; typedef struct AdvRecons AdvRecons;
 
 /** Data structure containing a library of different RMFs */
 typedef struct{
@@ -297,12 +306,18 @@ typedef struct{
 
   /** Number of pixels. */
   int npix;
+  
+  /** 1 if 'reconstruction' node exits (0 if not) */    //SIRENA
+  int nrecons;
 
   /** Counter for operations on pixels */
   int cpix;
 
   /** array of pixels. */
   AdvPix *pix;
+  
+  /** reconstruction info. */                           //SIRENA
+  AdvRecons *recons;
 
   /** File name (without path contributions) of the FITS file
       containing the XML detector definition. */
@@ -536,8 +551,17 @@ AdvPix* newAdvPix(int* const status);
 /** Destructor of the AdvPix structure */
 void freeAdvPix(AdvPix* pix);
 
+/** Constructor for an empty AdvRecons structure */
+AdvRecons* newAdvRecons(int* const status);      //SIRENA
+
+/** Destructor of the AdvRecons structure */
+void freeAdvRecons(AdvRecons* recons);   //SIRENA
+
 /** Remove the existing grading scheme from the pixel */
 void freeGrading(AdvPix* pix);
+
+/** Remove the existing grading scheme from the pixel */
+void freeGradingRecons(AdvRecons* recons);      //SIRENA
 
 /** Frees electrical table*/
 void freeElecTab(ElecTab* tab, int gr);
