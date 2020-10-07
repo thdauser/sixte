@@ -57,7 +57,7 @@ pulse_length=8192 # length for reconstruction (samples)
 rlength=8200 # record length (samples) >= pulse_length
 preBuffer=1000 # Number of samples before the impact in the trigger
 nintervals=2000 #noise intervals for the noise spectrum
-time=`python -c "print(${nintervals} * ${pulse_length} / ${samprate})"`  # noise simulation time (s)
+time=`python -c "print($nintervals * ${pulse_length} / $samprate)"`  # noise simulation time (s)
 acbias="yes"
 
 # FILENAMES
@@ -110,9 +110,9 @@ xifusim PixImpList=${noise_imp}\
 #--------------------------
 gennoisespec inFile=${noise_sim} \
                             outFile=${noise_spec} \
-                            nintervals=${nintervals} \
-                            pulse_length=${pulse_length} \
-                            intervalMinSamples=${pulse_length}\
+                            nintervals=$nintervals \
+                            pulse_length=$pulse_length \
+                            intervalMinSamples=$pulse_length\
 
                             
                             

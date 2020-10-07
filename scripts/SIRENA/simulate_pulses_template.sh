@@ -50,10 +50,10 @@ pulse_length=8192 # length for reconstruction (samples)
 pulse_distance=20000 # separation between consecutive isolated pulses (samples) >> pulse_length
 recordSeparation=20000 # distance (samples ) between consecutive records
 preBuffer=1000 # free samples before pulse triggering (samples)
-TsizeTC=`python -c "print (${preBuffer}+${pulse_distance} + ${recordSeparation}+1000)"` # simulated double-pulse record length (samples)
-TsizeSM=`python -c "print (${preBuffer} + ${pulse_length} + 1000)"` # trigger (isolated pulse) record length 
+TsizeTC=`python -c "print ($preBuffer+$pulse_distance + $recordSeparation+1000)"` # simulated double-pulse record length (samples)
+TsizeSM=`python -c "print ($preBuffer + $pulse_length + 1000)"` # trigger (isolated pulse) record length 
 npulses=20000 # number of simulated pulses to build the template
-time=`python -c "print (${npulses} / 2. * ${TsizeTC}/ ${samprate})"` #  simulation time (s)
+time=`python -c "print ($npulses / 2. * $TsizeTC / $samprate)"` #  simulation time (s)
 tempKeV=6. # (energy for template and then for optimal filter (keV)
 acbias="yes"
 
