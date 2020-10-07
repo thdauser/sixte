@@ -1849,9 +1849,9 @@ int findPulsesCAL
 		EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 	}
 	*threshold = thresholdmediankappa;
-        //cout<<*threshold<<endl;
+    //cout<<*threshold<<endl;
         
-        // Find pulses
+    // Find pulses
 	if (findTstartCAL (reconstruct_init->maxPulsesPerRecord, vectorinDER, thresholdmediankappa, samplesUp, reconstruct_init, nPulses, tstart, quality, maxDERgsl))
 	{
 		message = "Cannot run findTstartCAL";
@@ -2003,7 +2003,7 @@ int findTstartCAL
 					// The first condition to detect a pulse is that the adjustedDerivative was over the threshold
 					if (gsl_vector_get(der,i) > adaptativethreshold)
 					{
-					        cntUp++;
+                        cntUp++;
 						if (cntUp == 1)
 						{
 							possibleTstart = i;

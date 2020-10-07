@@ -85,8 +85,8 @@ struct Parameters {
     //Calculate and write the weight matrixes if weightMS=yes
 	char weightMS;
         
-    //Transform to resistance space (I2R, I2RALL, I2RNOL, I2RFITTED) or not (I)
-	char I2R[10];
+    //Transform to resistance space (I2R or I2RFITTED) or not (OPTFILT)
+	char EnergyMethod[10];
         
     //Boolean to choose whether to erase an already existing event list
 	char clobber;
@@ -172,11 +172,6 @@ struct Parameters {
 	
 	int weightMS=0;
         
-        //char I2R[10];		        // 
-
-	//char clobberStr[4];		// Clobber=yes then overwritte output files	
-	//int clobber=0;
-	
 //AUXILIARY VARIABLES
 
     string message = " ";

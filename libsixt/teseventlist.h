@@ -120,9 +120,11 @@ typedef struct {
 /** TesEventList constructor. Returns a pointer to an empty TesEventList data
     structure. */
 TesEventList* newTesEventList(int* const status);
+TesEventList* newTesEventListSIRENA(int* const status);
 
 /** TesEventList Destructor. */
 void freeTesEventList(TesEventList* event_list);
+void freeTesEventListSIRENA(TesEventList* event_list);
 
 /** Allocates memory for a TesEventList structure for the triggering stage:
  *  only event_index, pulse_height and grades1 */
@@ -139,6 +141,7 @@ void addEventToList(TesEventList* event_list,int index,double pulse_height,int g
 /** TesEventFile constructor. Returns a pointer to an empty TesEventFile data
     structure. */
 TesEventFile* newTesEventFile(int* const status);
+TesEventFile* newTesEventFileSIRENA(int* const status);
 
 /** Create and open a new TesEventFile. */
 TesEventFile* opennewTesEventFile(const char* const filename,
@@ -160,6 +163,8 @@ void freeTesEventFile(TesEventFile* file, int* const status);
 
 /** Adds the data contained in the event list to the given file */
 void saveEventListToFile(TesEventFile* file,TesEventList * event_list,
+		double start_time,double delta_t,long pixID,int* const status);
+void saveEventListToFileSIRENA(TesEventFile* file,TesEventList * event_list,
 		double start_time,double delta_t,long pixID,int* const status);
 
 /** Updates the RA, DEC and DETX/Y columns with the given coordinates */

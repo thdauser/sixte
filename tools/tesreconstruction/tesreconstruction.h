@@ -41,20 +41,6 @@
 
 #include <time.h>
 
-/*struct IOData
-{
-    fitsfile *inObject;
-    char *nameTable[255];
-    char *nameCol[255];
-    char *unit[255];
-    //MC char *type;
-    int type;
-    int iniCol;
-    int endCol;
-    long iniRow;
-    long endRow;
-};*/
-
 struct Parameters {
 	//File containing the optimal filter
 	char OptimalFilterFile[MAXFILENAME];
@@ -110,19 +96,19 @@ struct Parameters {
 	//Number of samples for threshold trespassing
 	int samplesUp;
         
-        //Number of samples below the threshold to look for other pulse
+    //Number of samples below the threshold to look for other pulse
 	int samplesDown;
 	
 	//Number of standard deviations in the kappa-clipping process for threshold estimation
 	double nSgms;
         
-        //Detect secondary pulses or not
-        int detectSP;
+    //Detect secondary pulses or not
+    int detectSP;
 
 	//Calibration run (0) or energy reconstruction run (1)?
 	int opmode;
         
-        //DetectionMode: Adjusted Derivative(AD) or Single Threshold Crossing(STC)
+    //DetectionMode: Adjusted Derivative(AD) or Single Threshold Crossing(STC)
 	char detectionMode[4];
 
 	/** Monochromatic energy for library creation **/
@@ -152,11 +138,11 @@ struct Parameters {
 	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
 	char FilterMethod[3];
 	
-	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RBISALL, I2RBISNOL or PCA **/
+	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA **/
 	char EnergyMethod[10];
         
-        //Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RALL, I2RNOL and I2RFITTED)
-        double filtEev;
+    //Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED)
+    double filtEev;
 	
 	//Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
 	char OFNoise[8];
@@ -164,10 +150,10 @@ struct Parameters {
 	//LagsOrNot: LAGS == 1 or NOLAGS == 0 **/
 	int LagsOrNot;
         
-        //Number of lags (odd number) **/
+    //Number of lags (odd number) **/
 	int nLags;
         
-        //Using 3 lags to analytically calculate a parabola (3) or using 5 lags to fit (5) **/
+    //Using 3 lags to analytically calculate a parabola (3) or using 5 lags to fit (5) **/
 	int Fitting35;
 
 	//OFIter: Iterate == 1 or NOTIterate == 0 **/
@@ -177,7 +163,7 @@ struct Parameters {
 	char OFLib;
 	
 	//Optimal Filter by using the Matched Filter (MF) or the DAB as matched filter (MF, DAB) **/
-        char OFInterp[4];
+    char OFInterp[4];
 	
 	//Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED **/
 	char OFStrategy[8];
@@ -185,7 +171,7 @@ struct Parameters {
 	//Optimal Filter length (taken into account if OFStrategy=FIXED) **/
 	int OFLength;
         
-        //0-padding filter if 0 (from pulseLength to OFLength filter filled in with 0's) or filter with a filter+preBuffer if different from 0 **/
+    //0-padding filter if 0 (from pulseLength to OFLength filter filled in with 0's) or filter with a filter+preBuffer if different from 0 **/
 	int preBuffer;
 	
 	//Write intermediate files (Yes:1, No:0)
@@ -197,17 +183,17 @@ struct Parameters {
 	// File with the output filter (only in calibration)
 	char filterFile[256];
         
-        // Additional error (in samples) added to the detected time"  (Logically, it changes the reconstructed energies) 
+    // Additional error (in samples) added to the detected time"  (Logically, it changes the reconstructed energies) 
 	int errorT;
         
-        //Sum0Filt: 0-padding: Subtract the sum of the filter (1) or not (0) **/
+    //Sum0Filt: 0-padding: Subtract the sum of the filter (1) or not (0) **/
 	int Sum0Filt;
 	
 	// Tstart of the pulses (to be used instead of calculating them if tstartPulse1 =! 0)
 	//int tstartPulse1;
-        char tstartPulse1[MAXFILENAME]; // Integer number: Sample where the first pulse starts 
-                                        // or
-                                        // nameFile: File where is the tstart (in seconds) of every pulse
+    char tstartPulse1[MAXFILENAME]; // Integer number: Sample where the first pulse starts 
+                                    // or
+                                    // nameFile: File where is the tstart (in seconds) of every pulse
 	int tstartPulse2;
 	int tstartPulse3;
 	

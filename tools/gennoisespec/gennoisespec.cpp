@@ -89,7 +89,7 @@
   * - LrsT: Running sum length in seconds 
   * - LbT: Baseline averaging length in seconds
   * - weightMS: Calculate and write the weight matrixes if weightMS=yes
-  * - I2R: Transform to resistance space (I2R, I2RALL, I2RNOL, I2RFITTED) or not (I)
+  * - EnergyMethod: Transform to resistance space (I2R or I2RFITTED) or not (OPTFILT)
   * - clobber: Re-write output files if clobber=yes
   * - matrixSize: Size of noise matrix if only one to be created
   * - rmNoiseIntervals: Remove some noise intervals before calculating the noise spectrum if rmNoiseIntervals=yes
@@ -353,8 +353,7 @@
      
      
      // Read info to transform to resistance space
-     //if ((strcmp(par.I2R,"I") != 0) && (adu_cnv == -999.0))
-     if ((strcmp(par.I2R,"I") != 0) && ((strcmp(par.I2R,"I2R") != 0) || ((adu_cnv_exists == 0) && (strcmp(par.I2R,"I2R") == 0))))
+     if ((adu_cnv_exists == 0) && ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2R") == 0)))
      {
          strcpy(extname,"RECORDS");
          fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status);
@@ -383,27 +382,6 @@
                  objI2R.iniRow = 1;
                  objI2R.endRow = 1;
                  gsl_vector *vectorI2R = gsl_vector_alloc(1);
-                 strcpy(objI2R.nameCol,"R0");
-                 if (readFitsSimple (objI2R,&vectorI2R))
-                 {
-                     //R0_error = 1;
-                     message = "Cannot read R0 in " + string(extname) + " HDU in " + string(par.inFile) + ". V0 is going to be checked...";
-                     cout<<message<<endl;
-                     status = 0;
-                     strcpy(objI2R.nameCol,"V0");
-                     if (readFitsSimple (objI2R,&vectorI2R))
-                     {
-                         //V0_error = 1;
-                         message = "Cannot read neither R0 nor V0 in " + string(extname) + " HDU in " + string(par.inFile);
-                         EP_PRINT_ERROR(message,status); return(EPFAIL);
-                     }
-                     V0 = gsl_vector_get(vectorI2R,0);
-                 }
-                 
-                 
-                 if (V0 == -999.0)     R0 = gsl_vector_get(vectorI2R,0);
-                 //cout<<"V0: "<<V0<<endl;
-                 //cout<<"R0: "<<R0<<endl;
                  strcpy(objI2R.nameCol,"I0_START");
                  if (readFitsSimple (objI2R,&vectorI2R))
                  {
@@ -412,44 +390,6 @@
                      EP_PRINT_ERROR(message,status); return(EPFAIL);
                  }
                  Ibias = gsl_vector_get(vectorI2R,0);
-                 //if (Ibias_error == 0) Ibias = gsl_vector_get(vector,0);
-                 strcpy(objI2R.nameCol,"RPARA");
-                 if (readFitsSimple (objI2R,&vectorI2R))
-                 {
-                     //RPARA_error = 1;
-                     message = "Cannot read " + string(objI2R.nameCol) + " in " + string(extname) + " HDU in " + string(par.inFile);
-                     EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 }
-                 RPARA = gsl_vector_get(vectorI2R,0);
-                 //if (RPARA_error == 0) RPARA = gsl_vector_get(vector,0);
-                 strcpy(objI2R.nameCol,"TTR");
-                 if (readFitsSimple (objI2R,&vectorI2R))
-                 {
-                     //TTR_error = 1;
-                     message = "Cannot read " + string(objI2R.nameCol) + " in " + string(extname) + " HDU in " + string(par.inFile);
-                     EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 }
-                 TTR = gsl_vector_get(vectorI2R,0);
-                 //if (TTR_error == 0) TTR = gsl_vector_get(vector,0);
-                 strcpy(objI2R.nameCol,"LFILTER");
-                 if (readFitsSimple (objI2R,&vectorI2R))
-                 {
-                     //LFILTER_error = 1;
-                     message = "Cannot read " + string(objI2R.nameCol) + " in " + string(extname) + " HDU in " + string(par.inFile);
-                     EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 }
-                 LFILTER = gsl_vector_get(vectorI2R,0);
-                 //if (LFILTER_error == 0) LFILTER = gsl_vector_get(vector,0);
-                 
-                 // V0=Ibias*(R0+RPARA/TTR²)*TTR
-                 if (V0 != -999.0)    R0 = V0/(Ibias*TTR)-RPARA/(TTR*TTR);
-                 //if ((V0_error == 0) && (Ibias_error == 0) && (TTR_error == 0) && (RPARA_error == 0))     R0 = V0/(Ibias*TTR)-RPARA/(TTR*TTR);
-                 
-                 /*if ((((R0_error == 1) && (V0_error == 1)) || (Ibias_error == 1) || (TTR_error == 1) || (RPARA_error == 1)) && ((adu_cnv_exists == 0) || (adu_bias_exists == 0) || (i_bias_exists == 0)))
-                 {
-                     message = "Cannot read neither I0/V0, I0_START, RPARA or TTR in " + string(extname) + " HDU nor ADU_CNV, I_bias or ADU_BIAS in " + string(par.inFile);
-                     EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 }*/
                  
                  strcpy(extname,"TESRECORDS");
                  if (fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status))
@@ -466,45 +406,12 @@
          }
          else
          {
-             strcpy(keyname,"R0");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &R0,NULL,&status))
-             {
-                 message = "Cannot read neither R0 in RECORDS HDU in " + string(par.inFile);
-                 EP_PRINT_ERROR(message,status); return(EPFAIL);
-             }
-             //cout<<"R0: "<<R0<<endl;
              strcpy(keyname,"I0_START");
              if (fits_read_key(infileObject,TDOUBLE,keyname, &Ibias,NULL,&status))
              {
                  message = "Cannot read neither I0_START in RECORDS HDU in " + string(par.inFile);
                  EP_PRINT_ERROR(message,status); return(EPFAIL);
              }
-             //cout<<"I0_START: "<<Ibias<<endl;
-             strcpy(keyname,"RPARA");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &RPARA,NULL,&status))
-             {
-                 message = "Cannot read neither RPARA in RECORDS HDU in " + string(par.inFile);
-                 EP_PRINT_ERROR(message,status); return(EPFAIL);
-             }  
-             //cout<<"RPARA: "<<RPARA<<endl;
-             strcpy(keyname,"TTR");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &TTR,NULL,&status))
-             {
-                 message = "Cannot read neither TTR in RECORDS HDU in " + string(par.inFile);
-                 EP_PRINT_ERROR(message,status); return(EPFAIL);
-             }    
-             //cout<<"TTR: "<<TTR<<endl;
-             strcpy(keyname,"LFILTER");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &LFILTER,NULL,&status))
-             {
-                 message = "Cannot read neither LFILTER in RECORDS HDU in " + string(par.inFile);
-                 EP_PRINT_ERROR(message,status); return(EPFAIL);
-             }    
-             /*if (((R0_error == 1) || (Ibias_error == 1) || (TTR_error == 1) || (RPARA_error == 1)) && ((adu_cnv_exists == 0) || (adu_bias_exists == 0) || (i_bias_exists == 0)))
-             {
-                 message = "Cannot read neither I0/V0, I0_START, RPARA or TTR in " + string(extname) + " HDU nor ADU_CNV, I_bias or ADU_BIAS in " + string(par.inFile);
-                 EP_PRINT_ERROR(message,status); return(EPFAIL);
-             }*/
          }
      }
      
@@ -545,7 +452,6 @@
      strcpy(keyname,message.c_str());
      char readTFORMADC [10];
      fits_read_key(infileObject,TSTRING,keyname,readTFORMADC,comment,&status);
-     //cout<<"TFORM2_1: "<<readTFORMADC<<endl;
      
      char * pointerTFORM;
      
@@ -565,7 +471,6 @@
              strcat(characters_after_paren,each_character_after_paren); 
          }
          eventsz = atoi(characters_after_paren);
-         //cout<<"eventsz: "<<eventsz<<endl;
      }
      else    // There is not a parenthesis
      {       
@@ -576,7 +481,6 @@
          string characters;
          while (isdigit(readTFORMADCstring[index]))
          {
-             //cout<<readTFORMADCstring[index]<<endl;
              if (index == 0) characters = readTFORMADCstring[index];
              else            characters = characters + readTFORMADCstring[index];
              
@@ -586,7 +490,6 @@
          
          readTFORMADCstring.clear();
          characters.clear();
-         //cout<<"eventsz: "<<eventsz<<endl;
      }
      
      // Calculate the sampling rate 
@@ -771,16 +674,19 @@
      //cout<<"Imax: "<<Imax<<endl;
      if ((((Imin == -999.0) || (Imax == -999.0)) || ((Imin == 0) || (Imax == 0))) && (adu_cnv == -999.0))
      {
+         //cout<<"If1"<<endl;
          aducnv = 1.0;
          message = "ADU_CNV not found or Imin or Imax not found or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
          EP_PRINT_ERROR(message,-999);	// Only a warning
      }
      else if (adu_cnv != -999.0)
      {
+         //cout<<"If2"<<endl;
          aducnv = -1*adu_cnv;
      }
      else if (((Imin != -999.0) && (Imax != -999.0)) && ((Imin != 0) && (Imax != 0)))
      {
+         //cout<<"If3"<<endl;
          aducnv = (Imax-Imin)/65534;    // Quantification levels = 65534  // If this calculus changes => Change it also in TASKSSIRENA
      }
      //cout<<"aducnv: "<<aducnv<<endl;
@@ -1339,57 +1245,18 @@
          if ((gsl_vector_get(ioutgsl,ioutgsl->size-1) == 0) && (gsl_vector_get(ioutgsl,ioutgsl->size-2) == 0))		break;
          
          // Convert to the resistance space if necessary
-         if (strcmp(par.I2R,"I") != 0)
+         if (strcmp(par.EnergyMethod,"OPTFILT") != 0)
          {
-             if (((strcmp(par.I2R,"I2R") == 0) && (adu_cnv_exists == 0)) || (strcmp(par.I2R,"I2R") != 0))
+             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,samprate,&ioutgsl))
              {
-                if (convertI2R(par.I2R,R0,Ibias,Imin,Imax,TTR,LFILTER,RPARA,samprate,&ioutgsl))
-                {
-                    message = "Cannot run routine convertI2R";
-                    EP_EXIT_ERROR(message,EPFAIL);
-                }
-             }
-             else
-             {
-                 if (i_bias == -999.0)
-                 {
-                     message = "I_BIAS keyword (to convert to resistance space) not found in the input FITS file";
-                     EP_EXIT_ERROR(message,EPFAIL);
-                 }
-                 if (adu_bias == -999.0)
-                 {
-                     message = "ADU_BIAS keyword (to convert to resistance space) not found in the input FITS file";
-                     EP_EXIT_ERROR(message,EPFAIL);
-                 }
-                 // DeltaI = ADU_CNV * (SAMPLE - ADU_BIAS)
-                 // R/R0 <- 1 - (abs(DeltaI)/Ibias)/(1+abs(DeltaI)/Ibias)
-                 gsl_vector *deltai = gsl_vector_alloc(ioutgsl->size);
-                 gsl_vector *vectoraux = gsl_vector_alloc(ioutgsl->size);
-                 
-                 gsl_vector_memcpy(deltai,ioutgsl);
-                 gsl_vector_add_constant(deltai,-1.0*adu_bias);
-                 gsl_vector_scale(deltai,adu_cnv);              // deltaI = ADU_CNV * (SAMPLE - ADU_BIAS)
-                 
-                 for (int i=0;i<deltai->size;i++)
-                 {
-                     if (gsl_vector_get(deltai,i)<0) 	gsl_vector_set(deltai,i,(-1.*gsl_vector_get(deltai,i)));
-                 }                                              // deltai = abs(deltai)
-                 gsl_vector_scale(deltai,1./i_bias); 			// deltai = abs(DeltaI)/Ibias
-                 
-                 gsl_vector_memcpy(vectoraux,deltai);
-                 gsl_vector_add_constant(vectoraux,+1.0);       // vectoraux = 1 + abs(DeltaI)/Ibias
-                 gsl_vector_div(deltai,vectoraux);              // deltai = (abs(DeltaI)/Ibias)/(1+abs(DeltaI)/Ibias)
-                 gsl_vector_scale(deltai,-1.0);                 // deltai = -(abs(DeltaI)/Ibias)/(1+abs(DeltaI)/Ibias)
-                 gsl_vector_add_constant(deltai,1.0);           // deltai = 1-(abs(DeltaI)/Ibias)/(1+abs(DeltaI)/Ibias)
-                 
-                 gsl_vector_memcpy(ioutgsl,deltai);
-                
-                 gsl_vector_free(deltai); deltai = 0;
-                 gsl_vector_free(vectoraux); vectoraux = 0;
+                 message = "Cannot run routine convertI2R";
+                 EP_EXIT_ERROR(message,EPFAIL);
              }
          }
-         
-         gsl_vector_scale(ioutgsl,aducnv);
+         else
+         {
+            gsl_vector_scale(ioutgsl,aducnv);
+         }
          
          // Assigning positive polarity (by using ASQUID and PLSPOLAR)
          gsl_vector_memcpy(ioutgsl_aux,ioutgsl);
@@ -1868,8 +1735,8 @@
          EP_PRINT_ERROR(message,status); return(EPFAIL);
      }
      
-     string str_i2r (string("I2R = ") + string(par.I2R));
-     strcpy(keyvalstr,str_i2r.c_str());
+     string str_energymethod (string("EnergyMethod = ") + string(par.EnergyMethod));
+     strcpy(keyvalstr,str_energymethod.c_str());
      if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
      {
          message = "Cannot write keyword " + string(keyname) + " in noise file " + string(par.outFile);
@@ -1933,7 +1800,6 @@
      
      strhistory.clear();
      piece_i.clear();
-     str_i2r.clear();
      
      return EPOK;
  }
@@ -2796,12 +2662,12 @@
      
      status=ape_trad_query_bool("weightMS", &par->weightMS);
      
-     status=ape_trad_query_string("I2R", &sbuffer);
+     status=ape_trad_query_string("EnergyMethod", &sbuffer);
      if (EXIT_SUCCESS!=status) {
-         message = "failed reading the I2R parameter";
+         message = "failed reading the EnergyMethod parameter";
          EP_EXIT_ERROR(message,EPFAIL);
      }
-     strcpy(par->I2R, sbuffer);
+     strcpy(par->EnergyMethod, sbuffer);
      free(sbuffer);
      
      status=ape_trad_query_bool("clobber", &par->clobber);
