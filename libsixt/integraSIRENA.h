@@ -285,13 +285,9 @@ typedef struct Grading
 
 typedef struct I2RData
 {
-  double R0;
   double I0_START;
   double IMIN;
   double IMAX;
-  double RPARA;
-  double TTR;
-  double LFILTER;
   
   double ADU_CNV;
   double I_BIAS;
@@ -499,7 +495,7 @@ typedef struct ReconstructInitSIRENA
   /** Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
   char FilterMethod[3];
   
-  /** Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA **/
+  /** Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA **/
   char EnergyMethod[10];
   
   double filtEev;

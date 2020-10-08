@@ -39,7 +39,7 @@
 # ==================================================
 #
 
-# SIXTE XML files *** see note in README file
+# SIXTE XML files *** see note in README file ***
 xmldirSX=${SIXTE}/share/sixte/instruments/athena-xifu
 xmlfileSX=${xmldirSX}/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml
 
