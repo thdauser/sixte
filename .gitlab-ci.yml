@@ -6,7 +6,7 @@
 # deploy:
 
 before_script:
-  - source /data/system/software/softwarescript.bash && source /data/system/software/softwarescript_Xray.bash
+  - source /software/profile.in
   - export SIMPUT=/userdata/data/sixte/simputsoft
   - export SIXTE=`pwd`
   - export HEADASNOQUERY=
