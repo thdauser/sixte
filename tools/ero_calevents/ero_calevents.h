@@ -71,6 +71,7 @@ typedef struct {
   long frame;
 
   long pha; /* [adu] */
+  long pi; /* currently no pha2pi correction --> contains same as pha */
   float energy; /* [eV] */
 
   int rawx, rawy;
@@ -88,6 +89,9 @@ typedef struct {
 
   unsigned char ccdnr;
 
+  double recordtime; /* [s] since 1.1.2000 */
+  double frametime; /* [s] since 1.1.2000 */
+  
 } eroCalEvent;
 
 

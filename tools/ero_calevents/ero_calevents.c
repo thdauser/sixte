@@ -229,16 +229,16 @@ int ero_calevents_main() {
         char *ttype[] = {"TIME", "RA", "DEC", "X", "Y", "ENERGY",
                          "EV_WEIGHT", "RAWX", "RAWY", "SUBX", "SUBY",
                          "PHA", "PAT_TYP", "PAT_INF", "TM_NR",
-                         "FLAG", "FRAME"};
-        char *tform[] = {"D", "J", "J", "J", "J", "E",
-                         "E", "I", "I", "B", "B",
+                         "FLAG", "FRAME", "RECORDTIME", "FRAMETIME","PI"};
+        char *tform[] = {"D", "D", "D", "D", "D", "E",
+                         "E", "I", "I", "D", "D",
                          "I", "I", "B", "B",
-                         "J", "J"};
+                         "J", "J","D","D","E"};
         char *tunit[] = {"", "", "", "", "", "eV",
                          "", "", "", "", "",
                          "adu", "", "", "",
-                         "", ""};
-        fits_create_tbl(fptr, BINARY_TBL, 0, 17, ttype, tform, tunit,
+                         "", "", "s", "s",""};
+        fits_create_tbl(fptr, BINARY_TBL, 0, 20, ttype, tform, tunit,
                         "EVENTS", &status);
         if (EXIT_SUCCESS != status) {
             char msg[MAXMSG];
@@ -264,10 +264,11 @@ int ero_calevents_main() {
                                      date_end, time_end, tstart, tstop,
                                      mjdref, timezero, par.CCDNr, &status);
         CHECK_STATUS_BREAK(status);
-
+	
         // Determine the column numbers.
         int ctime, cra, cdec, cx, cy, cenergy, cev_weight, crawx, crawy,
-                csubx, csuby, cpha, cpat_typ, cpat_inf, cccdnr, cflag, cframe;
+	  csubx, csuby, cpha, cpat_typ, cpat_inf, cccdnr, cflag,
+	  cframe, crecordtime, cframetime, cpi;
         fits_get_colnum(fptr, CASEINSEN, "TIME", &ctime, &status);
         fits_get_colnum(fptr, CASEINSEN, "RA", &cra, &status);
         fits_get_colnum(fptr, CASEINSEN, "DEC", &cdec, &status);
@@ -285,6 +286,9 @@ int ero_calevents_main() {
         fits_get_colnum(fptr, CASEINSEN, "TM_NR", &cccdnr, &status);
         fits_get_colnum(fptr, CASEINSEN, "FLAG", &cflag, &status);
         fits_get_colnum(fptr, CASEINSEN, "FRAME", &cframe, &status);
+	fits_get_colnum(fptr, CASEINSEN, "RECORDTIME", &crecordtime, &status);
+	fits_get_colnum(fptr, CASEINSEN, "FRAMETIME", &cframetime, &status);
+        fits_get_colnum(fptr, CASEINSEN, "PI", &cpi, &status);
         CHECK_STATUS_BREAK(status);
 
         // Set the TLMIN and TLMAX keywords.
@@ -504,6 +508,19 @@ int ero_calevents_main() {
             // CCD number.
             ev.ccdnr = par.CCDNr;
 
+	    // RECORDTIME (TDOUBLE, time in seconds): Time of the
+	    // telemetry record, produced by ITC, responsible for
+	    // (next to the 8bit FrameCounter) getting the data in the
+	    // correct order. A bright source has many events and one
+	    // CCD frame can be distributed over multiple telemetry
+	    // frames. The recordtime can (but needn't)
+	    // increase. Reference point is 1.1.2000.
+	    ev.recordtime = ev.time+(mjdref-eromjdref)*86400.;
+
+	    // FRAMETIME (TDOUBLE, time in seconds): Time stamp of the
+	    // CCD Frames, reference point is 1.1.2000, produced by CE
+	    ev.frametime = ev.time+(mjdref-eromjdref)*86400.;
+	    
             // Loop over all split partners contributing to the event.
             int ii;
             for (ii = 0; ii < 9; ii++) {
@@ -532,6 +549,10 @@ int ero_calevents_main() {
                 // Detected channel.
                 ev.pha = event.phas[ii];
 
+		// Copy the data also into a new column named PI
+		// (attention: no pha2pi correction done!)
+		ev.pi = ev.pha;
+		
                 // Calibrated and recombined amplitude in [eV].
                 // The amplitude is positive for the main event only. For
                 // split partners it is negative.
@@ -576,6 +597,9 @@ int ero_calevents_main() {
                 fits_write_col(fptr, TBYTE, cpat_inf, output_row, 1, 1, &ev.pat_inf, &status);
                 fits_write_col(fptr, TFLOAT, cev_weight, output_row, 1, 1, &ev.ev_weight, &status);
                 fits_write_col(fptr, TINT, cccdnr, output_row, 1, 1, &ev.ccdnr, &status);
+                fits_write_col(fptr, TDOUBLE, crecordtime, output_row, 1, 1, &ev.recordtime, &status);
+                fits_write_col(fptr, TDOUBLE, cframetime, output_row, 1, 1, &ev.frametime, &status);
+                fits_write_col(fptr, TLONG, cpi, output_row, 1, 1, &ev.pi, &status);
                 CHECK_STATUS_BREAK(status);
             }
             CHECK_STATUS_BREAK(status);
