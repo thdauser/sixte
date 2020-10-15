@@ -58,7 +58,7 @@ update:
   dependencies:
     - build
   script:
-    - make dist
+    - make distcheck
     - rsync -vhu sixte-?.?.?*.tar.gz /data/www/sixte_archive/sixte/
   only:
     - tags
