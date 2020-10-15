@@ -1,3 +1,13 @@
+version [2.6.1]
+  - ero_calevents: Make SIXTE output consistent with eSASS' evtool/srctool
+  - makespec
+    * Add GTIFile option to produce multiple lightcurves from one eventfile
+    * Add RMF consistency check
+  - Add CMake support
+  - Add exposure_map end-to-end test
+  - Set clobber=yes as default
+  - Multiple bug fixes
+	
 version [2.6.0]
   - changes input parameters of exposure_map tool
     * the exposure_map tool now uses WCS keyrecords to specify the grid on
