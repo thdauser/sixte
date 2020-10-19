@@ -9,7 +9,7 @@
 #include "genpixgrid.h"
 
 
-const char fname_def_xml[999] = "data/default_inst.xml";
+const char fname_def_xml[999] = DATADIR "default_inst.xml";
 int default_seed=0;
 
 static GenInst* get_mock_geninst(int* const status){

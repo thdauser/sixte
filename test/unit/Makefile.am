@@ -1,5 +1,6 @@
 AM_CFLAGS =-I@top_srcdir@/libsixt
 AM_CFLAGS+=-I@top_srcdir@/extlib/progressbar/include
+AM_CPPFLAGS=-DDATADIR="\"$(srcdir)/data/\""
 
 LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
                   $(top_srcdir)/build-aux/tap-driver.sh
@@ -18,4 +19,4 @@ random_number_gen_LDADD =@top_builddir@/libsixt/libsixt.la
 test_genpixgrid_LDADD =@top_builddir@/libsixt/libsixt.la
 test_vignetting_LDADD =@top_builddir@/libsixt/libsixt.la
 
-EXTRA_DIST = data 
+EXTRA_DIST = data

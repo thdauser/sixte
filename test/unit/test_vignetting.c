@@ -6,16 +6,15 @@
 //#include "sixt.h"
 #include "vignetting.h"
 
-#define VIGN_FILENAME "data/dummy_vign.fits"
 
-
+const char vign_filename[999] = DATADIR "dummy_vign.fits";
 
 static Vignetting* vign_load(int* status){
-  
-	Vignetting* vi  = newVignetting(VIGN_FILENAME, status);
+
+	Vignetting* vi  = newVignetting(vign_filename, status);
 
 	if (vi==NULL){
-		printf(" *** error: trying to load %s, but did not work\n",VIGN_FILENAME);
+		printf(" *** error: trying to load %s, but did not work\n",vign_filename);
 		*status = EXIT_FAILURE;
 	}
 	assert_int_equal(*status,EXIT_SUCCESS);
@@ -109,7 +108,7 @@ void test_get_vign_factor(){
 
 int main(void)
 {
-  
+
   const struct CMUnitTest tests[] = {
     cmocka_unit_test(test_vign_load),
 	cmocka_unit_test(test_vign_check_dimensions),

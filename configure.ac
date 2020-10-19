@@ -11,8 +11,8 @@ AC_CONFIG_MACRO_DIR(build-aux/m4)
 AM_INIT_AUTOMAKE([-Wall foreign])
 AC_CONFIG_SRCDIR([libsixt/sixt.h])
 
-# For cmocka testing with TAP output (DEACTIVATED in CONF as it caused problems)
-# AC_REQUIRE_AUX_FILE([tap-driver.sh])
+# For cmocka testing with TAP output
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 
 AC_REQUIRE_AUX_FILE([git-version-gen])
 
