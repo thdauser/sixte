@@ -12,6 +12,8 @@ before_script:
   - export HEADASNOQUERY=
   - export HEADASPROMPT=/dev/null
   - source /data/system/software/python/anaconda.sh
+  # Remove artifacts from failed make distcheck
+  - chmod u+w -R * 
 
 stages:
   - build
