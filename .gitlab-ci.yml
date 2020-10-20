@@ -12,8 +12,10 @@ before_script:
   - export HEADASNOQUERY=
   - export HEADASPROMPT=/dev/null
   - source /data/system/software/python/anaconda.sh
+
+after_script:
   # Remove artifacts from failed make distcheck
-  - chmod u+w -R * 
+  - chmod u+w -R sixte-*
 
 stages:
   - build
