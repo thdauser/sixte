@@ -71,7 +71,7 @@ typedef struct {
   long frame;
 
   long pha; /* [adu] */
-  long pi; /* currently no pha2pi correction --> contains same as pha */
+  float pi; /* currently no pha2pi correction! */
   float energy; /* [eV] */
 
   int rawx, rawy;

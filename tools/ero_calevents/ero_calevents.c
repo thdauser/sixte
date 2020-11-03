@@ -237,7 +237,7 @@ int ero_calevents_main() {
         char *tunit[] = {"", "", "", "", "", "eV",
                          "", "", "", "", "",
                          "adu", "", "", "",
-                         "", "", "s", "s",""};
+                         "", "", "s", "s","eV"};
         fits_create_tbl(fptr, BINARY_TBL, 0, 20, ttype, tform, tunit,
                         "EVENTS", &status);
         if (EXIT_SUCCESS != status) {
@@ -548,20 +548,23 @@ int ero_calevents_main() {
 
                 // Detected channel.
                 ev.pha = event.phas[ii];
-
-		// Copy the data also into a new column named PI
-		// (attention: no pha2pi correction done!)
-		ev.pi = ev.pha;
 		
                 // Calibrated and recombined amplitude in [eV].
                 // The amplitude is positive for the main event only. For
                 // split partners it is negative.
                 if (4 == ii) {
                     ev.energy = event.signal * 1000.;
+		    // Copy the raw energy grid into a new column named
+		    // PI. The eSASS reads in the PI column (apperently in
+		    // units of eV and not columns). This hack. however,
+		    // bypasses all detector corrections. A proper PHA2PI
+		    // correction has to be done!
+		    ev.pi = event.signal * 1000.;
                 } else {
                     ev.energy = -event.signal * 1000.;
+		    ev.pi = -event.signal * 1000.;
                 }
-
+		
                 // Event type.
                 if (event.type >= 0) {
                     ev.pat_typ = event.npixels;
@@ -599,7 +602,7 @@ int ero_calevents_main() {
                 fits_write_col(fptr, TINT, cccdnr, output_row, 1, 1, &ev.ccdnr, &status);
                 fits_write_col(fptr, TDOUBLE, crecordtime, output_row, 1, 1, &ev.recordtime, &status);
                 fits_write_col(fptr, TDOUBLE, cframetime, output_row, 1, 1, &ev.frametime, &status);
-                fits_write_col(fptr, TLONG, cpi, output_row, 1, 1, &ev.pi, &status);
+                fits_write_col(fptr, TFLOAT, cpi, output_row, 1, 1, &ev.pi, &status);
                 CHECK_STATUS_BREAK(status);
             }
             CHECK_STATUS_BREAK(status);
