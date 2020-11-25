@@ -1,3 +1,8 @@
+version [2.6.2]
+  - new tool: sixte_arfgen
+    * ARF generator to calculate off-axis ARFs for any location and attitude.
+  - updates internal handling of RMFs
+
 version [2.6.1]
   - ero_calevents: Make SIXTE output consistent with eSASS' evtool/srctool
   - makespec
@@ -7,7 +12,7 @@ version [2.6.1]
   - Add exposure_map end-to-end test
   - Set clobber=yes as default
   - Multiple bug fixes
-	
+
 version [2.6.0]
   - changes input parameters of exposure_map tool
     * the exposure_map tool now uses WCS keyrecords to specify the grid on
