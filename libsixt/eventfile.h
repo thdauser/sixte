@@ -37,6 +37,10 @@ typedef struct {
   /** Pointer to the FITS file. */
   fitsfile* fptr;
 
+  /** Starting address and size of FITS file (if created in core memory) */
+  void* memptr;
+  size_t memsize;
+
   /** Total number of rows in the file. */
   long nrows;
 
@@ -116,6 +120,9 @@ void copyEventFile(const EventFile* const src,
 		   const float threshold_lo_keV,
 		   const float threshold_up_keV,
 		   int* const status);
+
+/** Creates a copy of infile where fptr is stored in core memory */
+EventFile* copyEventFileMemory(EventFile* infile, int* const status);
 
 
 #endif /* EVENTFILE_H */

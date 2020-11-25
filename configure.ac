@@ -154,6 +154,7 @@ AC_CONFIG_HEADER([sixteconfig.h])
 AC_CONFIG_FILES([Makefile
 		libsixt/Makefile
 		tools/Makefile
+    tools/sixte_arfgen/Makefile
 		tools/athenawfisim/Makefile
 		tools/attgen_dither/Makefile
 		tools/comabackpro/Makefile

@@ -31,9 +31,11 @@ EventFile* newEventFile(int* const status)
 
   // Initialize pointers with NULL.
   file->fptr=NULL;
+  file->memptr=NULL;
 
   // Initialize.
   file->nrows=0;
+  file->memsize=0;
   file->ctime=0;
   file->cframe =0;
   file->cpha    =0;
@@ -65,10 +67,12 @@ void freeEventFile(EventFile** const file,
       int mode;
       fits_file_mode((*file)->fptr, &mode, status);
       if (READWRITE==mode) {
-	fits_write_chksum((*file)->fptr, status);
+        fits_write_chksum((*file)->fptr, status);
       }
       fits_close_file((*file)->fptr, status);
     }
+
+    free((*file)->memptr);
     free(*file);
     *file=NULL;
   }
@@ -190,7 +194,6 @@ EventFile* openNewEventFile(const char* const filename,
 
   return(plf);
 }
-
 
 EventFile* openEventFile(const char* const filename,
 			 const int mode, int* const status)
@@ -475,4 +478,40 @@ void copyEventFile(const EventFile* const src,
 
   // Free memory.
   freeEvent(&event);
+}
+
+EventFile* copyEventFileMemory(EventFile* infile, int* const status) {
+  // Create a new eventfile (fptr not initialized yet)
+  EventFile* outfile = newEventFile(status);
+
+  // Copy housekeeping data
+  outfile->nrows = infile->nrows;
+  outfile->ctime = infile->ctime;
+  outfile->cframe = infile->cframe;
+  outfile->cpha = infile->cpha;
+  outfile->cpi = infile->cpi;
+  outfile->csignal = infile->csignal;
+  outfile->crawx = infile->crawx;
+  outfile->crawy = infile->crawy;
+  outfile->cra = infile->cra;
+  outfile->cdec = infile->cdec;
+  outfile->cph_id = infile->cph_id;
+  outfile->csrc_id = infile->csrc_id;
+  outfile->cnpixels = infile->cnpixels;
+  outfile->ctype = infile->ctype;
+  outfile->cpileup = infile->cpileup;
+  outfile->csignals = infile->csignals;
+  outfile->cphas = infile->cphas;
+
+  // Create new fitsfile in core memory
+  size_t deltasize = 1000000; // TODO: hardcoded for now; perhaps these
+  outfile->memsize = 2880;    // values can be optimized.
+  outfile->memptr = malloc(outfile->memsize);
+  fits_create_memfile(&(outfile->fptr), &(outfile->memptr), &(outfile->memsize), deltasize,
+                      realloc, status);
+
+  // Copy all HDUs from infile to outfile
+  fits_copy_file(infile->fptr, outfile->fptr, 1, 1, 1, status);
+
+  return outfile;
 }
