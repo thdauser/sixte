@@ -44,7 +44,7 @@ int initGenericDetector(GenericDetector* gd,
 
   // Read the detector RMF and EBOUNDS from the specified file and
   // assign them to the Detector data structure.
-  gd->rmf = loadRMF(parameters->rmf_filename, &status);
+  gd->rmf = loadNormalizedRMF(parameters->rmf_filename, &status);
   if(EXIT_SUCCESS!=status) return(status);
 
   if (strlen(parameters->arf_filename)>0) {

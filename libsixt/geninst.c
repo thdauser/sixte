@@ -570,7 +570,7 @@ static void GenInstXMLElementStart(void* parsedata, const char* el,
 		char filepathname[MAXFILENAME];
 		strcpy(filepathname, xmlparsedata->inst->filepath);
 		strcat(filepathname, filename);
-		xmlparsedata->inst->det->rmf = loadRMF(filepathname,
+		xmlparsedata->inst->det->rmf = loadNormalizedRMF(filepathname,
 				&xmlparsedata->status);
 		CHECK_STATUS_VOID(xmlparsedata->status);
 

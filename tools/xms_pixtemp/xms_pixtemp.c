@@ -51,7 +51,7 @@ int xms_pixtemp_main() {
     CHECK_STATUS_BREAK(status);
 
     // Read the EBOUNDS from the detector response file.
-    struct RMF* rmf=loadRMF(parameters.RSP, &status);
+    struct RMF* rmf=loadNormalizedRMF(parameters.RSP, &status);
     CHECK_STATUS_BREAK(status);
 
     // Open the output file.

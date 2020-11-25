@@ -135,7 +135,7 @@ AdvRecons* newAdvRecons(int* const status){     //SIRENA
   // Initialize values and pointers
   recons->ngrades=0;
   recons->grades=NULL;
-  
+
   return(recons);
 }
 
@@ -532,7 +532,7 @@ void parseAdvDetXML(AdvDet* const det,
 	       int* const status){
 
   headas_chat(5, "read advanced detector setup from XML file '%s' ...\n", filename);
-  
+
   // Read the XML data from the file.
   // Open the specified file.
   printf("Read file %s\n", filename);
@@ -641,7 +641,7 @@ void parseAdvDetXML(AdvDet* const det,
 static void AdvDetXMLElementStart(void* parsedata,
 				   const char* el,
 				   const char** attr)
-{    
+{
 	struct XMLParseData* xmlparsedata=(struct XMLParseData*)parsedata;
 
 	// Check if an error has occurred previously.
@@ -658,7 +658,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 		char npix[MAXMSG];
 		char readout[MAXMSG];
 		getXMLAttributeString(attr, "NPIX", npix);
-        
+
 		xmlparsedata->det->npix=atoi(npix);
 		if(xmlparsedata->det->npix<1){
 			SIXT_ERROR("Number of pixels in advanced detector description less than 1.");
@@ -669,7 +669,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 			SIXT_ERROR("Unable to allocate memory for advanced detector pixel array.");
 			return;
 		}
-		
+
 		xmlparsedata->det->sx=getXMLAttributeDouble(attr, "XOFF");
 		xmlparsedata->det->sy=getXMLAttributeDouble(attr, "YOFF");
 		getXMLAttributeString(attr, "READOUT", readout);
@@ -700,7 +700,7 @@ static void AdvDetXMLElementStart(void* parsedata,
     } else if (!strcmp(Uelement, "RECONSTRUCTION")) {   //SIRENA
 		xmlparsedata->det->nrecons = 1;
         xmlparsedata->det->recons=(AdvRecons*)malloc(xmlparsedata->det->nrecons*sizeof(AdvRecons));
-		
+
 		for (int ii=0;ii<xmlparsedata->det->nrecons;ii++){
             xmlparsedata->det->recons[ii].grades=NULL;
             xmlparsedata->det->recons[ii].ngrades=0;
@@ -900,7 +900,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].value=getXMLAttributeInt(attr, "NUM");
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
-                
+
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades++;
             } else {
                 for (int i=0;i<xmlparsedata->det->nrecons;i++){
@@ -915,7 +915,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].rmf=NULL;
-                    
+
                     xmlparsedata->det->recons[i].ngrades++;
                 }
             }
@@ -938,7 +938,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmf=NULL;
-                
+
                 char rmffile[MAXFILENAME];
                 getXMLAttributeString(attr, "RMF", rmffile);
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
@@ -956,7 +956,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmf=NULL;
-                    
+
                     char rmffile[MAXFILENAME];
                     getXMLAttributeString(attr, "RMF", rmffile);
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmffile=strndup(rmffile,MAXFILENAME);
@@ -1175,7 +1175,7 @@ static void AdvDetXMLElementEnd(void* parsedata, const char* el)
 		xmlparsedata->det->inpixel=0;
 		xmlparsedata->det->cpix++;
 	}
-    
+
 	// Check if an error has occurred previously.
 	CHECK_STATUS_VOID(xmlparsedata->status);
 }
@@ -1319,7 +1319,7 @@ void addRMF(AdvDet* det,AdvPix* pixel,int rmf_index,int* const status){
 	  SIXT_ERROR("RMF path and filename are too long");
 	  return;
 	}
-	det->rmf_library->rmf_array[det->rmf_library->n_rmf] = loadRMF(filepathname,status);
+	det->rmf_library->rmf_array[det->rmf_library->n_rmf] = loadNormalizedRMF(filepathname,status);
 	det->rmf_library->filenames[det->rmf_library->n_rmf] = strndup(pixel->grades[rmf_index].rmffile,MAXFILENAME);
 	pixel->grades[rmf_index].rmf=det->rmf_library->rmf_array[det->rmf_library->n_rmf];
 	det->rmf_library->n_rmf++;
