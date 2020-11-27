@@ -497,16 +497,16 @@ int makespec_main() {
 		    "number of detector channels", &status);
     if (pha2pi){
       fits_update_key_longstr(sf, "PHA2PI", pha2pi,
-			      "Pha2Pi correction file", &status);
+			      "PHA2PI correction file", &status);
       free(pha2pi);
     }
-    fits_update_key(sf, TSTRING, "CORRFILE", "NONE", "Correlation file", &status);
+    fits_update_key(sf, TSTRING, "CORRFILE", "", "correlation file", &status);
     fits_update_key(sf, TDOUBLE, "EXPOSURE", &exposure,
 		    "exposure time", &status);
     fits_update_key(sf, TSTRING, "FilterExpr", par.EventFilter,
 		    "used filter expression", &status);
     int logic=TRUE;
-    fits_update_key(sf, TLOGICAL, "POISSERR", &logic, "Poissonian error", &status);
+    fits_update_key(sf, TLOGICAL, "POISSERR", &logic, "poissonian error", &status);
     CHECK_STATUS_BREAK(status);
 
     // Loop over all channels in the spectrum.
