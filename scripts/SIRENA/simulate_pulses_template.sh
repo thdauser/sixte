@@ -41,9 +41,6 @@
 #
 # 2.1)  define simulation parameters
 #----------------------------------
-# define  XML files
-xmldirXF=${XIFUSIM}/share/xifusim/instruments
-xmlfile=${xmldirXF}/8pix_nobbfb.xml
 
 samprate=156250  # sampling frequency
 pulse_length=8192 # length for reconstruction (samples)
@@ -62,10 +59,13 @@ acbias="yes"
 temp_imp="myTemp.piximpact"
 temp_sim="myTemp.fits"
 
-# 2.2) Create piximpact list to simulate isolated pulses
+# 2.2) Create piximpact list to simulate isolated pulses (tesconstpileup must be used if jitter wants to be simulated, i.e. offsets in the arrival time of photons)
 #-----------------------------------------------------------------
+xmldirSX=${SIXTE}/share/sixte/instruments/athena-xifu
+xmlfileSX=${xmldirSX}/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml 
+# 
 tesconstpileup PixImpList=${temp_imp} \
-                                XMLFile=${xmlfile} \
+                                XMLFile=${xmlfileSX} \
                                 timezero=3.E-7 \
                                 tstop=${time} \
                                 offset=-1 \
@@ -92,6 +92,9 @@ tessim PixID=1 \
                 acbias=${acbias}
 
 # (if data have been simulated with XIFUSIM)
+# define  XML files
+xmldirXF=${XIFUSIM}/share/xifusim/instruments
+xmlfile=${xmldirXF}/8pix_nobbfb.xml
 
 xifusim PixImpList=${temp_imp} \
                                 Streamfile=${temp_sim} \

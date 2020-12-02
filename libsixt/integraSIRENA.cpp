@@ -104,7 +104,8 @@
   * - filter_domain: Filtering Domain: Time(T) or Frequency(F)
   * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline)
   * - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA
-  * - filtEev: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED)
+  * - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED)
+  * - Ifit: Constant to apply the I2RFITTED conversion
   * - ofnoise: Noise to use with Optimal Filtering: NSD or WEIGHTM
   * - lagsornot: Lags (1) or no lags (0)
   * - nLags: Number of lags (positive odd number)
@@ -141,7 +142,7 @@
  extern "C" void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init, char* const record_file, fitsfile *fptr,
                                                 char* const library_file, char* const event_file, int pulse_length, double scaleFactor, int samplesUp, int samplesDown,
                                                 double nSgms, int detectSP, int opmode, char *detectionMode, double LrsT, double LbT, char* const noise_file, char* filter_domain, char* filter_method, 
-                                                char* energy_method, double filtEev, char *ofnoise, int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, char *ofinterp,
+                                                char* energy_method, double filtEev, double Ifit, char *ofnoise, int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, char *ofinterp,
                                                 char* oflength_strategy, int oflength, int preBuffer,
                                                 double monoenergy, char hduPRECALWN, char hduPRCLOFWM, int largeFilter, int interm, char* const detectFile, int errorT,
                                                 int Sum0Filt,
@@ -161,11 +162,33 @@
          EP_EXIT_ERROR("Error checking if library file exists",*status);
      }
      
-     if ((opmode == 0) && (largeFilter == -999)) largeFilter = pulse_length;
+     //if ((opmode == 0) && (largeFilter == -999)) largeFilter = pulse_length;
+     if (opmode == 0) 
+     {
+         pulse_length = pow(2,floor(log2(largeFilter)));
+         //EP_PRINT_ERROR("Pulse length not provided => Fixed as the base-2 value equal or lower than largeFilter",-999); // Only a warning
+     }
+     
      
      if (exists)
      {	
-         if (opmode == 1)		largeFilter = pulse_length;
+         if (opmode == 1)		
+         {
+             /*if (pulse_length == -999)  
+             {
+                 pulse_length = oflength;
+                 EP_PRINT_ERROR("Pulse length not provided => Fixed as OFLength (provide a different PulseLength value if 0-padding)",-999); // Only a warning
+             }*/
+             if ((pulse_length < oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
+             {
+                 EP_PRINT_ERROR("0-padding is going to be used)",-999); // Only a warning
+             }
+             else if ((pulse_length > oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
+             {
+                 pulse_length = oflength;
+             }
+             largeFilter = pulse_length;
+         }
          
          reconstruct_init->library_collection = getLibraryCollection(library_file, opmode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, lagsornot, preBuffer, status);
          if (*status)
@@ -182,14 +205,15 @@
          
          if ((opmode == 1) && (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration))
          {
-             if ((oflib == 1) 
+             /*if ((oflib == 1) 
                  && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0))
                  && (pulse_length != reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration) 
                  && (reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration != -999))
              {
                  EP_EXIT_ERROR("Templates length in the library file must be at least as the pulse length or equal to largeFilter",EPFAIL);
              }
-             else if ((oflib == 0) 
+             else if ((oflib == 0)*/
+             if ((oflib == 0)
                  && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
              {
                  EP_EXIT_ERROR("It is not possible PulseLength>PULSE_column_length and OFLib=no",EPFAIL);
@@ -349,6 +373,7 @@
      strcpy(reconstruct_init->FilterMethod,filter_method);
      strcpy(reconstruct_init->EnergyMethod,energy_method);
      reconstruct_init->filtEev     = filtEev;
+     reconstruct_init->Ifit     = Ifit;
      strcpy(reconstruct_init->OFNoise,ofnoise);
      reconstruct_init->LagsOrNot = lagsornot;
      reconstruct_init->nLags = nLags;
@@ -364,7 +389,6 @@
      reconstruct_init->Sum0Filt = Sum0Filt;
      reconstruct_init->intermediate  = interm;
      reconstruct_init->SaturationValue  = SaturationValue;
-     
      
      strncpy(reconstruct_init->tstartPulse1,tstartPulse1,255);
      reconstruct_init->tstartPulse1[255]='\0';
@@ -434,7 +458,14 @@
      if(reconstruct_init->pulse_length > record->trigger_size)
      {
          //EP_EXIT_ERROR("Warning: pulse length is larger than record size. Pulse length set to maximum value (record size)",EPFAIL);
-         EP_EXIT_ERROR("Pulse length is larger than record size",EPFAIL);
+         if (reconstruct_init->opmode == 0)
+         {
+             EP_EXIT_ERROR("largeFilter is larger than record size",EPFAIL);
+         }
+         else 
+         {
+            EP_EXIT_ERROR("Pulse length is larger than record size",EPFAIL);
+         }
      }
      
      // If first record, read the necessary keywords and columns from the input file in order to convert from current to quasi-resistance space
@@ -448,6 +479,7 @@
          reconstruct_init->i2rdata->ADU_CNV = -999;
          reconstruct_init->i2rdata->I_BIAS = -999;
          reconstruct_init->i2rdata->ADU_BIAS = -999;
+         reconstruct_init->i2rdata->Ifit = reconstruct_init->Ifit;
          if (strcmp(reconstruct_init->EnergyMethod,"OPTFILT") != 0)  
          {
              char extname[20];
@@ -1029,7 +1061,7 @@
   * - oflib: Work or not with a library with optimal filters (1/0)
   * - ofinterp: Optimal Filter by using the Matched Filter or the DAB as matched filter (MF/DAB) 
   * 	      It has been fixed in 'tesreconstruction' as 'DAB' (but it would be possible to work with 'MF')
-  * - filtEev: Energy of the filters of the library to be used to calculate energy
+  * - filtEeV: Energy of the filters of the library to be used to calculate energy
   * - lagsornot: Lags (1) or no lags (0)
   * - status: Input/output status
   ******************************************************************************/
@@ -2931,6 +2963,7 @@
  LrsT(0.0f),
  LbT(0.0f),
  filtEev(0.0f),
+ Ifit(0.0f),
  LagsOrNot(0),
  nLags(0),
  Fitting35(0),
@@ -2974,6 +3007,7 @@
  LbT(other.LbT),
  largeFilter(other.largeFilter),
  filtEev(other.filtEev),
+ Ifit(other.Ifit),
  LagsOrNot(other.LagsOrNot),
  nLags(other.nLags),
  Fitting35(other.Fitting35),
@@ -3098,6 +3132,8 @@
          
          filtEev = other.filtEev;
          
+         Ifit = other.Ifit;
+         
          strcpy(OFNoise, other.OFNoise);
          
          LagsOrNot = other.LagsOrNot;
@@ -3216,6 +3252,8 @@
      strcpy(ret->EnergyMethod, this->EnergyMethod);
      
      ret->filtEev = this->filtEev;
+     
+     ret->Ifit = this->Ifit;
      
      strcpy(ret->OFNoise, this->OFNoise);
      

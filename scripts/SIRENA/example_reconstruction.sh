@@ -41,9 +41,8 @@
 
 # SIXTE XML files *** see note in README file ***
 xmldirSX=${SIXTE}/share/sixte/instruments/athena-xifu
-xmlfileSX=${xmldirSX}/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml
+xmlfileSX=${xmldirSX}/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml # any file with grading information (pixel info is not relevant here)
 
-pulse_length=8192 # length for reconstruction (samples)
 tempeV=6000. # (energy of optimal filter (eV)
 
 data_sim="myData.fits"
@@ -55,14 +54,10 @@ libfile="myLib.fits"
 # https://sirena.readthedocs.io/
 tesreconstruction Recordfile=${data_sim} \
                                     TesEventFile=${evt_recons} \
-                                    PulseLength=${pulse_length} \
                                     monoenergy=${tempeV} \
                                     LibraryFile=${libfile} \
-                                    samplesUp=3\
-                                    nSgms=3.5 \
-                                    samplesDown=4 \
                                     opmode=1 \
-                                    XMLFile=${xmlfileSX}\
+                                    XMLFile=${xmlfileSX}
 
                             
                                 

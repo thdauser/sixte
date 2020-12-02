@@ -147,6 +147,12 @@
          EP_EXIT_ERROR(message,status); 
      }
      
+     if ((strcmp(par.EnergyMethod,"I2RFITTED") == 0) && (par.Ifit == 0.0))
+     {
+         message = "Ifit value must be provided";
+         EP_EXIT_ERROR(message,status); 
+     }
+     
      char str_stat[8];
      char str_stat1[8];
      double cutFreq = 0.;
@@ -353,7 +359,7 @@
      
      
      // Read info to transform to resistance space
-     if ((adu_cnv_exists == 0) && ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2R") == 0)))
+     if ((adu_cnv_exists == 0) && ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0)))
      {
          strcpy(extname,"RECORDS");
          fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status);
@@ -1247,7 +1253,7 @@
          // Convert to the resistance space if necessary
          if (strcmp(par.EnergyMethod,"OPTFILT") != 0)
          {
-             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,samprate,&ioutgsl))
+             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,par.Ifit,samprate,&ioutgsl))
              {
                  message = "Cannot run routine convertI2R";
                  EP_EXIT_ERROR(message,EPFAIL);
@@ -1737,6 +1743,15 @@
      
      string str_energymethod (string("EnergyMethod = ") + string(par.EnergyMethod));
      strcpy(keyvalstr,str_energymethod.c_str());
+     if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
+     {
+         message = "Cannot write keyword " + string(keyname) + " in noise file " + string(par.outFile);
+         EP_PRINT_ERROR(message,status); return(EPFAIL);
+     }
+     
+     char str_Ifit[125];			sprintf(str_Ifit,"%f",par.Ifit);
+     strhistory=string("Ifit = ") + string(str_Ifit);
+     strcpy(keyvalstr,strhistory.c_str());
      if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
      {
          message = "Cannot write keyword " + string(keyname) + " in noise file " + string(par.outFile);
@@ -2669,6 +2684,15 @@
      }
      strcpy(par->EnergyMethod, sbuffer);
      free(sbuffer);
+     
+     MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0), 
+              "EnergyMethod must be OPTFILT, I2R, I2RFITTED or PCA");
+     
+     status=ape_trad_query_double("Ifit", &par->Ifit);
+     if (EXIT_SUCCESS!=status) {
+         message = "failed reading the Ifit parameter";
+         EP_EXIT_ERROR(message,EPFAIL);
+     }
      
      status=ape_trad_query_bool("clobber", &par->clobber);
      if (EXIT_SUCCESS!=status) {

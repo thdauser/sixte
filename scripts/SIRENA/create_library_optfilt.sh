@@ -41,11 +41,7 @@
 
 # 3.1) define simulation parameters
 #----------------------------------
-# SIXTE XML files  ***see note in README file ***
-xmldirSX=${SIXTE}/share/sixte/instruments/athena-xifu
-xmlfileSX=${xmldirSX}/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml
-
-pulse_length=8192 # length for reconstruction (samples)
+largeFilter=8192 # largest filter to be created (samples); power of 2 smaller filters will also be created
 tempeV=6000. # (energy of optimal filter (eV)
 
 # FILENAMES
@@ -56,15 +52,11 @@ libfile="myLib.fits"
 
 # Use noise spectrum and pulses for template and create a library of optimal filters
 tesreconstruction Recordfile=${temp_sim} \
-                                    PulseLength=${pulse_length} \
                                     TesEventFile=myLibEvents.fits\
                                     monoenergy=${tempeV} \
                                     LibraryFile=${libfile} \
-                                    samplesUp=3 \
-                                    nSgms=3.5 \
-                                    samplesDown=4 \
+                                    largeFilter=${largeFilter} \
                                     opmode=0 \
-                                    XMLFile=${xmlfileSX}\
                                     NoiseFile=${noise_spec}
                             
                                 

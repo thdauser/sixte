@@ -87,6 +87,9 @@ struct Parameters {
         
     //Transform to resistance space (I2R or I2RFITTED) or not (OPTFILT)
 	char EnergyMethod[10];
+    
+    //Constant to apply the I2RFITTED conversion
+    double Ifit;
         
     //Boolean to choose whether to erase an already existing event list
 	char clobber;

@@ -293,6 +293,8 @@ typedef struct I2RData
   double I_BIAS;
   double ADU_BIAS;
   
+  double Ifit;
+  
 #ifdef __cplusplus
   I2RData();
   I2RData(const I2RData& other);
@@ -498,7 +500,11 @@ typedef struct ReconstructInitSIRENA
   /** Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA **/
   char EnergyMethod[10];
   
+  /** Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED) **/
   double filtEev;
+  
+  /** Constant to apply the I2RFITTED conversion **/
+  double Ifit;
   
   //Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
   char OFNoise[8];
@@ -624,7 +630,7 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
                                     double LbT, char* const noise_file, 
                                     char* filter_domain,
                                     char* filter_method, char* energy_method, 
-                                    double filtEev, char* ofnoise, 
+                                    double filtEev, double Ifit, char* ofnoise, 
                                     int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, 
                                     char *ofinterp, char* oflength_strategy, 
                                     int oflength, int preBuffer,

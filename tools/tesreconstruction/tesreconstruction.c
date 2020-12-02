@@ -69,6 +69,7 @@
 * - FilterMethod: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
 * - EnergyMethod: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA
 * - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RALL, I2RNOL and I2RFITTED)
+* - Ifit: Constant to apply the I2RFITTED conversion
 * - OFNoise: Noise to use with Optimal Filtering: NSD or WEIGHTM
 * - LagsOrNot: Lags or no lags (1/0)
 * - nLags: Number of lags (positive odd number)
@@ -157,16 +158,25 @@ int tesreconstruction_main() {
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
     
-    // Read XML info
-    //--------------
-    AdvDet *det = newAdvDet(&status);
-    CHECK_STATUS_BREAK(status);
-    det = loadAdvDet(par.XMLFile, &status);
+   if ((strcmp(par.Rcmethod,"SIRENA") == 0) && (strcmp(par.EnergyMethod,"I2RFITTED") == 0) && (par.Ifit == 0.0))
+   {
+        SIXT_ERROR("Ifit value must be provided");
+        return(EXIT_FAILURE);
+   }
     
-    CHECK_STATUS_BREAK(status);
     double sf = -999.; 
-    sf = det->SampleFreq;
     double sampling_rate = -999.0;
+    AdvDet *det = newAdvDet(&status);
+    if (par.opmode != 0)
+    {
+        // Read XML info
+        //--------------
+        CHECK_STATUS_BREAK(status);
+        det = loadAdvDet(par.XMLFile, &status);
+        CHECK_STATUS_BREAK(status);
+        
+        sf = det->SampleFreq;
+    }
     
     int trig_reclength = -999;
     
@@ -567,7 +577,7 @@ int tesreconstruction_main() {
                                                     par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
                                                     par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
                                                     par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
-                                                    par.filtEev, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
+                                                    par.filtEev, par.Ifit, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
                                                     par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength, par.preBuffer,par.monoenergy, 
                                                     par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, 
                                                     par.errorT, par.Sum0Filt, par.clobber, par.EventListSize, par.SaturationValue, par.tstartPulse1, 
@@ -711,7 +721,7 @@ int tesreconstruction_main() {
                         par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
                         par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
                         par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
-                        par.filtEev, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
+                        par.filtEev, par.Ifit, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
                         par.OFLib, par.OFInterp, par.OFStrategy, par.OFLength, par.preBuffer, par.monoenergy, 
                         par.hduPRECALWN, par.hduPRCLOFWM, par.largeFilter, par.intermediate, par.detectFile, 
                         par.errorT, par.Sum0Filt, par.clobber, par.EventListSize, par.SaturationValue, par.tstartPulse1, 
@@ -1016,15 +1026,15 @@ int getpar(struct Parameters* const par)
     
 	status=ape_trad_query_int("samplesUp", &par->samplesUp);
         
-        status=ape_trad_query_int("samplesDown", &par->samplesDown);
+    status=ape_trad_query_int("samplesDown", &par->samplesDown);
   
 	status=ape_trad_query_double("nSgms", &par->nSgms);
         
-        status=ape_trad_query_int("detectSP", &par->detectSP);
+    status=ape_trad_query_int("detectSP", &par->detectSP);
   
 	status=ape_trad_query_int("opmode", &par->opmode);
         
-        status=ape_trad_query_string("detectionMode", &sbuffer);
+    status=ape_trad_query_string("detectionMode", &sbuffer);
 	strcpy(par->detectionMode, sbuffer);
 	free(sbuffer);
   
@@ -1061,15 +1071,17 @@ int getpar(struct Parameters* const par)
 	strcpy(par->EnergyMethod, sbuffer);
 	free(sbuffer);
         
-        status=ape_trad_query_double("filtEev", &par->filtEev);
+    status=ape_trad_query_double("filtEev", &par->filtEev);
+    
+    status=ape_trad_query_double("Ifit", &par->Ifit);
 
 	status=ape_trad_query_string("OFNoise", &sbuffer);
 	strcpy(par->OFNoise, sbuffer);
 	free(sbuffer);
 	
 	status=ape_trad_query_int("LagsOrNot", &par->LagsOrNot);
-        status=ape_trad_query_int("nLags", &par->nLags);
-        status=ape_trad_query_int("Fitting35", &par->Fitting35);
+    status=ape_trad_query_int("nLags", &par->nLags);
+    status=ape_trad_query_int("Fitting35", &par->Fitting35);
 
 	status=ape_trad_query_int("OFIter", &par->OFIter);
 
@@ -1083,14 +1095,14 @@ int getpar(struct Parameters* const par)
 	
 	status=ape_trad_query_int("OFLength", &par->OFLength);
         
-        status=ape_trad_query_int("preBuffer", &par->preBuffer);
+    status=ape_trad_query_int("preBuffer", &par->preBuffer);
         
-        status=ape_trad_query_int("errorT", &par->errorT);
+    status=ape_trad_query_int("errorT", &par->errorT);
         
-        status=ape_trad_query_int("Sum0Filt", &par->Sum0Filt);
+    status=ape_trad_query_int("Sum0Filt", &par->Sum0Filt);
 
 	//status=ape_trad_query_int("tstartPulse1", &par->tstartPulse1);
-        status=ape_trad_query_string("tstartPulse1", &sbuffer);
+    status=ape_trad_query_string("tstartPulse1", &sbuffer);
 	strcpy(par->tstartPulse1, sbuffer);
 	free(sbuffer);
 	
@@ -1141,8 +1153,8 @@ int getpar(struct Parameters* const par)
 	MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0),"FilterMethod must be F0 or B0");
 	
 	MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
-		(strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RALL") == 0) || (strcmp(par->EnergyMethod,"I2RNOL") == 0) || 
-		(strcmp(par->EnergyMethod,"I2RFITTED") == 0) || (strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA");
+		(strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) 
+        || (strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA");
 	
 	MyAssert((strcmp(par->OFNoise,"NSD") == 0) || (strcmp(par->OFNoise,"WEIGHTM") == 0), "OFNoise must be NSD or WEIGHTM");
         

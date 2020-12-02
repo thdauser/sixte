@@ -41,23 +41,11 @@
 
 # 1.1) define simulation parameters
 #----------------------------------
-# define  XML files 
-xmldirXF=${XIFUSIM}/share/xifusim/instruments
-# create XML XF file for noise with <Trigger  model=TriggerNoise>
-xmlfile=${xmldirXF}/8pix_nobbfb.xml
-xmlfilenoise=${xmldirXF}/8pix_noise_nobbfb.xml
-
-if [ ! -e ${xmlfilenoise} ]; then
-    cp  ${xmlfile} ${xmlfilenoise}
-    sed -i '/TriggerDiff/c\<Trigger model="TriggerNoise" filename="pars_8.fits" hduname="TrigNoise"/>' ${xmlfilenoise}
-fi
 
 samprate=156250  # sampling frequency
-pulse_length=8192 # length for reconstruction (samples)
-rlength=8200 # record length (samples) >= pulse_length
-preBuffer=1000 # Number of samples before the impact in the trigger
-nintervals=2000 #noise intervals for the noise spectrum
-time=`python -c "print(${nintervals} * ${pulse_length} / ${samprate})"`  # noise simulation time (s)
+rlength=8200 # record length (samples) >= High resolution length
+nintervals=1000 # default noise intervals for the noise spectrum
+time=`python -c "print(${nintervals} * ${rlength} / ${samprate})"`  # noise simulation time (s)
 acbias="yes"
 
 # FILENAMES
@@ -66,22 +54,19 @@ noise_imp="mynoise.piximpact"
 noise_sim="mynoise_sim.fits"
 noise_spec="mynoise.spec"
 
-# 1.2) Create piximpact list to simulate noise streams
-#-----------------------------------------------
-tesconstpileup PixImpList=${noise_imp} \
-                                XMLFile=${xmlfile}\
-                                tstop=${time}\
-                                offset=0\
-                                energy=0.\
-                                pulseDistance=1\
-                                TriggerSize=${rlength}\
-                                sample_freq=${samprate}\
-                                preBufferSize=0 \
-                                clobber=yes
-
+# 1.2) Create piximpact list to simulate noise streams (both tesconstpileup or tesgenimpacts)
+#----------------------------------------------------------------------------------------
+tesgenimpacts \
+        PixImpList = ${noise_imp} \
+        mode = const \
+        tstart = 0 \
+        tstop = ${time} \
+        EConst = 0. \
+        dtau = 1
+        
 # 1.3) Simulate noise stream (same conditions as those used to simulate data)
 #-----------------------------------------------------------------------
-# (if data have been simulated with TESSIM)
+# 1.3.1) (if your data have been simulated with TESSIM)
 pixfile='file:${SIXTE}/share/sixte/instruments/athena-xifu/newpix_LPA75um.fits'
 tessim PixID=1 \
                 PixImpList=${noise_imp} \
@@ -94,7 +79,18 @@ tessim PixID=1 \
                 PixType=${pixfile} \
                 acbias=${acbias}
 
-# (if data have been simulated with XIFUSIM)
+# 1.3.2) (if your data have been simulated with XIFUSIM)
+# define  XML files 
+xmldirXF=${XIFUSIM}/share/xifusim/instruments
+# create XML XF file for noise with <Trigger  model=TriggerNoise>
+xmlfile=${xmldirXF}/8pix_nobbfb.xml
+xmlfilenoise=${xmldirXF}/8pix_noise_nobbfb.xml
+
+# create a noise-trigger XML file if not already present
+if [ ! -e ${xmlfilenoise} ]; then
+    cp  ${xmlfile} ${xmlfilenoise}
+    sed -i '/TriggerDiff/c\<Trigger model="TriggerNoise" filename="pars_8.fits" hduname="TrigNoise"/>' ${xmlfilenoise}
+fi
 
 xifusim PixImpList=${noise_imp}\
                                 Streamfile=${noise_sim}\
@@ -109,10 +105,9 @@ xifusim PixImpList=${noise_imp}\
 # 1.4) Build noise spectrum
 #--------------------------
 gennoisespec inFile=${noise_sim} \
-                            outFile=${noise_spec} \
-                            nintervals=${nintervals} \
-                            pulse_length=${pulse_length} \
-                            intervalMinSamples=${pulse_length}\
+                            outFile=${noise_spec} 
+                            
+            
 
                             
                             

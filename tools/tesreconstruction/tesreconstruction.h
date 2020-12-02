@@ -143,6 +143,9 @@ struct Parameters {
         
     //Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED)
     double filtEev;
+    
+    //Constant to apply the I2RFITTED conversion
+    double Ifit;
 	
 	//Noise to use with Optimal Filtering: NSD (Noise Spectral Density) or WEIGHTM (weight matrix) **/
 	char OFNoise[8];
