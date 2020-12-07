@@ -622,6 +622,12 @@ int ero_calevents_main() {
         fits_update_key(fptr, TDOUBLE, "DEC_MAX", &dec_max, "", &status);
         CHECK_STATUS_BREAK(status);
 
+	int pat_sel=15;
+	int flagsel=0;
+        fits_update_key(fptr, TLONG, "FLAGSEL", &flagsel, "Flag selection", &status);
+        fits_update_key(fptr, TINT, "PAT_SEL", &pat_sel, "Pattern selection (1=s,3=s+d,7=s+d+t,15=all)", &status);
+        CHECK_STATUS_BREAK(status);
+
         // Set the number of unique events to the number of entries in the table.
         // long uniq_evt;
         // fits_get_num_rows(fptr, &uniq_evt, &status);
