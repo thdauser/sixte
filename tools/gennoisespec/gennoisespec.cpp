@@ -1258,6 +1258,7 @@
                  message = "Cannot run routine convertI2R";
                  EP_EXIT_ERROR(message,EPFAIL);
              }
+             gsl_vector_scale(ioutgsl,aducnv);
          }
          else
          {

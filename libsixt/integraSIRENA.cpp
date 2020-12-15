@@ -102,7 +102,7 @@
   * - LbT: Baseline averaging length for the RS raw energy estimation (seconds)
   * - noise_file: Noise file
   * - filter_domain: Filtering Domain: Time(T) or Frequency(F)
-  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline)
+  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
   * - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA
   * - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED)
   * - Ifit: Constant to apply the I2RFITTED conversion
@@ -196,8 +196,8 @@
              EP_EXIT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
          }
          
-         double double_oflength = (double) oflength;
-         double log2_double_oflength = log2(double_oflength);            
+         //double double_oflength = (double) oflength;
+         //double log2_double_oflength = log2(double_oflength);            
          /*if ((opmode == 1) && (oflib == 1) && (strcmp(oflength_strategy,"FIXED") == 0) && ((log2_double_oflength - (int) log2_double_oflength) != 0))
          {
              EP_EXIT_ERROR("If OFLib=yes, OFLength must be a power of 2",EPFAIL);
@@ -1057,7 +1057,7 @@
   * - pulse_length: Pulse length
   * - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA
   * - ofnoise: For optimal filtering, NSD or WEIGHTM
-  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline)
+  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
   * - oflib: Work or not with a library with optimal filters (1/0)
   * - ofinterp: Optimal Filter by using the Matched Filter or the DAB as matched filter (MF/DAB) 
   * 	      It has been fixed in 'tesreconstruction' as 'DAB' (but it would be possible to work with 'MF')
