@@ -1047,14 +1047,13 @@ int getpar(struct Parameters *const par) {
         query_simput_parameter_float("rollangle", &(par->rollangle), &status);
     }
 
-
     status = ape_trad_query_bool("clobber", &par->clobber);
     if (EXIT_SUCCESS != status) {
         SIXT_ERROR("failed reading the clobber parameter");
         return (status);
     }
 
-    status = ape_trad_query_bool("usepha", &par->usepha);
+    status = ape_trad_query_int("usepha", &par->usepha);
     if (EXIT_SUCCESS != status) {
         SIXT_ERROR("failed reading the usepha parameter");
         return (status);
