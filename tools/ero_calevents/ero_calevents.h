@@ -32,6 +32,8 @@
 #include "wcs.h"
 #include "radec2xylib.h"
 
+#include <libgen.h>
+
 #define TOOLSUB ero_calevents_main
 #include "headas_main.c"
 
@@ -61,6 +63,8 @@ struct Parameters {
   /** Roll angle of pointing [deg]. */
   float rollangle;
 
+  int usepha;
+
   char clobber;
 };
 
@@ -71,7 +75,7 @@ typedef struct {
   long frame;
 
   long pha; /* [adu] */
-  float pi; /* currently no pha2pi correction! */
+  float pi; /* [eV] */
   float energy; /* [eV] */
 
   int rawx, rawy;

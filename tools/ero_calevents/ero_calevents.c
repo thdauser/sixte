@@ -22,6 +22,7 @@
 
 #include "ero_calevents.h"
 
+#include <libgen.h>
 
 int ero_calevents_main() {
     // Containing all programm parameters read by PIL
@@ -219,6 +220,53 @@ int ero_calevents_main() {
             break;
         }
 
+
+	// PHA2PI handling
+	struct PIRMF* pirmf;
+	printf("usepha in ero_calevents: %d\n", par.usepha);
+        if (par.usepha==1) {
+	  SIXT_WARNING("usepha=1: Falling back to ENERGY column. The "
+		       "event file will not be properly calibrated.");
+	} else {
+	  char pirmffile[MAXMSG];
+	  fits_read_key(elf->fptr, TSTRING, "PIRMF", pirmffile, comment, &status);
+
+	  if (EXIT_SUCCESS != status) {
+            char msg[MAXMSG];
+            sprintf(msg, "could not read FITS keyword 'PIRMF' from input "
+		         "event list '%s'", par.EvtFile);
+            SIXT_ERROR(msg);
+            break;
+	  }
+	
+	  // Start random number generator for PI (channel)-> PI (eV) conversion
+	  sixt_init_rng(0, &status);
+	  CHECK_STATUS_BREAK(status);
+
+	  // Get path of PI-RMF from PHA2PI keyword
+	  char* pha2pifile=NULL;
+	  fits_read_key_longstr(elf->fptr, "PHA2PI", &pha2pifile, NULL, &status);
+
+	  if (EXIT_SUCCESS != status) {
+            char msg[MAXMSG];
+            sprintf(msg, "could not read FITS keyword 'PHA2PI' from input "
+		    "event list '%s'", par.EvtFile);
+            SIXT_ERROR(msg);
+            break;
+	  }
+	  
+	  // Get the directory from PHA2PI file - PIRMF must be in same folder
+	  char * fullpirmffile = dirname(pha2pifile);
+	  strcat(fullpirmffile, "/");
+	  strcat(fullpirmffile, pirmffile);
+	  
+	  headas_chat(5," *** INFO : Using PIRMF='%s' to convert PI (channel) to PI (eV)!\n",fullpirmffile);
+	  
+	  // Read the EBOUNDS from the detector response file.
+	  pirmf=loadRMF(fullpirmffile, &status);
+	  CHECK_STATUS_BREAK(status); 
+	}
+	  
         // Create and open a new FITS file.
         headas_chat(3, "create new eROSITA event list file '%s' ...\n",
                     par.eroEvtFile);
@@ -439,6 +487,12 @@ int ero_calevents_main() {
             getEventFromFile(elf, input_row + 1, &event, &status);
             CHECK_STATUS_BREAK(status);
 
+	    // Check whether this is a valid event
+	    if (par.usepha!=1 & event.pi<=0){
+	      headas_chat(6, " *** INFO : Rejecting event %ld because invalid PI value: PI=%d\n", input_row+1, event.pi);
+	      continue;
+	    }
+
             // Determine the event data based on the event information.
             eroCalEvent ev;
 
@@ -513,12 +567,12 @@ int ero_calevents_main() {
 	    // (next to the 8bit FrameCounter) getting the data in the
 	    // correct order. A bright source has many events and one
 	    // CCD frame can be distributed over multiple telemetry
-	    // frames. The recordtime can (but needn't)
-	    // increase. Reference point is 1.1.2000.
+	    // frames. The recordtime can (but needn't) increase.
+	    // Reference point is 1.1.2000.
 	    ev.recordtime = ev.time+(mjdref-eromjdref)*86400.;
 
 	    // FRAMETIME (TDOUBLE, time in seconds): Time stamp of the
-	    // CCD Frames, reference point is 1.1.2000, produced by CE
+	    // CCD Frames, reference point is 1.1.2000, produced by CE.
 	    ev.frametime = ev.time+(mjdref-eromjdref)*86400.;
 	    
             // Loop over all split partners contributing to the event.
@@ -554,16 +608,17 @@ int ero_calevents_main() {
                 // split partners it is negative.
                 if (4 == ii) {
                     ev.energy = event.signal * 1000.;
-		    // Copy the raw energy grid into a new column named
-		    // PI. The eSASS reads in the PI column (apperently in
-		    // units of eV and not columns). This hack. however,
-		    // bypasses all detector corrections. A proper PHA2PI
-		    // correction has to be done!
-		    ev.pi = event.signal * 1000.;
                 } else {
                     ev.energy = -event.signal * 1000.;
-		    ev.pi = -event.signal * 1000.;
                 }
+
+		// Write PI Column in eV.
+		if (par.usepha==1) {
+		  ev.pi = ev.energy;
+		} else {
+		  ev.pi = getEBOUNDSEnergy(event.pi, pirmf, &status);
+		  CHECK_STATUS_BREAK(status);
+		}
 		
                 // Event type.
                 if (event.type >= 0) {
@@ -912,6 +967,9 @@ int ero_calevents_main() {
     freeGTI(&gti);
     freeAttitude(&ac);
 
+    // Release random number generator
+    sixt_destroy_rng();
+
     if (EXIT_SUCCESS == status) {
         headas_chat(3, "finished successfully!\n\n");
         return (EXIT_SUCCESS);
@@ -993,6 +1051,12 @@ int getpar(struct Parameters *const par) {
     status = ape_trad_query_bool("clobber", &par->clobber);
     if (EXIT_SUCCESS != status) {
         SIXT_ERROR("failed reading the clobber parameter");
+        return (status);
+    }
+
+    status = ape_trad_query_bool("usepha", &par->usepha);
+    if (EXIT_SUCCESS != status) {
+        SIXT_ERROR("failed reading the usepha parameter");
         return (status);
     }
 
