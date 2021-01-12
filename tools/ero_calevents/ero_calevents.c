@@ -223,7 +223,6 @@ int ero_calevents_main() {
 
 	// PHA2PI handling
 	struct PIRMF* pirmf;
-	printf("usepha in ero_calevents: %d\n", par.usepha);
         if (par.usepha==1) {
 	  SIXT_WARNING("usepha=1: Falling back to ENERGY column. The "
 		       "event file will not be properly calibrated.");
@@ -240,7 +239,7 @@ int ero_calevents_main() {
 	  }
 	
 	  // Start random number generator for PI (channel)-> PI (eV) conversion
-	  sixt_init_rng(0, &status);
+	  sixt_init_rng(getSeed(-1), &status);
 	  CHECK_STATUS_BREAK(status);
 
 	  // Get path of PI-RMF from PHA2PI keyword
