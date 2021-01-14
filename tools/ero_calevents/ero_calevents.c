@@ -238,8 +238,9 @@ int ero_calevents_main() {
             break;
 	  }
 	
-	  // Start random number generator for PI (channel)-> PI (eV) conversion
-	  sixt_init_rng(getSeed(-1), &status);
+	  // Initialize the random number generator for PI (channel)->PI (eV) conversion.
+	  unsigned int seed=getSeed(par.Seed);
+	  sixt_init_rng(seed, &status);
 	  CHECK_STATUS_BREAK(status);
 
 	  // Get path of PI-RMF from PHA2PI keyword
@@ -615,7 +616,11 @@ int ero_calevents_main() {
 		if (par.usepha==1) {
 		  ev.pi = ev.energy;
 		} else {
-		  ev.pi = getEBOUNDSEnergy(event.pi, pirmf, &status);
+		  if (4 == ii) {
+		    ev.pi = getEBOUNDSEnergy(event.pi, pirmf, &status) * 1000.;
+		  } else {
+		    ev.pi = -getEBOUNDSEnergy(event.pi, pirmf, &status) * 1000.;
+		  }
 		  CHECK_STATUS_BREAK(status);
 		}
 		
@@ -1050,6 +1055,12 @@ int getpar(struct Parameters *const par) {
     if (EXIT_SUCCESS != status) {
         SIXT_ERROR("failed reading the clobber parameter");
         return (status);
+    }
+
+    status=ape_trad_query_int("Seed", &par->Seed);
+    if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading the seed for the random number generator");
+      return(status);
     }
 
     status = ape_trad_query_int("usepha", &par->usepha);

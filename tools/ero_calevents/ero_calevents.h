@@ -65,6 +65,8 @@ struct Parameters {
 
   int usepha;
 
+  int Seed;
+  
   char clobber;
 };
 
