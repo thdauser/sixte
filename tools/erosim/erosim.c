@@ -300,6 +300,7 @@ int erosim_main() {
 		long kk;
 		int ii;
 		for (kk = 0; kk < arf7->NumberEnergyBins; kk++) {
+		        arf7->EffArea[kk]=0.;
 			arf7->LowEnergy[kk] = subinst[0]->tel->arf->LowEnergy[kk];
 			arf7->HighEnergy[kk] = subinst[0]->tel->arf->HighEnergy[kk];
 
