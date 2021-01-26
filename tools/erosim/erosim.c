@@ -273,7 +273,7 @@ int erosim_main() {
 			// Load the instrument configuration either with the
 			// specific (if available) or the default XML file.
 
-			printf("Telescope %ld, use XML file\n%s\n", ii + 1, xml_filename);
+			printf("Telescope %ld, use XML file\n%s\n", ii + 1, buffer);
 			subinst[ii] = loadGenInst(buffer, seed, &status);
 			CHECK_STATUS_BREAK(status);
 
