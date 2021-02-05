@@ -7925,35 +7925,49 @@ resize_mf_lowres = 4;
             {
                 if (strcmp((*reconstruct_init)->OFNoise,"NSD") == 0)
                 {
-                    //resize_mf =8192;
-                    if ((*reconstruct_init)->pulse_length <= (*reconstruct_init)->OFLength)  // 0-padding
+                    if (tstartSamplesRecordStartDOUBLE-preBuffer+resize_mf+numlags-1 <= recordAux->size)
                     {
-                        if (tstartSamplesRecordStartDOUBLE+resize_mf+numlags -1 <= recordAux->size)
+                        resize_mfNEW = resize_mf + numlags -1;
+                    }
+                    else
+                    {
+                        //resize_mfNEW = resize_mf + numlags/2;
+                        message = "tstart-preBuffer+filterSize-1>recordSize for pulse i=" + boost::lexical_cast<std::string>(i);
+                        EP_EXIT_ERROR(message,EPFAIL);
+                    }
+                        
+                    /*if ((*reconstruct_init)->pulse_length <= (*reconstruct_init)->OFLength)  // 0-padding
+                    {
+                        if (tstartSamplesRecordStartDOUBLE-preBuffer+numlags-1 <= recordAux->size)
                         {
                             resize_mfNEW = resize_mf + numlags -1;
                         }
                         else
                         {
-                            resize_mfNEW = resize_mf + numlags/2;
+                            //resize_mfNEW = resize_mf + numlags/2;
+                            message = "tstart-preBuffer+numlags-1>recordSize for pulse i=" + boost::lexical_cast<std::string>(i);
+                            EP_EXIT_ERROR(message,EPFAIL);
                         }
                     }
                     else                   // NO 0-padding (or preBuffer or short filter)
                     {
-                        if (tstartSamplesRecordStartDOUBLE+resize_mf+numlags -1 <= recordAux->size)
+                        if (tstartSamplesRecordStartDOUBLE-preBuffer+resize_mf+numlags-1 <= recordAux->size)
                         {
                             resize_mfNEW = resize_mf + numlags -1;
                         }
                         else
                         {
-                            resize_mfNEW = resize_mf + numlags/2;
+                            //resize_mfNEW = resize_mf + numlags/2;
+                            message = "tstart-preBuffer+filterSize+numlags-1>recordSize for pulse i=" + boost::lexical_cast<std::string>(i);
+                            EP_EXIT_ERROR(message,EPFAIL);
                         }
-                    }
+                    }*/
                 }
                 else
                 {
                     resize_mfNEW = resize_mf;
                 }
-                //log_debug("resize_mfNEW: %i",resize_mfNEW);
+                log_debug("resize_mfNEW: %i",resize_mfNEW);
                 
                 if ((pulseToCalculateEnergy = gsl_vector_alloc(resize_mfNEW)) == 0)
                 {
@@ -8061,7 +8075,12 @@ resize_mf_lowres = 4;
                         {
                             //log_debug("Entra (no 0-padding)",resize_mf);
                             log_debug("resize_mf2: %i",resize_mf);
-                            resize_mf = pow(2,floor(log2(resize_mf)));
+                            double double_oflength = (double)(*reconstruct_init)->OFLength;
+                            double log2_double_oflength = log2(double_oflength);            
+                            if ((log2_double_oflength - (int) log2_double_oflength) == 0) //oflength is a power of 2
+                            {
+                                resize_mf = pow(2,floor(log2(resize_mf)));
+                            }
                             gsl_vector *pulse_aux = gsl_vector_alloc(resize_mf+extraSizeDueToLags);
                             temp = gsl_vector_subvector(pulseToCalculateEnergy,0,resize_mf+extraSizeDueToLags);
                             gsl_vector_memcpy(pulse_aux,&temp.vector);
@@ -8108,13 +8127,13 @@ resize_mf_lowres = 4;
                                     message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
                                 }
+                                
                             }
                         }
                         else
                         {	
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                
                                 if (find_optimalfilter(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
                                 {
                                     message = "Cannot run routine find_optimalfilter for filter interpolation";
@@ -8891,9 +8910,19 @@ resize_mf_lowres = 4;
             {
                 if (strcmp((*reconstruct_init)->OFNoise,"NSD") == 0)
                 {
-                    if ((*reconstruct_init)->pulse_length <= (*reconstruct_init)->OFLength)  // 0-padding
+                    if (tstartSamplesRecordStartDOUBLE-preBuffer+resize_mf+numlags-1 <= recordAux->size)
                     {
-                        if (tstartSamplesRecordStartDOUBLE+resize_mf+numlags -1 <= recordAux->size)
+                        resize_mfNEW = resize_mf + numlags -1;
+                    }
+                    else
+                    {
+                        //resize_mfNEW = resize_mf + numlags/2;
+                        message = "tstart-preBuffer+filterSize-1>recordSize for pulse i=" + boost::lexical_cast<std::string>(i);
+                        EP_EXIT_ERROR(message,EPFAIL);
+                    }
+                    /*if ((*reconstruct_init)->pulse_length <= (*reconstruct_init)->OFLength)  // 0-padding
+                    {
+                        if (tstartSamplesRecordStartDOUBLE-preBuffer+numlags -1 <= recordAux->size)
                         {
                             resize_mfNEW = resize_mf + numlags -1;
                         }
@@ -8902,9 +8931,9 @@ resize_mf_lowres = 4;
                             resize_mfNEW = resize_mf + numlags/2;
                         }
                     }
-                    else                   // NO 0-padding (or preBuffer or normal)
+                    else                   // NO 0-padding (or preBuffer or short filter)
                     {
-                        if (tstartSamplesRecordStartDOUBLE+resize_mf+numlags -1 <= recordAux->size)
+                        if (tstartSamplesRecordStartDOUBLE-preBuffer+resize_mf+numlags -1 <= recordAux->size)
                         {
                             resize_mfNEW = resize_mf + numlags -1;
                         }
@@ -8912,7 +8941,7 @@ resize_mf_lowres = 4;
                         {
                             resize_mfNEW = resize_mf + numlags/2;
                         }
-                    }
+                    }*/
                 }
                 else
                 {
@@ -9034,7 +9063,13 @@ resize_mf_lowres = 4;
                             || (((*reconstruct_init)->pulse_length <= (*reconstruct_init)->OFLength) && (preBuffer != 0))
                             || (resize_mf < (*reconstruct_init)->OFLength))
                         {
-                            resize_mf = pow(2,floor(log2(resize_mf)));
+                            //resize_mf = pow(2,floor(log2(resize_mf)));
+                            double double_oflength = (double)(*reconstruct_init)->OFLength;
+                            double log2_double_oflength = log2(double_oflength);            
+                            if ((log2_double_oflength - (int) log2_double_oflength) == 0) //oflength is a power of 2
+                            {
+                                resize_mf = pow(2,floor(log2(resize_mf)));
+                            }
                             gsl_vector *pulse_aux = gsl_vector_alloc(resize_mf+extraSizeDueToLags);
                             temp = gsl_vector_subvector(pulseToCalculateEnergy,0,resize_mf+extraSizeDueToLags);
                             gsl_vector_memcpy(pulse_aux,&temp.vector);
@@ -10364,7 +10399,7 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
             gsl_vector_set(fixedlengths,reconstruct_init->library_collection->nfixedfilters-1-i,pow(2,1+i));
         }
     }
-    
+        
     int index = 0;
     gsl_vector_view temp;
     for (int i=0;i<reconstruct_init->library_collection->nfixedfilters;i++)
@@ -10980,11 +11015,11 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
     else if (OFlength_strategy == 3)
     {
         *OFlength = min(reconstruct_init->OFLength,grade1);
-        if (reconstruct_init->OFLength > grade1)
+        /*if (reconstruct_init->OFLength > grade1)
         {
             message = "OFLength provided as input parameter > Pulse duration (there can be a pulse in its tail) => OFLength=Pulse duration";
             EP_PRINT_ERROR(message,-999);	// Only a warning
-        }
+        }*/
     }
     
     if (grade1 >= H1)	// High res
