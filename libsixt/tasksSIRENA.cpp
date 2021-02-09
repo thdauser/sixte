@@ -311,6 +311,7 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, PulsesColl
         gsl_matrix_set_zero(weight);
         gsl_matrix_set_zero(covariance);
         
+        log_trace("Before calculateTemplate...");
         if (calculateTemplate (*reconstruct_init, pulsesAll, *pulsesInRecord, 1/record->delta_t, &pulsetemplate, &pulseheighttemplate, &covariance, &weight, &pulsetemplateMaxLengthFixedFilter))
         {
             message = "Cannot run routine calculateTemplate in CALIBRATION mode";
@@ -2160,6 +2161,8 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
     
     double scaleFactor = (*reconstruct_init)->scaleFactor;
     //int sizePulse_b = (*reconstruct_init)->pulse_length;
+    //cout<<"(*reconstruct_init)->pulse_length: "<<(*reconstruct_init)->pulse_length<<endl;
+    //cout<<"(*reconstruct_init)->largeFilter: "<<(*reconstruct_init)->largeFilter<<endl;
     int sizePulse_b = ((*reconstruct_init)->pulse_length,(*reconstruct_init)->largeFilter);
     int samplesUp = (*reconstruct_init)->samplesUp;
     double nSgms = (*reconstruct_init)->nSgms;
@@ -2342,6 +2345,7 @@ gsl_vector_memcpy(recordDERIVATIVE,record);*/
     
     //cout<<"numPulses: "<<numPulses<<endl;
     
+    //cout<<"sizePulse_b: "<<sizePulse_b<<endl;
     // Calculate the tend of the found pulses and check if the pulse is saturated
     // 0 => Standard (good) pulses
     // 1 => Truncated pulses at the beginning  (when detecting: 'findTstartCAL', 'InitialTriggering', 'FindSecondaries' and 'FindSecondaries')     
@@ -2516,7 +2520,7 @@ gsl_vector_memcpy(recordDERIVATIVE,record);*/
             {
                 if (gsl_vector_get(tstartgsl,i)< 0)
                 {
-                    sprintf(valERROR,"%d",__LINE__+5);
+                    sprintf(valERROR,"%d",__LINE__+6);
                     string str(valERROR);
                     message = "tstart < 0 in line " + str + " (" + __FILE__ + ")";
                     str.clear();
@@ -2555,11 +2559,11 @@ gsl_vector_memcpy(recordDERIVATIVE,record);*/
         foundPulses->pulses_detected[i].maxDER = gsl_vector_get(maxDERgsl,i);
         foundPulses->pulses_detected[i].samp1DER = gsl_vector_get(samp1DERgsl,i);
         // 'energy' will be known after running 'runEnergy'
-        foundPulses->pulses_detected[i].quality = gsl_vector_get(qualitygsl,i);
         if ((preBuffer != 0) && (gsl_vector_get(tstartgsl,i)-preBuffer < 0))
         {
-            foundPulses->pulses_detected[i].quality = 1;
+            gsl_vector_set(qualitygsl,i, 1);
         }
+        foundPulses->pulses_detected[i].quality = gsl_vector_get(qualitygsl,i);
         foundPulses->pulses_detected[i].numLagsUsed = gsl_vector_get(lagsgsl,i);
         foundPulses->pulses_detected[i].pixid = pixid;
         foundPulses->pulses_detected[i].phid = phid;
@@ -2580,6 +2584,7 @@ gsl_vector_memcpy(recordDERIVATIVE,record);*/
         log_debug("tstart= %f", gsl_vector_get(tstartgsl,i));
         log_debug("tend= %f", gsl_vector_get(tendgsl,i));
         log_debug("pulse duration %d", foundPulses->pulses_detected[i].pulse_duration);
+        log_debug("quality %f", foundPulses->pulses_detected[i].quality);
     }
     
     
@@ -2984,7 +2989,7 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
     for (int i=0;i<totalPulses;i++)
     {
         if (i == totalPulses-1)		tstartnext = gsl_vector_get(tstart,i)+2*reconstruct_init->pulse_length;
-        else				tstartnext = gsl_vector_get(tstart,i+1);
+        else				        tstartnext = gsl_vector_get(tstart,i+1);
         
         if ((tstartnext-gsl_vector_get(tstart,i) > reconstruct_init->pulse_length) && ((gsl_vector_get(quality,i) == 0) || (gsl_vector_get(quality,i) == 10)))
         {
@@ -2992,6 +2997,7 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
             cnt = cnt +1;
         }
     }
+    //cout<<"cnt: "<<cnt<<endl;
     if (cnt == 0)
     {
         message = "No valid pulses to calculate the template (check as a possibility if PulseLength or largeFilter > Record size)";
@@ -3045,13 +3051,15 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
     for (int i=0;i<totalPulses;i++)
     {
         if (i == totalPulses-1)		tstartnext = gsl_vector_get(tstart,i)+2*reconstruct_init->pulse_length;
-        else 				tstartnext = gsl_vector_get(tstart,i+1);
+        else 				        tstartnext = gsl_vector_get(tstart,i+1);
         
         // Check if the pulse is piled-up or not
-        if ((gsl_vector_get(pulseheight,i) < maximumpulseheight-0.1*maximumpulseheight) || (gsl_vector_get(pulseheight,i) > maximumpulseheight+0.1*maximumpulseheight) || (tstartnext-gsl_vector_get(tstart,i) <= reconstruct_init->pulse_length) || ((gsl_vector_get(quality,i) != 0) && (gsl_vector_get(quality,i) != 10)))
+        //if ((gsl_vector_get(pulseheight,i) < maximumpulseheight-0.1*maximumpulseheight) || (gsl_vector_get(pulseheight,i) > maximumpulseheight+0.1*maximumpulseheight) || (tstartnext-gsl_vector_get(tstart,i) <= reconstruct_init->pulse_length) || ((gsl_vector_get(quality,i) != 0) && (gsl_vector_get(quality,i) != 10)))
+        if ((gsl_vector_get(pulseheight,i) < maximumpulseheight-0.1*maximumpulseheight) || (gsl_vector_get(pulseheight,i) > maximumpulseheight+0.1*maximumpulseheight) || (gsl_vector_get(tstart,i)-preBuffer+pulseLengthCT >= tstartnext) || ((gsl_vector_get(quality,i) != 0) && (gsl_vector_get(quality,i) != 10)))
         {
             gsl_vector_set(nonpileup,i,0);
             nonpileupPulses --;
+            cout<<i<<" "<<nonpileupPulses<<endl;
         }
         else
         {
