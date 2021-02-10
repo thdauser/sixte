@@ -689,7 +689,7 @@
          
      // Detect pulses in record
      //log_trace("Before runDetect");
-     runDetect(record, trig_reclength,lastRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
+     runDetect(record, trig_reclength,lastRecord, nRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
      log_trace("After runDetect");
      
      if(pulsesInRecord->ndetpulses == 0) // No pulses found in record

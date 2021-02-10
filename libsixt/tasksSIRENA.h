@@ -47,6 +47,7 @@
 void runDetect(TesRecord* record, 
                int trig_reclength,
                int lastRecord, 
+               int nrecord,
                PulsesCollection *pulsesAll, 
                ReconstructInitSIRENA** reconstruct_init, 
                PulsesCollection** pulsesInRecord);
