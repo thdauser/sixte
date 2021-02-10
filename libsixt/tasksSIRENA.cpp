@@ -3059,7 +3059,7 @@ int calculateTemplate(ReconstructInitSIRENA *reconstruct_init, PulsesCollection 
         {
             gsl_vector_set(nonpileup,i,0);
             nonpileupPulses --;
-            cout<<i<<" "<<nonpileupPulses<<endl;
+            //cout<<i<<" "<<nonpileupPulses<<endl;
         }
         else
         {
