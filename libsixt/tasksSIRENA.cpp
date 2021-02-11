@@ -239,9 +239,16 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
         message = "Cannot run findMeanSigma in runDetect";
         EP_EXIT_ERROR(message,EPFAIL);
     }
-    // sgTES~0.1% of meanTEST if the record is noise only => sgTES~2% of meanTEST will be weird oscillations but not noise
+    /*cout<<"meanTEST: "<<meanTEST<<endl;
+    cout<<"sgTEST: "<<sgTEST<<endl;
+    cout<<"max: "<<gsl_vector_max(invector)<<endl;
+    cout<<"min: "<<gsl_vector_min(invector)<<endl;
+    cout<<"gsl_vector_max(invector)-meanTEST: "<<gsl_vector_max(invector)-meanTEST<<endl;
+    cout<<"meanTEST-gsl_vector_min(invector): "<<meanTEST-gsl_vector_min(invector)<<endl;
+    cout<<"sgTEST*100/meanTEST: "<<sgTEST*100/meanTEST<<endl;*/
+    // sgTES~0.1% of meanTEST if the record is noise only => sgTES>1% is a weird oscillation
     // Noise records are not important if no pulses are detected in them
-    if ((gsl_vector_max(invector)-meanTEST) < (meanTEST-gsl_vector_min(invector)) && (gsl_vector_max(invector)-meanTEST>2*sgTEST) && (meanTEST-gsl_vector_min(invector)>2*sgTEST) && (sgTEST*100/meanTEST>2))
+    if ((gsl_vector_max(invector)-meanTEST) < (meanTEST-gsl_vector_min(invector)) && ((gsl_vector_max(invector)-meanTEST>sgTEST) || (meanTEST-gsl_vector_min(invector)>sgTEST)) && (meanTEST-gsl_vector_min(invector)>2*sgTEST) && (sgTEST*100/meanTEST>1))
     {
         char str_nrecord[125];      snprintf(str_nrecord,125,"%d",nrecord);
         message = "Weird oscillations in record " + string(str_nrecord);
