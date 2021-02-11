@@ -106,6 +106,7 @@
  * - Create intermediate output FITS file if required ('createDetectFile')
  * - (Filter and) differentiate the 'models' of the library (only for the first record in PRODUCTION 'opmode=1') ('filderLibrary')
  * - Store the input record in 'invector' ('loadRecord')
+ * - Detect weird oscillations in some GSFC records
  * - Convert I into R if 'EnergyMethod' = I2R or I2RFITTED ('convertI2R')
  * - Process each record ('proceRecord')
  * 	- (Low-pass filter and) differentiate
@@ -135,7 +136,7 @@
  * - record: Member of TesRecord' structure that contains the input record
  * - trig_reclength: Record size (just in case threading and input files with different 'ADC' lengths but the same record size indeed)
  * - lastRecord: Integer to verify whether record is the last one (=1) to be read (and thus if library file will be created)
- * - nrecord: Current record index
+ * - nrecord: Current record index (to know the particular record where there is a weird oscillation)
  * - pulsesAll: Member of 'PulsesCollection' structure to successively store all the pulses used to create the library. Re-populated after each processed record
  * - reconstruct_init: Member of 'ReconstructInitSIRENA' structure to initialize the reconstruction parameters (pointer and values)
  * - pulsesInRecord: Member of 'PulsesCollection' structure to store all the pulses found in the input record
@@ -787,7 +788,7 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
 std::mutex library_mut;
 std::mutex fits_file_mut;
 
-void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, PulsesCollection *pulsesAll, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord)
+void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecord, PulsesCollection *pulsesAll, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord)
 {
     //log_trace("th_runDetect: START");
     scheduler* sc = scheduler::get();
@@ -860,6 +861,23 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, PulsesC
     //in with 0's => Re-allocate invector
     gsl_vector *invectorOriginal = gsl_vector_alloc(invector->size);
     gsl_vector_memcpy(invectorOriginal,invector);
+    
+     // To detect weird oscillations in some GSFC records
+    double meanTEST=0;
+    double sgTEST=0;
+    if (findMeanSigma (invector, &meanTEST, &sgTEST))
+    {
+        message = "Cannot run findMeanSigma in runDetect";
+        EP_EXIT_ERROR(message,EPFAIL);
+    }
+    // sgTES~0.1% of meanTEST if the record is noise only => sgTES>1% is a weird oscillation
+    // Noise records are not important if no pulses are detected in them
+    if ((gsl_vector_max(invector)-meanTEST) < (meanTEST-gsl_vector_min(invector)) && ((gsl_vector_max(invector)-meanTEST>sgTEST) || (meanTEST-gsl_vector_min(invector)>sgTEST)) && (meanTEST-gsl_vector_min(invector)>2*sgTEST) && (sgTEST*100/meanTEST>1))
+    {
+        char str_nrecord[125];      snprintf(str_nrecord,125,"%d",nrecord);
+        message = "Weird oscillations in record " + string(str_nrecord);
+        EP_EXIT_ERROR(message,EPFAIL);
+    }
     
     if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0))
     {

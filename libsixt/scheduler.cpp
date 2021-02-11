@@ -36,6 +36,7 @@ void detection_worker()
       //log_trace("Extracting detection data from queue...");
       th_runDetect(data->rec, data->trig_reclength,
                 data->last_record,
+                data->n_record,
                 data->all_pulses,
                 &(data->rec_init),
                 &(data->record_pulses));
