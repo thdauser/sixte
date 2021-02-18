@@ -249,11 +249,14 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
     cout<<"sgTEST*100/meanTEST: "<<sgTEST*100/meanTEST<<endl;*/
     // sgTES~0.1% of meanTEST if the record is noise only => sgTES>1% is a weird oscillation
     // Noise records are not important if no pulses are detected in them
+    int oscillations = 0;
     if ((gsl_vector_max(invector)-meanTEST) < (meanTEST-gsl_vector_min(invector)) && ((gsl_vector_max(invector)-meanTEST>sgTEST) || (meanTEST-gsl_vector_min(invector)>sgTEST)) && (meanTEST-gsl_vector_min(invector)>2*sgTEST) && (sgTEST*100/meanTEST>1))
     {
+        oscillations = 1;
         char str_nrecord[125];      snprintf(str_nrecord,125,"%d",nrecord);
         message = "Weird oscillations in record " + string(str_nrecord);
-        EP_EXIT_ERROR(message,EPFAIL);
+        //EP_EXIT_ERROR(message,EPFAIL);
+        EP_PRINT_ERROR(message,-999);	// Only a warning
     }
     
     // Convert I into R if 'EnergyMethod' = I2R or I2RFITTED
@@ -273,7 +276,7 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
     
     log_trace("Detecting...");
     // Process each record
-    if (procRecord(reconstruct_init, tstartRecord, 1/record->delta_t, dtcObject, invector, invectorOriginal,*pulsesInRecord, pulsesAll->ndetpulses, record->pixid,record->phid_list->phid_array[0]))
+    if (procRecord(reconstruct_init, tstartRecord, 1/record->delta_t, dtcObject, invector, invectorOriginal,*pulsesInRecord, pulsesAll->ndetpulses, record->pixid,record->phid_list->phid_array[0], oscillations))
     {
         message = "Cannot run routine procRecord for record processing";
         EP_EXIT_ERROR(message,EPFAIL);
@@ -872,11 +875,14 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nre
     }
     // sgTES~0.1% of meanTEST if the record is noise only => sgTES>1% is a weird oscillation
     // Noise records are not important if no pulses are detected in them
+    int oscillations = 0;
     if ((gsl_vector_max(invector)-meanTEST) < (meanTEST-gsl_vector_min(invector)) && ((gsl_vector_max(invector)-meanTEST>sgTEST) || (meanTEST-gsl_vector_min(invector)>sgTEST)) && (meanTEST-gsl_vector_min(invector)>2*sgTEST) && (sgTEST*100/meanTEST>1))
     {
+        oscillations = 1;
         char str_nrecord[125];      snprintf(str_nrecord,125,"%d",nrecord);
         message = "Weird oscillations in record " + string(str_nrecord);
-        EP_EXIT_ERROR(message,EPFAIL);
+        //EP_EXIT_ERROR(message,EPFAIL);
+        EP_PRINT_ERROR(message,-999);	// Only a warning
     }
     
     if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0))
@@ -934,7 +940,7 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nre
     // Process each record
     // thread safe
     if (procRecord(reconstruct_init, tstartRecord, 1/record->delta_t, dtcObject, 
-        invector, invectorOriginal, *pulsesInRecord, pulsesAll->ndetpulses,record->pixid,record->phid_list->phid_array[0]))
+        invector, invectorOriginal, *pulsesInRecord, pulsesAll->ndetpulses,record->pixid,record->phid_list->phid_array[0],oscillations))
     {
         message = "Cannot run routine procRecord for record processing";
         EP_EXIT_ERROR(message,EPFAIL);
@@ -2153,6 +2159,7 @@ int loadRecord(TesRecord* record, double *time_record, gsl_vector **adc_double)
  * - Declare and initialize variables
  * - Allocate GSL vectors
  * - (Low-pass filtering and) differentiation
+ * - If there are weird oscillations in the record, it is not processed => numPulses = 0
  * - Find the events (pulses) in the record
  *       - Production mode:
  *           - No detect: 'noDetect' if tStartPulse1!=0
@@ -2182,8 +2189,9 @@ int loadRecord(TesRecord* record, double *time_record, gsl_vector **adc_double)
  * - num_previousDetectedPulses: Number of previous detected pulses (to know the index to get the proper element from tstartPulse1_i in case tstartPulse1=nameFile)
  * - pixid: Pixel ID (from the input file) to be propagated 
  * - phid: Photon ID (from the input file) to be propagated
+ * - oscillations: 1 (there are weird oscillations in the record) or 0 (record without weird oscillations)
  ****************************************************************************/
-int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, double samprate, fitsfile *dtcObject, gsl_vector *record, gsl_vector *recordWithoutConvert2R, PulsesCollection *foundPulses, long num_previousDetectedPulses, int pixid, int phid)
+int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, double samprate, fitsfile *dtcObject, gsl_vector *record, gsl_vector *recordWithoutConvert2R, PulsesCollection *foundPulses, long num_previousDetectedPulses, int pixid, int phid, int oscillations)
 {
     int status = EPOK;
     string message = "";
@@ -2308,72 +2316,81 @@ gsl_vector_memcpy(recordDERIVATIVE,record);*/
     gsl_vector *recordDERIVATIVEOriginal = gsl_vector_alloc(recordDERIVATIVE->size);   // To be used in 'writeTestInfo'
     gsl_vector_memcpy(recordDERIVATIVEOriginal,recordDERIVATIVE);
     
-    // Find the events (pulses) in the record
-    if ((*reconstruct_init)->opmode == 1)	// In PRODUCTION mode
-    {
-        int tstartFirstEvent = 0;
-        bool triggerCondition; 
-        int flagTruncated;
-        int tstartProvided;
-        
-        if ((!isNumber((*reconstruct_init)->tstartPulse1)) || ((isNumber((*reconstruct_init)->tstartPulse1)) && (atoi((*reconstruct_init)->tstartPulse1) != 0)))
+    // If there are weird oscillations in the record, it is not processed => numPulses = 0
+    if (oscillations == 0)
+    {    
+        // Find the events (pulses) in the record
+        if ((*reconstruct_init)->opmode == 1)	// In PRODUCTION mode
         {
-            if (noDetect(recordDERIVATIVE, (*reconstruct_init), &numPulses, &tstartgsl, &qualitygsl, &maxDERgsl, &samp1DERgsl, num_previousDetectedPulses, samprate, tstartRecord))
-            {
-                message = "Cannot run routine noDetect";
-                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-            }
-        }
-        else 
-        {
-            if (InitialTriggering (recordDERIVATIVE, nSgms,
-                scaleFactor, samprate, stopCriteriaMKC, kappaMKC,
-                &triggerCondition, &tstartFirstEvent, &flagTruncated,
-                &threshold))
-            {
-                message = "Cannot run routine InitialTriggering";
-                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-            }
+            int tstartFirstEvent = 0;
+            bool triggerCondition; 
+            int flagTruncated;
+            int tstartProvided;
             
-            if (strcmp((*reconstruct_init)->detectionMode,"STC") == 0)
+            if ((!isNumber((*reconstruct_init)->tstartPulse1)) || ((isNumber((*reconstruct_init)->tstartPulse1)) && (atoi((*reconstruct_init)->tstartPulse1) != 0)))
             {
-                if (FindSecondariesSTC ((*reconstruct_init)->maxPulsesPerRecord, recordDERIVATIVE, threshold, (*reconstruct_init), tstartFirstEvent, &numPulses, &tstartgsl, &qualitygsl, &maxDERgsl, &samp1DERgsl))
+                if (noDetect(recordDERIVATIVE, (*reconstruct_init), &numPulses, &tstartgsl, &qualitygsl, &maxDERgsl, &samp1DERgsl, num_previousDetectedPulses, samprate, tstartRecord))
                 {
-                    message = "Cannot run FindSecondariesSTC";
+                    message = "Cannot run routine noDetect";
                     EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                 }
             }
-            else if (strcmp((*reconstruct_init)->detectionMode,"AD") == 0)
-            {   
-                if (FindSecondaries ((*reconstruct_init)->maxPulsesPerRecord,
-                    //recordDERIVATIVE, threshold,sigmaout,
-                    recordDERIVATIVE, threshold, samprate,
-                    (*reconstruct_init),
-                                     tstartFirstEvent,
-                                     &numPulses,&tstartgsl,&qualitygsl, &maxDERgsl,&samp1DERgsl,&lagsgsl))
+            else 
+            {
+                if (InitialTriggering (recordDERIVATIVE, nSgms,
+                    scaleFactor, samprate, stopCriteriaMKC, kappaMKC,
+                    &triggerCondition, &tstartFirstEvent, &flagTruncated,
+                    &threshold))
                 {
-                    message = "Cannot run routine FindSecondaries";
+                    message = "Cannot run routine InitialTriggering";
                     EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                }
+                
+                if (strcmp((*reconstruct_init)->detectionMode,"STC") == 0)
+                {
+                    if (FindSecondariesSTC ((*reconstruct_init)->maxPulsesPerRecord, recordDERIVATIVE, threshold, (*reconstruct_init), tstartFirstEvent, &numPulses, &tstartgsl, &qualitygsl, &maxDERgsl, &samp1DERgsl))
+                    {
+                        message = "Cannot run FindSecondariesSTC";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                }
+                else if (strcmp((*reconstruct_init)->detectionMode,"AD") == 0)
+                {   
+                    if (FindSecondaries ((*reconstruct_init)->maxPulsesPerRecord,
+                        //recordDERIVATIVE, threshold,sigmaout,
+                        recordDERIVATIVE, threshold, samprate,
+                        (*reconstruct_init),
+                                        tstartFirstEvent,
+                                        &numPulses,&tstartgsl,&qualitygsl, &maxDERgsl,&samp1DERgsl,&lagsgsl))
+                    {
+                        message = "Cannot run routine FindSecondaries";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
                 }
             }
         }
-    }
-    else if ((*reconstruct_init)->opmode == 0)	// In CALIBRATION mode
-    {
-        if (findPulsesCAL (recordNOTFILTERED, recordDERIVATIVE, &tstartgsl, &qualitygsl, &pulseHeightsgsl, &maxDERgsl,
-            &numPulses, &threshold, 
-            scaleFactor, samprate,
-            samplesUp, nSgms,
-            Lb, Lrs,
-            (*reconstruct_init),
-                           stopCriteriaMKC,
-                           kappaMKC))
+        else if ((*reconstruct_init)->opmode == 0)	// In CALIBRATION mode
         {
-            message = "Cannot run routine findPulsesCAL";
-            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+            if (findPulsesCAL (recordNOTFILTERED, recordDERIVATIVE, &tstartgsl, &qualitygsl, &pulseHeightsgsl, &maxDERgsl,
+                &numPulses, &threshold, 
+                scaleFactor, samprate,
+                samplesUp, nSgms,
+                Lb, Lrs,
+                (*reconstruct_init),
+                            stopCriteriaMKC,
+                            kappaMKC))
+            {
+                message = "Cannot run routine findPulsesCAL";
+                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+            }
         }
+        (*reconstruct_init)->threshold = threshold;
     }
-    (*reconstruct_init)->threshold = threshold;
+    else // There are weird oscillations in the record => No processed 
+    {
+        numPulses = 0;
+        (*reconstruct_init)->threshold = -999.0;
+    }
     
     // Write test info
     if ((*reconstruct_init)->intermediate == 1)
