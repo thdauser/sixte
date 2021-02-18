@@ -106,7 +106,7 @@
  * - Create intermediate output FITS file if required ('createDetectFile')
  * - (Filter and) differentiate the 'models' of the library (only for the first record in PRODUCTION 'opmode=1') ('filderLibrary')
  * - Store the input record in 'invector' ('loadRecord')
- * - Detect weird oscillations in some GSFC records
+ * - Detect weird oscillations in some GSFC records providing a warning (no pulses detected in that record)
  * - Convert I into R if 'EnergyMethod' = I2R or I2RFITTED ('convertI2R')
  * - Process each record ('proceRecord')
  * 	- (Low-pass filter and) differentiate
