@@ -62,7 +62,7 @@ void energy_worker()
     if(energy_queue.wait_and_pop(data)){
       //log_trace("Extracting energy data from queue...");
       //log_debug("Energy data in record %i",data->n_record);
-      th_runEnergy(data->rec, data->trig_reclength,
+      th_runEnergy(data->rec, data->n_record, data->trig_reclength,
                    &(data->rec_init),
                    &(data->record_pulses),
                    //&(data->optimal_filter));
@@ -89,7 +89,7 @@ void energy_worker_v2()
     if(detected_queue.wait_and_pop(data)){
       //log_trace("Extracting energy data from queue...");
       //log_debug("Energy data in record %i",data->n_record);
-      th_runEnergy(data->rec, data->trig_reclength,
+      th_runEnergy(data->rec, data->n_record, data->trig_reclength,
                    &(data->rec_init),
                    &(data->record_pulses),
                    //&(data->optimal_filter);

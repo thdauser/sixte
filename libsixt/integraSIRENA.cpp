@@ -701,7 +701,7 @@
      if ((reconstruct_init->opmode == 1) && (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0))
      {
          // Filter and calculates energy
-         runEnergy(record, trig_reclength, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
+         runEnergy(record, nRecord, trig_reclength, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
      }
      log_trace("After runEnergy");
          

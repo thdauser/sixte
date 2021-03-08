@@ -2426,7 +2426,7 @@ gsl_vector_memcpy(recordDERIVATIVE,record);*/
             gsl_vector_set(tendgsl,i,gsl_vector_get(tstartgsl,i)-preBuffer+sizePulse_b);	//tend_i = tstart_i + Pulse_Length
         }
         
-        if (gsl_vector_get(tendgsl,i) > recordDERIVATIVE->size)		// Truncated pulses at the end of the record
+        if (gsl_vector_get(tendgsl,i) > recordDERIVATIVE->size-1)		// Truncated pulses at the end of the record
         {
             gsl_vector_set(tendgsl,i,(recordDERIVATIVE->size)-1);
             gsl_vector_set (qualitygsl,i,2);
@@ -7650,13 +7650,14 @@ int obtainRiseFallTimes (gsl_vector *recordNOTFILTERED, double samprate, gsl_vec
  *
  * Parameters:
  * - record: Structure that contains the input ADC record
+ * - nrecord: Current record index (to know the particular record)
  * - trig_reclength: Record size (just in case threading and input files with different 'ADC' lengths but the same record size indeed)
  * - reconstruct_init: Member of 'ReconstructInitSIRENA' structure to initialize the reconstruction parameters (pointer and values)
  * - pulsesInRecord: Collection of pulses found in the current record
  * - optimalFilter: Optimal filters used in reconstruction
  * - pulsesAll: Member of *PulsesCollection* structure to store all the pulses found in the input FITS file. To know the index to get the proper element from 'tstartPulse1_i' in case `tstartPulse1` *              was a file name
  ******************************************************************************/
-void runEnergy(TesRecord* record, int trig_reclength, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord, OptimalFilterSIRENA **optimalFilter, PulsesCollection *pulsesAll)
+void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructInitSIRENA** reconstruct_init, PulsesCollection** pulsesInRecord, OptimalFilterSIRENA **optimalFilter, PulsesCollection *pulsesAll)
 {
     // Declare variables
     string message="";
@@ -7863,7 +7864,7 @@ resize_mf_lowres = 4;
             else								(*pulsesInRecord)->pulses_detected[i].grade1 = (*pulsesInRecord)->pulses_detected[i].pulse_duration;
             
             pulseGrade = 0;
-            if (pulseGrading(*reconstruct_init,(*pulsesInRecord)->pulses_detected[i].grade1,(*pulsesInRecord)->pulses_detected[i].grade2,OFlength_strategy,&pulseGrade,&resize_mf))
+            if (pulseGrading(*reconstruct_init,(*pulsesInRecord)->pulses_detected[i].grade1,(*pulsesInRecord)->pulses_detected[i].grade2,OFlength_strategy,&pulseGrade,&resize_mf,nrecord))
             {
                 message = "Cannot run routine pulseGrading";
                 EP_EXIT_ERROR(message,EPFAIL);
@@ -8172,6 +8173,8 @@ resize_mf_lowres = 4;
                         }
                         
                         // It is not necessary to check the allocation because '(*reconstruct_init)->pulse_length'='PulseLength'(input parameter) has been checked previously
+                        if (filtergsl != NULL) gsl_vector_free(filtergsl); filtergsl = 0;
+        
                         if (strcmp((*reconstruct_init)->FilterDomain,"T") == 0)         filtergsl= gsl_vector_alloc(resize_mf);
                         else if (strcmp((*reconstruct_init)->FilterDomain,"F") == 0)	filtergsl= gsl_vector_alloc(resize_mf*2);
                         
@@ -8182,6 +8185,7 @@ resize_mf_lowres = 4;
                             else
                                 filtergsl = gsl_vector_alloc((*reconstruct_init)->library_collection->pulse_templates[0].template_duration);
                         }
+                        gsl_vector_set_all(filtergsl,-999.0);
                         
                         Pab = gsl_vector_alloc(resize_mf);
                         if (numiteration == 0)
@@ -8642,7 +8646,7 @@ resize_mf_lowres = 4;
 /***** SECTION BB ************************************************************
  * th_runEenergy: Run energy calculation only in multithread mode
  *****************************************************************************/
-void th_runEnergy(TesRecord* record, int trig_reclength,
+void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                   ReconstructInitSIRENA** reconstruct_init, 
                   PulsesCollection** pulsesInRecord, 
                   OptimalFilterSIRENA **optimalFilter, PulsesCollection *pulsesAll)
@@ -8852,7 +8856,7 @@ resize_mf_lowres = 4;
             if ((*pulsesInRecord)->pulses_detected[i].quality == 1)		(*pulsesInRecord)->pulses_detected[i].grade1 = -1;
             else								(*pulsesInRecord)->pulses_detected[i].grade1 = (*pulsesInRecord)->pulses_detected[i].pulse_duration;      
             pulseGrade = 0;
-            if (pulseGrading(*reconstruct_init,(*pulsesInRecord)->pulses_detected[i].grade1,(*pulsesInRecord)->pulses_detected[i].grade2,OFlength_strategy,&pulseGrade,&resize_mf))
+            if (pulseGrading(*reconstruct_init,(*pulsesInRecord)->pulses_detected[i].grade1,(*pulsesInRecord)->pulses_detected[i].grade2,OFlength_strategy,&pulseGrade,&resize_mf,nrecord))
             {
                 message = "Cannot run routine pulseGrading";
                 EP_EXIT_ERROR(message,EPFAIL);
@@ -11050,8 +11054,9 @@ int find_Esboundary(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *r
  * - OFlength_strategy: 'OFStrategy' (input)
  * - pulseGrade: Pulse grade (output)
  * - OFlength: Optimal filter length (='OFLength' only if 'OFStrategy'=FIXED and 'OFLength' <= grade1) (output)
+ * - nrecord: Current record index (to know the particular record where there could be more than one pulse => message)
  ****************************************/
-int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade2, int OFlength_strategy, int *pulseGrade, long *OFlength)
+int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade2, int OFlength_strategy, int *pulseGrade, long *OFlength, int nrecord)
 {
     string message = "";
     char valERROR[256];
@@ -11088,12 +11093,30 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int grade1, int grade
     if (OFlength_strategy == 0)		*OFlength = grade1;
     else if (OFlength_strategy == 3)
     {
-        *OFlength = min(reconstruct_init->OFLength,grade1);
-        /*if (reconstruct_init->OFLength > grade1)
+        //*OFlength = min(reconstruct_init->OFLength,grade1);
+        /*if (reconstruct_init->OFLength > grade1) && 
         {
             message = "OFLength provided as input parameter > Pulse duration (there can be a pulse in its tail) => OFLength=Pulse duration";
             EP_PRINT_ERROR(message,-999);	// Only a warning
         }*/
+        
+        //*OFlength = reconstruct_init->OFLength;
+        if ((reconstruct_init->OFLength > grade1) && (reconstruct_init->pulse_length >= reconstruct_init->OFLength))
+        {
+            *OFlength = reconstruct_init->OFLength;
+            
+            char str_nrecord[125];      snprintf(str_nrecord,125,"%d",nrecord);
+            message = "OFLength provided as input parameter > Pulse duration (there can be a pulse in its tail) => Pulse duration = OFLength " + string(str_nrecord);
+            EP_PRINT_ERROR(message,-999);	// Only a warning
+        }
+        else if (reconstruct_init->pulse_length < reconstruct_init->OFLength)
+        {
+            *OFlength = reconstruct_init->pulse_length;
+        }
+        else
+        {
+            *OFlength = reconstruct_init->OFLength;
+        }
     }
     
     if (grade1 >= H1)	// High res
@@ -11259,10 +11282,10 @@ int calculateEnergy (gsl_vector *vector, int pulseGrade, gsl_vector *filter, gsl
     log_debug("filterFFT->size: %i",filterFFT->size);
     log_debug("vector->size: %i",vector->size);    
     log_debug("productSize: %i",productSize);    
-    int minimo;
+    /*int minimo;
     if (vector->size < filter->size) minimo = vector->size;
     else                             minimo = filter->size;
-    /*if (LowRes== 0)
+    if (LowRes== 0)
     {
         for (int i=0;i<minimo;i++)
         //for (int i=0;i<10;i++)
