@@ -241,7 +241,7 @@ int epicmos2_events_main()
 		   "PHA", "PI", "FLAG", "PATTERN"};
     char *tform[]={"D",
 		   "I", "I",
-		   "I", "I", "J", "J",
+		   "J", "J", "J", "J",
 		   "I", "I", "J", "B"};
     char *tunit[]={"s",
 		   "pixel", "pixel",
@@ -478,8 +478,8 @@ int epicmos2_events_main()
       fits_write_col(fptr, TDOUBLE, ctime, row+1, 1, 1, &ev.time, &status);
       fits_write_col(fptr, TINT, crawx, row+1, 1, 1, &ev.rawx, &status);
       fits_write_col(fptr, TINT, crawy, row+1, 1, 1, &ev.rawy, &status);
-      fits_write_col(fptr, TINT, cdetx, row+1, 1, 1, &ev.detx, &status);
-      fits_write_col(fptr, TINT, cdety, row+1, 1, 1, &ev.dety, &status);
+      fits_write_col(fptr, TLONG, cdetx, row+1, 1, 1, &ev.detx, &status);
+      fits_write_col(fptr, TLONG, cdety, row+1, 1, 1, &ev.dety, &status);
       fits_write_col(fptr, TLONG, cx, row+1, 1, 1, &ev.x, &status);
       fits_write_col(fptr, TLONG, cy, row+1, 1, 1, &ev.y, &status);
       fits_write_col(fptr, TINT, cpha, row+1, 1, 1, &ev.pha, &status);
