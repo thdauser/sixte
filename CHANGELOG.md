@@ -1,3 +1,12 @@
+version [2.6.3]
+  - Fix numerical overflow error in XMM epic*_events tools
+  - Make installation process compatible to zsh
+  - erosim: Set TSTART default to 1.1.2020, fix bug in initialization of summed ARF
+  - ero_calevents:
+    * Add PHA2PI correction, add Seed parameter, -ve energy for split evt
+    * Add FLAGSEL, PAT_SEL keywords
+  - makespec: Set CORRFILE to same value as BACKFILE in makespec
+
 version [2.6.2]
   - new tool: sixte_arfgen
     * ARF generator to calculate off-axis ARFs for any location and attitude.
