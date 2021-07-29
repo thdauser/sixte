@@ -660,6 +660,11 @@ void processGradedEvent(GradeProxy* grade_proxy, const double sample_length,PixI
 		if(is_trigger==0){
 			//TODO: Perhaps add a column to event list to flag the crosstalk impacts and their influenced victim (in grading)
 
+                        // Add crosstalk energy shift
+                        if (grade_proxy->nb_crosstalk_influence > 0) {
+                          impact_to_save->energy += grade_proxy->crosstalk_energy;
+                        }
+
 			// Add processed event to event file if not pile-up!
 			updateSignal(event_file,grade_proxy->row,impact_to_save->energy,grade1,grade2,grading,
 					grade_proxy->nb_crosstalk_influence,grade_proxy->crosstalk_energy,status);
