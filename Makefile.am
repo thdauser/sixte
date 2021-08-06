@@ -20,9 +20,11 @@ test:
 	cd test/exec/ && make test
 	cd test/e2e/ && ./run_e2e_test.sh
 
-crit_mac_version=9
+crit_mac_version_major=10
+crit_mac_version_minor=10
 install-exec-hook:
-	@if [ 0$(OSX_VERSION_MINOR) -gt $(crit_mac_version)  ]; then\
+	@if ([ 0$(OSX_VERSION_MAJOR) -eq $(crit_mac_version_major) ] && [ 0$(OSX_VERSION_MINOR) -gt $(crit_mac_version_minor) ]) || \
+		[ 0$(OSX_VERSION_MAJOR) -gt $(crit_mac_version_major) ]; then\
 		echo "\n  ***  Mac Version $(OSX_VERSION_MAJOR).$(OSX_VERSION_MINOR) detected *** ";\
 		echo "\n   ... trying to solve known problems with this installation with this script:\n\n ";\
 		./mac_solve_sixte_dependencies.sh @simput_dir@ @prefix@;\
@@ -33,4 +35,4 @@ BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
 dist-hook:
-	echo $(VERSION) > $(distdir)/.tarball-version                                                                       
+	echo $(VERSION) > $(distdir)/.tarball-version
