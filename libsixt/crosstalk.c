@@ -2057,7 +2057,6 @@ int computeCrosstalkInfluence(CrosstalkTimedep* buffer,PixImpact* impact,PixImpa
 		energy_influence= energy*(weight0+
 				(weight1-weight0) /(buffer->time[timedep_index+1]-buffer->time[timedep_index])
 				*(time_difference-buffer->time[timedep_index]));
-		impact->energy+=energy_influence;
 		*influence+=energy_influence;
 		headas_chat(7,", Influence:%.2e (fraction:%.2e)\n",*influence,*influence/energy);
 		return 1;

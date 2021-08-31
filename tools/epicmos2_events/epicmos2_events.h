@@ -54,7 +54,7 @@ typedef struct {
   /* [pixel] */
   int rawx, rawy;
   /* [0.05arcsec] */
-  int detx, dety;
+  long detx, dety;
   /* [0.05arcsec] */
   long x, y;
 

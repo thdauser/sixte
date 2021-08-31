@@ -8,19 +8,19 @@
 # Author: Joern Wilms, joern.wilms@sternwarte.uni-erlangen.de
 #
 
-if [ "X${SIXTE}" == X ];  then
+if [[ "X${SIXTE}" == X ]];  then
   echo "sixte-install.sh: ERROR -- set SIXTE before sourcing sixte-install.sh"
   exit 1
 fi
 
-if ! [ -d ${SIXTE} ]; then
+if ! [[ -d ${SIXTE} ]]; then
     echo "Directory ${SIXTE} does not exist"
     exit 2
 fi
 
-if [ "X${SIMPUT}" == X ];  then
+if [[ "X${SIMPUT}" == X ]];  then
     export SIMPUT=${SIXTE}
-    if ! [ -e ${SIMPUT}/bin/simput-install.sh ]; then
+    if ! [[ -e ${SIMPUT}/bin/simput-install.sh ]]; then
 	echo "sixte-install.sh: ERROR -- set SIMPUT environment variable before sourcing sixte-install.sh"
 	exit 1
     fi
@@ -40,7 +40,7 @@ PATH=${sixte_bin}:${PATH}
 #
 # setup parameter files
 #
-if [ "X${PFILES}" == X ]; then
+if [[ "X${PFILES}" == X ]]; then
     mkdir -p ${HOME}/pfiles
     PFILES="${HOME}/pfiles;${SIXTE}/share/sixte/pfiles"
 else
@@ -51,7 +51,7 @@ fi
 export DYLD_LIBRARY_PATH LD_LIBRARY_PATH PATH PFILES
 
 SIXTE_LIB=${SIXTE}/lib
-if [ "x$LD_LIBRARY_PATH" = x ]; then
+if [[ "x$LD_LIBRARY_PATH" = x ]]; then
   LD_LIBRARY_PATH="$SIXTE_LIB"
 else
   LD_LIBRARY_PATH=`echo ":$LD_LIBRARY_PATH:" | sed "s%:$SIXTE_LIB:%:%g" | sed "s%::*$%%"`
@@ -59,8 +59,8 @@ else
 fi
 
 build_os=`uname`
-if [ "$build_os" == "Darwin" ]; then
-    if [ "x$DYLD_LIBRARY_PATH" = x ]; then
+if [[ "$build_os" == "Darwin" ]]; then
+    if [[ "x$DYLD_LIBRARY_PATH" = x ]]; then
 	DYLD_LIBRARY_PATH="$SIXTE_LIB"
     else
 	DYLD_LIBRARY_PATH=`echo ":$DYLD_LIBRARY_PATH:" | sed "s%:$SIXTE_LIB:%:%g" | sed "s%::*$%%"`

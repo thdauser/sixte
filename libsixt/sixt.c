@@ -146,7 +146,7 @@ void sixt_get_XMLFile(char* const filename,
   // Determine the XML filename according to the selected
   // mission, instrument, and mode.
   if (0==strcmp(Mission, "SRG")) {
-    strcat(filename, "/srg");
+    strcat(filename, "/srg/erosita/");
     if (0==strcmp(Instrument, "EROSITA")) {
       strcat(filename, "/erosita_dummy.xml");
     } else {
@@ -245,7 +245,7 @@ void sixt_get_eroXMLFile(char *filename,
 			const int telescop_index,
 			int* const status){
 
-  sprintf(filename, "%s/instruments/srg/erosita_%d.xml", SIXT_DATA_PATH, telescop_index+1);
+  sprintf(filename, "%s/instruments/srg/erosita/erosita_%d.xml", SIXT_DATA_PATH, telescop_index+1);
 
 }
 #pragma GCC diagnostic pop
