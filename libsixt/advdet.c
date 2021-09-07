@@ -900,6 +900,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].value=getXMLAttributeInt(attr, "NUM");
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
 
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades++;
             } else {
@@ -914,6 +915,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].value=getXMLAttributeInt(attr, "NUM");
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                    xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].rmf=NULL;
 
                     xmlparsedata->det->recons[i].ngrades++;
@@ -937,6 +939,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].value=getXMLAttributeInt(attr, "NUM");
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
                 xmlparsedata->det->pix[xmlparsedata->det->cpix].grades[xmlparsedata->det->pix[xmlparsedata->det->cpix].ngrades].rmf=NULL;
 
                 char rmffile[MAXFILENAME];
@@ -955,6 +958,7 @@ static void AdvDetXMLElementStart(void* parsedata,
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].value=getXMLAttributeInt(attr, "NUM");
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+                    xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
                     xmlparsedata->det->pix[i].grades[xmlparsedata->det->pix[i].ngrades].rmf=NULL;
 
                     char rmffile[MAXFILENAME];

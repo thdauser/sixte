@@ -149,7 +149,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
     pulse16=(uint16_t) ((pulse-data->imin)*data->aducnv);
   }
   pulse = (pulse-data->imin)*data->aducnv;
-
+  
   // save data in the fifo
   data->fifo->adc_double[data->fifoind]=pulse;
   data->fifo->adc_array[data->fifoind]=pulse16;
@@ -157,7 +157,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   if (data->fifoind==data->fifo->trigger_size) {
     data->fifoind=0;
   }
-
+  
   // initialize this trigger?
   if (data->helper[0]==0xFFFF) {
     if (data->strategy==TRIGGER_MOVAVG) {
@@ -170,7 +170,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       data->CanTrigger=data->npts;
     }
   }
-
+  
   int trigger=0; // initialize to false
 
   // only check trigger if we are allowed to trigger
@@ -228,7 +228,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
   } else {
     data->CanTrigger--;
   }
-
+  
   // update moving average sum
   // note: we can always do this, including when pulse16==0xFFFF
   // since we prevent triggers if a 0xFFFF is in the queue with
@@ -241,7 +241,7 @@ void tes_append_trigger(tesparams *tes,double time,double pulse, int *status) {
       data->helper[1]=0;
     }
   }
-
+  
   if (trigger) {
 
     //    printf("Trigger: %10.5f\n",time);

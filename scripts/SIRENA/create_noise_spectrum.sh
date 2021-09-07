@@ -46,7 +46,6 @@ samprate=156250  # sampling frequency
 rlength=8200 # record length (samples) >= High resolution length
 nintervals=1000 # default noise intervals for the noise spectrum
 time=`python -c "print(${nintervals} * ${rlength} / ${samprate})"`  # noise simulation time (s)
-acbias="yes"
 
 # FILENAMES
 #---------------
@@ -77,14 +76,14 @@ tessim PixID=1 \
                 triggersize=${rlength} \
                 prebuffer=0 \
                 PixType=${pixfile} \
-                acbias=${acbias}
+                acbias=yes
 
 # 1.3.2) (if your data have been simulated with XIFUSIM)
 # define  XML files 
 xmldirXF=${XIFUSIM}/share/xifusim/instruments
 # create XML XF file for noise with <Trigger  model=TriggerNoise>
-xmlfile=${xmldirXF}/8pix_nobbfb.xml
-xmlfilenoise=${xmldirXF}/8pix_noise_nobbfb.xml
+xmlfile=${xmldirXF}/1pix_lpa2.5a_fll.xml
+xmlfilenoise=${xmldirXF}/1pix_lpa2.5a_fll_noise.xml
 
 # create a noise-trigger XML file if not already present
 if [ ! -e ${xmlfilenoise} ]; then
@@ -95,7 +94,7 @@ fi
 xifusim PixImpList=${noise_imp}\
                                 Streamfile=${noise_sim}\
                                 tstop=${time}\
-                                acbias=${acbias}\
+                                acbias=no\
                                 XMLfilename=${xmlfilenoise}\
                                 trig_reclength=${rlength}\
                                 trig_n_pre=0 \

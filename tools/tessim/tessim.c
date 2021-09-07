@@ -307,7 +307,6 @@ int tessim_main() {
       det->pix[0].tes->progressbar=progressbar_new("simulating",
                                        (unsigned long) ((par.tstop-par.tstart)*PROGRESSBAR_FACTOR));
     }
-
     // Run the simulation
     tes_propagate(det,par.tstop,&status);
 
@@ -351,6 +350,7 @@ int tessim_main() {
 
   } while(0); // end of error handling loop
 
+  //printf("%s %d %s","Paso 5: status=",status,"\n");
   if (EXIT_SUCCESS==status) {
     headas_chat(3,"finished successfully!\n\n");
     return(EXIT_SUCCESS);

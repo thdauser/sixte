@@ -1035,7 +1035,6 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
       // get the current TES
       tesparams *tes = det->pix[ii].tes;
 
-
       // TODO: BBFB loop is simulated here at pixel level whereas it should be done at channel level
       double bbfb_output=0.0;
       if (tes->dobbfb){
@@ -1099,7 +1098,7 @@ int tes_propagate(AdvDet *det, double tstop, int *status) {
         if (tes->write_to_stream != NULL ) {
           tes->write_to_stream(tes,tes->time,pulse,status);
         }
-
+        
         samples[ii]=0;
       }
 

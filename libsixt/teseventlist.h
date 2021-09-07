@@ -78,6 +78,8 @@ typedef struct {
 
 	/** PH_ID of the reconstructed photons */
 	long * ph_ids;
+    long * ph_ids2;
+    long * ph_ids3;
 
 	/** PIX_ID of the reconstructed photons */
 	long * pix_ids;

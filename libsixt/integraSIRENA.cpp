@@ -18,14 +18,14 @@
  *   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
  *   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
  *   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
- *   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
+ *   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
  * 
- * /***********************************************************************
+ ***********************************************************************
  *                      INTEGRASIRENA
  *
  *  File:       integraSIRENA.cpp
  *  Developers: Beatriz Cobo
- * 	       cobo@ifca.unican.es
+ * 	            cobo@ifca.unican.es
  *              IFCA
  *              Maite Ceballos
  *              ceballos@ifca.unican.es
@@ -116,7 +116,7 @@
   *             It has been fixed in 'tesreconstruction' as 'DAB'
   * - oflength_strategy: Optimal Filter length Strategy: FREE, BASE2, BYGRADE or FIXED
   * - oflength: Optimal Filter length (taken into account if :option:`OFStrategy`=FIXED)
-  * - preBuffer: Some samples added before the starting time of a pulse
+  * - preBuffer: Some samples added or not before the starting time of a pulse (number of added samples read from the xml file)
   * - monoenergy: Monochromatic energy of input file in eV (only for library creation)
   * - hduPRECALWN: Add or not the PRECALWN HDU in the library file (1/0) (only for library creation)
   * - hduPRCLOFWM: Add or not the PRCLOFWM HDU in the library file (1/0) (only for library creation)
@@ -143,12 +143,13 @@
                                                 char* const library_file, char* const event_file, int pulse_length, double scaleFactor, int samplesUp, int samplesDown,
                                                 double nSgms, int detectSP, int opmode, char *detectionMode, double LrsT, double LbT, char* const noise_file, char* filter_domain, char* filter_method, 
                                                 char* energy_method, double filtEev, double Ifit, char *ofnoise, int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, char *ofinterp,
-                                                char* oflength_strategy, int oflength, int preBuffer,
+                                                char* oflength_strategy, int oflength, char preBuffer,
                                                 double monoenergy, char hduPRECALWN, char hduPRCLOFWM, int largeFilter, int interm, char* const detectFile, int errorT,
                                                 int Sum0Filt,
                                                 char clobber, int maxPulsesPerRecord, double SaturationValue,
                                                 char* const tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status)
  {  
+     
      //gsl_set_error_handler_off();
      /*string message = "";
       *	char valERROR[256];*/
@@ -169,11 +170,28 @@
          //EP_PRINT_ERROR("Pulse length not provided => Fixed as the base-2 value equal or lower than largeFilter",-999); // Only a warning
      }
      
+     // Loading in the reconstruct_init structure values related to grading and preBuffer values from the XML file 
+     if (0 != preBuffer)	reconstruct_init->preBuffer = 1;
+     else			        reconstruct_init->preBuffer = 0;
+     gsl_vector *pBi;
+     gsl_vector *posti;
+     if (reconstruct_init->preBuffer == 1)
+     {
+        pBi = gsl_vector_alloc(reconstruct_init->grading->ngrades);
+        gsl_matrix_get_col(pBi,reconstruct_init->grading->gradeData,2);
+        reconstruct_init->preBuffer_max_value = gsl_vector_max(pBi);
+        reconstruct_init->preBuffer_min_value = gsl_vector_min(pBi);
+        posti = gsl_vector_alloc(reconstruct_init->grading->ngrades);
+        gsl_matrix_get_col(posti,reconstruct_init->grading->gradeData,1);
+        reconstruct_init->post_max_value = gsl_vector_max(posti);
+        reconstruct_init->post_min_value = gsl_vector_min(posti);
+     }
      
      if (exists)
-     {	
+     {
          if (opmode == 1)		
          {
+             
              /*if (pulse_length == -999)  
              {
                  pulse_length = oflength;
@@ -181,16 +199,24 @@
              }*/
              if ((pulse_length < oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
              {
-                 EP_PRINT_ERROR("0-padding is going to be used)",-999); // Only a warning
+                 EP_PRINT_ERROR("0-padding is going to be used",-999); // Only a warning
+                 /*if (preBuffer > pulse_length)
+                 {
+                    EP_EXIT_ERROR("It has no sense preBuffer>PulseLength",EPFAIL);
+                 }*/
              }
              else if ((pulse_length > oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
              {
+                 /*if (preBuffer > oflength)
+                 {
+                    EP_EXIT_ERROR("It has no sense preBuffer>OFLength",EPFAIL);
+                 }*/
                  pulse_length = oflength;
              }
              largeFilter = pulse_length;
          }
          
-         reconstruct_init->library_collection = getLibraryCollection(library_file, opmode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, lagsornot, preBuffer, status);
+         reconstruct_init->library_collection = getLibraryCollection(library_file, opmode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, lagsornot, reconstruct_init->preBuffer, pBi, posti, status);
          if (*status)
          {
              EP_EXIT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
@@ -227,6 +253,12 @@
      else if (!exists && opmode==1)
      {
          EP_EXIT_ERROR((char*)"Error accessing library file: it does not exists ",EPFAIL); 
+     }
+     
+     if (reconstruct_init->preBuffer == 1)
+     {
+        gsl_vector_free(pBi); pBi = 0;
+        gsl_vector_free(posti); posti = 0;
      }
      
      // Load NoiseSpec structure
@@ -384,7 +416,6 @@
      strcpy(reconstruct_init->OFInterp,ofinterp);
      strcpy(reconstruct_init->OFStrategy,oflength_strategy);
      reconstruct_init->OFLength      = oflength;
-     reconstruct_init->preBuffer      = preBuffer;
      reconstruct_init->errorT = errorT;
      reconstruct_init->Sum0Filt = Sum0Filt;
      reconstruct_init->intermediate  = interm;
@@ -453,14 +484,24 @@
      {
          EP_EXIT_ERROR("Record size is <= 0",EPFAIL);
      }
-     //log_debug("Pulse length: %d",reconstruct_init->pulse_length);
-     //log_debug("Record size: %d",record->trigger_size);
+     
      if(reconstruct_init->pulse_length > record->trigger_size)
      {
          //EP_EXIT_ERROR("Warning: pulse length is larger than record size. Pulse length set to maximum value (record size)",EPFAIL);
-         if (reconstruct_init->opmode == 0)
+         /*if (reconstruct_init->opmode == 0)
          {
              EP_EXIT_ERROR("largeFilter is larger than record size",EPFAIL);
+         }
+         else 
+         {
+            EP_EXIT_ERROR("Pulse length is larger than record size",EPFAIL);
+         }*/
+         if (reconstruct_init->opmode == 0) 
+         {
+             if (reconstruct_init->preBuffer == 0)
+                 EP_EXIT_ERROR("largeFilter is larger than record size",EPFAIL);
+             //else if (reconstruct_init->preBuffer == 1)
+             //    
          }
          else 
          {
@@ -688,7 +729,7 @@
      }
          
      // Detect pulses in record
-     //log_trace("Before runDetect");
+     log_trace("Before runDetect");
      runDetect(record, trig_reclength,lastRecord, nRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
      log_trace("After runDetect");
      
@@ -742,6 +783,8 @@
          if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
          if (event_list->pulse_heights != NULL) 	delete [] event_list->pulse_heights;
          if (event_list->ph_ids != NULL) 	delete [] event_list->ph_ids;
+         if (event_list->ph_ids2 != NULL) 	delete [] event_list->ph_ids2;
+         if (event_list->ph_ids3 != NULL) 	delete [] event_list->ph_ids3;
          if (event_list->pix_ids != NULL) 	delete [] event_list->pix_ids;
          if (event_list->tstarts != NULL) 	delete [] event_list->tstarts;
          if (event_list->tends != NULL) 	        delete [] event_list->tends;
@@ -786,7 +829,7 @@
          }
      }
      
-     log_debug("pulsesAll: %i",(*pulsesAll)->ndetpulses);
+     log_trace("pulsesAll: %i",(*pulsesAll)->ndetpulses);
      //cout<<"pulsesAll: "<<(*pulsesAll)->ndetpulses<<endl;
      //cout<<"pulsesInRecord: "<<pulsesInRecord->ndetpulses<<endl;
      
@@ -804,6 +847,8 @@
      event_list->grades2  = new int[event_list->index];
      event_list->pulse_heights  = new double[event_list->index];
      event_list->ph_ids   = new long[event_list->index];
+     event_list->ph_ids2   = new long[event_list->index];
+     event_list->ph_ids3   = new long[event_list->index];
      event_list->pix_ids   = new long[event_list->index];
      event_list->tends   = new double[event_list->index];
      event_list->tstarts   = new double[event_list->index];
@@ -839,6 +884,8 @@
              event_list->pulse_heights[ip]  = pulsesInRecord->pulses_detected[ip].pulse_height;
              event_list->pix_ids[ip]  = pulsesInRecord->pulses_detected[ip].pixid;
              event_list->ph_ids[ip]  = pulsesInRecord->pulses_detected[ip].phid;
+             event_list->ph_ids2[ip]  = pulsesInRecord->pulses_detected[ip].phid2;
+             event_list->ph_ids3[ip]  = pulsesInRecord->pulses_detected[ip].phid3;
              event_list->tstarts[ip]  = pulsesInRecord->pulses_detected[ip].Tstart;
              event_list->tends[ip]  = pulsesInRecord->pulses_detected[ip].Tend;
              event_list->risetimes[ip]  = pulsesInRecord->pulses_detected[ip].riseTime;
@@ -861,7 +908,7 @@
              }
              
              gsl_vector_free(numLagsUsed_vector);
-         }                   
+         }           
      }
      else
      {
@@ -1063,9 +1110,12 @@
   * 	      It has been fixed in 'tesreconstruction' as 'DAB' (but it would be possible to work with 'MF')
   * - filtEeV: Energy of the filters of the library to be used to calculate energy
   * - lagsornot: Lags (1) or no lags (0)
+  * - preBuffer: Using preBuffer (1) or not using preBuffer (0)
+  * - pBi: Vector with the preBuffer values read from the XML file
+  * - posti: Vector with the post values read from the XML file
   * - status: Input/output status
   ******************************************************************************/
- LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char* filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, int* const status)
+  LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char* filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, gsl_vector *pBi, gsl_vector *posti, int* const status)
  {  	
      // Create LibraryCollection structure
      LibraryCollection* library_collection = new LibraryCollection;
@@ -1193,10 +1243,21 @@
          *status = EPFAIL; return(library_collection);
      }
      
-     if ((opmode == 0) && (pulse_length != template_duration))
+     if (preBuffer == 0)
      {
-         EP_PRINT_ERROR("It is not possible the PulseLength provided because it does not match with the PulseLength (PULSE_column_length) of the existing library",EPFAIL);
-         *status=EPFAIL; return(library_collection);
+        if ((opmode == 0) && (pulse_length != template_duration))
+        {
+            EP_PRINT_ERROR("It is not possible the PulseLength provided because it does not match with the PulseLength (PULSE_column_length) of the existing library",EPFAIL);
+            *status=EPFAIL; return(library_collection);
+        }
+     }
+     else   // preBuffer = 1
+     {
+        if ((opmode == 0) && (gsl_vector_max(posti) != template_duration))
+        {
+            EP_PRINT_ERROR("It is not possible the post and pB values provided in the XML file because it does not match with the template duration of the existing library",EPFAIL);
+            *status=EPFAIL; return(library_collection);
+        }
      }
      
      int template_durationPLSMXLFF = -999;
@@ -1674,7 +1735,7 @@
              gsl_matrix_set_row(library_collection->W,it,vectorAux_W);
          }
          
-         if ((opmode == 1) && (it < ntemplates-1) && (strcmp(energy_method,"WEIGHT") == 0) ||
+         if (((opmode == 1) && (it < ntemplates-1) && (strcmp(energy_method,"WEIGHT") == 0)) ||
              ((opmode == 0) && (hduPRECALWN == 1) && (ntemplates > 1) && (it < ntemplates-1)))
          {
              gsl_matrix_get_row(vectorAux_T,matrixAux_T,it);
@@ -1694,14 +1755,14 @@
              gsl_vector_set(library_collection->r,it,gsl_vector_get(vectorAux_r,it));
          }	
          
-         if ((opmode == 1)  && (it < ntemplates-1) &&(strcmp(energy_method,"WEIGHTN") == 0) ||
+         if (((opmode == 1)  && (it < ntemplates-1) && (strcmp(energy_method,"WEIGHTN") == 0)) ||
              ((opmode == 0) && (hduPRECALWN == 1) && (ntemplates > 1) && (it < ntemplates-1)))
          {
              gsl_matrix_get_row(vectorAux_WAB,matrixAux_WAB,it);
              gsl_matrix_set_row(library_collection->WAB,it,vectorAux_WAB);
          }
          
-         if ((opmode == 1)  && (it < ntemplates-1) &&(strcmp(energy_method,"WEIGHTN") == 0) ||
+         if (((opmode == 1)  && (it < ntemplates-1) &&(strcmp(energy_method,"WEIGHTN") == 0)) ||
              ((opmode == 0) && (ntemplates > 1) && (it < ntemplates-1)))
          {
              
@@ -1750,7 +1811,8 @@
      if (vectorAux_DAB != NULL) gsl_vector_free(vectorAux_DAB);
      
      // Added new code to handle the new HDUs FIXFILTF, FIXFILTT, PRECALWN and PRCLOFWM
-     if (opmode == 0) 
+     //if (opmode == 0)
+     if ((opmode == 0) && (preBuffer == 0)) 
      {
          // FIXFILTF HDU
          strcpy(HDUname,"FIXFILTF");
@@ -1768,7 +1830,7 @@
              return(library_collection);
          }
          if (ntemplates == 1)	nOFs = nOFs-1;		// -1 because the ENERGYcolumn
-         else 			nOFs = (nOFs-1)/2;	// -1 because the ENERGYcolumn and /2 because the AB column
+         else 			        nOFs = (nOFs-1)/2;	// -1 because the ENERGYcolumn and /2 because the AB column
          
          if (nOFs == 0)	
          {
@@ -1803,7 +1865,7 @@
              }
          }
          if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))            lengthALL_PRCLWN = lengthALL_F-largeFilter*2;
-         else              					                       lengthALL_PRCLWN = lengthALL_F;
+         else              					                                            lengthALL_PRCLWN = lengthALL_F;
          
          lengthALL_PRCLOFWM = lengthALL_F;
          
@@ -2157,6 +2219,149 @@
          }
          gsl_matrix_free(matrixALL_PRCLOFWMx);
      }
+     else if ((opmode == 0) && (preBuffer == 1))
+     {
+         // FIXFILTF HDU
+         strcpy(HDUname,"FIXFILTF");
+         if (fits_movnam_hdu(fptr, ANY_HDU,HDUname, extver, status))
+         {
+             EP_PRINT_ERROR("Error moving to HDU FIXFILTF in library file",*status);
+             return(library_collection);
+         }
+         
+         library_collection->nfixedfilters = posti->size;
+         
+         int lengthALL_F = 0;
+         int lengthALL_T = 0;         
+
+         for (int i=0;i<posti->size;i++)
+         {
+             lengthALL_T = lengthALL_T + gsl_vector_get(posti,i);
+         }
+         
+         lengthALL_F = lengthALL_T*2;
+         
+         gsl_matrix *matrixALL_OFFx = gsl_matrix_alloc(ntemplates,lengthALL_F);
+         gsl_matrix *matrixALL_OFTx = gsl_matrix_alloc(ntemplates,lengthALL_T);
+         gsl_matrix *matrixALLab_OFFx = gsl_matrix_alloc(ntemplates,lengthALL_F);
+         gsl_matrix *matrixALLab_OFTx = gsl_matrix_alloc(ntemplates,lengthALL_T);
+         
+         char str_length[125];
+         
+         gsl_matrix *matrixAux_OFFx = NULL;
+         gsl_matrix *matrixAuxab_OFFx = NULL;
+         int index = 0;
+         strcpy(obj.nameTable,"FIXFILTF");
+         obj.iniRow = 1;
+         obj.endRow = ntemplates;
+         for (int i=0;i<posti->size;i++)
+         {
+             snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));	
+             matrixAux_OFFx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i)*2);
+             
+             strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
+             if (readFitsComplex (obj,&matrixAux_OFFx))
+             {
+                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 *status=EPFAIL; return(library_collection);
+             }
+             for (int j=0;j<matrixAux_OFFx->size1;j++)
+             {
+                 for (int k=0;k<matrixAux_OFFx->size2;k++)
+                 {
+                     gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
+                 }
+             }
+            
+             index = index + gsl_vector_get(posti,i)*2;
+             
+             if (ntemplates > 1)
+             {
+                 EP_PRINT_ERROR("Code not prepared for ntemplates>1 and preBuffer=yes",*status);
+                 return(library_collection);
+             }
+             
+             gsl_matrix_free(matrixAux_OFFx);
+             gsl_matrix_free(matrixAuxab_OFFx);
+         }
+         
+         // FIXFILTT HDU
+         strcpy(HDUname,"FIXFILTT");
+         if (fits_movnam_hdu(fptr, ANY_HDU,HDUname, extver, status))
+         {
+             EP_PRINT_ERROR("Error moving to HDU FIXFILTT in library file",*status);
+             return(library_collection);
+         }
+         
+         gsl_matrix *matrixAux_OFTx = NULL;
+         gsl_matrix *matrixAuxab_OFTx = NULL;
+         index = 0;
+         strcpy(obj.nameTable,"FIXFILTT");
+         for (int i=0;i<posti->size;i++)
+         {
+             snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));
+             matrixAux_OFTx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i));
+             
+             strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
+             if (readFitsComplex (obj,&matrixAux_OFTx))
+             {
+                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 *status=EPFAIL; return(library_collection);
+             }
+             for (int j=0;j<matrixAux_OFTx->size1;j++)
+             {
+                 for (int k=0;k<matrixAux_OFTx->size2;k++)
+                 {
+                     gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
+                 }
+             }
+             
+             if (ntemplates > 1)
+             {
+                 EP_PRINT_ERROR("Code not prepared for ntemplates>1 and preBuffer=yes",*status);
+                 return(library_collection);
+             }
+             
+             index = index + gsl_vector_get(posti,i);
+             
+             gsl_matrix_free(matrixAux_OFTx);
+             gsl_matrix_free(matrixAuxab_OFTx);
+         }
+         for (int it=0;it<ntemplates;it++)
+         {
+             library_collection->optimal_filtersFREQ[it].energy		= gsl_vector_get(library_collection->energies,it);
+             library_collection->optimal_filtersFREQ[it].ofilter_duration	= lengthALL_F;
+             library_collection->optimal_filtersFREQ[it].ofilter    		= gsl_vector_alloc(lengthALL_F);
+             
+             gsl_matrix_get_row(library_collection->optimal_filtersFREQ[it].ofilter,matrixALL_OFFx,it);
+             
+             library_collection->optimal_filtersTIME[it].energy		= gsl_vector_get(library_collection->energies,it);
+             library_collection->optimal_filtersTIME[it].ofilter_duration 	= lengthALL_T;
+             library_collection->optimal_filtersTIME[it].ofilter    		= gsl_vector_alloc(lengthALL_T);
+             
+             gsl_matrix_get_row(library_collection->optimal_filtersTIME[it].ofilter,matrixALL_OFTx,it);
+             
+             if (it < ntemplates-1)
+             {
+                 library_collection->optimal_filtersabFREQ[it].energy		= gsl_vector_get(library_collection->energies,it);
+                 library_collection->optimal_filtersabFREQ[it].ofilter_duration  = lengthALL_F;
+                 library_collection->optimal_filtersabFREQ[it].ofilter    	= gsl_vector_alloc(lengthALL_F);
+                 
+                 gsl_matrix_get_row(library_collection->optimal_filtersabFREQ[it].ofilter,matrixALLab_OFFx,it);
+                 
+                 library_collection->optimal_filtersabTIME[it].energy		= gsl_vector_get(library_collection->energies,it);
+                 library_collection->optimal_filtersabTIME[it].ofilter_duration	= lengthALL_F;
+                 library_collection->optimal_filtersabTIME[it].ofilter    	= gsl_vector_alloc(lengthALL_T);
+                 
+                 gsl_matrix_get_row(library_collection->optimal_filtersabTIME[it].ofilter,matrixALLab_OFTx,it);
+             }
+         }
+         
+         gsl_matrix_free(matrixALL_OFFx);
+         gsl_matrix_free(matrixALL_OFTx);
+         gsl_matrix_free(matrixALLab_OFFx);
+         gsl_matrix_free(matrixALLab_OFTx);
+     }
      
      if ((opmode == 1) && (oflib == 1))
      { 
@@ -2183,14 +2388,24 @@
                  return(library_collection);
              }
              
-             if (ntemplates == 1)
+             if (preBuffer == 0)
              {
-                 int nOFs_aux;
-                 nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
-                 if ((nOFs_aux == floor(log2(template_duration))) || (nOFs_aux == 1 + floor(log2(template_duration))))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
-                 else 							nOFs = (nOFs-1)/2;	// /2 because the AB column
+                if (ntemplates == 1)
+                {
+                    int nOFs_aux;
+                    nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
+                    if ((nOFs_aux == floor(log2(template_duration))) || (nOFs_aux == 1 + floor(log2(template_duration))))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+                    else                                                                            							nOFs = (nOFs-1)/2;	// /2 because the AB column
+                }
+                else 								                                                                            nOFs = (nOFs-1)/2;	// /2 because the AB column
              }
-             else 								nOFs = (nOFs-1)/2;	// /2 because the AB column
+             else // preBuffer =1
+             {
+                 if (ntemplates == 1)   nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+                 else                   nOFs = (nOFs-1)/2;	// /2 because the AB column             
+                 
+             }
+             
              if (nOFs == 0)	
              {
                  EP_PRINT_ERROR("The library has no fixed optimal filters",EPFAIL); 
@@ -2199,16 +2414,34 @@
              library_collection->nfixedfilters = nOFs;
              
              int lengthALL_F = 0;
-             for (int i=0;i<nOFs;i++)
+             int lengthALL_T = 0;
+             if (preBuffer == 0)
              {
-                 if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                 {
-                     if (i==0)	lengthALL_F = lengthALL_F + template_durationPLSMXLFF*2;
-                     else		lengthALL_F = lengthALL_F + pow(2,floor(log2(template_duration))-i+1)*2;
-                 }
-                 else	lengthALL_F = lengthALL_F + pow(2,floor(log2(template_duration))-i)*2;
+                 for (int i=0;i<nOFs;i++)
+                {
+                    if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                    {
+                        if (i==0)	lengthALL_F = lengthALL_F + template_durationPLSMXLFF*2;
+                        else		lengthALL_F = lengthALL_F + pow(2,floor(log2(template_duration))-i+1)*2;
+                    }
+                    else	lengthALL_F = lengthALL_F + pow(2,floor(log2(template_duration))-i)*2;
+                }
              }
-             
+             else  // preBuffer = 1
+             {
+                if (nOFs != posti->size)
+                {
+                    EP_PRINT_ERROR("The number of optimal filters in the library does not match the grading info in the XML file",EPFAIL); 
+                    *status=EPFAIL; return(library_collection);
+                }
+                for (int i=0;i<posti->size;i++)
+                {
+                    lengthALL_T = lengthALL_T + gsl_vector_get(posti,i) + gsl_vector_get(pBi,i);
+                }
+                
+                lengthALL_F = lengthALL_T*2;  
+             }
+                  
              strcpy(obj.nameTable,"FIXFILTF");
              
              if (strcmp(*ofinterp,"MF") == 0)
@@ -2216,53 +2449,82 @@
                  gsl_matrix *matrixALL_OFFx = gsl_matrix_alloc(ntemplates,lengthALL_F);
                  gsl_matrix *matrixAux_OFFx = NULL;
                  
-                 for (int i=0;i<nOFs;i++)
+                 if (preBuffer == 0)
                  {
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                     {  
-                         if (i==0)
-                         {
-                             snprintf(str_length,125,"%d",template_durationPLSMXLFF);
-                             matrixAux_OFFx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF*2);
-                         }
-                         else
-                         {
-                             snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
-                             matrixAux_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1)*2);
-                         }
-                     }
-                     else
-                     {
-                         snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
-                         matrixAux_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
-                     }
-                     strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
-                     if (readFitsComplex (obj,&matrixAux_OFFx))
-                     {
-                         EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-                         *status=EPFAIL; return(library_collection);
-                     }
-                     for (int j=0;j<matrixAux_OFFx->size1;j++)
-                     {
-                         for (int k=0;k<matrixAux_OFFx->size2;k++)
-                         {
-                             gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
-                         }
-                     }
-                     
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                     {
-                         if (i==0)	index = index + template_durationPLSMXLFF*2;
-                         else 		index = index + pow(2,floor(log2(template_duration))-i+1)*2;
-                     }
-                     else    index = index + pow(2,floor(log2(template_duration))-i)*2;
-                     
-                     gsl_matrix_free(matrixAux_OFFx);
+                    for (int i=0;i<nOFs;i++)
+                    {
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {  
+                            if (i==0)
+                            {
+                                snprintf(str_length,125,"%d",template_durationPLSMXLFF);
+                                matrixAux_OFFx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF*2);
+                            }
+                            else
+                            {
+                                snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
+                                matrixAux_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1)*2);
+                            }
+                        }
+                        else
+                        {
+                            snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
+                            matrixAux_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
+                        }
+                        strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
+                        if (readFitsComplex (obj,&matrixAux_OFFx))
+                        {
+                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            *status=EPFAIL; return(library_collection);
+                        }
+                        for (int j=0;j<matrixAux_OFFx->size1;j++)
+                        {
+                            for (int k=0;k<matrixAux_OFFx->size2;k++)
+                            {
+                                gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
+                            }
+                        }
+                        
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {
+                            if (i==0)	index = index + template_durationPLSMXLFF*2;
+                            else 		index = index + pow(2,floor(log2(template_duration))-i+1)*2;
+                        }
+                        else    index = index + pow(2,floor(log2(template_duration))-i)*2;
+                        
+                        gsl_matrix_free(matrixAux_OFFx);
+                    }
+                 }
+                 else // preBuffer=1
+                 {
+                    for (int i=0;i<nOFs;i++)
+                    {
+                        snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));
+                        matrixAux_OFFx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i)*2);
+                        
+                        strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
+                        if (readFitsComplex (obj,&matrixAux_OFFx))
+                        {
+                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            *status=EPFAIL; return(library_collection);
+                        }
+                        for (int j=0;j<matrixAux_OFFx->size1;j++)
+                        {
+                            for (int k=0;k<matrixAux_OFFx->size2;k++)
+                            {
+                                gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
+                            }
+                        }
+                        
+                        index = index + gsl_vector_get(posti,i)*2;
+                        
+                        gsl_matrix_free(matrixAux_OFFx);
+                    }
                  }
                  
                  for (int it=0;it<ntemplates;it++)
                  {
-                     library_collection->optimal_filters[it].energy			= gsl_vector_get(library_collection->energies,it);
+                     library_collection->optimal_filters[it].energy 			= gsl_vector_get(library_collection->energies,it);
                      library_collection->optimal_filters[it].ofilter_duration 	= lengthALL_F;
                      library_collection->optimal_filters[it].ofilter    		= gsl_vector_alloc(lengthALL_F);
                      
@@ -2276,48 +2538,77 @@
                  gsl_matrix *matrixALLab_OFFx = gsl_matrix_alloc(ntemplates,lengthALL_F);
                  gsl_matrix *matrixAuxab_OFFx = NULL;
                  
-                 for (int i=0;i<nOFs;i++)
+                 if (preBuffer == 0)
                  {
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                    for (int i=0;i<nOFs;i++)
+                    {
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {
+                            if (i==0)
+                            {
+                                snprintf(str_length,125,"%d",template_durationPLSMXLFF);
+                                matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF*2);
+                            }
+                            else
+                            {
+                                snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
+                                matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1)*2);
+                            }
+                        }
+                        else
+                        {
+                            snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
+                            matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
+                        }
+                        strcpy(obj.nameCol,(string("ABF")+string(str_length)).c_str());
+                        if (readFitsComplex (obj,&matrixAuxab_OFFx))
+                        {
+                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            *status=EPFAIL; return(library_collection);
+                        }
+                        for (int j=0;j<matrixAuxab_OFFx->size1;j++)
+                        {
+                            for (int k=0;k<matrixAuxab_OFFx->size2;k++)
+                            {
+                                gsl_matrix_set(matrixALLab_OFFx,j,k+index,gsl_matrix_get(matrixAuxab_OFFx,j,k));
+                            }
+                        }
+                        
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {
+                            if (i==0)	index = index + template_durationPLSMXLFF*2;
+                            else		index = index + pow(2,floor(log2(template_duration))-i+1)*2;
+                        }
+                        else    index = index + pow(2,floor(log2(template_duration))-i)*2;
+                        
+                        gsl_matrix_free(matrixAuxab_OFFx);
+                    }
+                 }
+                 else //preBuffer = 1
+                 {
+                     for (int i=0;i<nOFs;i++)
                      {
-                         if (i==0)
+                         snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));
+                         matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i)*2);
+                         
+                         strcpy(obj.nameCol,(string("ABF")+string(str_length)).c_str());
+                         if (readFitsComplex (obj,&matrixAuxab_OFFx))
                          {
-                             snprintf(str_length,125,"%d",template_durationPLSMXLFF);
-                             matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF*2);
+                             EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                             *status=EPFAIL; return(library_collection);
                          }
-                         else
+                         for (int j=0;j<matrixAuxab_OFFx->size1;j++)
                          {
-                             snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
-                             matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1)*2);
+                             for (int k=0;k<matrixAuxab_OFFx->size2;k++)
+                             {
+                                 gsl_matrix_set(matrixALLab_OFFx,j,k+index,gsl_matrix_get(matrixAuxab_OFFx,j,k));
+                             }
                          }
+                         
+                         index = index + gsl_vector_get(posti,i)*2;
+                         
+                         gsl_matrix_free(matrixAuxab_OFFx);
                      }
-                     else
-                     {
-                         snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
-                         matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
-                     }
-                     strcpy(obj.nameCol,(string("ABF")+string(str_length)).c_str());
-                     if (readFitsComplex (obj,&matrixAuxab_OFFx))
-                     {
-                         EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-                         *status=EPFAIL; return(library_collection);
-                     }
-                     for (int j=0;j<matrixAuxab_OFFx->size1;j++)
-                     {
-                         for (int k=0;k<matrixAuxab_OFFx->size2;k++)
-                         {
-                             gsl_matrix_set(matrixALLab_OFFx,j,k+index,gsl_matrix_get(matrixAuxab_OFFx,j,k));
-                         }
-                     }
-                     
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                     {
-                         if (i==0)	index = index + template_durationPLSMXLFF*2;
-                         else		index = index + pow(2,floor(log2(template_duration))-i+1)*2;
-                     }
-                     else    index = index + pow(2,floor(log2(template_duration))-i)*2;
-                     
-                     gsl_matrix_free(matrixAuxab_OFFx);
                  }
                  
                  for (int it=0;it<ntemplates;it++)
@@ -2350,14 +2641,22 @@
                  return(library_collection);
              }
              
-             if (ntemplates == 1)	
+             if (preBuffer == 0)
              {
-                 int nOFs_aux;
-                 nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
-                 if ((nOFs_aux == floor(log2(template_duration))) || (nOFs_aux == 1 + floor(log2(template_duration))))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
-                 else 								nOFs = (nOFs-1)/2;	// /2 because the AB column
+                if (ntemplates == 1)	
+                {
+                    int nOFs_aux;
+                    nOFs_aux = nOFs-1;		// -1 because the ENERGYcolumn
+                    if ((nOFs_aux == floor(log2(template_duration))) || (nOFs_aux == 1 + floor(log2(template_duration))))		nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+                    else 								nOFs = (nOFs-1)/2;	// /2 because the AB column
+                }
+                else	  nOFs = (nOFs-1)/2;	// /2 because the AB column
              }
-             else	  nOFs = (nOFs-1)/2;	// /2 because the AB column
+             else // preBuffer = 1
+             {
+                 if (ntemplates == 1)   nOFs = nOFs-1;		// -1 because the ENERGYcolumn
+                 else                   nOFs = (nOFs-1)/2;	// /2 because the AB column
+             }
              
              if (nOFs == 0)	
              {
@@ -2367,17 +2666,32 @@
              library_collection->nfixedfilters = nOFs;
              
              int lengthALL_T = 0;
-             for (int i=0;i<nOFs;i++)
+             if (preBuffer == 0)
              {
-                 if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                 {
-                     if (i==0)	lengthALL_T = lengthALL_T + template_durationPLSMXLFF;
-                     else  		lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration))-i+1);
-                 }
-                 else    
-                 {
-                     lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration))-i);
-                 }
+                for (int i=0;i<nOFs;i++)
+                {
+                    if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                    {
+                        if (i==0)	lengthALL_T = lengthALL_T + template_durationPLSMXLFF;
+                        else  		lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration))-i+1);
+                    }
+                    else    
+                    {
+                        lengthALL_T = lengthALL_T + pow(2,floor(log2(template_duration))-i);
+                    }
+                }
+             }
+             else // preBuffer =1
+             {
+                if (nOFs != posti->size)
+                {
+                    EP_PRINT_ERROR("The number of optimal filters in the library does not match the grading info in the XML file",EPFAIL); 
+                    *status=EPFAIL; return(library_collection);
+                }
+                for (int i=0;i<nOFs;i++)
+                {
+                    lengthALL_T = lengthALL_T + gsl_vector_get(posti,i) + gsl_vector_get(pBi,i);
+                }
              }
              
              strcpy(obj.nameTable,"FIXFILTT");
@@ -2387,49 +2701,79 @@
                  gsl_matrix *matrixALL_OFTx = gsl_matrix_alloc(ntemplates,lengthALL_T);
                  gsl_matrix *matrixAux_OFTx = NULL;
                  
-                 for (int i=0;i<nOFs;i++)
+                 if (preBuffer == 0)
                  {
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                     {
-                         if (i==0)
-                         {
-                             snprintf(str_length,125,"%d",template_durationPLSMXLFF);
-                             matrixAux_OFTx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF);
-                         }
-                         else
-                         {
-                             snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
-                             matrixAux_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1));
-                         }
-                     }
-                     else
-                     {
-                         snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
-                         matrixAux_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i));
-                     }
-                     strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
-                     if (readFitsComplex (obj,&matrixAux_OFTx))
-                     {
-                         EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-                         *status=EPFAIL; return(library_collection);
-                     }
-                     
-                     for (int j=0;j<matrixAux_OFTx->size1;j++)
-                     {
-                         for (int k=0;k<matrixAux_OFTx->size2;k++)
-                         {
-                             gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
-                         }
-                     }
-                     
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                     {
-                         if (i==0)	index = index + template_durationPLSMXLFF;
-                         else		index = index + pow(2,floor(log2(template_duration))-i+1);
-                     }
-                     else    index = index + pow(2,floor(log2(template_duration))-i);
-                     
-                     gsl_matrix_free(matrixAux_OFTx);
+                    for (int i=0;i<nOFs;i++)
+                    {
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {
+                            if (i==0)
+                            {
+                                snprintf(str_length,125,"%d",template_durationPLSMXLFF);
+                                matrixAux_OFTx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF);
+                            }
+                            else
+                            {
+                                snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
+                                matrixAux_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1));
+                            }
+                        }
+                        else
+                        {
+                            snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
+                            matrixAux_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i));
+                        }
+                        strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
+                        if (readFitsComplex (obj,&matrixAux_OFTx))
+                        {
+                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            *status=EPFAIL; return(library_collection);
+                        }
+                        
+                        for (int j=0;j<matrixAux_OFTx->size1;j++)
+                        {
+                            for (int k=0;k<matrixAux_OFTx->size2;k++)
+                            {
+                                gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
+                            }
+                        }
+                        
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {
+                            if (i==0)	index = index + template_durationPLSMXLFF;
+                            else		index = index + pow(2,floor(log2(template_duration))-i+1);
+                        }
+                        else    index = index + pow(2,floor(log2(template_duration))-i);
+                        
+                        gsl_matrix_free(matrixAux_OFTx);
+                    }
+                 }
+                 else // preBuffer =1
+                 {
+                    for (int i=0;i<nOFs;i++)
+                    {
+                        snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));
+                        matrixAux_OFTx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i));
+                        
+                        strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
+                        if (readFitsComplex (obj,&matrixAux_OFTx))
+                        {
+                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            *status=EPFAIL; return(library_collection);
+                        }
+                        
+                        for (int j=0;j<matrixAux_OFTx->size1;j++)
+                        {
+                            for (int k=0;k<matrixAux_OFTx->size2;k++)
+                            {
+                                gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
+                            }
+                        }
+                        
+                        index = index + gsl_vector_get(posti,i);
+                        
+                        gsl_matrix_free(matrixAux_OFTx);
+                    }
                  }
                  
                  for (int it=0;it<ntemplates;it++)
@@ -2448,49 +2792,78 @@
                  gsl_matrix *matrixALLab_OFTx = gsl_matrix_alloc(ntemplates,lengthALL_T);
                  gsl_matrix *matrixAuxab_OFTx = NULL;
                  
-                 for (int i=0;i<nOFs;i++)
+                 if (preBuffer == 0)
                  {
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                     {
-                         if (i==0)
-                         {
-                             snprintf(str_length,125,"%d",template_durationPLSMXLFF);
-                             matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF);
-                         }
-                         else
-                         {
-                             snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
-                             matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1));
-                         }
-                     }
-                     else
-                     {
-                         snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
-                         matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i));
-                     }
-                     strcpy(obj.nameCol,(string("ABT")+string(str_length)).c_str());
-                     if (readFitsComplex (obj,&matrixAuxab_OFTx))
-                     {
-                         EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
-                         *status=EPFAIL; return(library_collection);
-                     }
-                     for (int j=0;j<matrixAuxab_OFTx->size1;j++)
-                     {
-                         for (int k=0;k<matrixAuxab_OFTx->size2;k++)
-                         {
-                             gsl_matrix_set(matrixALLab_OFTx,j,k+index,gsl_matrix_get(matrixAuxab_OFTx,j,k));
-                         }
-                     }
-                     
-                     if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-                     {
-                         if (i==0)	index = index + template_durationPLSMXLFF;
-                         else		index = index + pow(2,floor(log2(template_duration))-i+1);
-                     }
-                     else    index = index + pow(2,floor(log2(template_duration))-i);
-                     
-                     gsl_matrix_free(matrixAuxab_OFTx);
-                 }	
+                    for (int i=0;i<nOFs;i++)
+                    {
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {
+                            if (i==0)
+                            {
+                                snprintf(str_length,125,"%d",template_durationPLSMXLFF);
+                                matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF);
+                            }
+                            else
+                            {
+                                snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
+                                matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1));
+                            }
+                        }
+                        else
+                        {
+                            snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
+                            matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i));
+                        }
+                        strcpy(obj.nameCol,(string("ABT")+string(str_length)).c_str());
+                        if (readFitsComplex (obj,&matrixAuxab_OFTx))
+                        {
+                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            *status=EPFAIL; return(library_collection);
+                        }
+                        for (int j=0;j<matrixAuxab_OFTx->size1;j++)
+                        {
+                            for (int k=0;k<matrixAuxab_OFTx->size2;k++)
+                            {
+                                gsl_matrix_set(matrixALLab_OFTx,j,k+index,gsl_matrix_get(matrixAuxab_OFTx,j,k));
+                            }
+                        }
+                        
+                        if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                        {
+                            if (i==0)	index = index + template_durationPLSMXLFF;
+                            else		index = index + pow(2,floor(log2(template_duration))-i+1);
+                        }
+                        else    index = index + pow(2,floor(log2(template_duration))-i);
+                        
+                        gsl_matrix_free(matrixAuxab_OFTx);
+                    }
+                 }
+                 else // preBuffer = 1
+                 {
+                    for (int i=0;i<nOFs;i++)
+                    {
+                        snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));
+                        matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i)+gsl_vector_get(pBi,i));
+                        
+                        strcpy(obj.nameCol,(string("ABT")+string(str_length)).c_str());
+                        if (readFitsComplex (obj,&matrixAuxab_OFTx))
+                        {
+                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            *status=EPFAIL; return(library_collection);
+                        }
+                        for (int j=0;j<matrixAuxab_OFTx->size1;j++)
+                        {
+                            for (int k=0;k<matrixAuxab_OFTx->size2;k++)
+                            {
+                                gsl_matrix_set(matrixALLab_OFTx,j,k+index,gsl_matrix_get(matrixAuxab_OFTx,j,k));
+                            }
+                        }
+                        
+                        index = index + gsl_vector_get(posti,i);
+                        
+                        gsl_matrix_free(matrixAuxab_OFTx);
+                    }
+                 }
                  
                  for (int it=0;it<ntemplates;it++)
                  {
@@ -3936,6 +4309,8 @@
  grade2_1(0),
  pixid(0),
  phid(0),
+ phid2(0),
+ phid3(0),
  pulse_adc(0),
  pulse_adc_preBuffer(0),
  Tstart(0.0f),
@@ -3967,6 +4342,8 @@
  grade2_1(other.grade2_1),
  pixid(other.pixid),
  phid(other.phid),
+ phid2(other.phid2),
+ phid3(other.phid3),
  pulse_adc(0),
  pulse_adc_preBuffer(0),
  Tstart(other.Tstart),
@@ -4008,6 +4385,8 @@
          grade2_1 = other.grade2_1;
          pixid = other.pixid;
          phid = other.phid;
+         phid2 = other.phid2;
+         phid3 = other.phid3;
          if(pulse_adc) {
              gsl_vector_free(pulse_adc); pulse_adc = 0;
          }

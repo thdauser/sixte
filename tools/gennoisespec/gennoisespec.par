@@ -1,6 +1,6 @@
 inFile,s,lq,"a.fits",,,"Enter input FITS file name"
 outFile,s,lq,"a_noisespec.fits",,,"Enter _noisespec output file name"
-intervalMinSamples,i,h,8192,,,"Base-2 minimum length of a pulse-free interval (samples)"
+intervalMinSamples,i,h,8192,,,"Length of a pulse-free interval (samples)"
 nplPF,i,h,0,,,"Number of pulse lengths after the end of the pulse to start the pulse-free interval searching"
 nintervals,i,h,1000,,,"Number of pulse-free intervals to use for the noise average"
 scaleFactor,r,h,0,,,"Scale factor to apply to make possible a varying cut-off frequency of the low-pass filter"

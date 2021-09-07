@@ -40,8 +40,8 @@
 #
 
 # SIXTE XML files *** see note in README file ***
-xmldirSX=${SIXTE}/share/sixte/instruments/athena-xifu
-xmlfileSX=${xmldirSX}/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml # any file with grading information (pixel info is not relevant here)
+xmldirSX=${XIFUSIM}/share/xifusim/instruments/
+xmlfileSX=${xmldirSX}/1pix_lpa2.5a_fll.xml # any file with grading information (pixel info is not relevant here)
 
 tempeV=6000. # (energy of optimal filter (eV)
 

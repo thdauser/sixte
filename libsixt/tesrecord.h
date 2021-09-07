@@ -74,6 +74,9 @@ typedef struct{
 
 	/** Error signal */
 	double* error_double;
+    
+    /** EXTEND of the record */
+	long extend;
 
 	/** PIXID of the record */
 	long pixid;

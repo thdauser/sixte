@@ -58,7 +58,7 @@ typedef struct{
 	double delta_t;
 
 	/** Column numbers for time, trigger, impact, and pixID columns */
-	int timeCol,trigCol,ph_idCol,pixIDCol;
+	int timeCol,trigCol,extendCol,ph_idCol,pixIDCol;
 
 	/** Option to write the records in doubles */
 	int write_doubles;
@@ -95,7 +95,7 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKeywords* keywords,int* const status);
 
 /** Populates a TesRecord structure with the next record */
-int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status);
+int getNextRecord(TesTriggerFile* const file,TesRecord* record,int *lastRecord,int *startRecordGroup,int* const status);
 
 /** Writes a record to a file */
 void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status);

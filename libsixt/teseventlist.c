@@ -66,6 +66,8 @@ TesEventList* newTesEventListSIRENA(int* const status){
 	event_list->grades1=NULL;
 	event_list->grades2=NULL;
 	event_list->ph_ids=NULL;
+    event_list->ph_ids2=NULL;
+    event_list->ph_ids3=NULL;
     event_list->pix_ids=NULL;
 	event_list->risetimes=NULL;
 	event_list->falltimes=NULL;
@@ -107,6 +109,8 @@ void freeTesEventListSIRENA(TesEventList* event_list){
 		free(event_list->grades1);
 		free(event_list->grades2);
 		free(event_list->ph_ids);
+        free(event_list->ph_ids2);
+        free(event_list->ph_ids3);
         free(event_list->pix_ids);
 		free(event_list->risetimes);
 		free(event_list->falltimes);
@@ -462,7 +466,7 @@ TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
 
 	//first column TIME
 	char   *ttype[]={"TIME","SIGNAL","AVG4SD","ELOWRES","GRADE1","GRADE2","PHI","LAGS","BSLN","RMSBSLN","PIXID","PH_ID","RISETIME","FALLTIME","RA","DEC","DETX","DETY","GRADING","SRC_ID","N_XT","E_XT"}; 
-	char *tform[]={"1D", "1D", "1D", "1D", "1J", "1J", "1D", "1J", "1D", "1D", "1J", "1J", "1D", "1D", "1D", "1D", "1E", "1E", "1I", "1J", "1I", "1D"};
+	char *tform[]={"1D", "1D", "1D", "1D", "1J", "1J", "1D", "1J", "1D", "1D", "1J", "3J", "1D", "1D", "1D", "1D", "1E", "1E", "1I", "1J", "1I", "1D"};
 	char *tunit[]={"s", "keV", "", "keV", "", "", "", "", "", "", "", "", "s", "s", "deg", "deg", "m", "m", "", "", "", "keV"};
 
 	fits_create_tbl(file->fptr, BINARY_TBL, 0, 22, ttype, tform, tunit,"EVENTS", status);
@@ -652,11 +656,31 @@ void saveEventListToFileSIRENA(TesEventFile* file,TesEventList * event_list,
 	CHECK_STATUS_VOID(*status);
 
 	//If PH_ID was computed, save it
-	if(NULL!=event_list->ph_ids){
+	/*if(NULL!=event_list->ph_ids){
+		fits_write_col(file->fptr, TLONG, file->phIDCol,
+						file->row, 1, event_list->index, event_list->ph_ids, status);
+		CHECK_STATUS_VOID(*status);
+	}*/
+    //If PH_ID was computed, save it
+	if((NULL!=event_list->ph_ids) && (event_list->ph_ids == 0)){
 		fits_write_col(file->fptr, TLONG, file->phIDCol,
 						file->row, 1, event_list->index, event_list->ph_ids, status);
 		CHECK_STATUS_VOID(*status);
 	}
+	else if ((NULL!=event_list->ph_ids) && (event_list->ph_ids != 0)){
+        int dimPH_ID = 3; // Length of the PH_ID column
+        int *buffer = (int *) malloc(event_list->index*dimPH_ID*sizeof(int));
+        for (int i=0;i<event_list->index;i++)
+        {
+            buffer[0+i*dimPH_ID] = event_list->ph_ids[i];
+            buffer[1+i*dimPH_ID] = event_list->ph_ids2[i];
+            buffer[2+i*dimPH_ID] = event_list->ph_ids3[i];
+        }
+        
+        fits_write_col(file->fptr, TINT, file->phIDCol,
+                            file->row, 1,event_list->index*3, buffer, status);  // Be careful TINT or TLONG!!!
+        free(buffer);
+    }
 	
 	file->row = file->row + event_list->index;
 	file->nrows+= event_list->index;

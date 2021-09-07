@@ -1,3 +1,37 @@
+/***********************************************************************
+   This file is part of SIXTE/SIRENA software.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+   Copyright 2014:  TASKSSIRENA has been developed by the INSTITUTO DE FISICA DE 
+   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
+   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
+   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
+   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
+
+***********************************************************************
+*                      SCHEDULER
+*
+*  File:       scheduler.cpp
+*  Developers: Beatriz Cobo
+* 	           cobo@ifca.unican.es
+*              IFCA
+*              Maite Ceballos
+*              ceballos@ifca.unican.es
+*              IFCA
+*                                                                     
+***********************************************************************/
 
 #include "scheduler.h"
 
@@ -156,12 +190,13 @@ void scheduler::push_detection(TesRecord* record, int trig_reclength,
   input->event_list->grades2 = new int[event_list->size];
   input->event_list->pulse_heights = new double[event_list->size];
   input->event_list->ph_ids = new long[event_list->size];
+  input->event_list->ph_ids2 = new long[event_list->size];
+  input->event_list->ph_ids3 = new long[event_list->size];
   input->event_list->grading = new int[event_list->size];
   input->event_list->phis = new double[event_list->size];
   input->event_list->lagsShifts = new int[event_list->size];
   input->event_list->bsln = new double[event_list->size];
   input->event_list->pix_ids = new long[event_list->size];
-  input->event_list->ph_ids = new long[event_list->size];
   log_trace("push_detection 3");
   detection_queue.push(input);
   log_trace("push_detection 4");
@@ -316,12 +351,14 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
         event_list->grades1[ip]  = record_pulses->pulses_detected[ip].grade1;
         event_list->grades2[ip]  = record_pulses->pulses_detected[ip].grade2;
         event_list->pulse_heights[ip]  = record_pulses->pulses_detected[ip].pulse_height;
-        event_list->ph_ids[ip]   = 0;
+        //event_list->ph_ids[ip]   = 0;
         event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
         event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
         event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
         event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
         event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
+        event_list->ph_ids2[ip] = record_pulses->pulses_detected[ip].phid2;
+        event_list->ph_ids3[ip] = record_pulses->pulses_detected[ip].phid3;
       }
       if (data_array[i]->last_record == 1) {
         //log_debug("eventlist last record");
@@ -362,12 +399,14 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
           event_list->grades1[ip]  = (*pulsesAll)->pulses_detected[ip].grade1;
           event_list->grades2[ip]  = (*pulsesAll)->pulses_detected[ip].grade2;
           event_list->pulse_heights[ip]  = (*pulsesAll)->pulses_detected[ip].pulse_height;
-          event_list->ph_ids[ip]   = 0;    
+          //event_list->ph_ids[ip]   = 0;    
           event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
           event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
           event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
           event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
           event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
+          event_list->ph_ids2[ip] = record_pulses->pulses_detected[ip].phid2;
+          event_list->ph_ids3[ip] = record_pulses->pulses_detected[ip].phid3;
         }
       }
     }
@@ -538,12 +577,14 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
         event_list->grades1[ip]  = record_pulses->pulses_detected[ip].grade1;
         event_list->grades2[ip]  = record_pulses->pulses_detected[ip].grade2;
         event_list->pulse_heights[ip]  = record_pulses->pulses_detected[ip].pulse_height;
-        event_list->ph_ids[ip]   = 0;
+        //event_list->ph_ids[ip]   = 0;
         event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
         event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
         event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
         event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
         event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
+        event_list->ph_ids2[ip] = record_pulses->pulses_detected[ip].phid2;
+        event_list->ph_ids3[ip] = record_pulses->pulses_detected[ip].phid3;
       }
       if (data_array[i]->last_record == 1) {
         //log_debug("eventlist last record");
@@ -584,12 +625,14 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
           event_list->grades1[ip]  = (*pulsesAll)->pulses_detected[ip].grade1;
           event_list->grades2[ip]  = (*pulsesAll)->pulses_detected[ip].grade2;
           event_list->pulse_heights[ip]  = (*pulsesAll)->pulses_detected[ip].pulse_height;
-          event_list->ph_ids[ip]   = 0;    
+          //event_list->ph_ids[ip]   = 0;    
           event_list->phis[ip] = record_pulses->pulses_detected[ip].phi;
           event_list->lagsShifts[ip] = record_pulses->pulses_detected[ip].lagsShift;
           event_list->bsln[ip] = record_pulses->pulses_detected[ip].bsln;
           event_list->pix_ids[ip] = record_pulses->pulses_detected[ip].pixid;
           event_list->ph_ids[ip] = record_pulses->pulses_detected[ip].phid;
+          event_list->ph_ids2[ip] = record_pulses->pulses_detected[ip].phid2;
+          event_list->ph_ids3[ip] = record_pulses->pulses_detected[ip].phid3;
         }
       }
     }

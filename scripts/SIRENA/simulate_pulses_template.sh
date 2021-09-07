@@ -52,7 +52,6 @@ TsizeSM=`python -c "print (${preBuffer} + ${pulse_length} + 1000)"` # trigger (i
 npulses=20000 # number of simulated pulses to build the template
 time=`python -c "print (${npulses} / 2. * ${TsizeTC}/ ${samprate})"` #  simulation time (s)
 tempKeV=6. # (energy for template and then for optimal filter (keV)
-acbias="yes"
 
 # FILENAMES
 #---------------
@@ -61,8 +60,8 @@ temp_sim="myTemp.fits"
 
 # 2.2) Create piximpact list to simulate isolated pulses (tesconstpileup must be used if jitter wants to be simulated, i.e. offsets in the arrival time of photons)
 #-----------------------------------------------------------------
-xmldirSX=${SIXTE}/share/sixte/instruments/athena-xifu
-xmlfileSX=${xmldirSX}/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml 
+xmldirSX=${XIFUSIM}/share/xifusim/instruments
+xmlfileSX=${xmldirSX}/1pix_lpa2.5a_fll.xml
 # 
 tesconstpileup PixImpList=${temp_imp} \
                                 XMLFile=${xmlfileSX} \
@@ -89,17 +88,17 @@ tessim PixID=1 \
                 triggerSize=${TsizeSM} \
                 prebuffer=${preBuffer}\
                 PixType=${pixfile} \
-                acbias=${acbias}
+                acbias=yes
 
 # (if data have been simulated with XIFUSIM)
 # define  XML files
 xmldirXF=${XIFUSIM}/share/xifusim/instruments
-xmlfile=${xmldirXF}/8pix_nobbfb.xml
+xmlfile=${xmldirXF}/1pix_lpa2.5a_fll.xml
 
 xifusim PixImpList=${temp_imp} \
                                 Streamfile=${temp_sim} \
                                 tstop=${time} \
-                                acbias=${acbias} \
+                                acbias=no \
                                 XMLfilename=${xmlfile} \
                                 trig_reclength=${TsizeSM} \
                                 trig_n_pre=${preBuffer} \

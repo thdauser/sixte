@@ -108,6 +108,9 @@ typedef struct{
   /** Size in samples before and after one pulse defining the grade */
   long gradelim_pre;
   long gradelim_post;
+  
+  /** Size in samples before one pulse defining the preBuffer */
+  long grade_preBuffer;
 
 }TESGrade;
 

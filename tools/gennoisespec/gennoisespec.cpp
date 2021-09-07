@@ -1,37 +1,37 @@
 /***********************************************************************
- *   This file is part of SIXTE/SIRENA software.
- * 
- *   SIXTE is free software: you can redistribute it and/or modify it
- *   under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   any later version.
- * 
- *   SIXTE is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *   GNU General Public License for more details.
- * 
- *   For a copy of the GNU General Public License see
- *   <http://www.gnu.org/licenses/>.
- * 
- *   Copyright 2014:  GENNOISESPEC has been developed by the INSTITUTO DE FISICA DE 
- *   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
- *   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
- *   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
- *   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
- * 
- * /***********************************************************************
- *                      GENNOISESPEC
- *
- *  File:       gennoisespec.cpp
- *  Developers: Beatriz Cobo
- * 	       cobo@ifca.unican.es
- *              IFCA
- *              Maite Ceballos
- *              ceballos@ifca.unican.es
- *              IFCA
- *                                                                     
- ***********************************************************************/
+   This file is part of SIXTE/SIRENA software.
+
+   SIXTE is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   any later version.
+
+   SIXTE is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   GNU General Public License for more details.
+
+   For a copy of the GNU General Public License see
+   <http://www.gnu.org/licenses/>.
+
+   Copyright 2014:  TASKSSIRENA has been developed by the INSTITUTO DE FISICA DE 
+   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
+   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
+   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
+   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
+
+***********************************************************************
+*                      GENNOISESPEC
+*
+*  File:       gennoisespec.cpp
+*  Developers: Beatriz Cobo
+* 	           cobo@ifca.unican.es
+*              IFCA
+*              Maite Ceballos
+*              ceballos@ifca.unican.es
+*              IFCA
+*                                                                     
+***********************************************************************/
  
  /******************************************************************************
   * DESCRIPTION:
@@ -158,12 +158,13 @@
      double cutFreq = 0.;
      int boxLength = 0;
      
-     if ((log2(par.intervalMinSamples)-floor(log2(par.intervalMinSamples))) > 0)	
+     int intervalMinSamples_base2 = pow(2,floor(log2(par.intervalMinSamples)));
+     /*if ((log2(par.intervalMinSamples)-floor(log2(par.intervalMinSamples))) > 0)	
      {	
          par.intervalMinSamples = pow(2,floor(log2(par.intervalMinSamples)));
          message = "intervalMinSamples' has been redefined as a base-2 system value.";
          EP_PRINT_ERROR(message,-999);	// Only a warning
-     }
+     }*/
      
      message="Into GENNOISESPEC task";
      cout<<message<<endl;
@@ -856,6 +857,13 @@
                 
                 gsl_matrix_get_row(interval,noiseIntervals,i);
                 
+                // Apply a Hanning window to reduce spectral leakage
+                /*if (hannWindow(&interval))
+                {
+                    message = "Cannot run hannWindow routine";
+                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                }*/
+    
                 // FFT calculus (EventSamplesFFT)
                 if(FFT(interval,vector_aux1,SelectedTimeDuration))
                 {
@@ -915,6 +923,10 @@
      
      // Extra normalization (further than the FFT normalization factor,1/n) in order 
      // to get the apropriate noise level provided by Peille (54 pA/rHz)
+     /*if (strcmp(par.EnergyMethod,"OPTFILT") == 0)
+     {
+        gsl_vector_scale(EventSamplesFFTMean,sqrt(2*intervalMinBins/samprate));
+     }*/
      gsl_vector_scale(EventSamplesFFTMean,sqrt(2*intervalMinBins/samprate));
      
      // Load in noiseIntervals only those intervals with a proper sigma and NumMeanSamples = cnt
@@ -941,9 +953,12 @@
      // Generate WEIGHT representation
      if (par.weightMS == 1)
      {
-         weightpoints = gsl_vector_alloc(floor(log2(par.intervalMinSamples)));
+         /*weightpoints = gsl_vector_alloc(floor(log2(par.intervalMinSamples)));
          for (int i=0;i<weightpoints->size;i++) 		gsl_vector_set(weightpoints,i,pow(2,floor(log2(par.intervalMinSamples))-i));
-         weightMatrixes = gsl_matrix_alloc(weightpoints->size,par.intervalMinSamples*par.intervalMinSamples);
+         weightMatrixes = gsl_matrix_alloc(weightpoints->size,par.intervalMinSamples*par.intervalMinSamples);*/
+         weightpoints = gsl_vector_alloc(floor(log2(intervalMinSamples_base2)));
+         for (int i=0;i<weightpoints->size;i++) 		gsl_vector_set(weightpoints,i,pow(2,floor(log2(intervalMinSamples_base2))-i));
+         weightMatrixes = gsl_matrix_alloc(weightpoints->size,intervalMinSamples_base2*intervalMinSamples_base2);
          gsl_matrix_set_all(weightMatrixes,-999.0);
          gsl_matrix_view tempm;
          gsl_matrix *noiseIntervals_weightPoints;
@@ -956,11 +971,12 @@
                  weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
                  noiseIntervals_weightPoints = gsl_matrix_alloc(cnt,gsl_vector_get(weightpoints,i));
                  
-                 tempm = gsl_matrix_submatrix(noiseIntervals,0,0,par.nintervals,gsl_vector_get(weightpoints,i));
+                 tempm = gsl_matrix_submatrix(noiseIntervals,0,0,cnt,gsl_vector_get(weightpoints,i));
                  gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
                  
                  if (par.matrixSize == 0){ //do all sizes
-                     weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
+                     //weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
+                     gsl_matrix_set_all(weightMatrix,1);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
                          for (int k=0;k<gsl_vector_get(weightpoints,i);k++)
@@ -1103,7 +1119,7 @@
      gsl_vector_free(sigma); sigma = 0;     
      
      gsl_matrix_free(noiseIntervals); noiseIntervals = 0;
-     if (par.weightMS == 1)
+     if (weightMS == 1)
      {
          gsl_vector_free(weightpoints); weightpoints = 0;
          gsl_matrix_free(weightMatrixes); weightMatrixes = 0;
@@ -1258,7 +1274,7 @@
                  message = "Cannot run routine convertI2R";
                  EP_EXIT_ERROR(message,EPFAIL);
              }
-             gsl_vector_scale(ioutgsl,aducnv);
+             //gsl_vector_scale(ioutgsl,100000);
          }
          else
          {
@@ -1352,6 +1368,7 @@
          if (nIntervals != 0)
          {
              findMeanSigma (intervalsWithoutPulsesTogether, &baselineIntervalFreeOfPulses, &sigmaIntervalFreeOfPulses);
+             //cout<<"baselineIntervalFreeOfPulses: "<<baselineIntervalFreeOfPulses<<endl;
              gsl_vector_set(baseline,indexBaseline,baselineIntervalFreeOfPulses);
              gsl_vector_set(sigma,indexBaseline,sigmaIntervalFreeOfPulses);
              indexBaseline++;
@@ -1892,7 +1909,15 @@
      strcpy(obj.nameCol,"CSD");
      obj.type = TDOUBLE;
      obj.unit = new char [255];
-     strcpy(obj.unit,"A/sqrt(Hz)");
+     if (strcmp(par.EnergyMethod,"OPTFILT") == 0)
+     {
+         strcpy(obj.unit,"A/sqrt(Hz)");
+     }
+     else
+     {
+         strcpy(obj.unit,"adu/sqrt(Hz)");
+     }
+     //strcpy(obj.unit,"A/sqrt(Hz)");
      if (writeFitsSimple(obj, csdgsl))
      {	
          message = "Cannot run routine writeFitsSimple for csdgsl";
@@ -1910,7 +1935,14 @@
      strcpy(obj.nameCol,"SIGMACSD");
      obj.type = TDOUBLE;	
      obj.unit = new char [255];
-     strcpy(obj.unit,"A/sqrt(Hz)");
+     if (strcmp(par.EnergyMethod,"OPTFILT") == 0)
+     {
+         strcpy(obj.unit,"A/sqrt(Hz)");
+     }
+     else
+     {
+         strcpy(obj.unit,"adu/sqrt(Hz)");
+     }
      if (writeFitsSimple(obj, sigmacsdgslnew))
      {
          message = "Cannot run routine writeFitsSimple for sigmacsdgsl";
@@ -1923,7 +1955,16 @@
      gsl_vector_Sumsubvector(baseline, 0, indexBaseline, &sumBaseline);
      double keyvaldouble;
      //keyvaldouble = sumBaseline/indexBaseline;
-     keyvaldouble = (sumBaseline/indexBaseline)/aducnv;
+     //cout<<"sumBaseline/indexBaseline: "<<sumBaseline/indexBaseline<<endl;
+     if (strcmp(par.EnergyMethod,"OPTFILT") == 0)
+     {
+        keyvaldouble = (sumBaseline/indexBaseline)/aducnv;
+     }
+     else
+     {
+         keyvaldouble = (sumBaseline/indexBaseline);
+     }
+     //cout<<"(sumBaseline/indexBaseline)/aducnv: "<<(sumBaseline/indexBaseline)/aducnv<<endl;
      if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
      {
          message = "Cannot write keyword " + string(keyname) + " in file " + string(par.outFile);
@@ -1966,7 +2007,15 @@
      gsl_vector_free(freqALLgsl); freqALLgsl = 0;
      
      strcpy(obj.nameCol,"CSD");
-     strcpy(obj.unit,"A/sqrt(Hz)");
+     if (strcmp(par.EnergyMethod,"OPTFILT") == 0)
+     {
+        strcpy(obj.unit,"A/sqrt(Hz)");
+     }
+     else
+     {
+         strcpy(obj.unit,"adu/sqrt(Hz)");
+     }
+     //strcpy(obj.unit,"A/sqrt(Hz)");
      if(writeFitsSimple(obj, csdALLgsl))
      {
          message = "Cannot run routine writeFitsSimple for csdALLgsl";
@@ -2677,6 +2726,7 @@
      }
      
      status=ape_trad_query_bool("weightMS", &par->weightMS);
+     if (par->weightMS == 1)    weightMS = 1;
      
      status=ape_trad_query_string("EnergyMethod", &sbuffer);
      if (EXIT_SUCCESS!=status) {

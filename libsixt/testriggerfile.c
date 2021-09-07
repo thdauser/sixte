@@ -171,52 +171,56 @@ TesTriggerFile* opennewTesTriggerFile(const char* const filename,
 TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKeywords* keywords,int* const status){
 	TesTriggerFile* file = newTesTriggerFile(0,0,status);
 
+    char comment[FLEN_COMMENT];
+    
 	//Open record file in READONLY mode
 	fits_open_file(&(file->fptr), filename, READONLY, status);
         
-        int hdunum;
-        fits_get_num_hdus(file->fptr, &hdunum,status);
-
-	// Check if input FITS file have been simulated with TESSIM or XIFUSIM
-        int tessimOrxifusim = -999;
-        fits_movnam_hdu(file->fptr, ANY_HDU,"RECORDS", 0, status);
-        if (*status != 0)
+    int hdunum;
+    fits_get_num_hdus(file->fptr, &hdunum,status);
+    
+    // Check if input FITS file have been simulated with TESSIM or XIFUSIM
+    int tessimOrxifusim = -999;
+    fits_movnam_hdu(file->fptr, ANY_HDU,"RECORDS", 0, status);
+    if (*status != 0)
+    {
+        *status = 0;
+        fits_movnam_hdu(file->fptr, ANY_HDU,"TESRECORDS", 0, status);
+        if (*status != 0)                
         {
-            *status = 0;
-            fits_movnam_hdu(file->fptr, ANY_HDU,"TESRECORDS", 0, status);
-            if (*status != 0)                
-            {
-                printf("%s","Cannot move to TESRECORDS HDU in input FITS file\n");
-                CHECK_STATUS_RET(*status, NULL);
-            }
-            else
-            {
-                tessimOrxifusim = 1;
-            }
-        }
-        else 
-        {
-            tessimOrxifusim = 0;
-        }
-        if (tessimOrxifusim == -999)
-        {
-            printf("%s","Neither the 'RECORDS' nor 'TESRECORDS' HDUs are in the input FITS file\n");
+            printf("%s","Cannot move to TESRECORDS HDU in input FITS file\n");
             CHECK_STATUS_RET(*status, NULL);
         }
+        else
+        {
+            tessimOrxifusim = 1;
+        }
+    }
+    else 
+    {
+        tessimOrxifusim = 0;
+    }
+    if (tessimOrxifusim == -999)
+    {
+        printf("%s","Neither the 'RECORDS' nor 'TESRECORDS' HDUs are in the input FITS file\n");
+        CHECK_STATUS_RET(*status, NULL);
+    }
 	
 	//Read standard keywords
 	//(shouldn't we read these from the record extension?)
 	sixt_read_fits_stdkeywords(file->fptr,keywords,status);
 
 	//Get number of rows
-	char comment[FLEN_COMMENT];
 	fits_read_key(file->fptr, TINT, "NAXIS2", &(file->nrows), comment, status);
         
         //Associate column numbers
 	fits_get_colnum(file->fptr, CASEINSEN,"TIME", &(file->timeCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"ADC", &(file->trigCol), status);
     int colnum = file->trigCol;
-    //printf("%s %d %s","colnum: ",colnum,"\n");
+    fits_get_colnum(file->fptr, CASEINSEN,"EXTEND", &(file->extendCol), status);
+    //printf("%s %d %s","statusEXTEND: ",*status,"\n");
+    if (*status != 0) *status = 0; // status!=0 if no EXTEND column
+    
 	fits_get_colnum(file->fptr, CASEINSEN,"PIXID", &(file->pixIDCol), status);
 	fits_get_colnum(file->fptr, CASEINSEN,"PH_ID", &(file->ph_idCol), status);
 	CHECK_STATUS_RET(*status, NULL);
@@ -355,7 +359,6 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
     
     if (pointerTFORM) // There is a parenthesis
     {
-        //printf("%s","YES (\n");
         char each_character_after_paren[125];
         char characters_after_paren[125];
         
@@ -373,8 +376,6 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
     }
     else    // There is not a parenthesis
     {   
-        //printf("%s","NO (\n");
-        
         char *ptr;
         long ret;
 
@@ -383,14 +384,18 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
         //printf("%s %d %s","eventsz: ",file->trigger_size,"\n");
     }
     
+    
     return(file);
 }
 
 /** Populates a TesRecord structure with the next record */
-int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status){
+int getNextRecord(TesTriggerFile* const file,TesRecord* record,int *lastRecord,int *startRecordGroup,int* const status){
   int anynul=0;
   char tform2ADC[20];
   LONGLONG rec_trigsize;
+  
+  (*lastRecord) = 0;
+  (*startRecordGroup) = 0;
 
   if (NULL==file || NULL==file->fptr) {
     *status=EXIT_FAILURE;
@@ -417,66 +422,166 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int* const status
 			 &rec_trigsize,&col_width,status);
       CHECK_STATUS_RET(*status,0);
     }
-    // resize buffers if that is necessary
-    if (record->trigger_size!=(unsigned long) rec_trigsize) {
-      resizeTesRecord(record,(unsigned long) rec_trigsize,status);
-      CHECK_STATUS_RET(*status,0);
-    }
-
-    // when ADC is integer
-    //fits_read_col(file->fptr, TUSHORT, file->trigCol,
-    //		  file->row,1,record->trigger_size,0,record->adc_array, &anynul,status);
-    // when ADC is DOUBLE
-    fits_read_col(file->fptr, TDOUBLE, file->trigCol,
-		  file->row,1,record->trigger_size,0,record->adc_double, &anynul,status);
-    CHECK_STATUS_RET(*status,0);
-
-//		fits_read_col(file->fptr, TLONG, file->ph_idCol,
-//					  file->row,1,MAXIMPACTNUMBER,0,record->phid_array, &anynul,status);
-//		CHECK_STATUS_RET(*status,0);
-
+    
     fits_read_col(file->fptr, TLONG, file->pixIDCol,
-		  file->row,1,1,0,&(record->pixid), &anynul,status);
+                  file->row,1,1,0,&(record->pixid), &anynul,status);
     CHECK_STATUS_RET(*status,0);
     fits_read_col(file->fptr, TDOUBLE, file->timeCol,
-		  file->row,1,1,0,&(record->time), &anynul,status);
-    CHECK_STATUS_RET(*status,0);
-    //Changed below by MTC//    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
-    /* Comment again because now ADC is double
-    for (unsigned long i=0 ; i < record->trigger_size ; i++) {
-
-      record->adc_double[i]= (double) (record->adc_array[i]);
-    }
-    */
-
-    fits_read_col(file->fptr, TLONG, file->ph_idCol,
-		  file->row,1,1,0,&(record->phid_list->phid_array[0]), &anynul,status);
-    if (*status != 0)	// Simulated files have the PH_ID column but empty
-    {
-    	record->phid_list->phid_array[0] = 0;
-	*status = 0;
-    }
+                  file->row,1,1,0,&(record->time), &anynul,status);
     CHECK_STATUS_RET(*status,0);
     
-    file->row++;
+    fits_read_col(file->fptr, TLONG, file->extendCol,
+		  file->row,1,1,0,&(record->extend), &anynul,status);
+    //CHECK_STATUS_RET(*status,0);
+    if (*status != 0) // No EXTEND column
+    {
+        *status = 0;
+        //// when ADC is integer
+        ////fits_read_col(file->fptr, TUSHORT, file->trigCol,
+        ////		  file->row,1,record->trigger_size,0,record->adc_array, &anynul,status);
+        //// when ADC is DOUBLE
+        fits_read_col(file->fptr, TDOUBLE, file->trigCol,
+                      file->row,1,record->trigger_size,0,record->adc_double, &anynul,status);
+        CHECK_STATUS_RET(*status,0);
+        
+        ////		fits_read_col(file->fptr, TLONG, file->ph_idCol,
+        ////					  file->row,1,MAXIMPACTNUMBER,0,record->phid_array, &anynul,status);
+        ////		CHECK_STATUS_RET(*status,0);
+        
+        //fits_read_col(file->fptr, TLONG, file->pixIDCol,
+        //             file->row,1,1,0,&(record->pixid), &anynul,status);
+        //CHECK_STATUS_RET(*status,0);
+        //fits_read_col(file->fptr, TDOUBLE, file->timeCol,
+        //              file->row,1,1,0,&(record->time), &anynul,status);
+        //CHECK_STATUS_RET(*status,0);
+        ////Changed below by MTC//    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
+        ///* Comment again because now ADC is double
+        // *    for (unsigned long i=0 ; i < record->trigger_size ; i++) {
+        // * 
+        // *      record->adc_double[i]= (double) (record->adc_array[i]);}
+        //*/
+        
+        fits_read_col(file->fptr, TLONG, file->ph_idCol,
+                      file->row,1,1,0,&(record->phid_list->phid_array[0]), &anynul,status);
+        if (*status != 0)	// Simulated files have the PH_ID column but empty
+        {
+            record->phid_list->phid_array[0] = 0;
+            *status = 0;
+        }
+        //CHECK_STATUS_RET(*status,0);
+        
+        (*startRecordGroup) = file->row;
+        
+        file->row++;
+    }
+    else // EXTEND column
+    {
+        // resize buffers if that is necessary
+        int nrowsTogether = 0;
+        if (record->extend == 0)
+        {
+            if (record->trigger_size!=(unsigned long) rec_trigsize) {
+                resizeTesRecord(record,(unsigned long) rec_trigsize,status);
+                CHECK_STATUS_RET(*status,0);
+            }
+            // when ADC is integer
+            //fits_read_col(file->fptr, TUSHORT, file->trigCol,
+            //	 	  file->row,1,record->trigger_size,0,record->adc_array, &anynul,status);
+            // when ADC is DOUBLE
+            fits_read_col(file->fptr, TDOUBLE, file->trigCol,
+                          file->row,1,record->trigger_size,0,record->adc_double, &anynul,status);
+            CHECK_STATUS_RET(*status,0);
+            (*startRecordGroup) = file->row;
+        }
+        else
+        {
+            int sizeADC = record->trigger_size; 
+            int sizeToWrite;
+            
+            int sizeLastRow = 0;
+            div_t nrowsTogether_div_t = div(record->trigger_size+record->extend,record->trigger_size);
+            nrowsTogether = nrowsTogether_div_t.quot +1;
+            sizeLastRow = nrowsTogether_div_t.rem;
+            resizeTesRecord(record,(unsigned long) record->extend + record->trigger_size,status);
+            double *singleRecord = NULL;
+            int rowToRead = file->row;
+            int index = 0;
+            (*startRecordGroup) = file->row;
+            for (int i=0;i<nrowsTogether;i++)
+            {
+                singleRecord = malloc(sizeADC*sizeof(singleRecord));
+                // when ADC is integer
+                //fits_read_col(file->fptr, TUSHORT, file->trigCol,
+                //	 	  file->row,1,record->trigger_size,0,record->adc_array, &anynul,status);
+                // when ADC is DOUBLE
+                fits_read_col(file->fptr, TDOUBLE, file->trigCol,
+                              rowToRead,1,sizeADC,0,singleRecord, &anynul,status);
+                CHECK_STATUS_RET(*status,0);
+                
+                if (i != nrowsTogether-1)
+                {
+                    sizeToWrite = sizeADC;
+                }
+                else
+                {
+                    sizeToWrite = sizeLastRow;
+                }
+                for (int j=0;j<sizeToWrite;j++)
+                {
+                    record->adc_double[j+index] = singleRecord[j];
+                }
+                free(singleRecord);
+                index = index + sizeADC;
+                rowToRead++;    
+            }
+        }
+        
+        
+        /*fits_read_col(file->fptr, TDOUBLE, file->timeCol,
+                      file->row,1,1,0,&(record->time), &anynul,status);
+        CHECK_STATUS_RET(*status,0);
+        //Changed below by MTC//    for (unsigned long i=0 ; i < file->trigger_size ; i++) {
+        //Comment again because now ADC is double
+        //    for (unsigned long i=0 ; i < record->trigger_size ; i++) {
+        // 
+        //      record->adc_double[i]= (double) (record->adc_array[i]);}
+        //
+        */
+        
+        free(record->phid_list->phid_array);
+        record->phid_list->phid_array = malloc(3*sizeof(*(record->phid_list->phid_array)));
+        fits_read_col(file->fptr, TLONG, file->ph_idCol,
+                      file->row,1,3,0,record->phid_list->phid_array, &anynul,status);
+        CHECK_STATUS_RET(*status,0);
+        
+        if (record->extend == 0)
+        {
+            file->row++;
+        }
+        else
+        {
+            file->row = file->row + nrowsTogether;
+        }
+    }
+    
+    if (file->row>file->nrows)  (*lastRecord) = 1;
+    
     return(1);
   } else {
     return(0);
   }
-
-
 }
 
 /** Writes a record to a file */
 void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status){
-        // if we've run out of buffer, extend the table
-        if (outputFile->rowbuffer==0){
-                // extend to 1.5 of previous length
-                outputFile->rowbuffer = (long) outputFile->nrows/2; 
-                fits_insert_rows(outputFile->fptr, outputFile->nrows, outputFile->rowbuffer, status);
-        }
+    // if we've run out of buffer, extend the table
+    if (outputFile->rowbuffer==0){
+        // extend to 1.5 of previous length
+        outputFile->rowbuffer = (long) outputFile->nrows/2; 
+        fits_insert_rows(outputFile->fptr, outputFile->nrows, outputFile->rowbuffer, status);
+    }
 
-        // write values
+    // write values
 	fits_write_col(outputFile->fptr, TDOUBLE, outputFile->timeCol,
 			outputFile->row, 1, 1, &(record->time), status);
 	if (outputFile->write_doubles){
@@ -491,7 +596,7 @@ void writeRecord(TesTriggerFile* outputFile,TesRecord* record,int* const status)
 	fits_write_col(outputFile->fptr, TLONG, outputFile->ph_idCol,
 			outputFile->row, 1,record->phid_list->index,record->phid_list->phid_array, status);
 
-        outputFile->rowbuffer--;
+    outputFile->rowbuffer--;
 	outputFile->nrows++;
 	outputFile->row++;
 }

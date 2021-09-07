@@ -18,14 +18,14 @@
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
-   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
+   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
 
-/***********************************************************************
+***********************************************************************
 *                      GENUTILS
 *
 *  File:       genutils.cpp
 *  Developers: Beatriz Cobo
-* 	       cobo@ifca.unican.es
+* 	           cobo@ifca.unican.es
 *              IFCA
 *              Maite Ceballos
 *              ceballos@ifca.unican.es
@@ -55,6 +55,7 @@ MAP OF SECTIONS IN THIS FILE::
  - 13. fileExists
  - 14. parabola3Pts
  - 15. isNumber
+ - 16. hannWindow
 
 *******************************************************************************/
 
@@ -528,3 +529,30 @@ bool isNumber(string s)
     return true; 
 } 
 /*xxxx end of SECTION 15 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 16 ************************************************************
+* hannWindow: This function applies a N-length Hanning window to the input vector
+*             N is the length of the input vector
+* 
+* 0.5-0.5cos(2PIn/(N-1)) 0<=n<=N-1
+* 
+* Parameters:
+* - inoutvector: Input/Output GSL vector
+*****************************************************************************/
+int hannWindow(gsl_vector **inoutvector)
+{
+	//Declare variables
+    int status=EPOK;
+ 	double multiplier;
+    int N = (*inoutvector)->size;
+    
+    for (int i = 0; i < N; i++) 
+    {
+        multiplier = 0.5 * (1 - cos(2*pi*i/(N-1)));
+        gsl_vector_set(*inoutvector,i,gsl_vector_get(*inoutvector,i)*multiplier);
+    }
+
+ 	return EPOK;
+}
+/*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

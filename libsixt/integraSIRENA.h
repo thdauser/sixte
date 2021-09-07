@@ -18,7 +18,7 @@
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
-   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
+   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
 
 ***********************************************************************
 *                      INTEGRASIRENA
@@ -316,24 +316,26 @@ typedef struct PulseDetected
 	/** tstart(i)-tstart(i-1)*/
 	int grade2;
 
-        int grade2_1;
+    int grade2_1;
 
 	/** PIX_ID of the detected pulse*/
 	int pixid;
         
-        /** PH_ID of the detected pulse*/
+    ///** PH_IDs corresponding to the record where is the detected pulse*/
 	int phid;
+    int phid2;
+    int phid3;
 	
 	/** Vector containing the pulse adc values */
 	gsl_vector *pulse_adc;
         
-        /** Vector containing the pulse adc values and the preBuffer*/
+    /** Vector containing the pulse adc values and the preBuffer*/
 	gsl_vector *pulse_adc_preBuffer;
 
 	/** Start time of the Pulse */
 	double Tstart;
         
-        /** Start time of the Pulse in samples */
+    /** Start time of the Pulse in samples */
 	double TstartSamples;
 
 	/** End time of the Pulse */
@@ -357,32 +359,32 @@ typedef struct PulseDetected
 	/** Energy (KeV) of the Pulse */
 	double energy;
         
-        /** Pulse grade */
+    /** Pulse grade */
 	int grading;
 
-        /** Average of the first 4 samples of the derivative of the Pulse */
+    /** Average of the first 4 samples of the derivative of the Pulse */
 	double avg_4samplesDerivative;
         
-        /** Low resolution energy estimator (4 samples-long filter) */
+    /** Low resolution energy estimator (4 samples-long filter) */
 	double E_lowres;
         
-        /** Offset relative to the central point of the parabola */
-        double phi;
+    /** Offset relative to the central point of the parabola */
+    double phi;
         
-        /** Number of samples shifted to find the maximum of the parabola  */
-        int lagsShift;
+    /** Number of samples shifted to find the maximum of the parabola  */
+    int lagsShift;
         
 	/** Quality of the Pulse */
 	double quality;
         
-        /**Number of lags used in detection*/
-        int numLagsUsed;
+    /**Number of lags used in detection*/
+    int numLagsUsed;
         
-        /** Baseline calculated, in general, by using the previous Lb samples to the pulse */
-        double bsln;
+    /** Baseline calculated, in general, by using the previous Lb samples to the pulse */
+    double bsln;
         
-        /** Rms of the baseline calculated, in general, by using the previous Lb samples to the pulse */
-        double rmsbsln;
+    /** Rms of the baseline calculated, in general, by using the previous Lb samples to the pulse */
+    double rmsbsln;
 #ifdef __cplusplus
   PulseDetected();
   PulseDetected(const PulseDetected& other);
@@ -535,6 +537,12 @@ typedef struct ReconstructInitSIRENA
   
   //0-padding filter if 0 (from pulseLength to OFLength filter filled in with 0's) or filter with a filter+preBuffer if different from 0
   int preBuffer;
+  int preBuffer_min_value;
+  int preBuffer_max_value;
+  
+  // Values from the grading info in the XML file
+  int post_min_value;
+  int post_max_value;
 
   /** Write intermediate files **/
   int intermediate;
@@ -633,7 +641,7 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
                                     double filtEev, double Ifit, char* ofnoise, 
                                     int lagsornot, int nLags, int Fitting35, int ofiter, char oflib, 
                                     char *ofinterp, char* oflength_strategy, 
-                                    int oflength, int preBuffer,
+                                    int oflength, char preBuffer,
                                     double monoenergy, char hduPRECALWN, 
                                     char hduPRCLOFWM, int largeFilter, 
                                     int interm, char* detectFile, 
@@ -671,8 +679,7 @@ extern "C"
 #endif
 void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
 
-
-LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, int* const status);
+LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, gsl_vector *pBi, gsl_vector *posti, int* const status);
 
 NoiseSpec* getNoiseSpec(const char* const filename,int opmode,int hduPRCLOFWM,char *energy_method,char *ofnoise,char *filter_method,int* const status);
 

@@ -19,14 +19,14 @@
    CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
    Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish (
    Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
-   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
+   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
 
-/***********************************************************************
+***********************************************************************
 *                      PULSEPROCESS
 *
 *  File:       pulseprocess.cpp
 *  Developers: Beatriz Cobo
-* 	       cobo@ifca.unican.es
+* 	           cobo@ifca.unican.es
 *              IFCA
 *              Maite Ceballos
 *              ceballos@ifca.unican.es
@@ -429,7 +429,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 	// It is not necessary to check the allocation because 'tstart' size must already be > 0
 	*B = gsl_vector_alloc(tstart->size);
 	gsl_vector_set_all(*B,-999);
-        *rmsB = gsl_vector_alloc(tstart->size);
+    *rmsB = gsl_vector_alloc(tstart->size);
 	gsl_vector_set_all(*rmsB,-999);
 	double Baux = -999;
 	double tendprev;
@@ -440,806 +440,806 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 	
 	double mean, sigma;
 
-	if (nPulses != 0)
+    if (nPulses != 0)
+    {
+        if ((nPulses-1 >(tstart)->size-1))
         {
-            if ((nPulses-1 >(tstart)->size-1))
+            sprintf(valERROR,"%d",__LINE__+8);
+            string str(valERROR);
+            message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+            str.clear();
+            EP_PRINT_ERROR(message,EPFAIL);
+        }
+        
+        for (int i=0;i<nPulses;i++)
+        {
+            gsl_vector_set(tstart,i,(int)(gsl_vector_get(tstart,i)));	
+        }
+        
+        for (int i=0;i<nPulses;i++)
+        {
+            if (i == 0)     // First pulse into a record		
+                //  Current pulse
+                //      //\\          /\     /\       /\
+                // (1) //  \\  (2)   /  \(3)/  \ (4) /  \    (5)
+                // ----      --------    ---    -----    ----------
             {
-                    sprintf(valERROR,"%d",__LINE__+8);
-                    string str(valERROR);
-                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                    str.clear();
-                    EP_PRINT_ERROR(message,EPFAIL);
-            }
-	
-            for (int i=0;i<nPulses;i++)
-            {
-                    gsl_vector_set(tstart,i,(int)(gsl_vector_get(tstart,i)));	
-            }
-	
-            for (int i=0;i<nPulses;i++)
-            {
-                    if (i == 0)     // First pulse into a record		
-                    //  Current pulse
-                    //      //\\          /\     /\       /\
-                    // (1) //  \\  (2)   /  \(3)/  \ (4) /  \    (5)
-                    // ----      --------    ---    -----    ----------
+                if (gsl_vector_get(tstart,0)>=gsl_vector_get(*lb,0))
+                    // tstart>=lb => Sum lb samples
+                    // length_(1)>=lb
+                {
+                    if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
                     {
-                            if (gsl_vector_get(tstart,0)>=gsl_vector_get(*lb,0))
-                            // tstart>=lb => Sum lb samples
-                            // length_(1)>=lb
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                    }
+                    
+                    if ((gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) > vectorin->size-2)
+                        || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0))))
+                    {
+                        sprintf(valERROR,"%d",__LINE__+6);
+                        string str(valERROR);
+                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
+                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                    {
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    
+                    // Sum all the elements of 'input'
+                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                    {
+                        message = "Cannot run gsl_vector_Sumsubvector routine when tstart>=lb";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    //cout<<"Baux: "<<Baux<<endl;
+                    if (findMeanSigma (input, &mean, &sigma))
+                    {
+                        message = "Cannot run findMeanSigma in getB";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    gsl_vector_free(input); input = 0;
+                }
+                else if ((gsl_vector_get(tstart,0)<gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,0)>1))
+                    // 0<tstart<lb => Sum the available number of samples (although the available number of samples was lower than lb)
+                    // 0<length_(1)<lb
+                {
+                    if ((input = gsl_vector_alloc(gsl_vector_get(tstart,0))) == 0)
+                    {
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                    }
+                    
+                    if ((gsl_vector_get(tstart,0) < 1) || (gsl_vector_get(tstart,0) >vectorin->size))
+                    {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    temp = gsl_vector_subvector(vectorin,0,gsl_vector_get(tstart,0));
+                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                    {
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    
+                    // Sum all the elements of 'input'
+                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                    {
+                        message = "Cannot run gsl_vector_Sumsubvector routine when tstart<lb";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    gsl_vector_set(*lb,0, gsl_vector_get(tstart,0));
+                    if (findMeanSigma (input, &mean, &sigma))
+                    {
+                        message = "Cannot run findMeanSigma in getB";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    gsl_vector_free(input); input = 0;
+                }
+                else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
+                {
+                    for (int j=1;j<nPulses;j++)
+                        // (2),(3),(4) and (5) are analyzed
+                        // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
+                    {
+                        tendprev = gsl_vector_get(tstart,j-1)+sizepulse-1;
+                        if (tendprev >= vectorin->size)
+                        {
+                            tendprev = vectorin->size-1;
+                        }
+                        
+                        if (gsl_vector_get(tstart,j)-tendprev > 0)
+                        {
+                            if (gsl_vector_get(tstart,j)-tendprev >= gsl_vector_get(*lb,0))
+                                // length_(j)>=lb (j/=nPulses)
                             {
-                                    if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                    }
-
-                                    if ((gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0) > vectorin->size-2)
-                                            || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0))))
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__+5);
-                                            string str(valERROR);
-                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-                                    temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,0)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
-                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-
-                                    // Sum all the elements of 'input'
-                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                    {
-                                            message = "Cannot run gsl_vector_Sumsubvector routine when tstart>=lb";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    //cout<<"Baux: "<<Baux<<endl;
-                                    if (findMeanSigma (input, &mean, &sigma))
-                                    {
-                                            message = "Cannot run findMeanSigma in getB";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    gsl_vector_free(input); input = 0;
+                                if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                                
+                                if ((gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) > vectorin->size-2)
+                                    || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0))))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                if (findMeanSigma (input, &mean, &sigma))
+                                {
+                                    message = "Cannot run findMeanSigma in getB";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input); input = 0;
+                                
+                                break;
                             }
-                            else if ((gsl_vector_get(tstart,0)<gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,0)>1))
-                            // 0<tstart<lb => Sum the available number of samples (although the available number of samples was lower than lb)
-                            // 0<length_(1)<lb
+                            else if ((gsl_vector_get(tstart,j)-tendprev < gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,j)-tendprev > 1))
+                                // 0<length_(j)<lb (j/=nPulses)
                             {
-                                    if ((input = gsl_vector_alloc(gsl_vector_get(tstart,0))) == 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                    }
-
-                                    if ((gsl_vector_get(tstart,0) < 1) || (gsl_vector_get(tstart,0) >vectorin->size))
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__+5);
-                                            string str(valERROR);
-                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-                                    temp = gsl_vector_subvector(vectorin,0,gsl_vector_get(tstart,0));
-                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-
-                                    // Sum all the elements of 'input'
-                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                    {
-                                            message = "Cannot run gsl_vector_Sumsubvector routine when tstart<lb";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    gsl_vector_set(*lb,0, gsl_vector_get(tstart,0));
-                                    if (findMeanSigma (input, &mean, &sigma))
-                                    {
-                                            message = "Cannot run findMeanSigma in getB";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    gsl_vector_free(input); input = 0;
+                                if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j)-tendprev-1)) == 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                                
+                                if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                    || (gsl_vector_get(tstart,j)-tendprev-1 < 1) || (gsl_vector_get(tstart,j)-tendprev-1 >vectorin->size-(tendprev+1)))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j)-tendprev-1);
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                gsl_vector_set(*lb,0,gsl_vector_get(tstart,j)-tendprev-1);
+                                
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                if (findMeanSigma (input, &mean, &sigma))
+                                {
+                                    message = "Cannot run findMeanSigma in getB";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input); input = 0;
+                                
+                                break;
                             }
-                            else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
+                            else
                             {
-                                    for (int j=1;j<nPulses;j++)
+                                for (int j=0;j<nPulses;j++)	// From the current pulse
                                     // (2),(3),(4) and (5) are analyzed
                                     // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
+                                {
+                                    tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
+                                    if (tendprev >= vectorin->size)
                                     {
-                                            tendprev = gsl_vector_get(tstart,j-1)+sizepulse-1;
-                                            if (tendprev >= vectorin->size)
-                                            {
-                                                    tendprev = vectorin->size-1;
-                                            }
-
-                                            if (gsl_vector_get(tstart,j)-tendprev > 0)
-                                            {
-                                                    if (gsl_vector_get(tstart,j)-tendprev >= gsl_vector_get(*lb,0))
-                                                    // length_(j)>=lb (j/=nPulses)
-                                                    {
-                                                            if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                            }
-
-                                                            if ((gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0) > vectorin->size-2)
-                                                                    || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) >vectorin->size-(gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0))))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
-                                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-
-                                                            // Sum all the elements of input
-                                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                            {
-                                                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            if (findMeanSigma (input, &mean, &sigma))
-                                                            {
-                                                                    message = "Cannot run findMeanSigma in getB";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            gsl_vector_free(input); input = 0;
-
-                                                            break;
-                                                    }
-                                                    else if ((gsl_vector_get(tstart,j)-tendprev < gsl_vector_get(*lb,0)) && (gsl_vector_get(tstart,j)-tendprev > 1))
-                                                    // 0<length_(j)<lb (j/=nPulses)
-                                                    {
-                                                            if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j)-tendprev-1)) == 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                            }
-
-                                                            if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-                                                                    || (gsl_vector_get(tstart,j)-tendprev-1 < 1) || (gsl_vector_get(tstart,j)-tendprev-1 >vectorin->size-(tendprev+1)))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j)-tendprev-1);
-                                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            gsl_vector_set(*lb,0,gsl_vector_get(tstart,j)-tendprev-1);
-
-                                                            // Sum all the elements of input
-                                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                            {
-                                                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse free interval before the pulse";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            if (findMeanSigma (input, &mean, &sigma))
-                                                            {
-                                                                    message = "Cannot run findMeanSigma in getB";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            gsl_vector_free(input); input = 0;
-
-                                                            break;
-                                                    }
-                                                    else
-                                                    {
-                                                            for (int j=0;j<nPulses;j++)	// From the current pulse
-                                                            // (2),(3),(4) and (5) are analyzed
-                                                            // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
-                                                            {
-                                                                    tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
-                                                                    if (tendprev >= vectorin->size)
-                                                                    {
-                                                                            tendprev = vectorin->size-1;
-                                                                    }
-                                                                    if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
-                                                                    {
-                                                                            if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,0))
-                                                                            {
-                                                                                    if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                                                    }
-
-                                                                                    if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) > vectorin->size-2)
-                                                                                            || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0))))
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__+5);
-                                                                                            string str(valERROR);
-                                                                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-                                                                                    temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
-                                                                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-
-                                                                                    // Sum all the elements of input
-                                                                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                                                    {
-                                                                                            message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    if (findMeanSigma (input, &mean, &sigma))
-                                                                                    {
-                                                                                            message = "Cannot run findMeanSigma in getB";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    gsl_vector_free(input); input = 0;
-
-                                                                                    break;
-                                                                            }
-                                                                            else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,0)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
-                                                                            {
-                                                                                    if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                                                    }
-
-                                                                                    if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-                                                                                            || (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__+5);
-                                                                                            string str(valERROR);
-                                                                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-                                                                                    temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
-                                                                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-
-                                                                                    // Sum all the elements of input
-                                                                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                                                    {
-                                                                                            message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    if (/*(0 < 0) || */(0 >(*lb)->size-1))
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__+5);
-                                                                                            string str(valERROR);
-                                                                                            message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-                                                                                    gsl_vector_set(*lb,0,gsl_vector_get(tstart,j+1)-tendprev-1);
-                                                                                    if (findMeanSigma (input, &mean, &sigma))
-                                                                                    {
-                                                                                            message = "Cannot run findMeanSigma in getB";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    gsl_vector_free(input); input = 0;
-
-                                                                                    break;
-                                                                            }
-                                                                    }
-
-                                                                    if (j == nPulses-1)	// Last pulse into the record
-                                                                    // (5) is analyzed
-                                                                    {
-                                                                            if (vectorin->size-tendprev >= gsl_vector_get(*lb,0))
-                                                                            {
-                                                                                    if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                                                    }
-
-                                                                                    if ((tendprev < 0) || (tendprev > vectorin->size-2)
-                                                                                            || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-tendprev))
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__+5);
-                                                                                            string str(valERROR);
-                                                                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-                                                                                    temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,0));
-                                                                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-
-                                                                                    // Sum all the elements of input
-                                                                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                                                    {
-                                                                                            message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    if (findMeanSigma (input, &mean, &sigma))
-                                                                                    {
-                                                                                            message = "Cannot run findMeanSigma in getB";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    gsl_vector_free(input); input = 0;
-
-                                                                                    break;
-                                                                            }
-                                                                            else if ((vectorin->size-tendprev < gsl_vector_get(*lb,0)) && (vectorin->size-tendprev > 1))
-                                                                            {
-                                                                                    if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                                                    }
-
-                                                                                    if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-                                                                                            || (vectorin->size-tendprev-1 < 1))
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__+5);
-                                                                                            string str(valERROR);
-                                                                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-                                                                                    temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
-                                                                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__-2);
-                                                                                            string str(valERROR);
-                                                                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-                                                                                    if (/*(i < 0) || */(0 >(*lb)->size-1))
-                                                                                    {
-                                                                                            sprintf(valERROR,"%d",__LINE__+5);
-                                                                                            string str(valERROR);
-                                                                                            message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                                                                            str.clear();
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);
-                                                                                    }
-                                                                                    gsl_vector_set(*lb,0,vectorin->size-tendprev-1);
-
-                                                                                    // Sum all the elements of input
-                                                                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                                                    {
-                                                                                            message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    if (findMeanSigma (input, &mean, &sigma))
-                                                                                    {
-                                                                                            message = "Cannot run findMeanSigma in getB";
-                                                                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                                                    }
-                                                                                    gsl_vector_free(input); input = 0;
-
-                                                                                    break;
-                                                                            }
-                                                                    }
-                                                            }//for 0 to N
-                                                    }
-                                            }
+                                        tendprev = vectorin->size-1;
                                     }
+                                    if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
+                                    {
+                                        if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,0))
+                                        {
+                                            if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                            }
+                                            
+                                            if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0) > vectorin->size-2)
+                                                || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0))))
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,0),gsl_vector_get(*lb,0));
+                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            
+                                            // Sum all the elements of input
+                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                            {
+                                                message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            if (findMeanSigma (input, &mean, &sigma))
+                                            {
+                                                message = "Cannot run findMeanSigma in getB";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            gsl_vector_free(input); input = 0;
+                                            
+                                            break;
+                                        }
+                                        else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,0)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
+                                        {
+                                            if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                            }
+                                            
+                                            if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                                || (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            
+                                            // Sum all the elements of input
+                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                            {
+                                                message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            if (/*(0 < 0) || */(0 >(*lb)->size-1))
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            gsl_vector_set(*lb,0,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                            if (findMeanSigma (input, &mean, &sigma))
+                                            {
+                                                message = "Cannot run findMeanSigma in getB";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            gsl_vector_free(input); input = 0;
+                                            
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (j == nPulses-1)	// Last pulse into the record
+                                        // (5) is analyzed
+                                    {
+                                        if (vectorin->size-tendprev >= gsl_vector_get(*lb,0))
+                                        {
+                                            if ((input = gsl_vector_alloc(gsl_vector_get(*lb,0))) == 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                            }
+                                            
+                                            if ((tendprev < 0) || (tendprev > vectorin->size-2)
+                                                || (gsl_vector_get(*lb,0) < 1) || (gsl_vector_get(*lb,0) > vectorin->size-tendprev))
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,0));
+                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            
+                                            // Sum all the elements of input
+                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                            {
+                                                message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            if (findMeanSigma (input, &mean, &sigma))
+                                            {
+                                                message = "Cannot run findMeanSigma in getB";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            gsl_vector_free(input); input = 0;
+                                            
+                                            break;
+                                        }
+                                        else if ((vectorin->size-tendprev < gsl_vector_get(*lb,0)) && (vectorin->size-tendprev > 1))
+                                        {
+                                            if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                            }
+                                            
+                                            if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                                || (vectorin->size-tendprev-1 < 1))
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
+                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__-2);
+                                                string str(valERROR);
+                                                message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            if (/*(i < 0) || */(0 >(*lb)->size-1))
+                                            {
+                                                sprintf(valERROR,"%d",__LINE__+5);
+                                                string str(valERROR);
+                                                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                                str.clear();
+                                                EP_PRINT_ERROR(message,EPFAIL);
+                                            }
+                                            gsl_vector_set(*lb,0,vectorin->size-tendprev-1);
+                                            
+                                            // Sum all the elements of input
+                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                            {
+                                                message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            if (findMeanSigma (input, &mean, &sigma))
+                                            {
+                                                message = "Cannot run findMeanSigma in getB";
+                                                EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                            }
+                                            gsl_vector_free(input); input = 0;
+                                            
+                                            break;
+                                        }
+                                    }
+                                }//for 0 to N
                             }
-                    }// end of the first pulse scope
-                    else    // Not first pulse into a record
-                    //             Current pulse
-                    //      /\          //\\     /\       /\
-                    // (1) /  \  (2)   //  \\(3)/  \ (4) /  \    (5)
-                    // ----    --------      ---    -----    ----------
-                    {	
-                            
-                            tendprev = gsl_vector_get(tstart,i-1)+sizepulse-1;
-                            if (gsl_vector_get(tstart,i)-tendprev >= gsl_vector_get(*lb,i))
-                            // tstart_(i)-tend_(i-1)>=lb => Sum lb samples
-                            // length_(2)>=lb
-                            {
-                                    if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                    }
-                        
-                                    if ((gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) > vectorin->size-2)
-                                    || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i))))
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__+5);
-                                            string str(valERROR);
-                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-                                    temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
-                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-
-                                    // Sum all the elements of input
-                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                    {
-                                            message = "Cannot run gsl_vector_Sumsubvector routine length_(2)>=lb";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    if (findMeanSigma (input, &mean, &sigma))
-                                    {
-                                            message = "Cannot run findMeanSigma in getB";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    gsl_vector_free(input); input = 0;
-                            }
-                            else if ((gsl_vector_get(tstart,i)-tendprev<gsl_vector_get(*lb,i)) && (gsl_vector_get(tstart,i)-tendprev>1))
-                            // 0<tstart_(i)-tend_(i-1)<lb => Sum the available number of samples (although the available number of samples was lower than lb)
-                            // 0<length_(2)<lb
-                            {
-                                    if ((input = gsl_vector_alloc(gsl_vector_get(tstart,i)-tendprev-1)) == 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                    }
-                            
-                                    if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-                                            || (gsl_vector_get(tstart,i)-tendprev-1 < 1) || (gsl_vector_get(tstart,i)-tendprev-1 > vectorin->size-(tendprev+1)))
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__+5);
-                                            string str(valERROR);
-                                            message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-                                    temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,i)-tendprev-1);
-                                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__-2);
-                                            string str(valERROR);
-                                            message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-
-                                    // Sum all the elements of input
-                                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                    {
-                                            message = "Cannot run gsl_vector_Sumsubvector routine when 0<length_(2)<lb";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    if ((i < 0) || (i >(*lb)->size-1))
-                                    {
-                                            sprintf(valERROR,"%d",__LINE__+5);
-                                            string str(valERROR);
-                                            message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                            str.clear();
-                                            EP_PRINT_ERROR(message,EPFAIL);
-                                    }
-                                    gsl_vector_set(*lb,i,gsl_vector_get(tstart,i)-tendprev-1);
-                                    if (findMeanSigma (input, &mean, &sigma))
-                                    {
-                                            message = "Cannot run findMeanSigma in getB";
-                                            EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                    }
-                                    gsl_vector_free(input); input = 0;
-                            }
-                            else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
-                            {
-                                    for (int j=i;j<nPulses;j++)	// From the current pulse
-                                    // (3),(4) and (5) are analyzed
-                                    // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
-                                    {
-                                            tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
-                                            if (tendprev >= vectorin->size)
-                                            {
-                                                    tendprev = vectorin->size-1;
-                                            }
-                                            if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
-                                            {
-                                                    if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,i))
-                                                    {
-                                                            if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                            }
-                                                
-                                                            if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) > vectorin->size-2)
-                                                                    || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i))))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
-                                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-
-                                                            // Sum all the elements of input
-                                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                            {
-                                                                    message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            if (findMeanSigma (input, &mean, &sigma))
-                                                            {
-                                                                    message = "Cannot run findMeanSigma in getB";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            gsl_vector_free(input); input = 0;
-
-                                                            break;
-                                                    }
-                                                    else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,i)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
-                                                    {
-                                                            if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                            }
-                                                    
-                                                            if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
-                                                                    || (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
-                                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-
-                                                            // Sum all the elements of input
-                                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                            {
-                                                                    message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            if ((i < 0) || (i >(*lb)->size-1))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            gsl_vector_set(*lb,i,gsl_vector_get(tstart,j+1)-tendprev-1);
-                                                            if (findMeanSigma (input, &mean, &sigma))
-                                                            {
-                                                                    message = "Cannot run findMeanSigma in getB";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            gsl_vector_free(input); input = 0;
-
-                                                            break;
-                                                    }
-                                            }
-
-                                            if (j == nPulses-1)	// Last pulse into the record
-                                            // (5) is analyzed
-                                            {
-                                                    if (vectorin->size-tendprev >= gsl_vector_get(*lb,i))
-                                                    {
-                                                            if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                            }
-                                                    
-                                                            //if ((tendprev < 0) || (tendprev > vectorin->size-2)                                                                   || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-tendprev))
-                                                            if ((tendprev < 0) || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-tendprev))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,i));
-                                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-
-                                                            // Sum all the elements of input
-                                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                            {
-                                                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            if (findMeanSigma (input, &mean, &sigma))
-                                                            {
-                                                                    message = "Cannot run findMeanSigma in getB";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            gsl_vector_free(input); input = 0;
-
-                                                            break;
-                                                    }
-                                                    else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev > 1))
-                                                    {
-                                                            if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
-                                                            }
-                                                    
-                                                            //if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)                                                                    || (vectorin->size-tendprev-1 < 1))
-                                                            if ((tendprev+1 < 0) || (vectorin->size-tendprev-1 < 1))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
-                                                            if (gsl_vector_memcpy(input, &temp.vector) != 0)
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__-2);
-                                                                    string str(valERROR);
-                                                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            if ((i < 0) || (i >(*lb)->size-1))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            gsl_vector_set(*lb,i,vectorin->size-tendprev-1);
-
-                                                            // Sum all the elements of input
-                                                            if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
-                                                            {
-                                                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            if (findMeanSigma (input, &mean, &sigma))
-                                                            {
-                                                                    message = "Cannot run findMeanSigma in getB";
-                                                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
-                                                            }
-                                                            gsl_vector_free(input); input = 0;
-
-                                                            break;
-                                                    }
-                                                    else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev <= 1))
-                                                    {
-                                                            if ((i < 0) || (i >(*lb)->size-1))
-                                                            {
-                                                                    sprintf(valERROR,"%d",__LINE__+5);
-                                                                    string str(valERROR);
-                                                                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                                                                    str.clear();
-                                                                    EP_PRINT_ERROR(message,EPFAIL);
-                                                            }
-                                                            gsl_vector_set(*lb,i,gsl_vector_get(*lb,i-1));
-
-                                                            break;
-                                                    }
-                                            }
-                                    }
-                            }
+                        }
                     }
-
-                    if ((i < 0) || (i >(*B)->size-1))
+                }
+            }// end of the first pulse scope
+            else    // Not first pulse into a record
+                //             Current pulse
+                //      /\          //\\     /\       /\
+                // (1) /  \  (2)   //  \\(3)/  \ (4) /  \    (5)
+                // ----    --------      ---    -----    ----------
+            {	
+                
+                tendprev = gsl_vector_get(tstart,i-1)+sizepulse-1;
+                if (gsl_vector_get(tstart,i)-tendprev >= gsl_vector_get(*lb,i))
+                    // tstart_(i)-tend_(i-1)>=lb => Sum lb samples
+                    // length_(2)>=lb
+                {
+                    if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
                     {
-                            sprintf(valERROR,"%d",__LINE__+5);
-                            string str(valERROR);
-                            message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
-                            str.clear();
-                            EP_PRINT_ERROR(message,EPFAIL);
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
                     }
-                    gsl_vector_set(*B,i,Baux);
-                    gsl_vector_set(*rmsB,i,sigma);
-            }//for
-        }
-
+                    
+                    if ((gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i) > vectorin->size-2)
+                        || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i))))
+                    {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,i)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
+                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                    {
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    
+                    // Sum all the elements of input
+                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                    {
+                        message = "Cannot run gsl_vector_Sumsubvector routine length_(2)>=lb";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    if (findMeanSigma (input, &mean, &sigma))
+                    {
+                        message = "Cannot run findMeanSigma in getB";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    gsl_vector_free(input); input = 0;
+                }
+                else if ((gsl_vector_get(tstart,i)-tendprev<gsl_vector_get(*lb,i)) && (gsl_vector_get(tstart,i)-tendprev>1))
+                    // 0<tstart_(i)-tend_(i-1)<lb => Sum the available number of samples (although the available number of samples was lower than lb)
+                    // 0<length_(2)<lb
+                {
+                    if ((input = gsl_vector_alloc(gsl_vector_get(tstart,i)-tendprev-1)) == 0)
+                    {
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                    }
+                    
+                    if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                        || (gsl_vector_get(tstart,i)-tendprev-1 < 1) || (gsl_vector_get(tstart,i)-tendprev-1 > vectorin->size-(tendprev+1)))
+                    {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,i)-tendprev-1);
+                    if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                    {
+                        sprintf(valERROR,"%d",__LINE__-2);
+                        string str(valERROR);
+                        message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    
+                    // Sum all the elements of input
+                    if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                    {
+                        message = "Cannot run gsl_vector_Sumsubvector routine when 0<length_(2)<lb";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    if ((i < 0) || (i >(*lb)->size-1))
+                    {
+                        sprintf(valERROR,"%d",__LINE__+5);
+                        string str(valERROR);
+                        message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                        str.clear();
+                        EP_PRINT_ERROR(message,EPFAIL);
+                    }
+                    gsl_vector_set(*lb,i,gsl_vector_get(tstart,i)-tendprev-1);
+                    if (findMeanSigma (input, &mean, &sigma))
+                    {
+                        message = "Cannot run findMeanSigma in getB";
+                        EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                    }
+                    gsl_vector_free(input); input = 0;
+                }
+                else	// If there is not a pulse-free interval before the pulse, it is looked for it after the current pulse
+                {
+                    for (int j=i;j<nPulses;j++)	// From the current pulse
+                        // (3),(4) and (5) are analyzed
+                        // When 0<length_(j)<lb => 'break' => Out of the 'for' loop
+                    {
+                        tendprev = gsl_vector_get(tstart,j)+sizepulse-1;
+                        if (tendprev >= vectorin->size)
+                        {
+                            tendprev = vectorin->size-1;
+                        }
+                        if ((j < nPulses-1) && (gsl_vector_get(tstart,j+1)-tendprev > 0)) // Not last pulse into a row=event
+                        {
+                            if (gsl_vector_get(tstart,j+1)-tendprev >= gsl_vector_get(*lb,i))
+                            {
+                                if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                                
+                                if ((gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) < 0) || (gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i) > vectorin->size-2)
+                                    || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-(gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i))))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,gsl_vector_get(tstart,j+1)-gsl_vector_get(*lb,i),gsl_vector_get(*lb,i));
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                    message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev >= lb";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                if (findMeanSigma (input, &mean, &sigma))
+                                {
+                                    message = "Cannot run findMeanSigma in getB";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input); input = 0;
+                                
+                                break;
+                            }
+                            else if ((gsl_vector_get(tstart,j+1)-tendprev < gsl_vector_get(*lb,i)) && ((gsl_vector_get(tstart,j+1)-tendprev>1)))
+                            {
+                                if ((input = gsl_vector_alloc(gsl_vector_get(tstart,j+1)-tendprev-1)) == 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                                
+                                if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)
+                                    || (gsl_vector_get(tstart,j+1)-tendprev-1 < 1) || (gsl_vector_get(tstart,j+1)-tendprev-1 > vectorin->size-(tendprev+1)))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,tendprev+1,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                    message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                if ((i < 0) || (i >(*lb)->size-1))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                gsl_vector_set(*lb,i,gsl_vector_get(tstart,j+1)-tendprev-1);
+                                if (findMeanSigma (input, &mean, &sigma))
+                                {
+                                    message = "Cannot run findMeanSigma in getB";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input); input = 0;
+                                
+                                break;
+                            }
+                        }
+                        
+                        if (j == nPulses-1)	// Last pulse into the record
+                            // (5) is analyzed
+                        {
+                            if (vectorin->size-tendprev >= gsl_vector_get(*lb,i))
+                            {
+                                if ((input = gsl_vector_alloc(gsl_vector_get(*lb,i))) == 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                                
+                                //if ((tendprev < 0) || (tendprev > vectorin->size-2)                                                                   || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-tendprev))
+                                if ((tendprev < 0) || (gsl_vector_get(*lb,i) < 1) || (gsl_vector_get(*lb,i) > vectorin->size-tendprev))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,tendprev,gsl_vector_get(*lb,i));
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                if (findMeanSigma (input, &mean, &sigma))
+                                {
+                                    message = "Cannot run findMeanSigma in getB";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input); input = 0;
+                                
+                                break;
+                            }
+                            else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev > 1))
+                            {
+                                if ((input = gsl_vector_alloc(vectorin->size-tendprev-1)) == 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
+                                }
+                                
+                                //if ((tendprev+1 < 0) || (tendprev+1 > vectorin->size-2)                                                                    || (vectorin->size-tendprev-1 < 1))
+                                if ((tendprev+1 < 0) || (vectorin->size-tendprev-1 < 1))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "View goes out of scope the original vector in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                temp = gsl_vector_subvector(vectorin,tendprev+1,vectorin->size-tendprev-1);
+                                if (gsl_vector_memcpy(input, &temp.vector) != 0)
+                                {
+                                    sprintf(valERROR,"%d",__LINE__-2);
+                                    string str(valERROR);
+                                    message = "Copying vectors of different length in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                if ((i < 0) || (i >(*lb)->size-1))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                gsl_vector_set(*lb,i,vectorin->size-tendprev-1);
+                                
+                                // Sum all the elements of input
+                                if (gsl_vector_Sumsubvector(input,0,input->size,&Baux))
+                                {
+                                    message = "Cannot run gsl_vector_Sumsubvector routine when no pulse-free interval before pulse & last pulse in row";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                if (findMeanSigma (input, &mean, &sigma))
+                                {
+                                    message = "Cannot run findMeanSigma in getB";
+                                    EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
+                                }
+                                gsl_vector_free(input); input = 0;
+                                
+                                break;
+                            }
+                            else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev <= 1))
+                            {
+                                if ((i < 0) || (i >(*lb)->size-1))
+                                {
+                                    sprintf(valERROR,"%d",__LINE__+5);
+                                    string str(valERROR);
+                                    message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                                    str.clear();
+                                    EP_PRINT_ERROR(message,EPFAIL);
+                                }
+                                gsl_vector_set(*lb,i,gsl_vector_get(*lb,i-1));
+                                
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if ((i < 0) || (i >(*B)->size-1))
+            {
+                sprintf(valERROR,"%d",__LINE__+5);
+                string str(valERROR);
+                message = "Setting i-th element of vector out of range in line " + str + " (" + __FILE__ + ")";
+                str.clear();
+                EP_PRINT_ERROR(message,EPFAIL);
+            }
+            gsl_vector_set(*B,i,Baux);
+            gsl_vector_set(*rmsB,i,sigma);
+        }//for
+    }
+    
     message.clear();
         
 	return(EPOK);
@@ -1986,6 +1986,10 @@ int findTstartCAL
 	// To provide the tstarts (or not)
 	bool findTstarts = true;
         if ((isNumber(reconstruct_init->tstartPulse1)) && (atoi(reconstruct_init->tstartPulse1) != 0)) findTstarts = false;
+        
+    /*cout<<"adaptativethreshold: "<<adaptativethreshold<<endl;
+    for (int i=0;i<der->size;i++)
+        cout<<i<<" "<<gsl_vector_get(der,i)<<endl;*/
 	
 	if (findTstarts == true)
 	{
