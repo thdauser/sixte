@@ -2,10 +2,10 @@
 
 import subprocess
 import sys
-sys.path.append('../scripts/')
+sys.path.append('../python_wrapper/sixtesoft/')
 import sixte
 
-sixte.check_pythonversion(3,6)
+sixte.check_pythonversion(3, 6)
 
 from astropy.io import fits
 
@@ -13,60 +13,60 @@ def check_dummy_xml(file,tool):
     with  fits.open(file) as hdul:
         data = hdul[1].data
 
-        status=0
+        status = 0
 
         mrawx = data.field('rawx').mean()
-        if  (abs(mrawx-4) > 1e-9):
+        if abs(mrawx-4) > 1e-9:
             print( ' *** error : RAWX should be always 4, but is {:0.6f} on average'.format(mrawx))
-            status=1
+            status = 1
 
         # RAWY has to be off, as a few counts are during the readout ('readout streak'), which
         # is in this direction
         mrawy = data.field('rawy').mean()
-        if  (abs(mrawy-4) < 1e-9):
+        if abs(mrawy-4) < 1e-9:
             print( ' *** error : RAWY should be slightly off from 4, but is exactly 4')
-            status=1
+            status = 1
 
-        if  (abs(mrawy-4) > 0.5):
+        if abs(mrawy-4) > 0.5:
             print( ' *** error : RAWY should be close to value 4, but with {:0.6f} it is too far off'.format(mrawy))
-            status=1
+            status = 1
 
-    if (status!=0):
+    if status != 0:
         exit(1)
     else:
         print(f'{tool}: checking RAWX/Y from dummy XML File SUCCESSFUL')
-        return 0;
+        return 0
 
 
 
 # TEST OPTIONS
 
-xmllist = [sixte.STDTEST.xml,sixte.STDTEST.xml_eventmode]
-testlist = ['timemode','eventmode']
+xmllist = [sixte.STDTEST.xml, sixte.STDTEST.xml_eventmode]
+testlist = ['timemode', 'eventmode']
 
 implist = sixte.defpath().ref_path + \
-        sixte.defpath(testname='phoimg.e2e').refname_implist
+        sixte.defpath(testname = 'phoimg.e2e').refname_implist
 
 for ii in range(len(xmllist)):
 
-    defpath = sixte.defpath(subtestname=testlist[ii])
+    defpath = sixte.defpath(subtestname = testlist[ii])
 
     print(f'   *** testing {defpath.testname}  *** ')
 
-    ret_val = sixte.gendetsim( implist,
-                               defpath.testname_rawlist,
-                               xmllist[ii],
-                               logfile=defpath.log,
-                               test=1)
+    ret_val = sixte.gendetsim(implist,
+                              defpath.testname_rawlist,
+                              xmllist[ii],
+                              logfile=defpath.log,
+                              test=True)
 
-    sixte.check_returncode(ret_val,defpath.fullname)
+    sixte.check_returncode(ret_val, defpath.fullname)
 
-    sixte.check_fdiff( defpath.ref_path + defpath.refname_rawlist,
-                       defpath.testname_rawlist,
-                       defpath.fullname)
+    sixte.check_fdiff(defpath.ref_path + defpath.refname_rawlist,
+                      defpath.testname_rawlist,
+                      defpath.fullname)
     
-    if testlist[ii]=='timemode':
-        check_dummy_xml(defpath.testname_rawlist,defpath.fullname)
+    if testlist[ii] == 'timemode':
+        check_dummy_xml(defpath.testname_rawlist, defpath.fullname)
 
 
 # clean output
@@ -77,7 +77,7 @@ sixte.clean_output()
 # # STANDARD TEST: TIME READOUT
 # ret_val = sixte.gendetsim(fin,fout,defvar.xml,
 #                        logfile=defvar.log,
-#                        test=1)
+#                        test=True)
 # 
 # # initialize default variables
 # defvar = sixte.defvar

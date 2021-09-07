@@ -2,7 +2,7 @@
 
 import subprocess
 import sys
-sys.path.append('../scripts/')
+sys.path.append('../python_wrapper/sixtesoft/')
 import sixte
 
 sixte.check_pythonversion(3,6)
@@ -11,19 +11,19 @@ from astropy.io import fits
 
 # TEST OPTIONS
 
-background = "yes"  ## switch the background on
-# point away from the simput file (RA=0,Dec=0)
+background = "yes"  # switch the background on
+# point away from the simput file (RA=0, Dec=0)
 ra_outside = sixte.STDTEST.RA + 3.0
 dec_outside = sixte.STDTEST.Dec + 3.0
-exposure = 1000
+exposure = 1000  # [s]
 
 
-xmllist = [sixte.STDTEST.xml,sixte.STDTEST.xml_eventmode]
-testlist = ['pha_timemode','pha_eventmode']
+xmllist = [sixte.STDTEST.xml, sixte.STDTEST.xml_eventmode]
+testlist = ['pha_timemode', 'pha_eventmode']
 
 for ii in range(len(xmllist)):
 
-    defpath = sixte.defpath(subtestname=testlist[ii])
+    defpath = sixte.defpath(subtestname = testlist[ii])
 
     print(f'   *** testing {defpath.testname}  *** ')
 
@@ -37,9 +37,9 @@ for ii in range(len(xmllist)):
                             logfile=defpath.log,
                             expos=exposure,
                             background=background,
-                            test=1)
+                            test=True)
 
-    sixte.check_returncode(ret_val,defpath.fullname)
+    sixte.check_returncode(ret_val, defpath.fullname)
 
     sixte.check_fdiff( defpath.ref_path + defpath.refname_evtlist,
                        defpath.testname_evtlist,
@@ -49,10 +49,3 @@ for ii in range(len(xmllist)):
 
 # clean output
 sixte.clean_output()
-
-
-
-
-
-
-

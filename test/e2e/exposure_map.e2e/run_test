@@ -16,10 +16,10 @@ that only a circle is visible.
 
 import subprocess
 import sys
-sys.path.append('../scripts/')
+sys.path.append('../python_wrapper/sixtesoft/')
 import sixte
 
-sixte.check_pythonversion(3,6)
+sixte.check_pythonversion(3, 6)
 
 defpath = sixte.defpath()
 print("   *** testing {}  *** ".format(defpath.testname))
@@ -30,7 +30,7 @@ print("          testing full fov")
 ret_val = sixte.exposure_map(defpath.testname_expmap,
                              defpath.xml,
                              logfile=defpath.log,
-                             test=1)
+                             test=True)
 
 sixte.check_returncode(ret_val,defpath.fullname)
 
@@ -45,9 +45,9 @@ ret_val = sixte.exposure_map(defpath.testname_expmap,
                              defpath.xml,
                              fov_diameter=1/30,
                              logfile=defpath.log,
-                             test=1)
+                             test=True)
 
-sixte.check_returncode(ret_val,defpath.fullname)
+sixte.check_returncode(ret_val, defpath.fullname)
 
 sixte.check_fdiff( defpath.ref_path+defpath.refname_expmap_fov,
                    defpath.testname_expmap,

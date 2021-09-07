@@ -2,13 +2,13 @@
 
 import astropy.io.fits as fits
 import sys
-sys.path.append('../scripts/')
+sys.path.append('../python_wrapper/sixtesoft/')
 import sixte
 
 
-sixte.check_pythonversion(3,6)
+sixte.check_pythonversion(3, 6)
 
-def check_att_fov(fout,expos):
+def check_att_fov(fout, expos):
     # check if the criterion: 50% margin on FoV is fulfilled
     prec = 0.01  # be careful, we've only got low number statistics
 
@@ -39,9 +39,9 @@ ret_val = sixte.phogen(defpath.testname_pholist,
                        defpath.simput,
                        logfile=defpath.log,
                        prefix='',
-                       test=1)
+                       test=True)
 
-sixte.check_returncode(ret_val,defpath.fullname)
+sixte.check_returncode(ret_val, defpath.fullname)
 
 sixte.check_fdiff(defpath.ref_path + defpath.refname_pholist,
                   defpath.testname_pholist,
@@ -58,14 +58,12 @@ ret_val = sixte.phogen(defpath.testname_pholist,
                        attitude=defpath.attitude,
                        prefix='',
                        logfile=defpath.log,
-                       test=1)
+                       test=True)
 
-ret_val=check_att_fov(defpath.testname_pholist,exposure)
+ret_val = check_att_fov(defpath.testname_pholist, exposure)
 
-sixte.check_returnvalue(ret_val,defpath.fullname)
+sixte.check_returnvalue(ret_val, defpath.fullname)
 
 
 # clean output
 sixte.clean_output()
-
-

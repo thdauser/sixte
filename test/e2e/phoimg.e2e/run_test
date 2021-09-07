@@ -2,14 +2,14 @@
 
 import subprocess
 import sys
-sys.path.append('../scripts/')
+sys.path.append('../python_wrapper/sixtesoft/')
 import sixte
 
-sixte.check_pythonversion(3,6)
+sixte.check_pythonversion(3, 6)
 
 # TEST OPTIONS
 fin = sixte.defpath().ref_path + \
-        sixte.defpath(testname='phogen.e2e').refname_pholist
+        sixte.defpath(testname = 'phogen.e2e').refname_pholist
 
 
 defpath = sixte.defpath()
@@ -19,16 +19,13 @@ ret_val = sixte.phoimg(fin,
                        defpath.testname_implist,
                        defpath.xml,
                        logfile=defpath.log,
-                       test=1)
+                       test=True)
 
-sixte.check_returncode(ret_val,defpath.fullname)
+sixte.check_returncode(ret_val, defpath.fullname)
 
-sixte.check_fdiff( defpath.ref_path + defpath.refname_implist,
-                   defpath.testname_implist,
-                   defpath.fullname)
+sixte.check_fdiff(defpath.ref_path + defpath.refname_implist,
+                  defpath.testname_implist,
+                  defpath.fullname)
 
 # clean output
 sixte.clean_output()
-
-
-
