@@ -19,13 +19,14 @@
    Manuel Castro, National Institute for Space Research (INPE),
 		 Brazil; under grant #2017/00968-6,
 		 São Paulo Research Foundation (FAPESP).
-     
+
    Copyright 2019 Remeis-Sternwarte, Friedrich-Alexander-Universitaet
                   Erlangen-Nuernberg
 
 */
 
 #include "masksystem.h"
+#include "background.h"
 
 
 ////////////////////////////////////////////////////////////////////
