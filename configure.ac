@@ -34,13 +34,6 @@ AC_ARG_WITH(simput,
 
 AC_SUBST(simput_dir)
 
-AC_ARG_WITH(gsl,
-	[AC_HELP_STRING([--with-gsl=<GSL path>],
-	[Provide an alternative path to the GSL software (requires lib to be in <path>/lib and includes in <path>/includes])],
-	gsl_dir=$withval,
-	gsl_dir=no
-)
-
 
 # Compiler Flags:
 # "-g -W -Wall -O0" for debugging
@@ -58,11 +51,6 @@ CXXFLAGS="$CXXFLAGS -pthread -std=c++11"
 # Linker Flags:
 LDFLAGS="$LDFLAGS -g -W -Wall  -L$simput_dir/lib"
 
-
-if test "x$gsl_dir" != xno; then
-CPPFLAGS="$CPPFLAGS -I$gsl_dir/include"
-LDFLAGS="$LDFLAGS -L$gsl_dir/lib"
-fi
 
 OSX_VERSION_MAJOR=""
 OSX_VERSION_MINOR=""
@@ -112,6 +100,11 @@ AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboo
 # GSL Libraries:
 
 AX_PATH_GSL(1.16,[],[AC_MSG_ERROR(could not find required version of GSL >= 1.16)])
+
+# Correct library linking information and compiler flags are stored in GSL_LIBS
+# and GSL_CFLAGS after successful execution of AX_PATH_GSL.
+LDFLAGS="$LDFLAGS $GSL_LIBS"
+CPPFLAGS="$CPPFLAGS $GSL_CFLAGS"
 
 AC_SEARCH_LIBS([cblas_sdot], [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])
