@@ -93,10 +93,6 @@ AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!
 
 
 ####################################
-# boostlib
-AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboost-all-dev])])
-
-####################################
 # GSL Libraries:
 
 AX_PATH_GSL(1.16,[],[AC_MSG_ERROR(could not find required version of GSL >= 1.16)])
@@ -110,6 +106,16 @@ AC_SEARCH_LIBS([cblas_sdot], [gslcblas], [], \
 			 [AC_MSG_ERROR([No gslcblas library found!])], [])
 AC_SEARCH_LIBS([gsl_sf_erf_Q], [gsl], [], \
 			 [AC_MSG_ERROR([No gsl library found!])], [])
+
+
+####################################
+# boostlib
+AX_BOOST_BASE([1.40],[],[AC_MSG_ERROR([Install with: sudo apt-get install libboost-all-dev])])
+
+# Correct library linking information and compiler flags are stored in BOOST_LDFLAGS
+# and BOOST_CPPFLAGS after successful execution of AX_BOOST_BASE.
+LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+CXXFLAGS="$CXXFLAGS $BOOST_CPPFLAGS"
 
 
 ####################################
