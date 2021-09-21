@@ -27,7 +27,7 @@ build:
   stage: build
   script:
     - autoreconf --install --force
-    - ./configure --prefix=$SIXTE --with-simput=$SIMPUT --with-gsl=/data/system/software/gsl/current/BUILD
+    - ./configure --prefix=$SIXTE --with-simput=$SIMPUT --with-gsl-prefix=/data/system/software/gsl/current/BUILD
     - make
     - make install
   only:
