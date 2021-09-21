@@ -94,6 +94,13 @@ AC_SEARCH_LIBS(readline, readline, [], [AC_MSG_ERROR([No readline library found!
 
 ####################################
 # GSL Libraries:
+AC_ARG_WITH(gsl,
+	[AC_HELP_STRING([--with-gsl=<GSL path>],
+	[Deprecated (use --with-gsl-prefix instead)])],
+	[AC_MSG_ERROR([Option --with-gsl deprecated. Use --with-gsl-prefix instead.])],
+	[]
+)
+
 
 AX_PATH_GSL(1.16,[],[AC_MSG_ERROR(could not find required version of GSL >= 1.16)])
 
