@@ -37,6 +37,7 @@
 #include "point.h"
 #include "rmf.h"
 #include "xmlbuffer.h"
+#include "mxs.h"
 
 
 /////////////////////////////////////////////////////////////////
@@ -214,6 +215,9 @@ typedef struct {
 
   /** Properties of the DEPFET sensor. */
   DepfetProp depfet;
+
+  /** Properties of the MXS source */
+  MXSparams* mxs_params;
 
   /** MIN and MAX indices of readout indices. */
   int rawymin;

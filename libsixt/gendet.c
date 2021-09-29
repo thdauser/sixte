@@ -70,6 +70,7 @@ GenDet* newGenDet(int* const status) {
 	det->depfet.istorageflag = 0;
 	det->depfet.clear_const = NULL;
 	det->depfet.clear_fcn = NULL;
+        det->mxs_params = NULL;
 
 	// Get empty GenPixGrid.
 	det->pixgrid = newGenPixGrid(status);
@@ -120,6 +121,9 @@ void destroyGenDet(GenDet** const det) {
 			free((*det)->depfet.clear_const);
 			(*det)->depfet.clear_const = NULL;
 		}
+                if ((*det)->mxs_params != NULL) {
+                         freeMXSParams( &((*det)->mxs_params) );
+                }
 
 		free(*det);
 		*det = NULL;

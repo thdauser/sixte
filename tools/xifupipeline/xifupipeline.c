@@ -74,9 +74,6 @@ int xifupipeline_main()
 	// Pulse reconstruction initialization structure
 	ReconstructInit* reconstruct_init = NULL;
 
-	// Modulated X-ray sources parameter structure
-	MXSparams* mxs_params = NULL;
-
 	// Error status.
 	int status=EXIT_SUCCESS;
 
@@ -275,6 +272,10 @@ int xifupipeline_main()
 			}
 		}
 
+                // Print status of MXS source
+                if (par.doMXS)
+                        headas_chat(3, "Modulated X-ray source active\n");
+
 		// --- End of Initialization ---
 
 
@@ -370,13 +371,6 @@ int xifupipeline_main()
 		if (status!=EXIT_SUCCESS) {
 		  printf(" ERROR initializing the TES setup \n");
 		  break;
-		}
-
-		// Load and initialize the mxs parameters if mxs is enabled
-    if (par.enable_mxs) {
-			mxs_params = loadMXSparams(par.mxs_frequency, par.mxs_flash_duration,
-			                           par.mxs_rate, det->npix, seed, &status);
-		  CHECK_STATUS_BREAK(status);
 		}
 
 		// ---- End of TES initialization ----
@@ -481,6 +475,7 @@ int xifupipeline_main()
 
 		// --- End of opening files ---
 
+
 		// --- Initialize Crosstalk Structure ---
 		det->crosstalk_id=par.doCrosstalk;
 		det->scaling=par.scaling;
@@ -520,7 +515,7 @@ int xifupipeline_main()
 		long current_impact_write_row = 0;
 		long nimpacts=0;
 
-    // Start and end time of current mxs flash.
+        // Start and end time of current mxs flash.
 		double flash_start_time = 0;
 		double flash_end_time = 0;
 
@@ -540,7 +535,7 @@ int xifupipeline_main()
 			if (inst->det->ignore_bkg){
 				get_next_nxb=0;
 			}
-			if (par.enable_mxs){
+			if (par.doMXS){
 				get_next_mxs=1;
 			}
 			int isnxbph=0;
@@ -555,12 +550,12 @@ int xifupipeline_main()
 			Impact mxs_imp;
 
 			// Set start and end time of first mxs flash in current gti.
-			if (par.enable_mxs){
-	  		while (flash_start_time < t0) {
-		  	  flash_start_time += 1./mxs_params->mxs_frequency;
-			  }
-		    flash_end_time = flash_start_time + mxs_params->mxs_flash_duration;
-      }
+			if (par.doMXS) {
+                                while (flash_start_time < t0) {
+                                        flash_start_time += 1./inst->det->mxs_params->mxs_frequency;
+                                }
+                                flash_end_time = flash_start_time + inst->det->mxs_params->mxs_flash_duration;
+                        }
 
 			do {
 				// Photon generation.
@@ -572,8 +567,8 @@ int xifupipeline_main()
 
 				// MXS generation
 				if (get_next_mxs){
-					ismxsph=phmxsgen(det, t1, &mxs_imp, mxs_params,
-						               &flash_start_time, &flash_end_time, &status);
+					ismxsph=phmxsgen(t1, &mxs_imp, inst->det->mxs_params, det,
+						         &flash_start_time, &flash_end_time, &status);
 					CHECK_STATUS_BREAK(status);
 					if (!ismxsph){
 						mxs_imp.time=t1;
@@ -605,7 +600,7 @@ int xifupipeline_main()
 				assert(ph.time<=t1);
 
 				// If simulating background and no mxs.
-				if (!inst->det->ignore_bkg && !par.enable_mxs){ //In case of bkg, check which comes first
+				if (!inst->det->ignore_bkg && !par.doMXS){ //In case of bkg, check which comes first
 					if (ph.time<=nxb_imp.time){ //Photon should be treated first
 						get_next_nxb=0;
 						get_next_photon=1;
@@ -616,7 +611,7 @@ int xifupipeline_main()
 				}
 
         // If simulating mxs and no background.
-				if (inst->det->ignore_bkg && par.enable_mxs){
+				if (inst->det->ignore_bkg && par.doMXS){
 					if (ph.time<=mxs_imp.time){ //Photon should be treated first
 						get_next_mxs=0;
 						get_next_photon=1;
@@ -627,7 +622,7 @@ int xifupipeline_main()
 				}
 
 				// If simulating mxs and background.
-				if (!inst->det->ignore_bkg && par.enable_mxs) {
+				if (!inst->det->ignore_bkg && par.doMXS) {
 					if (nxb_imp.time <= mxs_imp.time) {
 						if (ph.time <= nxb_imp.time) { // Photon should be treated first
 							get_next_photon = 1;
@@ -863,7 +858,6 @@ int xifupipeline_main()
 		destroyAdvDet(&det);
 		freeTesEventFile(event_file,&status);
 	}
-
 
 	if (NULL!=progressfile) {
 		fclose(progressfile);
@@ -1220,10 +1214,7 @@ int xifupipeline_getpar(struct Parameters* const par)
 	}
 
 	/* Read mxs related parameters */
-	query_simput_parameter_bool("enable_mxs", &par->enable_mxs, &status);
-	query_simput_parameter_double("mxs_frequency", &par->mxs_frequency, &status);
-	query_simput_parameter_double("mxs_flash_duration", &par->mxs_flash_duration, &status);
-	query_simput_parameter_double("mxs_rate", &par->mxs_rate, &status);
+    query_simput_parameter_bool("doMXS", &(par->doMXS), &status);
 
 	return(status);
 }

@@ -791,7 +791,37 @@ static void GenInstXMLElementStart(void* parsedata, const char* el,
 			CHECK_STATUS_VOID(xmlparsedata->status);
 		}
 
-	} else if (!strcmp(Uelement, "SPLIT")) {
+	} else if (!strcmp(Uelement, "MXS")) {
+                // Get filename
+                char filename[MAXFILENAME];
+        	getXMLAttributeString(attr, "FILENAME", filename);
+
+                // Check if a file name has been specified.
+        	if (strlen(filename) == 0) {
+        		xmlparsedata->status = EXIT_FAILURE;
+        		SIXT_ERROR("no filename specified for MXS");
+        		return;
+        	}
+
+                char filepathname[MAXFILENAME];
+        	strcpy(filepathname, xmlparsedata->inst->filepath);
+        	strcat(filepathname, filename);
+
+                double frequency = getXMLAttributeDouble(attr, "FLASH_FREQUENCY");
+                double flash_duration = getXMLAttributeDouble(attr, "FLASH_DURATION");
+                double rate_det = getXMLAttributeDouble(attr, "RATE");
+
+                int status = EXIT_SUCCESS;
+                xmlparsedata->inst->det->mxs_params = loadMXSparams(frequency,
+                                                        flash_duration, rate_det,
+                                                        filepathname, &status);
+
+                if (status != EXIT_SUCCESS) {
+                    xmlparsedata->status = EXIT_FAILURE;
+        			SIXT_ERROR("failed to load MXS parameters");
+        			return;
+                }
+        } else if (!strcmp(Uelement, "SPLIT")) {
 
 		char type[MAXMSG];
 		getXMLAttributeString(attr, "TYPE", type);

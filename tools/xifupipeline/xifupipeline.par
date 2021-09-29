@@ -46,7 +46,4 @@ ProjCenter,b,h,no,,,"option to turn off the inside pixel position randomization 
 chatter,i,lh,3,,,"verbosity"
 clobber,b,h,yes,,,"overwrite output files if exist?"
 history,b,lh,true,,,"write a history block with program parameters to each FITS file?"
-enable_mxs,b,h,n,,,"Enable modulated X-ray sources"
-mxs_frequency,r,h,121.3,,,"Frequency of the mxs flashes (Hz)"
-mxs_flash_duration,r,h,0.00005,,,"Duration of the mxs flashes (s)"
-mxs_rate,r,h,208,,,"MXS count rate per pixel during the flash (cps/pixel)"
+doMXS,b,h,n,,,"Enable modulated X-ray source"

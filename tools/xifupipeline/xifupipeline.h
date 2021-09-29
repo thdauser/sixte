@@ -46,7 +46,6 @@
 #include "crosstalk.h"
 #include "parinput.h"
 #include "grading.h"
-#include "mxs.h"
 
 #define TOOLSUB xifupipeline_main
 #include "headas_main.c"
@@ -128,11 +127,7 @@ struct Parameters {
   char clobber;
 
   /** MXS related parameters */
-  int enable_mxs;
-  double mxs_frequency;
-  double mxs_flash_duration;
-  double mxs_rate;
-
+  int doMXS;
 };
 
 

@@ -22,6 +22,7 @@
 #ifndef MXS_H
 #define MXS_H 1
 
+#include "simput.h"
 #include "sixt.h"
 #include "linkedimplist.h"
 #include "advdet.h"
@@ -33,25 +34,39 @@
 #define MXS_PH_ID -10
 
 typedef struct {
-  double mxs_frequency;      // Frequency of the mxs flashes (Hz)
-  double mxs_flash_duration; // Duration of the mxs flashes (s)
-  double mxs_rate_det;       // MXS count rate on detector during flash (cps)
+  double* energy; // [keV]
+  long n_events;
+} MXSEventList;
+
+typedef struct {
+  double mxs_frequency;        // Frequency of the mxs flashes (Hz)
+  double mxs_flash_duration;   // Duration of the mxs flashes (s)
+  double mxs_rate_det;         // MXS count rate on detector during flash (cps)
+
+  MXSEventList* mxs_eventlist; // Energies MXS photons for sampling
+  SimputImg* mxs_img;          // Image of the spatial distribution of the
+                               // observed flux.
 } MXSparams;
 
 /**
  * Creates a new MXSparams struct. Loads and sets all members and returns
  * a pointer to the new MXSparams struct.
  */
-MXSparams* loadMXSparams (double mxs_frequency, double mxs_flash_duration,
-                          double mxs_rate, int numpix, unsigned int seed,
-                          int* const status);
+MXSparams* loadMXSparams(double mxs_frequency, double mxs_flash_duration,
+                         double mxs_rate_det, char* mxs_filename,
+                         int* const status);
+
+/**
+ * Frees a previously allocated MXSparams struct.
+ */
+void freeMXSParams(MXSparams** mxs_params);
 
 /**
  * Generates the next mxs photon that hits the detector. Adjusts flash_start_time
  * and flash_end_time if necessary.
  */
-int phmxsgen(AdvDet *det, double tend, Impact* impact,
-             MXSparams *mxs_params, double *flash_start_time,
+int phmxsgen(double tend, Impact* impact,
+             MXSparams* mxs_params, AdvDet* det, double *flash_start_time,
              double *flash_end_time, int* const status);
 
 /**
@@ -60,13 +75,5 @@ int phmxsgen(AdvDet *det, double tend, Impact* impact,
  * process).
  */
 double getNextImpactTime(double prevtime, double mxs_rate_det, int* const status);
-
-/**
- * Returns energy of an MXS photon.
- * For 2/3 of the photons, draw a random energy between 3 and 12 keV
- * (Brehmstrahlung continuum), for 1/6 of the photons, emit a 5 keV photons
- * (~ Cr line) and for the last 1/6, emit an 8 keV photon.
- */
-double getMXSEnergy();
 
 #endif /* MXS_H */
