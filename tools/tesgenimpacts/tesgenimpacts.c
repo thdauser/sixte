@@ -206,7 +206,7 @@ void tesgenimpacts_getpar(tesgenimppars *par, int *status){
   query_simput_parameter_int("PixID", &(par->pixid), status);
 
   char *modestr;
-  query_simput_parameter_string("mode", &(modestr), status);
+  query_simput_parameter_string("opmode", &(modestr), status);
   if (strcmp(modestr, "const") == 0){
     par->mode = MODE_CONST;
   } else if (strcmp(modestr, "lin") == 0){
