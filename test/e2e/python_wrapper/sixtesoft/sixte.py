@@ -36,10 +36,7 @@ class defvar:
         self.fname_expmap_fov = "expmap_fov.fits"  # for fov_diameter testing
         self.fname_img = "img.fits"
 
-        self.inst = "dummy_inst"
-        self.mode = "dummy_mode"
         self.filt = "dummy_filt"
-        self.miss = "dummy_miss"
 
         self.xml_path = "data/dummy/"
         self.xml_name = "default_inst.xml"
@@ -118,7 +115,7 @@ class defpath(defvar):
         self.testname_evtlist = self.get_testfile_prefix(subtestname) + self.fname_evtlist
         self.testname_expmap = self.get_testfile_prefix(subtestname) + self.fname_expmap
         self.testname_img = self.get_testfile_prefix(subtestname) + self.fname_img
-        
+
         self.refname_pholist = self.get_reffile_prefix(subtestname) + self.fname_pholist
         self.refname_implist = self.get_reffile_prefix(subtestname) + self.fname_implist
         self.refname_rawlist = self.get_reffile_prefix(subtestname) + self.fname_rawlist
@@ -177,10 +174,7 @@ def append_to_log_file(logfile, cmd):
 
 def phogen(phlist, xmlfile, simput, expos=STDTEST.expos,
            ra=STDTEST.RA, dec=STDTEST.Dec,
-           instrument=STDTEST.inst,
            attitude=0,
-           mission=STDTEST.miss,
-           mode=STDTEST.mode,
            seed=STDTEST.seed,
            clobber="yes",
            prefix="sim_",
@@ -193,9 +187,6 @@ def phogen(phlist, xmlfile, simput, expos=STDTEST.expos,
 
     str = f"""phogen \
         PhotonList={prefix}{phlist} \
-        Instrument={instrument} \
-        Mission={mission} \
-        Mode={mode} \
         XMLFile={xmlfile} \
         {pointing_string} \
         Simput={simput} \
@@ -220,9 +211,6 @@ def phogen(phlist, xmlfile, simput, expos=STDTEST.expos,
 
 def phoimg(phlist, implist, xmlfile, expos=STDTEST.expos,
            ra=STDTEST.RA, dec=STDTEST.Dec,
-           instrument=STDTEST.inst,
-           mission=STDTEST.miss,
-           mode=STDTEST.mode,
            seed=STDTEST.seed,
            mjdref=STDTEST.mjdref,
            tstart=STDTEST.tstart,
@@ -235,9 +223,6 @@ def phoimg(phlist, implist, xmlfile, expos=STDTEST.expos,
     str = f"""phoimg \
         PhotonList={phlist} \
         ImpactList={implist} \
-        Instrument={instrument} \
-        Mission={mission} \
-        Mode={mode} \
         XMLFile={xmlfile} \
         RA={ra} Dec={dec} \
         MJDREF={mjdref} \
@@ -262,9 +247,6 @@ def phoimg(phlist, implist, xmlfile, expos=STDTEST.expos,
 
 
 def gendetsim(implist, rawdata, xmlfile, expos=STDTEST.expos,
-              instrument=STDTEST.inst,
-              mission=STDTEST.miss,
-              mode=STDTEST.mode,
               seed=STDTEST.seed,
               mjdref=STDTEST.mjdref,
               tstart=STDTEST.tstart,
@@ -278,9 +260,6 @@ def gendetsim(implist, rawdata, xmlfile, expos=STDTEST.expos,
     str = f"""gendetsim \
         ImpactList={implist} \
         RawData={rawdata} \
-        Instrument={instrument} \
-        Mission={mission} \
-        Mode={mode} \
         XMLFile={xmlfile} \
         MJDREF={mjdref} \
         TSTART={tstart} \
@@ -311,11 +290,8 @@ def runsixt(xmlfile,
             rawdata=0,
             implist=0,
             ra=STDTEST.RA, dec=STDTEST.Dec,
-            instrument=STDTEST.inst,
             attitude=0,
             simput=STDTEST.simput,
-            mission=STDTEST.miss,
-            mode=STDTEST.mode,
             seed=STDTEST.seed,
             mjdref=STDTEST.mjdref,
             tstart=STDTEST.tstart,
@@ -336,9 +312,6 @@ def runsixt(xmlfile,
 Prefix={prefix} \
 {impfile_string} {rawdata_string} \
 EvtFile={evtfile}  \
-Instrument={instrument} \
-Mission={mission} \
-Mode={mode} \
 XMLFile={xmlfile} \
 MJDREF={mjdref} \
 Simput={simput}  \
@@ -363,7 +336,7 @@ clobber={clobber}"""
     return ret_val
 
 
-def imgev(evtfile=STDTEST.fname_evtlist, 
+def imgev(evtfile=STDTEST.fname_evtlist,
           image=STDTEST.fname_img,
           projection=STDTEST.projection,
           naxis1=STDTEST.naxis1, naxis2=STDTEST.naxis2,
@@ -376,7 +349,7 @@ def imgev(evtfile=STDTEST.fname_evtlist,
 
     if test:
         os.environ["SIXTE_USE_PSEUDO_RNG"] = "1"
-        
+
     str = precmd + f"""imgev EvtFile={evtfile} Image={image} \
 Projection={projection} \
 NAXIS1={naxis1} NAXIS2={naxis2} \
@@ -530,7 +503,7 @@ chatter={chatter} clobber={clobber} history={history}"""
     ret_val = subprocess.run(cmd, shell=True, executable='/bin/bash',
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     check_returncode(ret_val, "ero_vis")
-    
+
     if os.getenv('SIXTE_USE_PSEUDO_RNG'):
         del os.environ['SIXTE_USE_PSEUDO_RNG']
 
@@ -593,7 +566,7 @@ Emin={emin} Emax={emax} Chanmin={chanmin} Chanmax={chanmax} \
 
     if os.getenv('SIXTE_USE_PSEUDO_RNG'):
         del os.environ['SIXTE_USE_PSEUDO_RNG']
-        
+
     return ret_val
 
 

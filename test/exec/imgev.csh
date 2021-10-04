@@ -4,8 +4,8 @@ source setup/setup.csh
 set xml = ${xmldir}/athena/1469mm_wfi_wo_filter
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'imgev' "      
-    exit 
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'imgev' "
+    exit
 endif
 
 runsixt  \
@@ -13,11 +13,8 @@ runsixt  \
   Prefix=$outdir/imgev_ \
   Simput=$indir/simput.fits \
   XMLFile=${xml}/depfet_b_1l_ff_large.xml \
-  Mission=Athena \
-  Instrument=WFI \
-  Mode=large \
   Exposure=100 \
-  clobber=yes 
+  clobber=yes
 
 imgev \
   EvtFile=$outdir/imgev_evt.fits \
@@ -30,4 +27,3 @@ imgev \
   CRVAL1=0.0 CRVAL2=0.0 \
   CDELT1=-0.5 CDELT2=0.5 \
   clobber=yes
-

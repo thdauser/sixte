@@ -4,8 +4,8 @@ source setup/setup.csh
 set xml = ${xmldir}/srg
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'projev' and 'evpat' "      
-    exit 
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'projev' and 'evpat' "
+    exit
 endif
 
 runsixt  \
@@ -16,29 +16,18 @@ runsixt  \
   Prefix=$outdir/projev_ \
   Simput=$indir/simput.fits \
   XMLFile=${xml}/erosita_dummy.xml \
-  Mission=SRG \
-  Instrument=eROSITA \
-  Mode=none \
   Exposure=1 \
-  clobber=yes 
+  clobber=yes
 
 projev  \
   RawData=$outdir/projev_raw.fits \
   RA=0.0 Dec=0.0 \
-  Mission=SRG \
-  Instrument=eROSITA \
-  Mode=none \
   XMLFile=${xml}/erosita_dummy.xml \
   Exposure=1 \
-  clobber=yes 
+  clobber=yes
 
 evpat  \
   RawData=$outdir/projev_raw.fits \
   EvtFile=$outdir/projev_evt.fits \
-  Mission=SRG \
-  Instrument=eROSITA \
-  Mode=none \
   XMLFile=${xml}/erosita_dummy.xml \
-  clobber=yes 
-
-  
+  clobber=yes

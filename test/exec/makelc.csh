@@ -4,8 +4,8 @@ source setup/setup.csh
 set xml = ${xmldir}/athena/1469mm_wfi_wo_filter
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'makelc' "      
-    exit 
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'makelc' "
+    exit
 endif
 
 runsixt  \
@@ -13,11 +13,8 @@ runsixt  \
   Prefix=$outdir/makelc_ \
   Simput=$indir/simput.fits \
   XMLFile=${xml}/depfet_b_1l_ff_large.xml \
-  Mission=Athena \
-  Instrument=WFI \
-  Mode=large \
   Exposure=100 \
-  clobber=yes 
+  clobber=yes
 
 makelc \
   EvtFile=$outdir/makelc_evt.fits \
@@ -25,4 +22,3 @@ makelc \
   length=100.0 \
   dt=1.0 \
   clobber=yes
-
