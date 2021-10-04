@@ -62,12 +62,9 @@ int gendetsim_main() {
 
     headas_chat(3, "initialize ...\n");
 
-    // Determine the appropriate instrument XML definition file.
+    // Determine the instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile,
-		     par.Mission, par.Instrument, par.Mode,
-		     &status);
-    CHECK_STATUS_BREAK(status);
+    strcpy(xml_filename, par.XMLFile);
 
     // Determine the impact list file.
     char impactlist_filename[MAXFILENAME];
@@ -236,30 +233,6 @@ int getpar(struct Parameters* const par)
     return(status);
   }
   strcpy(par->RawData, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("Mission", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the mission");
-    return(status);
-  }
-  strcpy(par->Mission, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("Instrument", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the instrument");
-    return(status);
-  }
-  strcpy(par->Instrument, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("Mode", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the instrument mode");
-    return(status);
-  }
-  strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("XMLFile", &sbuffer);

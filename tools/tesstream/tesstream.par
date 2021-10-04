@@ -1,5 +1,5 @@
 PixImpList,s,lq,"piximpacts.fits",,,"pixel impact list output file"
-XMLFile,s,h,"XIFU.xml",,,"XML input file with detector definition (overwrites Mission, Instrument, and Mode)"
+XMLFile,s,h,"XIFU.xml",,,"XML input file with detector definition"
 tstart,r,h,0.,,,"Start time of simulation"
 tstop,r,h,0.01,,,"Stop time of simulation"
 Streamfile,s,h,"Stream.fits",,,"File name of output FITS stream"

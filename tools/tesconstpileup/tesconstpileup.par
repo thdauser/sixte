@@ -1,5 +1,5 @@
 PixImpList,s,lq,"pileup.fits",,,"pixel impact list output file"
-XMLFile,s,lq,"XIFU.xml",,,"XML input file with detector definition (overwrites Mission, Instrument, and Mode)"
+XMLFile,s,lq,"XIFU.xml",,,"XML input file with detector definition"
 tstop,r,h,20,,,"Stop time of simulation"
 Telescop,s,h,"NONE",,,"telescope for observation (only keyword)"
 Instrume,s,h,"NONE",,,"instrument for observation (only keyword)"

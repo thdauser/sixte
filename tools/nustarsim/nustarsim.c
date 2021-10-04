@@ -161,11 +161,9 @@ int nustarsim_main()
       CHECK_NULL_BREAK(progressfile, status, msg);
     }
 
-    // Determine the appropriate instrument XML definition file.
+    // Determine the instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile,
-		     "NUSTAR", "NUSTAR", "", &status);
-    CHECK_STATUS_BREAK(status);
+    strcpy(xml_filename, par.XMLFile);
 
     // Load the configurations of both sub-instruments.
     for (ii=0; ii<2; ii++) {
@@ -950,7 +948,7 @@ int nustarsim_getpar(struct Parameters* const par)
 	       "pointing");
     return(status);
   }
-  
+
   query_simput_parameter_float("rollangle",&(par->rollangle),&status);
 
 

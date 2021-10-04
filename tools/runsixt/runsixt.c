@@ -161,12 +161,9 @@ int runsixt_main()
       CHECK_NULL_BREAK(progressfile, status, msg);
     }
 
-    // Determine the appropriate instrument XML definition file.
+    // Determine the instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile,
-		     par.Mission, par.Instrument, par.Mode,
-		     &status);
-    CHECK_STATUS_BREAK(status);
+    strcpy(xml_filename, par.XMLFile);
 
     // Load the instrument configuration.
     inst=loadGenInst(xml_filename, seed, &status);
@@ -698,19 +695,6 @@ int runsixt_getpar(struct Parameters* const par)
   free(sbuffer);
 
   query_simput_parameter_file_name("XMLFile", &(par->XMLFile), &status);
-
-  // only load Mission, Instrument and Mode if XMLFile is not given
-  if (par->XMLFile){
-    // set to default values
-    par->Mission = NULL;
-    par->Instrument = NULL;
-    par->Mode = NULL;
-    headas_chat(5, "using xml file: %s \n", par->XMLFile);
-  } else {
-    query_simput_parameter_string("Mission", &(par->Mission), &status);
-    query_simput_parameter_string("Instrument", &(par->Instrument), &status);
-    query_simput_parameter_string("Mode", &(par->Mode), &status);
-  }
 
   status=ape_trad_query_bool("Background", &par->Background);
   if (EXIT_SUCCESS!=status) {

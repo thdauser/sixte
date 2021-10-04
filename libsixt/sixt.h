@@ -243,15 +243,6 @@ void sixt_warning(const char* const msg);
     the given alternative (if supplied). */
 void sixt_deprecated(const char* const fnc, const char* const alt);
 
-/** Determine the XMLFilename according to the selected mission,
-    instrument and mode. */
-void sixt_get_XMLFile(char* const filename,
-		      const char* const xmlfile,
-		      const char* const mission,
-		      const char* const instrument,
-		      const char* const mode,
-		      int* const status);
-
 /** Determine the LAD XMLFilename. */
 void sixt_get_LADXMLFile(char* const filename,
 			 const char* const xmlfile);

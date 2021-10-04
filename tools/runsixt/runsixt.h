@@ -57,10 +57,6 @@ struct Parameters {
   char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
 
-  char* Mission;
-  char* Instrument;
-  char* Mode;
-
   char Background;
 
   /** Telescope pointing direction [deg]. */

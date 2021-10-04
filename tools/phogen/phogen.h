@@ -40,9 +40,6 @@
 
 struct Parameters {
   char PhotonList[MAXFILENAME];
-  char Mission[MAXMSG];
-  char Instrument[MAXMSG];
-  char Mode[MAXMSG];
   char XMLFile[MAXFILENAME];
   char Attitude[MAXFILENAME];
 

@@ -33,9 +33,6 @@
 /* Program parameters */
 struct Parameters {
   char RawData[MAXFILENAME];
-  char Mission[MAXMSG];
-  char Instrument[MAXMSG];
-  char Mode[MAXMSG];
   char XMLFile[MAXFILENAME];
   char AdvXml[MAXFILENAME];
   char Attitude[MAXFILENAME];
@@ -101,12 +98,9 @@ int projev_main() {
     sixt_init_rng(seed, &status);
     CHECK_STATUS_BREAK(status);
 
-    // Determine the appropriate instrument XML definition file.
+    // Determine the instrument XML definition file.
     char xml_filename[MAXFILENAME];
-    sixt_get_XMLFile(xml_filename, par.XMLFile,
-		     par.Mission, par.Instrument, par.Mode,
-		     &status);
-    CHECK_STATUS_BREAK(status);
+    strcpy(xml_filename, par.XMLFile);
 
     // Load the instrument configuration.
     inst=loadGenInst(xml_filename, seed, &status);
@@ -220,30 +214,6 @@ int projev_getpar(struct Parameters* par)
     return(status);
   }
   strcpy(par->RawData, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("Mission", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the mission");
-    return(status);
-  }
-  strcpy(par->Mission, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("Instrument", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the instrument");
-    return(status);
-  }
-  strcpy(par->Instrument, sbuffer);
-  free(sbuffer);
-
-  status=ape_trad_query_string("Mode", &sbuffer);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the instrument mode");
-    return(status);
-  }
-  strcpy(par->Mode, sbuffer);
   free(sbuffer);
 
   status=ape_trad_query_string("XMLFile", &sbuffer);

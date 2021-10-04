@@ -43,9 +43,6 @@
 struct Parameters {
   char ImpactList[MAXFILENAME];
   char RawData[MAXFILENAME];
-  char Mission[MAXMSG];
-  char Instrument[MAXMSG];
-  char Mode[MAXMSG];
   char XMLFile[MAXFILENAME];
 
   char Background;

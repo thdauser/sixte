@@ -1,7 +1,4 @@
-Mission,s,lq,"SRG",,,"mission name: Chandra, GRAVITAS, IXO, ATHENA, SRG, XMM"
-Instrument,s,lq,"eROSITA",,,"instrument name"
-Mode,s,lq,"none",,,"instrument mode (including filter)"
-XMLFile,s,h,"none",,,"XML input file with detector definition (overwrites Mission, Instrument, and Mode)"
+XMLFile,s,lq,"dummy_inst.xml",,,"XML input file with instrument definition"
 EventList,s,h,"none",,,"Obsolete Keyword, now called RawData! (single-pixel event list output file)"
 PatternList,s,h,"none",,,"Obsolete keyword, now called EvtFile! (event pattern list output file)"
 RawData,s,h,"none",,,"raw data output file"

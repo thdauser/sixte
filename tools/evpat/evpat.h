@@ -41,9 +41,6 @@
 
 
 struct Parameters {
-  char Mission[MAXMSG];
-  char Instrument[MAXMSG];
-  char Mode[MAXMSG];
   char XMLFile[MAXFILENAME];
 
   char EvtFile[MAXFILENAME];
