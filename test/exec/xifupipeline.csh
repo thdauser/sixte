@@ -7,9 +7,9 @@ set std = $xml/xifu_baseline.xml
 set adv = $xml/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml'"      
-    echo "  --> skip testing 'xifupipeline' "      
-    exit 
+    echo " *** warning *** did not find required instrument-directory '$xml'"
+    echo "  --> skip testing 'xifupipeline' "
+    exit
 endif
 
 xifupipeline  \
@@ -39,5 +39,3 @@ xifupipeline  \
     doCrosstalk=no \
     chatter=3 \
     clobber=yes
-
-    

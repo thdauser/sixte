@@ -2,13 +2,13 @@
 
 source setup/setup.csh
 
-set xml = $xmldir/athena/1469mm_xifu
-set adv = $xml/xifu_detector_hex_baseline.xml
+set xml = $xmldir/athena-xifu
+set adv = $xml/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml'"      
-    echo "  --> skip testing 'gradeddetection' "      
-    exit 
+    echo " *** warning *** did not find required instrument-directory '$xml'"
+    echo "  --> skip testing 'gradeddetection' "
+    exit
 endif
 
 gradeddetection  \

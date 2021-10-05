@@ -1,11 +1,11 @@
 #! /bin/csh
 
 source setup/setup.csh
-set xml = ${xmldir}/athena-wfi/wfi_w_filter
+set xml = ${xmldir}/athena-wfi/wfi_wo_filter_baseline
 
 if (! (-d $xml)) then
-    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'athenawfisim' "      
-    exit 
+    echo " *** warning *** did not find required instrument-directory '$xml' : skip testing 'athenawfisim' "
+    exit
 endif
 
 athenawfisim  \
@@ -18,7 +18,7 @@ athenawfisim  \
   XMLFile2=${xml}/ld_wfi_ff_chip2.xml \
   XMLFile3=${xml}/ld_wfi_ff_chip3.xml \
   Exposure=1 \
-  clobber=yes 
+  clobber=yes
 
 
 athenawfisim  \
@@ -32,4 +32,4 @@ athenawfisim  \
   XMLFile2=${xml}/ld_wfi_ff_chip2.xml \
   XMLFile3=${xml}/ld_wfi_ff_chip3.xml \
   Exposure=1 \
-  clobber=yes 
+  clobber=yes
