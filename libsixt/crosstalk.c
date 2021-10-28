@@ -2254,9 +2254,9 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy, PixImpact * impact
 			double crosstalk_effect=0.;
 			calc_prop_xt_influence(det,energy_fictional_victim,crosstalk->energy,&crosstalk_effect, dt_in_frames, grade);
 			if (abs(xtalk_proxy->type[ii])==-PROPCTK1){
-				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_1/1.e-2; //Scaled at 1% of amplitude;
+				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_1;
 			} else if (abs(xtalk_proxy->type[ii])==-PROPCTK2){
-				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_2/1.e-2; //Scaled at 1% of amplitude
+				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_2;
 			}
 
 		//Derivative Crosstalk
@@ -2266,7 +2266,7 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy, PixImpact * impact
 			double energy_fictional_victim=0.;
 			double crosstalk_effect=0.;
 			calc_der_xt_influence(det,energy_fictional_victim,crosstalk->energy,&crosstalk_effect, dt_in_frames, grade);
-			energies[ii]=crosstalk_effect*det->der_TDM_scaling/1.e-2; //Scaled at 1% of amplitude;
+			energies[ii]=crosstalk_effect*det->der_TDM_scaling;
 		}
 	}
 }
@@ -2338,10 +2338,10 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 			if (energy_influence!=0.){
 				if ((abs(xtalk_proxy->type[ii])==-PROPCTK1) && (det->prop_TDM_scaling_1>1e-9)){
 					*nb_influences+=crosstalk->nb_pileup+1;
-					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_1/1.e-2; //Scaled at 1% of amplitude;
+					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_1;
 				} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK2) && (det->prop_TDM_scaling_2>1e-9)){
 					*nb_influences+=crosstalk->nb_pileup+1;
-					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_2/1.e-2; //Scaled at 1%
+					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_2;
 				}
 			}
 		//Derivative cross-talk
@@ -2351,7 +2351,7 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 			calc_der_xt_influence(det,impact->energy,crosstalk->energy,&energy_influence, dt_in_frames, grade);
 			if (energy_influence!=0.){
 				*nb_influences+=crosstalk->nb_pileup+1;
-				*xtalk_energy+=energy_influence*det->der_TDM_scaling/1.e-2; //Scaled at 1% of amplitude;
+				*xtalk_energy+=energy_influence*det->der_TDM_scaling;
 			}
 		}
 	}
