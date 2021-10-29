@@ -389,6 +389,7 @@ typedef struct{
   TDMTab* crosstalk_TDM_prop;
   float prop_TDM_scaling_1;
   float prop_TDM_scaling_2;
+  float prop_TDM_scaling_3;
 
   /** Structure containing the derivative TDM cross-talk tables */
   char* TDM_der_file;
@@ -458,13 +459,17 @@ struct MatrixPropCrossTalk{
 	/** Number of cross-talk pixel for type 2 cross-talk */
 	int type_2_pix;
 
+	/** Number of cross-talk pixel for type 3 cross-talk */
+	int type_3_pix;
+
 	/** Array containing the cross talk pixels */
 	int* cross_talk_pixels_1;
 	int* cross_talk_pixels_2;
+	int* cross_talk_pixels_3;
 
 };
 
-/** Structure defining the proporitonal cross talk between pixels, which can be approximated
+/** Structure defining the derivative cross talk between pixels, which can be approximated
     by a simple matrix containing weights */
 struct MatrixDerCrossTalk{
 

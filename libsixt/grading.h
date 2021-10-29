@@ -36,7 +36,8 @@
 #define ELECCTK -33
 #define PROPCTK1 -41
 #define PROPCTK2 -42
-#define DERCTK -43
+#define PROPCTK3 -43
+#define DERCTK -44
 // In the code, -31 is the intermodulation cross-talk, -32 the thermal crosstalk and -33 the electrical one...
 #define WRONGE -4
 #define GRADECHG -5

@@ -451,7 +451,7 @@ void applyMatrixEnerdepCrossTalk(MatrixEnerdepCrossTalk* cross_talk,GradeProxy* 
 	}
 }
 
-/** Same for propotional cross-talk */
+/** Same for proportional cross-talk */
 void applyMatrixPropCrossTalk(MatrixPropCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,int* const status){
 	// This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
 	PixImpact crosstalk_impact;
@@ -481,9 +481,20 @@ void applyMatrixPropCrossTalk(MatrixPropCrossTalk* cross_talk,GradeProxy* grade_
 		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels_2[ii]]),&crosstalk_impact,PROPCTK2,df,status);
 		CHECK_STATUS_VOID(*status);
 	}
+        // Iterate over type 3
+	for (int ii=0;ii<cross_talk->type_3_pix;ii++){
+		crosstalk_impact.energy = impact->energy;
+		crosstalk_impact.pixID = impact->pixID; //We store the impact pixel "perturber"
+		crosstalk_impact.time = impact->time;
+		crosstalk_impact.ph_id = -impact->ph_id;
+		crosstalk_impact.src_id = impact->src_id;
+		double df=0.; //This is just to avoid changing the rest of the code
+		addCrosstalkEvent(&(grade_proxys[cross_talk->cross_talk_pixels_3[ii]]),&crosstalk_impact,PROPCTK3,df,status);
+		CHECK_STATUS_VOID(*status);
+	}
 }
 
-/** Same for propotional cross-talk */
+/** Same for derivative cross-talk */
 void applyMatrixDerCrossTalk(MatrixDerCrossTalk* cross_talk,GradeProxy* grade_proxys,PixImpact* impact,int* const status){
 	// This could be done in impactsToEvents, but seems less readable (it is just an information proxy, will be reused at each iteration)
 	PixImpact crosstalk_impact;

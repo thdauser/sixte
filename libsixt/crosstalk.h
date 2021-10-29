@@ -42,7 +42,8 @@
 #define ELECCTK -33
 #define PROPCTK1 -41
 #define PROPCTK2 -42
-#define DERCTK -43
+#define PROPCTK3 -43
+#define DERCTK -44
 
 #define DTMIN 0.00704 //Minimal time before impact influenced by ctk //TODO Once time dependencies tables shall be more accurate, to change
 #define DTMAX 0.046 //Maximal time after impact influenced by ctk

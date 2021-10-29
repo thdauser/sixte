@@ -1136,7 +1136,7 @@ void storeEventtype(CrosstalkProxy* xtalk_proxy, int type, double df, int* statu
 	xtalk_proxy->is_saved[xtalk_proxy->n_active_crosstalk]=0;
 
 	if (abs(type)!=-IMODCTK && abs(type)!=-THERCTK && abs(type)!=-ELECCTK && abs(type)!=-PROPCTK1
-			&& abs(type)!=-PROPCTK2 && abs(type)!=-DERCTK){
+			&& abs(type)!=-PROPCTK2 && abs(type)!=-PROPCTK3 && abs(type)!=-DERCTK){
 		printf("Found an incorrect cross-talk type %i \n", type);
 		SIXT_ERROR("Wrong crosstalk type");
 		*status=EXIT_FAILURE;
@@ -1379,8 +1379,10 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 	int max_rows=concerned_pixel->channel->num_pixels; //rows in a given column, column start at 0 in structure (can differ)
 	concerned_pixel->prop_cross_talk->cross_talk_pixels_1=(int*)realloc(concerned_pixel->prop_cross_talk->cross_talk_pixels_1,sizeof(int)); //only row N+1, column N
 	concerned_pixel->prop_cross_talk->cross_talk_pixels_2=(int*)realloc(concerned_pixel->prop_cross_talk->cross_talk_pixels_2, (max_rows-1)*sizeof(int)); //All but itself in column N
+	concerned_pixel->prop_cross_talk->cross_talk_pixels_3=(int*)realloc(concerned_pixel->prop_cross_talk->cross_talk_pixels_3,sizeof(int)); //only row N+2, column N
 
 	int circ_next_row=(concerned_pixel->row)%(det->max_rows)+1; //If pixel is at 'last' row, it will affect row 1
+	int circ_next_next_row=(concerned_pixel->row+1)%(det->max_rows)+1; //If pixel is at 'last' row, it will affect row 2
 
 	//The last column may not have the same number of rows, if this is the case, since switches are sequential,
 	//type 1 cross-talk cannot happen with row N+1 within the same column, we affect the next pixel to -1 since
@@ -1388,9 +1390,12 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 	if (circ_next_row>max_rows){
 		circ_next_row=-1;
 	}
-	//printf("Number of row %i, next row %i and max row %i\n", concerned_pixel->row, circ_next_row, max_rows);
+        if (circ_next_next_row>max_rows){
+		circ_next_next_row=-1;
+	}
+	//printf("Number of row %i, next row %i next next row %i and max row %i\n", concerned_pixel->row, circ_next_row, circ_next_next_row, max_rows);
 
-	// Iterate over the channel to find all type 1/2 pixels
+	// Iterate over the channel to find all type 1/2/3 pixels
 	for (int i=0;i<concerned_pixel->channel->num_pixels;i++){
 		// Cross-talk is not with yourself ;)
 		if (concerned_pixel->channel->pixels[i]->pindex==pixid) continue;
@@ -1410,12 +1415,20 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 		//Type 2 for same column N
 		concerned_pixel->prop_cross_talk->cross_talk_pixels_2[concerned_pixel->prop_cross_talk->type_2_pix]=current_pixel->pindex;
 		concerned_pixel->prop_cross_talk->type_2_pix+=1;
+
+		if (row==circ_next_next_row){
+			//Type 3 for next row (N+2)
+			concerned_pixel->prop_cross_talk->cross_talk_pixels_3[concerned_pixel->prop_cross_talk->type_3_pix]=current_pixel->pindex;
+			concerned_pixel->prop_cross_talk->type_3_pix+=1;
+		}
 	}
 
 	assert(concerned_pixel->prop_cross_talk->type_1_pix<=1); //There should be 1 next row neighbor maximum
 	assert(concerned_pixel->prop_cross_talk->type_2_pix==max_rows-1); //There should be max_rows-1 in column neighbors
+	assert(concerned_pixel->prop_cross_talk->type_3_pix<=1); //There should be 1 next row neighbor maximum
 	//printf("Number of type 1 pixels %i \n", concerned_pixel->prop_cross_talk->type_1_pix);
 	//printf("Number of type 2 pixels %i \n", concerned_pixel->prop_cross_talk->type_2_pix);
+	//printf("Number of type 3 pixels %i \n", concerned_pixel->prop_cross_talk->type_3_pix);
 }
 
 static void load_tdm_xt_table(const AdvDet *det, char* filename, int k, int *status, TDMTab **tmp_TDM) {
@@ -1663,10 +1676,16 @@ void init_crosstalk(AdvDet* det, int* const status){
 			query_simput_parameter_string("doCrosstalk", &buf, status );
 			if (strncmp(buf,"tdm_prop1",9)==0){
 				det->prop_TDM_scaling_2=0.0;
+				det->prop_TDM_scaling_3=0.0;
 				printf("    -> only simulating TYPE 1 proportional crosstalk (scaling=%.2e)\n", det->prop_TDM_scaling_1*det->scaling);
 			} else if (strncmp(buf,"tdm_prop2",9)==0){
 				det->prop_TDM_scaling_1=0.0;
+				det->prop_TDM_scaling_3=0.0;
 				printf("    -> only simulating TYPE 2 proportional crosstalk (scaling=%.2e)\n", det->prop_TDM_scaling_2*det->scaling);
+			} else if (strncmp(buf,"tdm_prop3",9)==0){
+				det->prop_TDM_scaling_1=0.0;
+				det->prop_TDM_scaling_2=0.0;
+				printf("    -> only simulating TYPE 3 proportional crosstalk (scaling=%.2e)\n", det->prop_TDM_scaling_3*det->scaling);
 			}
 			free(buf);
 		}
@@ -2248,7 +2267,7 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy, PixImpact * impact
 
 		//Proportional Crosstalk
 		//------------------
-		} else if (abs(xtalk_proxy->type[ii])==-PROPCTK1 || abs(xtalk_proxy->type[ii])==-PROPCTK2){
+		} else if (abs(xtalk_proxy->type[ii])==-PROPCTK1 || abs(xtalk_proxy->type[ii])==-PROPCTK2 || abs(xtalk_proxy->type[ii])==-PROPCTK3){
 			double dt_in_frames=0.;
 			double energy_fictional_victim=0.;
 			double crosstalk_effect=0.;
@@ -2257,6 +2276,8 @@ void computeWeights(AdvDet* det, CrosstalkProxy* xtalk_proxy, PixImpact * impact
 				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_1;
 			} else if (abs(xtalk_proxy->type[ii])==-PROPCTK2){
 				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_2;
+			} else if (abs(xtalk_proxy->type[ii])==-PROPCTK3){
+				energies[ii]=crosstalk_effect*det->prop_TDM_scaling_3;
 			}
 
 		//Derivative Crosstalk
@@ -2331,7 +2352,7 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 				}
 			}
 		//Proportional cross-talk
-		} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK1)|| (abs(xtalk_proxy->type[ii])==-PROPCTK2)){
+		} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK1) || (abs(xtalk_proxy->type[ii])==-PROPCTK2) || (abs(xtalk_proxy->type[ii])==-PROPCTK3)) {
 			double dt_in_frames=dt/sample_length;
 			energy_influence=0.;
 			calc_prop_xt_influence(det,impact->energy,crosstalk->energy, &energy_influence, dt_in_frames, grade);
@@ -2342,6 +2363,9 @@ void computeTimeDependency(AdvDet* det, CrosstalkProxy* xtalk_proxy,PixImpact * 
 				} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK2) && (det->prop_TDM_scaling_2>1e-9)){
 					*nb_influences+=crosstalk->nb_pileup+1;
 					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_2;
+				} else if ((abs(xtalk_proxy->type[ii])==-PROPCTK3) && (det->prop_TDM_scaling_3>1e-9)){
+					*nb_influences+=crosstalk->nb_pileup+1;
+					*xtalk_energy+=energy_influence*det->prop_TDM_scaling_3;
 				}
 			}
 		//Derivative cross-talk

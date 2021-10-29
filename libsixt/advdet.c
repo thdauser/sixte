@@ -403,6 +403,7 @@ AdvDet* newAdvDet(int* const status){
   det->crosstalk_TDM_prop=NULL;
   det->prop_TDM_scaling_1=1;
   det->prop_TDM_scaling_2=1;
+  det->prop_TDM_scaling_3=1;
 
   det->TDM_der_file=NULL;
   det->crosstalk_TDM_der=NULL;
@@ -1131,6 +1132,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 
 		xmlparsedata->det->prop_TDM_scaling_1=getXMLAttributeDouble(attr,"SCALING1");
 		xmlparsedata->det->prop_TDM_scaling_2=getXMLAttributeDouble(attr,"SCALING2");
+		xmlparsedata->det->prop_TDM_scaling_3=getXMLAttributeDouble(attr,"SCALING3");
 
 	} else if(!strcmp(Uelement, "DERCROSSTALK")){
 		xmlparsedata->det->TDM_der_file=(char*)malloc(MAXFILENAME*sizeof(char));
@@ -1532,8 +1534,10 @@ void freeMatrixPropCrossTalk(MatrixPropCrossTalk* matrix){
 	if (matrix!=NULL){
 		free(matrix->cross_talk_pixels_1);
 		free(matrix->cross_talk_pixels_2);
+		free(matrix->cross_talk_pixels_3);
 		matrix->type_1_pix=0;
 		matrix->type_2_pix=0;
+		matrix->type_3_pix=0;
 	}
 	free(matrix);
 	matrix=NULL;
@@ -1600,8 +1604,10 @@ MatrixPropCrossTalk* newMatrixPropCrossTalk(int* const status){
 
 	matrix->type_1_pix=0;
 	matrix->type_2_pix=0;
+	matrix->type_3_pix=0;
 	matrix->cross_talk_pixels_1 = NULL;
 	matrix->cross_talk_pixels_2 = NULL;
+	matrix->cross_talk_pixels_3 = NULL;
 
 	return matrix;
 }
