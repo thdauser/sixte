@@ -1383,6 +1383,7 @@ void load_proportional_cross_talk(AdvDet* det,int pixid,int* const status){
 
 	int circ_next_row=(concerned_pixel->row)%(det->max_rows)+1; //If pixel is at 'last' row, it will affect row 1
 	int circ_next_next_row=(concerned_pixel->row+1)%(det->max_rows)+1; //If pixel is at 'last' row, it will affect row 2
+        // note: Rows here are 1-based!
 
 	//The last column may not have the same number of rows, if this is the case, since switches are sequential,
 	//type 1 cross-talk cannot happen with row N+1 within the same column, we affect the next pixel to -1 since
@@ -1561,14 +1562,15 @@ void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
 	//Allocate memory
 	concerned_pixel->der_cross_talk=newMatrixDerCrossTalk(status);
 	int max_rows=concerned_pixel->channel->num_pixels; //row in a given column, column start at 0 in the structure (can differ)
-	concerned_pixel->der_cross_talk->cross_talk_pixels=(int*)realloc(concerned_pixel->der_cross_talk->cross_talk_pixels,4*sizeof(int)); //for the moment only 4 considered TODO: Change once more accurate
+	concerned_pixel->der_cross_talk->cross_talk_pixels=(int*)realloc(concerned_pixel->der_cross_talk->cross_talk_pixels,2*sizeof(int));
 
 	// Find the affected 'wiring' neighbors. This concerns row (N+1) and (N-1)
 	// in the same column. No issue as in type 1, since even columns with less rows affect the
 	// next wiring neighbours.
-	int circ_next_row=(concerned_pixel->row + 1)%(max_rows); //If pixel is at 'last' row, it will affect row 0
-	int circ_prev_row=(concerned_pixel->row+max_rows-1)%(max_rows);
-	//printf("Number of rows %i, row actual %i and other 2, %i, %i, \n", max_rows, concerned_pixel->row, circ_prev_row, circ_next_row);
+        // note: Rows here are 1-based!
+	int circ_next_row=(concerned_pixel->row)%(max_rows) + 1; //If pixel is at 'last' row, it will affect row 0
+	int circ_prev_row=(concerned_pixel->row+max_rows-2)%(max_rows) + 1;
+	// printf("Number of rows %i, row actual %i and victims, %i, %i, \n", max_rows, concerned_pixel->row, circ_prev_row, circ_next_row);
 
 
 	// Iterate over the channel to find all type 1/2 pixels
@@ -1583,12 +1585,12 @@ void load_derivative_cross_talk(AdvDet* det,int pixid,int* const status){
 
 		//Quick check if the pixel is concerned
 		if ((row==circ_next_row || row==circ_prev_row)){
-			//Type 3 for next row (N+1), (N-1)
+			//Type 4 for next row (N+1), (N-1)
 			concerned_pixel->der_cross_talk->cross_talk_pixels[concerned_pixel->der_cross_talk->num_cross_talk_pixels]=current_pixel->pindex;
 			concerned_pixel->der_cross_talk->num_cross_talk_pixels+=1;
 		}
 	}
-	// printf("Number of type 3 pixels %i \n", concerned_pixel->der_cross_talk->num_cross_talk_pixels);
+	//printf("Number of type 4 pixels %i \n", concerned_pixel->der_cross_talk->num_cross_talk_pixels);
 	assert(concerned_pixel->der_cross_talk->num_cross_talk_pixels==2); //There should be 2 wiring neighbors
 }
 
