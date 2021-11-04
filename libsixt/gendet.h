@@ -172,6 +172,9 @@ typedef struct {
       ray detector background. */
   int auxbackground;
 
+  /** Flag whether to to simulate splits in the AUX background */
+  int split_bkg;
+
   /** Models for detector background based on PHA spectra. */
   PHABkg* phabkg[2];
 

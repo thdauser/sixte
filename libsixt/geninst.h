@@ -81,5 +81,13 @@ GenInst* loadGenInst(const char* const filename,
 		     const unsigned int seed,
 		     int* const status);
 
+/** Add a Photon Aux background to a GenDet from an external FITS file.
+ *  Only works if no prior Aux background was initialized*/
+void GenDetAddPhotBkg(GenDet* det,
+                      const unsigned int seed,
+                      const char* const filename,
+                      int* const status);
+
+
 
 #endif /* GENINST_H */

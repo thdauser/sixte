@@ -364,6 +364,20 @@ GenInst* loadGenInst(const char* const filename, const unsigned int seed,
 	return (inst);
 }
 
+void GenDetAddPhotBkg(GenDet* det,
+                      const unsigned int seed,
+                      const char* const filename,
+                      int* const status) {
+  if (0 == auxBkgInitialized) {
+    bkgInitialize(filename, seed, status);
+    auxBkgInitialized=1;
+    det->auxbackground = 1;
+    det->split_bkg=1;
+  } else {
+    SIXT_WARNING("AUX background already initialized in XML - skipping photon background!");
+  }
+}
+
 static void GenInstXMLElementStart(void* parsedata, const char* el,
 		const char** attr) {
 	struct XMLParseData* xmlparsedata = (struct XMLParseData*) parsedata;

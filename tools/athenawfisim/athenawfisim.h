@@ -64,6 +64,7 @@ struct Parameters {
   char XMLFile2[MAXFILENAME];
   char XMLFile3[MAXFILENAME];
 
+  char StrayLightFile[MAXFILENAME];
   char Background;
 
   /** Telescope pointing direction [deg]. */

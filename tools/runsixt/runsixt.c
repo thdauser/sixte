@@ -173,6 +173,13 @@ int runsixt_main()
     p2p = initPha2Pi_from_GenInst( inst, seed, &status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
+    // Set the straylight
+    strcpy(ucase_buffer, par.StrayLightFile);
+    strtoupper(ucase_buffer);
+    if (0!=strcmp(ucase_buffer, "NONE")) {
+      GenDetAddPhotBkg(inst->det, seed, par.StrayLightFile, &status);
+    }
+
     // Set the usage of the detector background according to
     // the respective program parameter.
     setGenDetIgnoreBkg(inst->det, !par.Background);
@@ -701,6 +708,14 @@ int runsixt_getpar(struct Parameters* const par)
     SIXT_ERROR("failed reading the background flag");
     return(status);
   }
+
+  status=ape_trad_query_string("StrayLightFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the stray light file");
+    return(status);
+  }
+  strcpy(par->StrayLightFile, sbuffer);
+  free(sbuffer);
 
   query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);
 

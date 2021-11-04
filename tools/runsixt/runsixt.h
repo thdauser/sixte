@@ -57,6 +57,7 @@ struct Parameters {
   char GTIfile[MAXFILENAME];
   char ProgressFile[MAXFILENAME];
 
+  char StrayLightFile[MAXFILENAME];
   char Background;
 
   /** Telescope pointing direction [deg]. */

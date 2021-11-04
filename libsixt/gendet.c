@@ -54,6 +54,7 @@ GenDet* newGenDet(int* const status) {
 	// Set initial values.
 	det->ignore_bkg = 0;
 	det->auxbackground = 0;
+	det->split_bkg = 0;
 	det->anyphoton = 0;
 	det->frametime = 0.;
 	det->deadtime = 0.;
@@ -380,10 +381,6 @@ static void insert_aux_bkg(GenDet* const det, double time, double dt) {
 	double sinrota = sin(det->pixgrid->rota);
 	int ii;
 	for (ii = 0; ii < list->numhits; ii++) {
-		// Add the signal to the detector without
-		// regarding charge cloud splitting effects,
-		// since this is also not done by Tenzer et al. (2010)
-		// and Boller (2011).
 		// Please note that the detector response matrix is
 		// NOT applied to the particle-induced background events,
 		// since the response is not available for the therefore
@@ -397,17 +394,29 @@ static void insert_aux_bkg(GenDet* const det, double time, double dt) {
 				- list->hit_ypos[ii] * 0.001 * sinrota;
 		double yh = list->hit_xpos[ii] * 0.001 * sinrota
 				+ list->hit_ypos[ii] * 0.001 * cosrota;
-		int x, y;
-		double xr, yr;
-		getGenDetAffectedPixel(det->pixgrid, xh, yh, &x, &y, &xr, &yr);
-		// Check if the pixel indices are valid or if the
-		// specified position lies outside the pixel area.
-		if ((x < 0) || (y < 0))
-			continue;
+                if (det->split_bkg) {
+                  struct Point2d pos = {.x=xh, .y=yh};
+                  int status=EXIT_SUCCESS;
+                  makeGenSplitEvents(det, &pos, list->hit_energy[ii],
+                                     -1, -1, time, &status);
+                  CHECK_STATUS_VOID(&status);
+                } else {
+ 		  // Add the signal to the detector without
+		  // regarding charge cloud splitting effects,
+		  // since this is also not done by Tenzer et al. (2010)
+		  // and Boller (2011).
+                  int x, y;
+                  double xr, yr;
+                  getGenDetAffectedPixel(det->pixgrid, xh, yh, &x, &y, &xr, &yr);
+                  // Check if the pixel indices are valid or if the
+                  // specified position lies outside the pixel area.
+                  if ((x < 0) || (y < 0))
+                          continue;
 
-		// Add the signal to the pixel.
-		addGenDetCharge2Pixel(det, x, y, list->hit_energy[ii],
-				time, -1, -1);
+                  // Add the signal to the pixel.
+                  addGenDetCharge2Pixel(det, x, y, list->hit_energy[ii],
+                                  time, -1, -1);
+                }
 	}
 	bkgFree(list);
 }
