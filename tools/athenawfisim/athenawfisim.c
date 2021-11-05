@@ -209,23 +209,21 @@ int athenapwfisim_main() {
 			subinst[ii] = loadGenInst(buffer, seed, &status);
 			CHECK_STATUS_BREAK(status);
 
-			// Set the straylight
+			// Set the aux background
                         // Here: Need to do a workaround - The struct defining the background
                         // is a static variable and can only be initialized once - chips 1-3
                         // just need to be told to use this initialized background
-			strcpy(ucase_buffer, par.StrayLightFile);
+			strcpy(ucase_buffer, par.BkgEventFile);
 			strtoupper(ucase_buffer);
 			if (0!=strcmp(ucase_buffer, "NONE")) {
                                 if (ii==0) {
-					GenDetAddPhotBkg(subinst[ii]->det, seed, par.StrayLightFile, &status);
-                                } else {
-					if(subinst[0]->det->split_bkg) {
-						subinst[ii]->det->split_bkg=1;
-						subinst[ii]->det->auxbackground=1;
-                                        }
+					GenDetAddAuxBkg(subinst[ii]->det, seed, par.BkgEventFile, &status);
                                 }
-
 			}
+			if((subinst[0]->det->auxbackground==1) && (ii!=0)) {
+				subinst[ii]->det->auxbackground=1;
+				subinst[ii]->det->split_bkg = subinst[ii]->det->split_bkg;
+                        }
 
 			// Set the usage of the detector background according to
 			// the respective program parameter.
@@ -862,12 +860,12 @@ int athenapwfisim_getpar(struct Parameters* const par) {
 		return (status);
 	}
 
-        status=ape_trad_query_string("StrayLightFile", &sbuffer);
+        status=ape_trad_query_string("BkgEventFile", &sbuffer);
         if (EXIT_SUCCESS!=status) {
-          SIXT_ERROR("failed reading the name of the stray light file");
+          SIXT_ERROR("failed reading the name of the background event file");
           return(status);
         }
-        strcpy(par->StrayLightFile, sbuffer);
+        strcpy(par->BkgEventFile, sbuffer);
         free(sbuffer);
 
 	query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);

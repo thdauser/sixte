@@ -142,6 +142,7 @@ void bkgInitialize(const char* const filename,
   bkginputdata.xcolname = "X";
   bkginputdata.ycolname = "Y";
   ftime(&time_struct);
+  bkginputdata.is_photbkg = 0;
 
   fits_open_table(&bkginputdata.inputfptr, filename, READONLY, status);
   fits_report_error(stderr, *status);
@@ -183,6 +184,14 @@ void bkgInitialize(const char* const filename,
     }
   }
   bkginputdata.aux.rate=bkginputdata.aux.rate*bkginputdata.area_sqcm;
+
+  // check header key to see whether we need to use splits for impacts
+  fits_read_key(bkginputdata.inputfptr, TLOGICAL, "PHOTONS", &bkginputdata.is_photbkg, NULL, status);
+  if(*status != 0) {
+    // for backwards compatibility: if this key does not exist, it's a particle bkg
+    *status = EXIT_SUCCESS;
+    bkginputdata.is_photbkg = 0;
+  }
 
   fits_get_num_rows(bkginputdata.inputfptr, &bkginputdata.numrows, status);
   fits_report_error(stderr, *status);
@@ -235,6 +244,10 @@ void bkgInitializeAux(const char* const filename,
   } else {
     SIXT_ERROR("Invalid auxiliary information provided for init of background module!");
   }
+}
+
+int bkgCheckPhotBkg() {
+  return bkginputdata.is_photbkg;
 }
 
 /* Free passed background structure. */

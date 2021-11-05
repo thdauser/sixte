@@ -173,11 +173,11 @@ int runsixt_main()
     p2p = initPha2Pi_from_GenInst( inst, seed, &status);
     CHECK_STATUS_BREAK_WITH_FITSERROR(status);
 
-    // Set the straylight
-    strcpy(ucase_buffer, par.StrayLightFile);
+    // Set the Aux Background
+    strcpy(ucase_buffer, par.BkgEventFile);
     strtoupper(ucase_buffer);
     if (0!=strcmp(ucase_buffer, "NONE")) {
-      GenDetAddPhotBkg(inst->det, seed, par.StrayLightFile, &status);
+      GenDetAddAuxBkg(inst->det, seed, par.BkgEventFile, &status);
     }
 
     // Set the usage of the detector background according to
@@ -709,12 +709,12 @@ int runsixt_getpar(struct Parameters* const par)
     return(status);
   }
 
-  status=ape_trad_query_string("StrayLightFile", &sbuffer);
+  status=ape_trad_query_string("BkgEventFile", &sbuffer);
   if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the name of the stray light file");
+    SIXT_ERROR("failed reading the name of the background event file");
     return(status);
   }
-  strcpy(par->StrayLightFile, sbuffer);
+  strcpy(par->BkgEventFile, sbuffer);
   free(sbuffer);
 
   query_simput_parameter_file_name("Attitude", &(par->Attitude), &status);

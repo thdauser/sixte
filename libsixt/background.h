@@ -73,6 +73,8 @@ typedef struct backgroundInput {
   int ycolnum;
   int numevents;
 
+  int is_photbkg;
+
   double eventsperinterval;
   double *hit_xpos;
   double *hit_ypos;
@@ -153,6 +155,11 @@ void bkgInitializeAux(const char* const filename,
     const unsigned int seed,
     bkgAux* bkgaux,
     int* const status);
+
+/** Return the is_photbkg member of bkginputdata
+ *  Need to do this since bkginputdata is a static struct 
+ */
+int bkgCheckPhotBkg();
 
 /** Free memory of passed backgroundOutput structure */
 void bkgFree(backgroundOutput* struct_to_free);

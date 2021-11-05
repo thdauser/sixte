@@ -364,15 +364,15 @@ GenInst* loadGenInst(const char* const filename, const unsigned int seed,
 	return (inst);
 }
 
-void GenDetAddPhotBkg(GenDet* det,
-                      const unsigned int seed,
-                      const char* const filename,
-                      int* const status) {
+void GenDetAddAuxBkg(GenDet* det,
+                     const unsigned int seed,
+                     const char* const filename,
+                     int* const status) {
   if (0 == auxBkgInitialized) {
     bkgInitialize(filename, seed, status);
     auxBkgInitialized=1;
     det->auxbackground = 1;
-    det->split_bkg=1;
+    det->split_bkg=bkgCheckPhotBkg();
   } else {
     SIXT_WARNING("AUX background already initialized in XML - skipping photon background!");
   }
@@ -749,6 +749,7 @@ static void GenInstXMLElementStart(void* parsedata, const char* el,
 			}
 		}
 		xmlparsedata->inst->det->auxbackground = 1;
+		xmlparsedata->inst->det->split_bkg=bkgCheckPhotBkg();
 
 	} else if (!strcmp(Uelement, "PHABACKGROUND")) {
 
