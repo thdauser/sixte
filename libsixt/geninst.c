@@ -926,7 +926,7 @@ static void GenInstXMLElementStart(void* parsedata, const char* el,
 
 	} else if (!strcmp(Uelement, "WAIT")) {
 
-		float waittime = getXMLAttributeFloat(attr, "TIME");
+		double waittime = getXMLAttributeDouble(attr, "TIME");
 		CLWait* clwait = newCLWait(waittime, &xmlparsedata->status);
 		append2ClockList(xmlparsedata->inst->det->clocklist, CL_WAIT, clwait,
 				&xmlparsedata->status);
