@@ -30,6 +30,12 @@ int radec2xy_main() {
     // Input event file.
     EventFile* elf = NULL;
 
+    // Input TES event file.
+    TesEventFile* tes_elf = NULL;
+
+    // Input file pointer (either TES or normal event file).
+    fitsfile* input_fptr=NULL;
+
     // Error status.
     int status = EXIT_SUCCESS;
 
@@ -46,17 +52,34 @@ int radec2xy_main() {
         radec2xy_getpar(&par,&status);
         CHECK_STATUS_BREAK(status);
 
-        // Open the input event file.
-        elf = openEventFile(par.EvtFile, READWRITE, &status);
+        // Set the event file.
+        elf=openEventFile(par.EvtFile, READWRITE, &status);
+        if(status==COL_NOT_FOUND){
+          headas_chat(3, "Given file is not a standard Event File, trying to read it as TES Event File...\n");
+          status=EXIT_SUCCESS;
+          freeEventFile(&elf, &status);
+          CHECK_STATUS_BREAK(status);
+          tes_elf=openTesEventFile(par.EvtFile,READWRITE,&status);
+          input_fptr = tes_elf->fptr;
+        } else {
+          input_fptr = elf->fptr;
+        }
         CHECK_STATUS_BREAK(status);
 
-        addXY2eventfile(elf, &par.RefRA, &par.RefDec, par.Projection, &status);
-        CHECK_STATUS_BREAK(status);
+        if (tes_elf == NULL) {
+          addXY2eventfile(elf, &par.RefRA, &par.RefDec,
+                          par.Projection, &status);
+          CHECK_STATUS_BREAK(status);
+        } else {
+          addXY2teseventfile(tes_elf, &par.RefRA, &par.RefDec,
+                             par.Projection, &status);
+        }
+
 
         // Append a check sum to the header of the event extension.
         int hdutype = 0;
-        fits_movabs_hdu(elf->fptr, 2, &hdutype, &status);
-        fits_write_chksum(elf->fptr, &status);
+        fits_movabs_hdu(input_fptr, 2, &hdutype, &status);
+        fits_write_chksum(input_fptr, &status);
         CHECK_STATUS_BREAK(status);
 
     } while (0); // END of the error handling loop.
@@ -66,6 +89,7 @@ int radec2xy_main() {
 
     // Close the files.
     freeEventFile(&elf, &status);
+    freeTesEventFile(tes_elf, &status);
 
     if (EXIT_SUCCESS == status) {
         headas_chat(3, "finished successfully!\n\n");

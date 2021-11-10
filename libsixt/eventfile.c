@@ -343,7 +343,7 @@ void getEventFromFile(const EventFile* const file,
 		&dnull, &event->ra, &anynul, status);
   event->ra*=M_PI/180.;
   fits_read_col(file->fptr, TDOUBLE, file->cdec, row, 1, 1,
-		&lnull, &event->dec, &anynul, status);
+		&dnull, &event->dec, &anynul, status);
   event->dec*=M_PI/180.;
   fits_read_col(file->fptr, TLONG, file->cph_id, row, 1, NEVENTPHOTONS,
 		&lnull, &event->ph_id, &anynul, status);

@@ -27,6 +27,7 @@
 #include "sixt.h"
 #include "event.h"
 #include "eventfile.h"
+#include "teseventlist.h"
 #include "wcs.h"
 #include "parinput.h"
 #include "radec2xylib.h"

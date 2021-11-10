@@ -157,8 +157,20 @@ TesEventFile* opennewTesEventFileSIRENA(const char* const filename,
 				  const char clobber,
 				  int* const status);
 
+/** Initializes TESEventFile column numbers */
+void getColNumsFromTesEventFile(TesEventFile* const file, int* const status);
+
 /** Opens a TES event file with the given mode */
 TesEventFile* openTesEventFile(const char* const filename,const int mode, int* const status);
+
+/** Add a column to open TesEventFile. TesEventFile must be opened in
+    READWRITE mode. ttype should be known in EventFile typedef,
+    otherwise added column will be ignored by the other
+    EventFile routines */
+void addCol2TesEventFile(TesEventFile* const file,
+			int* const colnum, char* const ttype,
+			char* const tform, char* const tunit,
+			int* const status);
 
 /** TesEventFile Destructor. */
 void freeTesEventFile(TesEventFile* file, int* const status);

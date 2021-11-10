@@ -26,6 +26,7 @@
 #include "event.h"
 #include "wcs.h"
 #include "eventfile.h"
+#include "teseventlist.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Type declarations.
@@ -43,10 +44,11 @@ typedef struct {
 
 
 /** */
-ImgPos radec2xy( Event* const event, struct wcsprm* const wcs, int* const status );
+ImgPos radec2xy(double* ra, double* dec, struct wcsprm* const wcs, int* const status );
 
 struct wcsprm getRadec2xyWCS( float* RefRA, float* RefDec, char* Projection, int* const status );
 
 void addXY2eventfile(EventFile* const evtfile, float* RefRA, float* RefDec, char* Projection, int* const status);
 
+void addXY2teseventfile(TesEventFile* const evtfile, float* RefRA, float* RefDec, char* Projection, int* const status);
 #endif /* RADEC2XY_H */

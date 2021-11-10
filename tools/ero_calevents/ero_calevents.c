@@ -527,7 +527,7 @@ int ero_calevents_main() {
             }
 
             // Convert world coordinates to image coordinates X and Y.
-            ImgPos pos = radec2xy( &event, &wcs, &status );
+            ImgPos pos = radec2xy(&(event.ra), &(event.dec), &wcs, &status );
             CHECK_STATUS_BREAK(status);
             ev.x = pos.x;
             ev.y = pos.y;

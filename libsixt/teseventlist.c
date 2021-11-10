@@ -499,17 +499,8 @@ static int getColnumIfExists(fitsfile *fptr, int casesen, char* template, int* c
   return colnum;
 }
 
-/** Opens a TES event file with the given mode */
-TesEventFile* openTesEventFile(const char* const filename,const int mode, int* const status){
-	TesEventFile * file = newTesEventFile(status);
-	headas_chat(3, "open TES event file '%s' ...\n", filename);
-	fits_open_table(&file->fptr, filename, mode, status);
-	CHECK_STATUS_RET(*status, NULL);
-
-	// Determine the row numbers.
-	fits_get_num_rows(file->fptr, &(file->nrows), status);
-
-	// Determine the column numbers.
+void getColNumsFromTesEventFile(TesEventFile* const file, int* const status)
+{
 	file->timeCol = getColnumIfExists(file->fptr, CASEINSEN, "TIME", status);
 	file->energyCol = getColnumIfExists(file->fptr, CASEINSEN, "SIGNAL", status);
 	file->grade1Col = getColnumIfExists(file->fptr, CASEINSEN, "GRADE1", status);
@@ -525,9 +516,68 @@ TesEventFile* openTesEventFile(const char* const filename,const int mode, int* c
 	file->nxtCol = getColnumIfExists(file->fptr, CASEINSEN, "N_XT", status);
 	file->extCol = getColnumIfExists(file->fptr, CASEINSEN, "E_XT", status);
 
+	CHECK_STATUS_VOID(*status);
+}
+
+/** Opens a TES event file with the given mode */
+TesEventFile* openTesEventFile(const char* const filename,const int mode, int* const status){
+	TesEventFile * file = newTesEventFile(status);
+	headas_chat(3, "open TES event file '%s' ...\n", filename);
+	fits_open_table(&file->fptr, filename, mode, status);
+	CHECK_STATUS_RET(*status, NULL);
+
+	// Determine the row numbers.
+	fits_get_num_rows(file->fptr, &(file->nrows), status);
+
+	// Determine the column numbers.
+        getColNumsFromTesEventFile(file, status);
+
 	CHECK_STATUS_RET(*status, NULL);
 
 	return(file);
+}
+
+void addCol2TesEventFile(TesEventFile* const file,
+		int* const colnum,
+		char* const ttype,
+		char* const tform,
+		char* const tunit,
+		int* const status){
+
+	// Check if colnum is out of bounds
+	int cnum = 0;
+	fits_get_num_cols(file->fptr, &cnum, status);
+	CHECK_STATUS_VOID(*status);
+	if( (*colnum <= 0) || (*colnum > cnum+1) ){
+		*colnum = cnum+1;
+	}
+
+	// Insert column in File
+	fits_insert_col(file->fptr,*colnum,ttype,tform,status);
+	CHECK_STATUS_VOID(*status);
+
+	// Set TUNIT of added column
+	char keystr[MAXMSG];
+	sprintf(keystr, "TUNIT%d", *colnum);
+	char comment[MAXMSG];
+	sprintf(comment, "Unit of column %s", ttype);
+	fits_update_key(file->fptr, TSTRING, keystr, tunit, comment, status);
+	CHECK_STATUS_VOID(*status);
+
+	// Re-initilize column numbers in TesEventFile
+	getColNumsFromTesEventFile(file, status);
+	CHECK_STATUS_VOID(*status);
+
+	// TEST if added column is really there
+	fits_get_colnum(file->fptr, CASEINSEN, ttype, &cnum, status);
+	if( *status == COL_NOT_FOUND ){
+		char msg[MAXMSG];
+	sprintf(msg, "Adding column '%s' at %d failed!",
+			ttype,*colnum);
+	SIXT_ERROR(msg);
+	*status=EXIT_FAILURE;
+	}
+	return;
 }
 
 /** Adds the data contained in the event list to the given file */

@@ -22,11 +22,11 @@
 
 
 // Convert world coordinates to image coordinates X and Y.
-ImgPos radec2xy( Event* const event, struct wcsprm* const wcs, int* const status ) {
+ImgPos radec2xy( double* ra, double* dec, struct wcsprm* const wcs, int* const status ) {
 
     double world[2] = {
-            event->ra * 180. / M_PI,
-            event->dec * 180. / M_PI
+            *ra * 180. / M_PI,
+            *dec * 180. / M_PI
     };
 
     ImgPos pos;
@@ -138,7 +138,7 @@ void addXY2eventfile(EventFile* const evtfile, float* RefRA, float* RefDec, char
     if( *status == COL_NOT_FOUND ){
         fits_clear_errmsg();
         *status=EXIT_SUCCESS;
-        cx = evtfile->cra + 1;
+        cx = evtfile->cdec + 1;
         addCol2EventFile(evtfile, &cx, "X", "J", "", status);
         CHECK_STATUS_VOID(*status);
     }
@@ -148,7 +148,7 @@ void addXY2eventfile(EventFile* const evtfile, float* RefRA, float* RefDec, char
     if( *status == COL_NOT_FOUND ){
         fits_clear_errmsg();
         *status=EXIT_SUCCESS;
-        cy = evtfile->cra + 2;
+        cy = evtfile->cdec + 2;
         addCol2EventFile(evtfile, &cy, "Y", "J", "", status);
         CHECK_STATUS_VOID(*status);
     }
@@ -219,7 +219,7 @@ void addXY2eventfile(EventFile* const evtfile, float* RefRA, float* RefDec, char
         getEventFromFile(evtfile, (int)ii, event, status);
         CHECK_STATUS_BREAK(*status);
 
-        ImgPos pos = radec2xy( event, &wcs, status );
+        ImgPos pos = radec2xy(&(event->ra), &(event->dec), &wcs, status );
         CHECK_STATUS_BREAK(*status);
 
         // Save changes to eventfile
@@ -230,6 +230,130 @@ void addXY2eventfile(EventFile* const evtfile, float* RefRA, float* RefDec, char
     }
     // Release memory.
     freeEvent(&event);
+    wcsfree(&wcs);
+
+    if (*status == EXIT_SUCCESS) {
+        headas_chat(3, " ... adding X, Y coordinates successful!\n");
+    } else {
+        char msg[MAXMSG];
+        sprintf(msg,"*** ERROR occurred while adding X, Y coordinates to eventfile");
+        SIXT_ERROR(msg);
+        *status = EXIT_FAILURE;
+    }
+}
+
+void addXY2teseventfile(TesEventFile* const evtfile, float* RefRA, float* RefDec, char* Projection, int* const status) {
+
+    headas_chat(3, "add XY coordinates to event file ...\n");
+
+    // Determine WCS
+    struct wcsprm wcs = getRadec2xyWCS(RefRA, RefDec, Projection, status);
+    CHECK_STATUS_VOID(*status)
+
+    // Add 'X', 'Y' column to evtfile if necessary
+    int cx;
+    fits_get_colnum(evtfile->fptr, CASEINSEN, "X", &cx, status);
+    if( *status == COL_NOT_FOUND ){
+        fits_clear_errmsg();
+        *status=EXIT_SUCCESS;
+        cx = evtfile->decCol + 1;
+        addCol2TesEventFile(evtfile, &cx, "X", "J", "", status);
+        CHECK_STATUS_VOID(*status);
+    }
+
+    int cy;
+    fits_get_colnum(evtfile->fptr, CASEINSEN, "Y", &cy, status);
+    if( *status == COL_NOT_FOUND ){
+        fits_clear_errmsg();
+        *status=EXIT_SUCCESS;
+        cy = evtfile->decCol + 2;
+        addCol2TesEventFile(evtfile, &cy, "Y", "J", "", status);
+        CHECK_STATUS_VOID(*status);
+    }
+
+    // Update the WCS keywords in the output file.
+    char keyword[MAXMSG];
+    sprintf(keyword, "TCTYP%d", cx);
+    fits_update_key(evtfile->fptr, TSTRING, keyword, wcs.ctype[0],
+                    "projection type", status);
+    sprintf(keyword, "TCTYP%d", cy);
+    fits_update_key(evtfile->fptr, TSTRING, keyword, wcs.ctype[1],
+                    "projection type", status);
+    sprintf(keyword, "TCRVL%d", cx);
+    fits_update_key(evtfile->fptr, TDOUBLE, keyword, &wcs.crval[0],
+                    "reference value", status);
+    sprintf(keyword, "TCRVL%d", cy);
+    fits_update_key(evtfile->fptr, TDOUBLE, keyword, &wcs.crval[1],
+                    "reference value", status);
+    sprintf(keyword, "TCRPX%d", cx);
+    fits_update_key(evtfile->fptr, TFLOAT, keyword, &wcs.crpix[0],
+                    "reference point", status);
+    sprintf(keyword, "TCRPX%d", cy);
+    fits_update_key(evtfile->fptr, TFLOAT, keyword, &wcs.crpix[1],
+                    "reference point", status);
+    sprintf(keyword, "TCDLT%d", cx);
+    fits_update_key(evtfile->fptr, TDOUBLE, keyword, &wcs.cdelt[0],
+                    "pixel increment", status);
+    sprintf(keyword, "TCDLT%d", cy);
+    fits_update_key(evtfile->fptr, TDOUBLE, keyword, &wcs.cdelt[1],
+                    "pixel increment", status);
+    sprintf(keyword, "TCUNI%d", cx);
+    fits_update_key(evtfile->fptr, TSTRING, keyword, wcs.cunit[0],
+                    "axis units", status);
+    sprintf(keyword, "TCUNI%d", cy);
+    fits_update_key(evtfile->fptr, TSTRING, keyword, wcs.cunit[1],
+                    "axis units",status);
+    CHECK_STATUS_VOID(*status);
+
+    fits_update_key(evtfile->fptr, TSTRING, "REFXCTYP", wcs.ctype[0],
+                    "projection type", status);
+    fits_update_key(evtfile->fptr, TSTRING, "REFYCTYP", wcs.ctype[1],
+                    "projection type", status);
+    fits_update_key(evtfile->fptr, TSTRING, "REFXCUNI", wcs.cunit[0],
+                    "axis units", status);
+    fits_update_key(evtfile->fptr, TSTRING, "REFYCUNI", wcs.cunit[1],
+                    "axis units", status);
+    fits_update_key(evtfile->fptr, TFLOAT, "REFXCRPX", &wcs.crpix[0],
+                    "reference value", status);
+    fits_update_key(evtfile->fptr, TFLOAT, "REFYCRPX", &wcs.crpix[1],
+                    "reference value", status);
+    fits_update_key(evtfile->fptr, TDOUBLE, "REFXCRVL", &wcs.crval[0],
+                    "reference value", status);
+    fits_update_key(evtfile->fptr, TDOUBLE, "REFYCRVL", &wcs.crval[1],
+                    "reference value", status);
+    fits_update_key(evtfile->fptr, TDOUBLE, "REFXCDLT", &wcs.cdelt[0],
+                    "pixel increment", status);
+    fits_update_key(evtfile->fptr, TDOUBLE, "REFYCDLT", &wcs.cdelt[1],
+                    "pixel increment", status);
+    CHECK_STATUS_VOID(*status);
+
+
+    // Loop over all events in the input list.
+    long ii;
+    for (ii = 1; ii <= evtfile->nrows; ii++) {
+        // Get RA and Dec
+        double dnull=0;
+        double anynul=0;
+        double ra, dec;
+        fits_read_col(evtfile->fptr, TDOUBLE, evtfile->raCol, ii, 1, 1,
+                      &dnull, &ra, &anynul, status);
+        ra*=M_PI/180.;
+        fits_read_col(evtfile->fptr, TDOUBLE, evtfile->decCol, ii, 1, 1,
+                      &dnull, &dec, &anynul, status);
+        dec*=M_PI/180.;
+
+        CHECK_STATUS_BREAK(*status);
+
+        ImgPos pos = radec2xy(&ra, &dec, &wcs, status );
+        CHECK_STATUS_BREAK(*status);
+
+        // Save changes to eventfile
+        fits_write_col(evtfile->fptr, TLONG, cx, ii, 1, 1, &pos.x, status);
+        fits_write_col(evtfile->fptr, TLONG, cy, ii, 1, 1, &pos.y, status);
+        CHECK_STATUS_BREAK(*status);
+
+    }
+    // Release memory.
     wcsfree(&wcs);
 
     if (*status == EXIT_SUCCESS) {
