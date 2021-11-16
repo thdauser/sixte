@@ -1,3 +1,23 @@
+version [2.7.0]
+  - Update mac dependencies for new SIMPUT extlib versions
+  - Remove Mission, Instrument and Mode parameter from Sixte tools
+    and associated XML selection feature
+  - tesgenimpacts: Rename parameter "mode" to "opmode"
+  - Add python wrapper module (see test/e2e/python_wrapper)
+  - SIRENA update to version v.3.8.24
+  - xifupipeline
+    * Fix crosstalk energy shifts not being applied
+      to victim photons in TDM crosstalk
+    * Adds MXS implementation
+    * Make derivative crosstalk only apply to rows N+-1
+    * Added prop3 type TDM crosstalk - affects pixel in row N+2
+    * Removed implicit 1% scaling from TDM crosstalk - requires use
+      of new instrument files
+  - Add command-line interface to simulate auxbackground in runsixt
+    and athenawfisim (key BkgEventList). Can also simulate photon
+    background.
+  - Support X-IFU type event files in radec2xy
+
 version [2.6.3]
   - Fix numerical overflow error in XMM epic*_events tools
   - Make installation process compatible to zsh
