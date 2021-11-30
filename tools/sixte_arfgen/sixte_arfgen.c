@@ -272,12 +272,11 @@ void update_arf(ARFFile* arf_out, ARFCorr* arf_corr,
   // Loop over all ARF bins
   for (int bin_idx = 0; bin_idx < arf->NumberEnergyBins; bin_idx++) {
     // Get energies of this ARF bin
-    double e_low = arf->LowEnergy[bin_idx];
-    double e_hi = arf->HighEnergy[bin_idx];
+    double e_cent = 0.5*(arf->LowEnergy[bin_idx] + arf->HighEnergy[bin_idx]);
 
     // Calculate correction factor for this bin by interpolation
     double arf_corr_interp = gsl_interp_eval(interp, arf_corr->corr_energ,
-                               arf_corr->corr_fac, 0.5*(e_low+e_hi), acc);
+                               arf_corr->corr_fac, e_cent, acc);
 
     // Calculate corrected effective area
     specref[bin_idx] *= arf_corr_interp;
