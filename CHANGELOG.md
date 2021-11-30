@@ -1,3 +1,6 @@
+version [2.7.1]
+  - fix interpolation error for X-IFU ARFs in sixte_arfgen
+
 version [2.7.0]
   - Update mac dependencies for new SIMPUT extlib versions
   - Remove Mission, Instrument and Mode parameter from Sixte tools
