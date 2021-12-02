@@ -77,6 +77,15 @@ MXSparams* loadMXSparams(double mxs_frequency, double mxs_flash_duration,
   mxs_params->mxs_flash_duration = mxs_flash_duration;
   mxs_params->mxs_rate_det = mxs_rate_det;
 
+  // Check MXS parameter reasonableness
+  if (mxs_params->mxs_flash_duration > 1./mxs_params->mxs_frequency) {
+    char msg[MAXMSG];
+    snprintf(msg, sizeof(msg), "MXS flash duration (%e s) longer than time"
+             " difference between the flashes (%e s)\n",
+             mxs_params->mxs_flash_duration, 1./mxs_params->mxs_frequency);
+    SIXT_WARNING(msg);
+  }
+
   mxs_params->mxs_eventlist = loadMXSEvents(mxs_filename, status);
   mxs_params->mxs_img = loadMXSImage(mxs_filename, status);
 
