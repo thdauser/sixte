@@ -207,10 +207,10 @@ int phmxsgen(double tend, Impact* impact,
   // (while loop because we could have a flash interval without an mxs photon if
   // getNextImpactTime provides an impact time outside this interval)
   while (time_of_next_mxs_impact > *flash_end_time) {
-
-    time_of_last_mxs_impact = *flash_end_time + 1./mxs_params->mxs_frequency;
-    *flash_start_time = time_of_last_mxs_impact;
+    *flash_start_time += 1./mxs_params->mxs_frequency;
     *flash_end_time = *flash_start_time + mxs_params->mxs_flash_duration;
+
+    time_of_last_mxs_impact = *flash_start_time;
     time_of_next_mxs_impact = getNextImpactTime(time_of_last_mxs_impact,
                                                 mxs_params->mxs_rate_det,
                                                 status);
