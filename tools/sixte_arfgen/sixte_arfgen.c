@@ -54,6 +54,7 @@ int sixte_arfgen_main()
 
     // Read the parameters using PIL
     status = sixte_arfgen_getpar(&par);
+    CHECK_STATUS_BREAK(status);
 
     // Initialize the random number generator
     unsigned int seed = getSeed(par.Seed);
@@ -108,7 +109,7 @@ int sixte_arfgen_main()
     char arf_filepathname[MAXFILENAME];
 		strcpy(arf_filepathname, inst->filepath);
 		strcat(arf_filepathname, inst->tel->arf_filename);
-    
+
     arf_out = initARFFile(&par, arf_filepathname, &status);
     CHECK_STATUS_BREAK(status);
 
@@ -139,11 +140,14 @@ int sixte_arfgen_main()
 
   // Remove temporary event file
   if (access(par.eventlist_filename, F_OK) == 0) {
-    status = remove(par.eventlist_filename);
+    int tmp_status = remove(par.eventlist_filename);
+    if (tmp_status != 0) {
+      status = tmp_status;
+    }
   }
 
   if (EXIT_SUCCESS==status) {
-    headas_chat(3, "finished successfully!\n\n");
+    headas_chat(2, "finished successfully!\n\n");
     return(EXIT_SUCCESS);
   } else {
     return(EXIT_FAILURE);
@@ -233,6 +237,7 @@ void calc_arf_corr(ARFCorr* arf_corr, const struct ARF* const arf,
     long n_good_rows = -1;
     fits_find_rows(elf->fptr, par->regfilter, 1, elf->nrows, &n_good_rows,
                    row_status, status);
+    CHECK_STATUS_BREAK_WITH_FITSERROR(*status);
     assert( (n_good_rows >= 0) && (n_good_rows <= elf->nrows) );
 
     // Calculate correction factor for this energy bin
@@ -437,6 +442,7 @@ static void getWCSfromImage(char* ImageFile, char* Projection, float* RefRA,
   // Open ImageFile
   fitsfile* fptr;
   fits_open_file(&fptr, ImageFile, READONLY, status);
+  CHECK_STATUS_VOID(*status);
 
   // Read WCS keywords
   *RefRA = 5;
@@ -447,14 +453,20 @@ static void getWCSfromImage(char* ImageFile, char* Projection, float* RefRA,
   char ctype1[MAXMSG];
   fits_read_key(fptr, TSTRING, "CTYPE1", ctype1, NULL, status);
   if (strncmp(ctype1, "RA-", 3) != 0) {
-    SIXT_ERROR("CTYPE1 does not start with \"RA\"");
+    SIXT_ERROR("CTYPE1 keyword of the image does not start with \"RA\"");
+    *status = EXIT_FAILURE;
+    return;
   }
 
   // Find projection type (e.g., as in RA---TAN or RA---AIT)
   int idx = 2; // Start at first -
   while(ctype1[idx] == 45) idx++; // (45 is ASCII encoding for -)
   strcpy(Projection, &ctype1[idx]);
-  assert(strlen(Projection) == 3);
+  if(strlen(Projection) != 3) {
+    SIXT_ERROR("Failed to read projection type from image");
+    *status = EXIT_FAILURE;
+    return;
+  };
 }
 
 int sixte_arfgen_getpar(Parameters* const par) {
@@ -466,6 +478,10 @@ int sixte_arfgen_getpar(Parameters* const par) {
   query_simput_parameter_bool("clobber", &(par->clobber), &status);
   query_simput_parameter_file_name("ARFCorr", &(par->ARFCorr), &status);
   query_simput_parameter_file_name("XMLFile", &(par->XMLFile), &status);
+  if (status != EXIT_SUCCESS) {
+    SIXT_ERROR("Failed to read XMLFile parameter from command line");
+    return status;
+  }
   query_simput_parameter_double("MJDREF", &(par->MJDREF), &status);
   query_simput_parameter_int("n_photons", &(par->n_photons), &status);
   query_simput_parameter_double("photon_rate", &(par->photon_rate), &status);
@@ -504,6 +520,10 @@ int sixte_arfgen_getpar(Parameters* const par) {
   if ( strncasecmp(par->Projection, "none", 5) == 0 ) {
     // No projection specified, so read WCS keywords from image
     query_simput_parameter_file_name("ImageFile", &(par->ImageFile), &status);
+    if (status != EXIT_SUCCESS) {
+      SIXT_ERROR("Failed to read ImageFile parameter from command line");
+      return status;
+    }
     getWCSfromImage(par->ImageFile, par->Projection, &par->RefRA, &par->RefDec,
                     &status);
   } else {
@@ -513,6 +533,10 @@ int sixte_arfgen_getpar(Parameters* const par) {
 
   char* buf;
   query_simput_parameter_file_name("regfile", &buf, &status);
+  if (status != EXIT_SUCCESS) {
+    SIXT_ERROR("Failed to read regfile parameter from command line");
+    return status;
+  }
   // Save as regfilter, using appropriate syntax for fits row filtering
   sprintf(par->regfilter, "regfilter('%s')", buf);
   free(buf);

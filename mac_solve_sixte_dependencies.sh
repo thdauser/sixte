@@ -9,7 +9,7 @@
 install_prefix_simput=$1
 install_prefix_sixte=$2
 
-for tool in bin/athenawfisim bin/comabackpro bin/comadet bin/comaexp bin/comaimg bin/comaimgPM \
+for tool in bin/sixte_arfgen bin/athenawfisim bin/comabackpro bin/comadet bin/comaexp bin/comaimg bin/comaimgPM \
     bin/comaphovign bin/comarecon bin/epicmos1_events bin/epicmos2_events bin/ero_calevents \
     bin/ero_exposure bin/ero_fits2tm bin/ero_rawevents bin/ero_vis bin/erosim bin/evpat \
     bin/exposure_map bin/fudgexp bin/gendetsim bin/gennoisespec bin/gradeddetection \
