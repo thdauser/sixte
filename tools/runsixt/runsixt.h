@@ -23,6 +23,9 @@
 #ifndef RUNSIXT_H
 #define RUNSIXT_H 1
 
+#define TOOLSUB runsixt_main
+#include "sixt_main.c"
+
 #include "sixt.h"
 
 #include "attitude.h"
