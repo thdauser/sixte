@@ -32,6 +32,7 @@
  * Header files.                                                              *
  ******************************************************************************/
 #include "headas.h"
+#include <sixteconfig.h>
 /******************************************************************************/
 
 int sixt_argc;
@@ -54,7 +55,7 @@ extern "C" {
 }
 #endif
 
-// TODO: why do we need this??
+// TOOLSUB must be defined in the tool using sixt_main.c
 #ifndef TOOLSUB
 #error: TOOLSUB is not defined
 #endif
