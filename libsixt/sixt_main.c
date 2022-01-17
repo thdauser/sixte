@@ -67,6 +67,8 @@ int main(int argc, char **argv) {
 
   sixt_argc=argc;
   sixt_argv=argv;
+    
+  printf("SIXTE version %s\n",PACKAGE_VERSION);
 
   status = headas_init(argc, argv);
 
