@@ -884,7 +884,6 @@
      gsl_vector_complex_free(vector_aux1); vector_aux1 = 0;
      //cout<<"cnt: "<<cnt<<endl;
      
-     //cout<<"cnt: "<<cnt<<endl;
      if (cnt == 0)
      {
          message = "Pulse-free intervals not found";
@@ -963,7 +962,7 @@
          gsl_matrix_view tempm;
          gsl_matrix *noiseIntervals_weightPoints;
          gsl_matrix *weightMatrix;
-         
+
          if (NumMeanSamples >= par.nintervals)
          {
              for (int i=0;i<weightpoints->size;i++)
@@ -975,8 +974,7 @@
                  gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
                  
                  if (par.matrixSize == 0){ //do all sizes
-                     //weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
-                     gsl_matrix_set_all(weightMatrix,1);
+                     weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
                          for (int k=0;k<gsl_vector_get(weightpoints,i);k++)
@@ -1014,7 +1012,6 @@
                  
                  if (par.matrixSize == 0){ //do all sizes
                      
-                     //cout<<"par.matrixSize=0"<<endl;
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -2398,7 +2395,7 @@
   *
   * <DiDj> = E[DiDj] = (1/N)sum(p=1,N){(Di^p)(Dj^p)}
   * 
-  * 		  |<D1D1> <D1D2>...<D1Dn>|
+  * 		        |<D1D1> <D1D2>...<D1Dn>|
   *  Vij = <DiDj> = |<D2D1> <D2D2>...<D2Dn>|	where n is the pulse-free interval length     V => (nxn)
   *                 |...                   |
   *                 |<DnD1> <DnD2>...<DnDn>|
@@ -2427,7 +2424,7 @@
      gsl_matrix *covariance = gsl_matrix_alloc((*weight)->size1,(*weight)->size2);
      
      /*clock_t t;
-      *        t=clock();*/
+     t=clock();*/
      // Elements of the diagonal of the covariance matrix
      for (int i=0;i<intervalMatrix->size2;i++)
      {
@@ -2447,11 +2444,11 @@
          elementValue1 = 0.0;
          elementValue2 = 0.0;
      }
-     /*cout<<"Matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size1<<endl;
-      *        t = clock() - t;
-      *        cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;*/
+     /*cout<<"Matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
+     t = clock() - t;
+     cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
      
-     //t = clock();
+     t = clock();*/
      // Other elements
      for (int i=0;i<intervalMatrix->size2;i++)
      {
@@ -2479,21 +2476,21 @@
          }
      }
      
-     /*cout<<"Elements out of the matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size1<<endl;
-      *        t = clock() - t;
-      *        cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;*/
+     /*cout<<"Elements out of the matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
+     t = clock() - t;
+     cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
      
-     //t = clock();
+     t = clock();*/
      // Calculate the weight matrix
      // It is not necessary to check the allocation because 'covarianze' size must already be > 0
-     gsl_matrix *covarianceaux = gsl_matrix_alloc(covariance->size1,covariance->size2);
-     gsl_matrix_memcpy(covarianceaux,covariance);
-     /*cout<<"Preparation to the inversion ended "<<covariance->size1<<"x"<<covariance->size1<<endl;
-      *        t = clock() - t;
-      *        cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
-      *        t = clock();*/
-     gsl_linalg_LU_decomp(covarianceaux, perm, &s);
-     if (gsl_linalg_LU_invert(covarianceaux, perm, *weight) != 0) 
+     //gsl_matrix *covarianceaux = gsl_matrix_alloc(covariance->size1,covariance->size2);
+     //gsl_matrix_memcpy(covarianceaux,covariance);
+     /*cout<<"Preparation to the inversion ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
+     t = clock() - t;
+     cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
+     t = clock();*/
+     gsl_linalg_LU_decomp(covariance, perm, &s);
+     if (gsl_linalg_LU_invert(covariance, perm, *weight) != 0) 
      {
          sprintf(valERROR,"%d",__LINE__-2);
          string str(valERROR);
@@ -2502,9 +2499,8 @@
          EP_PRINT_ERROR(message,EPFAIL);	return(EPFAIL);
      }
      
-     gsl_matrix_free(covarianceaux);
-     gsl_matrix_free(covariance);
-     gsl_permutation_free(perm);
+     gsl_matrix_free(covariance); covariance=0;
+     gsl_permutation_free(perm); perm=0;
      
      return (EPOK);
  }
