@@ -1,21 +1,22 @@
-# SIXTE CI jobs
+# SIXTE CI/CD configuration
 #
-# build, test, and deploy SIXTE scripts
-# build:
-# test:  run 'make test' to test sixte tools
-# deploy:
+# Triggers and jobs that are then run:
+# * Changes pushed to any branch -> build, test
+# * Changes pushed to master     -> build, test, deploy
+# * Tag pushed to any branch     -> build, update
+# * Triggerd by SIMPUT pipeline  -> build, test
 
-before_script:
-  - source /software/profile.in
-  - export SIMPUT=/userdata/data/sixte/simputsoft
-  - export SIXTE=`pwd`
-  - export HEADASNOQUERY=
-  - export HEADASPROMPT=/dev/null
-  - source /data/system/software/python/anaconda.sh
 
-after_script:
-  # Remove artifacts from failed make distcheck
-  - chmod u+w -R sixte-*
+default:
+  before_script:
+    - source /software/profile.in
+    - export SIMPUT=/userdata/data/sixte/simputsoft
+    - export SIXTE=`pwd`
+    - export HEADASNOQUERY=
+    - export HEADASPROMPT=/dev/null
+  after_script:
+    # Remove artifacts from failed make distcheck
+    - chmod u+w -R sixte-*
 
 stages:
   - build
@@ -27,12 +28,12 @@ build:
   stage: build
   script:
     - autoreconf --install --force
-    - ./configure --prefix=$SIXTE --with-simput=$SIMPUT --with-gsl-prefix=/data/system/software/gsl/current/BUILD
+    - ./configure --prefix=$SIXTE --with-simput=$SIMPUT
     - make
     - make install
-  only:
-    - master
-    - tags
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "trigger"
   artifacts:
     expire_in: 30 min
     paths:
@@ -43,19 +44,24 @@ test:
   stage: test
   script:
     - . $SIXTE/sixte-install.sh
+    - module load conda
+    - conda activate
     - ln -sf /home/sixte/instruments.git/instruments share/sixte/instruments
     - make check
     - make test
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "trigger"
 
-provide:
+deploy:
   stage: deploy
   dependencies: []
   script:
     - git push /data/git/sixt.git HEAD:master
-  only:
-    - master
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
 
 update:
   stage: update
@@ -64,5 +70,5 @@ update:
   script:
     - make distcheck
     - rsync -vhu sixte-?.?.?*.tar.gz /data/www/sixte_archive/sixte/
-  only:
-    - tags
+  rules:
+    - if: $CI_COMMIT_TAG
