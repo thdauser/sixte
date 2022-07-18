@@ -5,13 +5,22 @@
 # * Changes pushed to master     -> build, test, deploy
 # * Tag pushed to any branch     -> build, update
 # * Triggerd by SIMPUT pipeline  -> build, test
+#
+# Will use SIMPUT at /userdata/data/sixte/simputsoft by default, or at the
+# SIMPUT GitLab builds directory if USE_SIMPUT_GITLAB_BUILD set to "true" (e.g.,
+# when triggered by SIMPUT pipeline).
 
 
 default:
   before_script:
     - source /software/profile.in
-    - export SIMPUT=/userdata/data/sixte/simputsoft
     - export SIXTE=`pwd`
+    - >
+      if [[ "$USE_SIMPUT_GITLAB_BUILD" == "true" ]]; then
+        export SIMPUT=${SIXTE}/../simput
+      else
+        export SIMPUT=/userdata/data/sixte/simputsoft
+      fi
     - export HEADASNOQUERY=
     - export HEADASPROMPT=/dev/null
   after_script:
@@ -33,12 +42,11 @@ build:
     - make install
   rules:
     - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "trigger"
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
   artifacts:
     expire_in: 30 min
     paths:
       - ./*
-
 
 test:
   stage: test
@@ -53,7 +61,7 @@ test:
     - if: $CI_COMMIT_TAG
       when: never
     - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "trigger"
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
 
 deploy:
   stage: deploy
@@ -61,6 +69,8 @@ deploy:
   script:
     - git push /data/git/sixt.git HEAD:master
   rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
     - if: $CI_COMMIT_BRANCH == "master"
 
 update:
