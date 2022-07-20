@@ -14,6 +14,7 @@
 default:
   before_script:
     - source /software/profile.in
+    - module load heasoft
     - export SIXTE=`pwd`
     - >
       if [[ "$USE_SIMPUT_GITLAB_BUILD" == "true" ]]; then
@@ -37,7 +38,7 @@ build:
   stage: build
   script:
     - autoreconf --install --force
-    - ./configure --prefix=$SIXTE --with-simput=$SIMPUT
+    - ./configure --prefix=$SIXTE --with-simput=$SIMPUT --with-gsl-prefix=$HEADAS # be explicit about gsl library
     - make
     - make install
   rules:
@@ -52,6 +53,8 @@ test:
   stage: test
   script:
     - . $SIXTE/sixte-install.sh
+    - module load isis
+    - module load Localmodels/relxill
     - module load conda
     - conda activate
     - ln -sf /home/sixte/instruments.git/instruments share/sixte/instruments
@@ -62,6 +65,10 @@ test:
       when: never
     - if: $CI_PIPELINE_SOURCE == "push"
     - if: $CI_PIPELINE_SOURCE == "pipeline"
+  artifacts:
+    expire_in: 30 min
+    paths:
+      - ./test/*
 
 deploy:
   stage: deploy
