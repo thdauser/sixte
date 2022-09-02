@@ -207,10 +207,6 @@
              }
              else if ((pulse_length > oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
              {
-                 /*if (preBuffer > oflength)
-                 {
-                    EP_EXIT_ERROR("It has no sense preBuffer>OFLength",EPFAIL);
-                 }*/
                  pulse_length = oflength;
              }
              largeFilter = pulse_length;
@@ -222,23 +218,8 @@
              EP_EXIT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
          }
          
-         //double double_oflength = (double) oflength;
-         //double log2_double_oflength = log2(double_oflength);            
-         /*if ((opmode == 1) && (oflib == 1) && (strcmp(oflength_strategy,"FIXED") == 0) && ((log2_double_oflength - (int) log2_double_oflength) != 0))
-         {
-             EP_EXIT_ERROR("If OFLib=yes, OFLength must be a power of 2",EPFAIL);
-         }*/
-         
          if ((opmode == 1) && (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration))
          {
-             /*if ((oflib == 1) 
-                 && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0))
-                 && (pulse_length != reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration) 
-                 && (reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration != -999))
-             {
-                 EP_EXIT_ERROR("Templates length in the library file must be at least as the pulse length or equal to largeFilter",EPFAIL);
-             }
-             else if ((oflib == 0)*/
              if ((oflib == 0)
                  && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
              {
@@ -730,6 +711,8 @@
          
      // Detect pulses in record
      log_trace("Before runDetect");
+     if (!scheduler::get()->is_threading())
+         trig_reclength = record->trigger_size;
      runDetect(record, trig_reclength,lastRecord, nRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
      log_trace("After runDetect");
      
@@ -1656,11 +1639,11 @@
      {
          // It is not necessary to check the allocation because 'template_duration' has been checked previously
          library_collection->pulse_templates[it].ptemplate    		= gsl_vector_alloc(template_duration);
-         library_collection->pulse_templates_filder[it].ptemplate    	= gsl_vector_alloc(template_duration);
+         library_collection->pulse_templates_filder[it].ptemplate   = gsl_vector_alloc(template_duration);
          library_collection->pulse_templates_B0[it].ptemplate 		= gsl_vector_alloc(template_duration);
          library_collection->matched_filters[it].mfilter      		= gsl_vector_alloc(template_duration);
          library_collection->matched_filters_B0[it].mfilter   		= gsl_vector_alloc(template_duration);
-         
+
          library_collection->pulse_templatesMaxLengthFixedFilter[it].template_duration = template_durationPLSMXLFF;
          library_collection->pulse_templates[it].template_duration		= template_duration;
          library_collection->pulse_templates_filder[it].template_duration    	= -1;
@@ -2230,7 +2213,7 @@
          }
          
          library_collection->nfixedfilters = posti->size;
-         
+
          int lengthALL_F = 0;
          int lengthALL_T = 0;         
 
@@ -2884,6 +2867,7 @@
          char str_length[125];
          obj.iniRow = 1;
          obj.endRow = ntemplates;
+         strcpy(obj.nameTable,"PRCLOFWM");
          int index = 0;
          
          // PRCLOFWM HDU
@@ -2911,39 +2895,56 @@
          library_collection->nfixedfilters = nOFs;
          
          int lengthALL_PRCLOFWM = 0;
-         for (int i=0;i<nOFs;i++)
+         if (preBuffer == 0)
          {
-             if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
-             {
-                 if (i==0)	lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + template_durationPLSMXLFF*2;
-                 else  		lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + pow(2,floor(log2(template_duration))-i+1)*2;
-             }
-             else    lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + pow(2,floor(log2(template_duration))-i)*2;
+            for (int i=0;i<nOFs;i++)
+            {
+                if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                {
+                    if (i==0)	lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + template_durationPLSMXLFF*2;
+                    else  		lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + pow(2,floor(log2(template_duration))-i+1)*2;
+                }
+                else    lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + pow(2,floor(log2(template_duration))-i)*2;
+            }
          }
-         
-         strcpy(obj.nameTable,"PRCLOFWM");
-         
+         else
+         {
+            for (int i=0;i<posti->size;i++)
+            {
+                lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + gsl_vector_get(posti,i);
+            }
+            lengthALL_PRCLOFWM = lengthALL_PRCLOFWM*2;
+         }
+
          gsl_matrix *matrixALL_PRCLOFWMx = gsl_matrix_alloc(ntemplates,lengthALL_PRCLOFWM);
          gsl_matrix *matrixAux_PRCLOFWMx = NULL;
          for (int i=0;i<nOFs;i++)
          {
-             if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+             if (preBuffer == 0)
              {
-                 if (i==0)
-                 {
-                     snprintf(str_length,125,"%d",template_durationPLSMXLFF);
-                     matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF*2);
-                 }
-                 else
-                 {
-                     snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
-                     matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1)*2);
-                 }
+                if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                {
+                    if (i==0)
+                    {
+                        snprintf(str_length,125,"%d",template_durationPLSMXLFF);
+                        matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,template_durationPLSMXLFF*2);
+                    }
+                    else
+                    {
+                        snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i+1)));
+                        matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i+1)*2);
+                    }
+                }
+                else
+                {
+                    snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
+                    matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
+                }
              }
-             else
+             else if (preBuffer == 1)
              {
-                 snprintf(str_length,125,"%d",(int) (pow(2,floor(log2(template_duration))-i)));
-                 matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
+                 snprintf(str_length,125,"%d",(int) (gsl_vector_get(posti,i)));
+                 matrixAux_PRCLOFWMx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i)*2);
              }
              
              strcpy(obj.nameCol,(string("OFW")+string(str_length)).c_str());
@@ -2961,12 +2962,19 @@
                  }
              }
              
-             if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+             if (preBuffer == 0)
              {
-                 if (i==0)	index = index + template_durationPLSMXLFF*2;
-                 else		index = index + pow(2,floor(log2(template_duration))-i+1)*2;
+                if ((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19))
+                {
+                    if (i==0)	index = index + template_durationPLSMXLFF*2;
+                    else		index = index + pow(2,floor(log2(template_duration))-i+1)*2;
+                }
+                else    index = index + pow(2,floor(log2(template_duration))-i)*2;
              }
-             else    index = index + pow(2,floor(log2(template_duration))-i)*2;
+             else
+             {
+                 index = index + gsl_vector_get(posti,i)*2;
+             }
              
              gsl_matrix_free(matrixAux_PRCLOFWMx);
          }

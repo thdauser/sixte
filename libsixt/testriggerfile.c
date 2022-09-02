@@ -218,7 +218,6 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 	fits_get_colnum(file->fptr, CASEINSEN,"ADC", &(file->trigCol), status);
     int colnum = file->trigCol;
     fits_get_colnum(file->fptr, CASEINSEN,"EXTEND", &(file->extendCol), status);
-    //printf("%s %d %s","statusEXTEND: ",*status,"\n");
     if (*status != 0) *status = 0; // status!=0 if no EXTEND column
     
 	fits_get_colnum(file->fptr, CASEINSEN,"PIXID", &(file->pixIDCol), status);
@@ -246,8 +245,6 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
             *status = 0;
         }
     }
-    //printf("%s %d %s","deltat_exists: ",deltat_exists,"\n");
-    //printf("%s %f %s","file->delta_t: ",file->delta_t,"\n");
     double tclock;
     if (deltat_exists == 0)
     {
@@ -372,7 +369,6 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
             strcat(characters_after_paren,each_character_after_paren); 
         }
         file->trigger_size = atoi(characters_after_paren);
-        //printf("%s %d %s","eventsz: ",file->trigger_size,"\n");
     }
     else    // There is not a parenthesis
     {   
@@ -381,9 +377,7 @@ TesTriggerFile* openexistingTesTriggerFile(const char* const filename,SixtStdKey
 
         ret = strtol(readTFORMADC, &ptr, 10);
         file->trigger_size = ret;
-        //printf("%s %d %s","eventsz: ",file->trigger_size,"\n");
     }
-    
     
     return(file);
 }
@@ -535,7 +529,6 @@ int getNextRecord(TesTriggerFile* const file,TesRecord* record,int *lastRecord,i
                 rowToRead++;    
             }
         }
-        
         
         /*fits_read_col(file->fptr, TDOUBLE, file->timeCol,
                       file->row,1,1,0,&(record->time), &anynul,status);

@@ -1542,15 +1542,20 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                     }
                 }
-				
+
 				gsl_vector_memcpy(modelFound_aux,modelAux);
+                //cout<<"find_model_energiesD"<<endl;
 				gsl_vector_free(modelAux); modelAux = 0;
 
 				break;
 			}
 		}
-		
-		gsl_matrix_free(pulse_templatesMaxLengthFixedFilter_B0); pulse_templatesMaxLengthFixedFilter_B0 = 0;
+
+        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        {
+            gsl_matrix_free(pulse_templatesMaxLengthFixedFilter_B0); pulse_templatesMaxLengthFixedFilter_B0 = 0;
+        }
+
 	}
 
 	gsl_vector_view temp;
@@ -1633,7 +1638,7 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 				}
 				
 				gsl_vector_free(modelA); modelA = 0;
-                                gsl_vector_free(modelB); modelB = 0;
+                gsl_vector_free(modelB); modelB = 0;
 
 				break;
 			}
@@ -1706,7 +1711,7 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 					EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
 				}
 				gsl_vector_free(modelA); modelA = 0;
-                                gsl_vector_free(modelB); modelB = 0;
+                gsl_vector_free(modelB); modelB = 0;
 
 
 				break;
@@ -1898,7 +1903,7 @@ int findPulsesCAL
 
 		gsl_vector_free(Lbgsl); Lbgsl = 0;
 		gsl_vector_free(Bgsl); Bgsl = 0;
-                gsl_vector_free(sigmagsl); sigmagsl = 0;
+        gsl_vector_free(sigmagsl); sigmagsl = 0;
 	}
 	
 	message.clear();

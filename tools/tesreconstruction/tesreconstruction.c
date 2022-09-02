@@ -805,7 +805,6 @@ int tesreconstruction_main() {
                             }
                         
                             //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
-                            //printf("%s %d %s","startRecordGroup = ",startRecordGroup,"\n");
                             reconstructRecordSIRENA(record,trig_reclength, event_list,reconstruct_init_sirena,
                                                     lastRecord, startRecordGroup, &pulsesAll, &optimalFilter, &status);
                     }

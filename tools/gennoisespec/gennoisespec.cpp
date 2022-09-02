@@ -963,17 +963,22 @@
          gsl_matrix *noiseIntervals_weightPoints;
          gsl_matrix *weightMatrix;
 
+	 cout<<"NumMeanSamples: "<<NumMeanSamples<<endl;
+	 cout<<"NumMeanSamples_afterRm: "<<NumMeanSamples_afterRm<<endl;
+         cout<<"par.nintervals: "<<par.nintervals<<endl;
          if (NumMeanSamples >= par.nintervals)
          {
+	     cout<<"If1"<<endl;
              for (int i=0;i<weightpoints->size;i++)
              {	
-                 weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
+	         weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
                  noiseIntervals_weightPoints = gsl_matrix_alloc(cnt,gsl_vector_get(weightpoints,i));
                  
                  tempm = gsl_matrix_submatrix(noiseIntervals,0,0,cnt,gsl_vector_get(weightpoints,i));
                  gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
                  
                  if (par.matrixSize == 0){ //do all sizes
+		                    cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -986,6 +991,7 @@
                      gsl_matrix_free(weightMatrix);
                      
                  }else if (gsl_vector_get(weightpoints,i) == par.matrixSize){ // do only input param size
+		                    cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -1002,6 +1008,7 @@
          }
          else
          {
+	   	     cout<<"If2"<<endl;
              for (int i=0;i<weightpoints->size;i++)
              {	
                  weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
@@ -1012,6 +1019,7 @@
                  
                  if (par.matrixSize == 0){ //do all sizes
                      
+                     //cout<<"par.matrixSize=0"<<endl;
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -2423,8 +2431,8 @@
      
      gsl_matrix *covariance = gsl_matrix_alloc((*weight)->size1,(*weight)->size2);
      
-     /*clock_t t;
-     t=clock();*/
+     clock_t t;
+     t=clock();
      // Elements of the diagonal of the covariance matrix
      for (int i=0;i<intervalMatrix->size2;i++)
      {
@@ -2444,11 +2452,11 @@
          elementValue1 = 0.0;
          elementValue2 = 0.0;
      }
-     /*cout<<"Matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
+     cout<<"Matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
      t = clock() - t;
      cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
      
-     t = clock();*/
+     t = clock();
      // Other elements
      for (int i=0;i<intervalMatrix->size2;i++)
      {
@@ -2476,19 +2484,19 @@
          }
      }
      
-     /*cout<<"Elements out of the matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
+     cout<<"Elements out of the matrix diagonal ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
      t = clock() - t;
      cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
      
-     t = clock();*/
+     t = clock();
      // Calculate the weight matrix
      // It is not necessary to check the allocation because 'covarianze' size must already be > 0
      //gsl_matrix *covarianceaux = gsl_matrix_alloc(covariance->size1,covariance->size2);
      //gsl_matrix_memcpy(covarianceaux,covariance);
-     /*cout<<"Preparation to the inversion ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
+     cout<<"Preparation to the inversion ended "<<covariance->size1<<"x"<<covariance->size2<<endl;
      t = clock() - t;
      cout<<"Consumed "<<((float)t)/CLOCKS_PER_SEC<<" sec"<<endl;
-     t = clock();*/
+     t = clock();
      gsl_linalg_LU_decomp(covariance, perm, &s);
      if (gsl_linalg_LU_invert(covariance, perm, *weight) != 0) 
      {
@@ -2499,6 +2507,7 @@
          EP_PRINT_ERROR(message,EPFAIL);	return(EPFAIL);
      }
      
+     //gsl_matrix_free(covarianceaux); covarianceaux=0;
      gsl_matrix_free(covariance); covariance=0;
      gsl_permutation_free(perm); perm=0;
      
