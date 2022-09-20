@@ -3654,7 +3654,17 @@ int shift_m(gsl_vector *vectorin, gsl_vector *vectorout, int m)
  * Mi^p: Value of the ith-sample of the model p (model='pulseaverage')  Mi = <Si> = (1/N)sum(p=1,N){Si^p}
  * N: Number of non piled-up pulses
  * Di = Si - Mi
- * <DiDj> = E[(Si-Mi)(Sj-Mj)] = (1/N)sum(p=1,N){(Si^p-Mi^p)(Sj^p-Mj^p)}
+ *       (i)
+ * <DiDj> = E[(Si-Mi)(Sj-Mj)] - E[Si-Mi]E[Sj-Mj] =
+ *       (ii)
+ *        = (1/N)sum(p=1,N){(Si^p-Mi^p)(Sj^p-Mj^p)} - (E[Si]-Mi)(E[Sj]-Mj) =
+ *       (iii)
+ *        = (1/N)sum(p=1,N){(Si^p-Mi^p)(Sj^p-Mj^p)}
+ *
+ * (i) Var(X) = <X> = E[(X-E[X])^2] = E[X^2] - (E[X])^2; E[X] = (1/N)sum(i=1,N){(xi}
+ * (ii) E[Mi] = (1/Number of models)sum{Mi} = Mi; Average of the i-th sample of all the models = i-th sample of the  model (only one model)
+ * (iii) E[Si] = Mi (average of i-th samples of all the pulses is the i-th sample of the model)
+ *
  * 		           |<D1D1> <D1D2>...<D1Dn>|
  *  Vij = <DiDj> = |<D2D1> <D2D2>...<D2Dn>|	where n is the pulse length     V => (nxn)
  *                 |...                   |
@@ -4960,7 +4970,7 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
                 EP_PRINT_ERROR(message,EPFAIL);
             }
             gsl_vector_memcpy(matchedfiltersSHORT,&temp.vector);
-            
+
             // Calculate the optimal filter
             if (calculus_optimalFilter (0, 0, reconstruct_init->opmode, matchedfiltersSHORT, matchedfiltersSHORT->size, samprate, runF0orB0val, reconstruct_init->noise_spectrum->noisefreqs, reconstruct_init->noise_spectrum->noisespec, &optimalfilter_x, &optimalfilter_f_x, &optimalfilter_FFT_x, &optimalfilter_FFT_complex_x))
             {
@@ -8375,7 +8385,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                     // Get the filter
                     if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                     {
-                        if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Ealpha_lowres, &Ebeta_lowres))
+                        if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Ealpha_lowres, &Ebeta_lowres, 1, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_optimalfilter for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -8383,7 +8393,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                     }
                     else
                     {
-                        if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres))
+                        if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres, 1, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -8501,7 +8511,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                         {
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                if (find_matchedfilter(runF0orB0val, (*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_matchedfilter(runF0orB0val, (*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8509,7 +8519,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_matchedfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta))
+                                if (find_matchedfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8520,7 +8530,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                         {
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                if (find_matchedfilter(runF0orB0val, energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_matchedfilter(runF0orB0val, energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8528,7 +8538,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_matchedfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta))
+                                if (find_matchedfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8588,7 +8598,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                         {
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8596,7 +8606,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab,&Ealpha, &Ebeta))
+                                if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab,&Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8607,7 +8617,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                         {	
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                if (find_optimalfilter(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_optimalfilter(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8615,7 +8625,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_optimalfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta))
+                                if (find_optimalfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -8639,7 +8649,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                     PRCLOFWM = gsl_matrix_alloc(2,resize_mf);
                     if (numiteration == 0)
                     {
-                        if (find_prclofwm((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta))
+                        if (find_prclofwm((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_prclofwm";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -8647,7 +8657,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                     }
                     else
                     {
-                        if (find_prclofwm(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta))
+                        if (find_prclofwm(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_prclofwm";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -8659,7 +8669,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                     if (numiteration == 0)
                     {
                         // Get the indexes of the two energies which straddle the pulse
-                        if (find_Esboundary((*pulsesInRecord)->pulses_detected[i].maxDER,(*reconstruct_init)->library_collection->maxDERs,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta))
+                        if (find_Esboundary((*pulsesInRecord)->pulses_detected[i].maxDER,(*reconstruct_init)->library_collection->maxDERs,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_Esboundary for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -8668,7 +8678,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                     else
                     {
                         // Get the indexes of the two energies which straddle the pulse
-                        if (find_Esboundary(energy,(*reconstruct_init)->library_collection->energies,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta))
+                        if (find_Esboundary(energy,(*reconstruct_init)->library_collection->energies,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_Esboundary for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -8735,7 +8745,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                         Pab = gsl_vector_alloc(resize_mf);
                         if (numiteration == 0)
                         {
-                            if (find_prclwn((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta))
+                            if (find_prclwn((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                             {
                                 message = "Cannot run routine find_prclwn";
                                 EP_EXIT_ERROR(message,EPFAIL);
@@ -8743,7 +8753,7 @@ void runEnergy(TesRecord* record, int nrecord, int trig_reclength, ReconstructIn
                         }
                         else
                         {
-                            if (find_prclwn(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta))
+                            if (find_prclwn(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                             {
                                 message = "Cannot run routine find_prclwn";
                                 EP_EXIT_ERROR(message,EPFAIL);
@@ -9355,7 +9365,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                     // Filter
                     if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                     {
-                        if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Ealpha_lowres, &Ebeta_lowres))
+                        if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Ealpha_lowres, &Ebeta_lowres, 1, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_optimalfilter for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -9363,7 +9373,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                     }
                     else
                     {
-                        if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres))
+                        if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl_lowres, &Pab_lowres,&Ealpha_lowres, &Ebeta_lowres, 1, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -9498,7 +9508,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                         {
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                if (find_matchedfilter(runF0orB0val, (*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_matchedfilter(runF0orB0val, (*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9506,7 +9516,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_matchedfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta))
+                                if (find_matchedfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9517,7 +9527,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                         {
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                if (find_matchedfilter(runF0orB0val, energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_matchedfilter(runF0orB0val, energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9525,7 +9535,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_matchedfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta))
+                                if (find_matchedfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_matchedfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9589,7 +9599,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                         {
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
-                                if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_optimalfilter((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9597,7 +9607,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab,&Ealpha, &Ebeta))
+                                if (find_optimalfilterDAB((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &filtergsl, &Pab,&Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9609,7 +9619,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                             if (strcmp((*reconstruct_init)->OFInterp,"MF") == 0)
                             {
                                 
-                                if (find_optimalfilter(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta))
+                                if (find_optimalfilter(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilter for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9617,7 +9627,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                             }
                             else //(*reconstruct_init)->OFInterp = DAB
                             {
-                                if (find_optimalfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta))
+                                if (find_optimalfilterDAB(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &filtergsl, &Pab, &Ealpha, &Ebeta, 0, (*reconstruct_init)->library_collection->margin))
                                 {
                                     message = "Cannot run routine find_optimalfilterDAB for filter interpolation";
                                     EP_EXIT_ERROR(message,EPFAIL);
@@ -9641,7 +9651,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                     PRCLOFWM = gsl_matrix_alloc(2,resize_mf);
                     if (numiteration == 0)
                     {
-                        if (find_prclofwm((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta))
+                        if (find_prclofwm((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_prclofwm";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -9649,7 +9659,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                     }
                     else
                     {
-                        if (find_prclofwm(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta))
+                        if (find_prclofwm(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLOFWM, &Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_prclofwm";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -9661,7 +9671,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                     if (numiteration == 0)
                     {
                         // Get the indexes of the two energies which straddle the pulse
-                        if (find_Esboundary((*pulsesInRecord)->pulses_detected[i].maxDER,(*reconstruct_init)->library_collection->maxDERs,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta))
+                        if (find_Esboundary((*pulsesInRecord)->pulses_detected[i].maxDER,(*reconstruct_init)->library_collection->maxDERs,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_Esboundary for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -9670,7 +9680,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                     else
                     {
                         // Get the indexes of the two energies which straddle the pulse
-                        if (find_Esboundary(energy,(*reconstruct_init)->library_collection->energies,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta))
+                        if (find_Esboundary(energy,(*reconstruct_init)->library_collection->energies,(*reconstruct_init),&indexEalpha,&indexEbeta,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                         {
                             message = "Cannot run routine find_Esboundary for filter interpolation";
                             EP_EXIT_ERROR(message,EPFAIL);
@@ -9737,7 +9747,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                         Pab = gsl_vector_alloc(resize_mf);
                         if (numiteration == 0)
                         {
-                            if (find_prclwn((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta))
+                            if (find_prclwn((*pulsesInRecord)->pulses_detected[i].maxDER, (*reconstruct_init)->library_collection->maxDERs, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                             {
                                 message = "Cannot run routine find_prclwn";
                                 EP_EXIT_ERROR(message,EPFAIL);
@@ -9745,7 +9755,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                         }
                         else
                         {
-                            if (find_prclwn(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta))
+                            if (find_prclwn(energy, (*reconstruct_init)->library_collection->energies, (*reconstruct_init), &PRCLWN, &Pab,&Ealpha, &Ebeta, (*reconstruct_init)->library_collection->margin))
                             {
                                 message = "Cannot run routine find_prclwn";
                                 EP_EXIT_ERROR(message,EPFAIL);
@@ -10469,8 +10479,9 @@ int interpolatePOS (gsl_vector *x_in, gsl_vector *y_in, long size, double step, 
  * - matchedfilterFound: GSL vector with the matched filter selected
  * - Ealpha: Energy (in eV) which straddle the 'maxDER' in the lower limit
  * - Ebeta: Energy (in eV) which straddle the 'maxDER' in the higher limit
+ * - margin: Margin to be applied when several energies in the library to choose the proper filter (hardcoded in 'LibraryCollection' in 'integraSIRENA.cpp')
  ****************************************/
-int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound, double *Ealpha, double *Ebeta)
+int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound, double *Ealpha, double *Ebeta, double margin)
 {
     string message = "";
     char valERROR[256];
@@ -10509,7 +10520,8 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
         EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
     }
     
-    if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
+    //if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
+    if (maxDER < (gsl_vector_get(maxDERs_LIB1row,0)-gsl_vector_get(maxDERs_LIB1row,0)*margin/100.0))
     {
         if (reconstruct_init->filtEev == 0)
         {
@@ -10526,7 +10538,8 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
         
         *Ealpha = 0.0;
     }
-    else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
+    //else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
+    else if (maxDER > (gsl_vector_get(maxDERs_LIB1row,nummodels-1)+gsl_vector_get(maxDERs_LIB1row,nummodels-1)*margin/100.0))
     {
         if (reconstruct_init->filtEev == 0)
         {
@@ -10557,7 +10570,8 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
                 
                 break;
             }
-            else if ((maxDER > gsl_vector_get(maxDERs_LIB1row,i)) && (maxDER < gsl_vector_get(maxDERs_LIB1row,i+1)))
+            //else if ((maxDER > gsl_vector_get(maxDERs_LIB1row,i)) && (maxDER < gsl_vector_get(maxDERs_LIB1row,i+1)))
+            else if ((maxDER > (gsl_vector_get(maxDERs_LIB1row,i)-gsl_vector_get(maxDERs_LIB1row,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs_LIB1row,i+1)-gsl_vector_get(maxDERs_LIB1row,i+1)*margin/100.0)))
             {
                 *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
                 *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i+1);
@@ -10634,8 +10648,9 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, Rec
  * - PabFound: PAB column from the library
  * - Ealpha: Energy (in eV) which straddle the 'maxDER' in the lower limit
  * - Ebeta: Energy (in eV) which straddle the 'maxDER' in the higher limit
+ * - margin: Margin to be applied when several energies in the library to choose the proper filter (hardcoded in 'LibraryCollection' in 'integraSIRENA.cpp')
  ****************************************/
-int find_matchedfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta)
+int find_matchedfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **matchedfilterFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta, double margin)
 {
     string message = "";
     char valERROR[256];
@@ -10654,7 +10669,8 @@ int find_matchedfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
     // It is not necessary to check the allocation because the allocation of 'matchedfilterFound_aux' has been checked previously 
     gsl_vector *PabFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration);
     
-    if (maxDER < gsl_vector_get(maxDERs,0))
+    //if (maxDER < gsl_vector_get(maxDERs,0))
+    if (maxDER < (gsl_vector_get(maxDERs,0)-gsl_vector_get(maxDERs,0)*margin/100.0))
     {
         gsl_vector_memcpy(matchedfilterFound_aux,reconstruct_init->library_collection->matched_filters[0].mfilter);
         
@@ -10663,7 +10679,8 @@ int find_matchedfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
         *Ealpha = 0.0;
         *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
     }
-    else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    //else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    else if (maxDER > (gsl_vector_get(maxDERs,nummodels-1)+gsl_vector_get(maxDERs,nummodels-1)*margin/100.0))
     {
         if (nummodels == 1)
         {
@@ -10701,7 +10718,8 @@ int find_matchedfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
                 
                 break;
             }
-            else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            //else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            else if ((maxDER > (gsl_vector_get(maxDERs,i)-gsl_vector_get(maxDERs,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs,i+1)-gsl_vector_get(maxDERs,i+1)*margin/100.0)))
             {
                 *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
                 *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i+1);
@@ -10747,8 +10765,10 @@ int find_matchedfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
  * - optimalfilterFound: GSL vector with the optimal filter selected
  * - Ealpha: Energy (in eV) which straddle the 'maxDER' in the lower limit
  * - Ebeta: Energy (in eV) which straddle the 'maxDER' in the higher limit
+ * - LowRes: 1 if the low resolution energy estimator (without lags) is going to be calculated
+ * - margin: Margin to be applied when several energies in the library to choose the proper filter (hardcoded in 'LibraryCollection' in 'integraSIRENA.cpp')
  ****************************************/
-int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **optimalfilterFound, double *Ealpha, double *Ebeta)
+int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **optimalfilterFound, double *Ealpha, double *Ebeta, int LowRes, double margin)
 {
     string message = "";
     char valERROR[256];
@@ -10791,7 +10811,8 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
         EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
     }
     
-    if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
+    //if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
+    if (maxDER < (gsl_vector_get(maxDERs_LIB1row,0)-gsl_vector_get(maxDERs_LIB1row,0)*margin/100.0))
     {  
         if (reconstruct_init->filtEev == 0)
         {
@@ -10806,7 +10827,8 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
         
         *Ealpha = 0.0;
     }
-    else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
+    //else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
+    else if (maxDER > (gsl_vector_get(maxDERs_LIB1row,nummodels-1)+gsl_vector_get(maxDERs_LIB1row,nummodels-1)*margin/100.0))
     {
         if (reconstruct_init->filtEev == 0)
         {
@@ -10834,7 +10856,8 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
                 
                 break;
             }
-            else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            //else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            else if ((maxDER > (gsl_vector_get(maxDERs_LIB1row,i)-gsl_vector_get(maxDERs_LIB1row,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs_LIB1row,i+1)-gsl_vector_get(maxDERs_LIB1row,i+1)*margin/100.0)))
             {
                 *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
                 *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i+1);
@@ -10942,8 +10965,10 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
  * - PabFound: PAB column from the library
  * - Ealpha: Energy (in eV) which straddle the 'maxDER' in the lower limit
  * - Ebeta: Energy (in eV) which straddle the 'maxDER' in the higher limit
+ * - LowRes: 1 if the low resolution energy estimator (without lags) is going to be calculated
+ * - margin: Margin to be applied when several energies in the library to choose the proper filter (hardcoded in 'LibraryCollection' in 'integraSIRENA.cpp')
  ****************************************/
-int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **optimalfilterFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta)
+int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_vector **optimalfilterFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta, int LowRes, double margin)
 {
     string message = "";
     char valERROR[256];
@@ -10967,8 +10992,9 @@ int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
         PabFound_Aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration);
     else 
         PabFound_Aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration);
-    
-    if (maxDER < gsl_vector_get(maxDERs,0))
+
+    //if (maxDER < gsl_vector_get(maxDERs,0))
+    if (maxDER < (gsl_vector_get(maxDERs,0)-gsl_vector_get(maxDERs,0)*margin/100.0))
     {
         gsl_vector_memcpy(optimalfilterFound_Aux,reconstruct_init->library_collection->optimal_filters[0].ofilter);
         
@@ -10981,7 +11007,8 @@ int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
         *Ealpha = 0.0;
         *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
     }
-    else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    //else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    else if (maxDER > (gsl_vector_get(maxDERs,nummodels-1)+gsl_vector_get(maxDERs,nummodels-1)*margin/100.0))
     {
         if (nummodels == 1)
         {
@@ -11031,7 +11058,8 @@ int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
                 
                 break;
             }
-            else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            //else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            else if ((maxDER > (gsl_vector_get(maxDERs,i)-gsl_vector_get(maxDERs,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs,i+1)-gsl_vector_get(maxDERs,i+1)*margin/100.0)))
             {
                 *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
                 *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i+1);
@@ -11135,8 +11163,9 @@ int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
  * - PabFound: PAB column from the library
  * - Ealpha: Energy (in eV) which straddle the 'maxDER' in the lower limit
  * - Ebeta: Energy (in eV) which straddle the 'maxDER' in the higher limit
+ * - margin: Margin to be applied when several energies in the library to choose the proper filter (hardcoded in 'LibraryCollection' in 'integraSIRENA.cpp')
  ****************************************/
-int find_prclwn(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_matrix **PRCLWNFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta)
+int find_prclwn(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_matrix **PRCLWNFound, gsl_vector **PabFound, double *Ealpha, double *Ebeta, double margin)
 {	  
     string message = "";
     char valERROR[256];
@@ -11155,7 +11184,8 @@ int find_prclwn(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *recon
     }
     gsl_vector *PabFound_Aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration);
     
-    if (maxDER < gsl_vector_get(maxDERs,0))
+    //if (maxDER < gsl_vector_get(maxDERs,0))
+    if (maxDER < (gsl_vector_get(maxDERs,0)-gsl_vector_get(maxDERs,0)*margin/100.0))
     {
         gsl_matrix_get_row(PRCLWNFound_Aux,reconstruct_init->library_collection->PRECALWN,0);
         
@@ -11164,7 +11194,8 @@ int find_prclwn(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *recon
         *Ealpha = 0.0;
         *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
     }
-    else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    //else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    else if (maxDER > (gsl_vector_get(maxDERs,nummodels-1)+gsl_vector_get(maxDERs,nummodels-1)*margin/100.0))
     {
         gsl_matrix_get_row(PRCLWNFound_Aux,reconstruct_init->library_collection->PRECALWN,nummodels-2);
         
@@ -11188,7 +11219,8 @@ int find_prclwn(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *recon
                 
                 break;
             }
-            else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            //else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            else if ((maxDER > (gsl_vector_get(maxDERs,i)-gsl_vector_get(maxDERs,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs,i+1)-gsl_vector_get(maxDERs,i+1)*margin/100.0)))
             {
                 *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
                 *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i+1);
@@ -11254,8 +11286,9 @@ int find_prclwn(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *recon
  * - PRCLOFWMFound: GSL vector with the precalculated matrix 'PRCLOFWMx' selected
  * - Ealpha: Energy (in eV) which straddle the 'maxDER' in the lower limit
  * - Ebeta: Energy (in eV) which straddle the 'maxDER' in the higher limit
+ * - margin: Margin to be applied when several energies in the library to choose the proper filter (hardcoded in 'LibraryCollection' in 'integraSIRENA.cpp')
  ****************************************/
-int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_matrix **PRCLOFWMFound, double *Ealpha, double *Ebeta)
+int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, gsl_matrix **PRCLOFWMFound, double *Ealpha, double *Ebeta, double margin)
 {
     string message = "";
     char valERROR[256];
@@ -11296,7 +11329,8 @@ int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *rec
         EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
     }
     
-    if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
+    //if (maxDER < gsl_vector_get(maxDERs_LIB1row,0))
+    if (maxDER < (gsl_vector_get(maxDERs_LIB1row,0)-gsl_vector_get(maxDERs_LIB1row,0)*margin/100.0))
     {
         if (reconstruct_init->filtEev == 0)
         {
@@ -11311,7 +11345,8 @@ int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *rec
         
         *Ealpha = 0.0;
     }
-    else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
+    //else if (maxDER > gsl_vector_get(maxDERs_LIB1row,nummodels-1))
+    else if (maxDER > (gsl_vector_get(maxDERs_LIB1row,nummodels-1)+gsl_vector_get(maxDERs_LIB1row,nummodels-1)*margin/100.0))
     {
         if (reconstruct_init->filtEev == 0)
         {
@@ -11337,7 +11372,8 @@ int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *rec
                 *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
                 *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i);
             }
-            else if ((maxDER > gsl_vector_get(maxDERs_LIB1row,i)) && (maxDER < gsl_vector_get(maxDERs_LIB1row,i+1)))
+            //else if ((maxDER > gsl_vector_get(maxDERs_LIB1row,i)) && (maxDER < gsl_vector_get(maxDERs_LIB1row,i+1)))
+            else if ((maxDER > (gsl_vector_get(maxDERs_LIB1row,i)-gsl_vector_get(maxDERs_LIB1row,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs_LIB1row,i+1)-gsl_vector_get(maxDERs_LIB1row,i+1)*margin/100.0)))
             {		
                 gsl_matrix_get_row(PRCLOFWMFound_Aux,reconstruct_init->library_collection->PRCLOFWM,i);
 
@@ -11421,13 +11457,15 @@ int find_prclofwm(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *rec
  * - indexEbeta: Index of the energy higher than the energy of the pulse which is being analyzed
  * - Ealpha: Energy (in eV) which straddle the 'maxDER' in the lower limit
  * - Ebeta: Energy (in eV) which straddle the 'maxDER' in the higher limit
+ * - margin: Margin to be applied when several energies in the library to choose the proper filter (hardcoded in 'LibraryCollection' in 'integraSIRENA.cpp')
  ****************************************/
-int find_Esboundary(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, int *indexEalpha, int *indexEbeta, double *Ealpha, double *Ebeta)
+int find_Esboundary(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *reconstruct_init, int *indexEalpha, int *indexEbeta, double *Ealpha, double *Ebeta, double margin)
 {
     string message = "";
     int nummodels = maxDERs->size;
     
-    if (maxDER < gsl_vector_get(maxDERs,0))
+    //if (maxDER < gsl_vector_get(maxDERs,0))
+    if (maxDER < (gsl_vector_get(maxDERs,0)-gsl_vector_get(maxDERs,0)*margin/100.0))
     {
         *indexEalpha = 0;
         *indexEbeta = 0;
@@ -11435,7 +11473,8 @@ int find_Esboundary(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *r
         *Ealpha = 0.0;
         *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,0);
     }
-    else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    //else if (maxDER > gsl_vector_get(maxDERs,nummodels-1))
+    else if (maxDER > (gsl_vector_get(maxDERs,nummodels-1)+gsl_vector_get(maxDERs,nummodels-1)*margin/100.0))
     {
         *indexEalpha = nummodels - 1;
         *indexEbeta = nummodels - 1;
@@ -11457,7 +11496,8 @@ int find_Esboundary(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA *r
                 
                 break;
             }
-            else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            //else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
+            else if ((maxDER > (gsl_vector_get(maxDERs,i)-gsl_vector_get(maxDERs,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs,i+1)-gsl_vector_get(maxDERs,i+1)*margin/100.0)))
             {
                 *indexEalpha = i;
                 *indexEbeta = i+1;

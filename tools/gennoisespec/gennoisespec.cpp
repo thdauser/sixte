@@ -2401,7 +2401,13 @@
   * Di^p: Value of the pth-sample of the pulse-free interval i
   * N: Number of samples
   *
-  * <DiDj> = E[DiDj] = (1/N)sum(p=1,N){(Di^p)(Dj^p)}
+  *       (i)
+  * <DiDj> = E[DiDj] - E[Di]E[Dj] =
+  *       (ii)
+  *        =(1/N)sum(p=1,N){(Di^p)(Dj^p)} - (1/N)sum(p=1,N){(Di^p) * (1/N)sum(p=1,N){(Dj^p)
+  *
+  * (i) Var(X) = <X> = E[(X-E[X])^2] = E[X^2] - (E[X])^2
+  * (ii) E[X] = (1/N)sum(i=1,N){(xi}
   * 
   * 		        |<D1D1> <D1D2>...<D1Dn>|
   *  Vij = <DiDj> = |<D2D1> <D2D2>...<D2Dn>|	where n is the pulse-free interval length     V => (nxn)

@@ -142,6 +142,11 @@ typedef struct LibraryCollection
 	/** Number of fixed length filters in the structure. */
 	int nfixedfilters;
 
+    /** Margin to be applied when several energies in the library to choose the proper filter */
+    /** To be used in 'find_matchedfilterDAB', 'find_optimalfilterDAB', 'find_prclwn', 'find_Esboundary' and 'find_prclofwm' */
+    /** Also included in 'find_matchedfilter' and 'find_optimalfilter' */
+    double margin; // %
+
 	/** Energies of the templates */
 	gsl_vector *energies;
 

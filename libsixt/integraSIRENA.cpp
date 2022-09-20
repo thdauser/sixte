@@ -186,7 +186,7 @@
         reconstruct_init->post_max_value = gsl_vector_max(posti);
         reconstruct_init->post_min_value = gsl_vector_min(posti);
      }
-     
+
      if (exists)
      {
          if (opmode == 1)		
@@ -213,6 +213,7 @@
          }
          
          reconstruct_init->library_collection = getLibraryCollection(library_file, opmode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, lagsornot, reconstruct_init->preBuffer, pBi, posti, status);
+         reconstruct_init->library_collection->margin = 0.25; //%
          if (*status)
          {
              EP_EXIT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
