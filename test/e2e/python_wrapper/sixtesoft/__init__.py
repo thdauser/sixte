@@ -22,3 +22,5 @@ from .sixte import imgev
 from .sixte import erosim
 from .sixte import ero_vis
 from .sixte import ero_calevents
+
+from .sixte import STDTEST
