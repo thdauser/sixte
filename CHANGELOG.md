@@ -1,3 +1,7 @@
+version [2.7.2]
+  - Several small bug fixes and optimizations.
+  - Several updates to SIRENA (v.3.8.28)
+
 version [2.7.1]
   - fix interpolation error for X-IFU ARFs in sixte_arfgen
 
