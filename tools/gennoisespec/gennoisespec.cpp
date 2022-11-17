@@ -321,6 +321,80 @@
              status = 0;
          }
      }
+
+     if (strcmp(par.EnergyMethod,"I2RDER") == 0)
+     {
+        int keyword_exists = 0;
+
+        // V0(V)
+        strcpy(keyname,"V0");
+        for (int i=0;i<hdunum;i++)
+        {
+            fits_movabs_hdu(infileObject, i+1, NULL, &status);
+            fits_read_key(infileObject,TDOUBLE,keyname, &V0,comment,&status);
+            if (status == 0)
+            {
+                keyword_exists = 1;
+                break;
+            }
+            else if ((status != 0) && (i <= hdunum-1))
+            {
+                status = 0;
+            }
+        }
+        if (keyword_exists == 0)
+        {
+            message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
+            EP_EXIT_ERROR(message,status);
+        }
+        keyword_exists = 0;
+
+        // RL(Ohm)
+        strcpy(keyname,"RL");
+        for (int i=0;i<hdunum;i++)
+        {
+            fits_movabs_hdu(infileObject, i+1, NULL, &status);
+            fits_read_key(infileObject,TDOUBLE,keyname, &RL,comment,&status);
+            if (status == 0)
+            {
+                keyword_exists = 1;
+                break;
+            }
+            else if ((status != 0) && (i <= hdunum-1))
+            {
+                status = 0;
+            }
+        }
+        if (keyword_exists == 0)
+        {
+            message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
+            EP_EXIT_ERROR(message,status);
+        }
+        keyword_exists = 0;
+
+        // L(H)
+        strcpy(keyname,"L");
+        for (int i=0;i<hdunum;i++)
+        {
+            fits_movabs_hdu(infileObject, i+1, NULL, &status);
+            fits_read_key(infileObject,TDOUBLE,keyname, &L,comment,&status);
+            if (status == 0)
+            {
+                keyword_exists = 1;
+                break;
+            }
+            else if ((status != 0) && (i <= hdunum-1))
+            {
+                status = 0;
+            }
+        }
+        if (keyword_exists == 0)
+        {
+            message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
+            EP_EXIT_ERROR(message,status);
+        }
+     }
+
      /*cout<<"adu_cnv: "<<adu_cnv<<endl;
      cout<<"i_bias: "<<i_bias<<endl;
      cout<<"adu_bias: "<<adu_bias<<endl;*/
@@ -392,7 +466,6 @@
                  strcpy(objI2R.nameCol,"I0_START");
                  if (readFitsSimple (objI2R,&vectorI2R))
                  {
-                     //Ibias_error = 1;
                      message = "Cannot read " + string(objI2R.nameCol) + " in " + string(extname) + " HDU in " + string(par.inFile);
                      EP_PRINT_ERROR(message,status); return(EPFAIL);
                  }
@@ -677,26 +750,20 @@
          EP_PRINT_ERROR(message,-EPFAIL);
      }
      
-     //cout<<"Imin: "<<Imin<<endl;
-     //cout<<"Imax: "<<Imax<<endl;
      if ((((Imin == -999.0) || (Imax == -999.0)) || ((Imin == 0) || (Imax == 0))) && (adu_cnv == -999.0))
      {
-         //cout<<"If1"<<endl;
          aducnv = 1.0;
          message = "ADU_CNV not found or Imin or Imax not found or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
          EP_PRINT_ERROR(message,-999);	// Only a warning
      }
      else if (adu_cnv != -999.0)
      {
-         //cout<<"If2"<<endl;
          aducnv = -1*adu_cnv;
      }
      else if (((Imin != -999.0) && (Imax != -999.0)) && ((Imin != 0) && (Imax != 0)))
      {
-         //cout<<"If3"<<endl;
          aducnv = (Imax-Imin)/65534;    // Quantification levels = 65534  // If this calculus changes => Change it also in TASKSSIRENA
      }
-     //cout<<"aducnv: "<<aducnv<<endl;
      
      asquid = 1.0;
      plspolar = 1.0;
@@ -1274,7 +1341,7 @@
          // Convert to the resistance space if necessary
          if (strcmp(par.EnergyMethod,"OPTFILT") != 0)
          {
-             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,par.Ifit,samprate,&ioutgsl))
+             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,par.Ifit,V0,RL,L,samprate,&ioutgsl))
              {
                  message = "Cannot run routine convertI2R";
                  EP_EXIT_ERROR(message,EPFAIL);
@@ -2747,8 +2814,8 @@
      strcpy(par->EnergyMethod, sbuffer);
      free(sbuffer);
      
-     MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0), 
-              "EnergyMethod must be OPTFILT, I2R, I2RFITTED or PCA");
+     MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) || (strcmp(par->EnergyMethod,"I2RDER") == 0),
+              "EnergyMethod must be OPTFILT, I2R, I2RFITTED, I2RDER or PCA");
      
      status=ape_trad_query_double("Ifit", &par->Ifit);
      if (EXIT_SUCCESS!=status) {

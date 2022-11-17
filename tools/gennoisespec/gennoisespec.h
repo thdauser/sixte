@@ -147,18 +147,10 @@ struct Parameters {
 	
 	double Imin = -999.0;
     double Imax = -999.0;
-    double R0 = -999.0;
-    double V0 = -999.0;
     double Ibias = -999.0;
-    double RPARA = -999.0;
-    double TTR = -999.0;
-    double LFILTER = -999.0;
-    int R0_error = 0;
-    int V0_error = 0;
-    int Ibias_error = 0;
-    int RPARA_error = 0;
-    int TTR_error = 0;
-    int LFILTER_error = 0;
+	double V0 = -999.0;
+	double RL = -999.0;
+	double L = -999.0;
 
 // INPUT VECTORS
 

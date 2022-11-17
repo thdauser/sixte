@@ -226,12 +226,12 @@ int findMeanSigma (gsl_vector *invector, double *mean, double *sigma)
 	int size = invector->size; // Size of the input vector
 	// To calculate the mean
 	bool veryBig = false;
-        double suma = 0.0;
+    double suma = 0.0;
 
 	// Mean
 	for (int i=0;i<size;i++)
 	{
-                if (gsl_vector_get(invector,i)>1e10)
+        if (gsl_vector_get(invector,i)>1e10)
 		{
 			veryBig =true;
 			break;
@@ -240,18 +240,18 @@ int findMeanSigma (gsl_vector *invector, double *mean, double *sigma)
 	
 	if (veryBig == false)
 	{
-                *mean = 0.0;
-                for (int i=0;i<size;i++)
-                {
-                    *mean = *mean + gsl_vector_get(invector,i);
-                }
-                *mean = *mean/size;
+        *mean = 0.0;
+        for (int i=0;i<size;i++)
+        {
+            *mean = *mean + gsl_vector_get(invector,i);
+        }
+        *mean = *mean/size;
 		// Standard deviation
-                for (int i=0;i<size;i++)
-                {
-                    suma = suma + pow(gsl_vector_get(invector,i)-*mean,2.0);
-                }
-                *sigma = sqrt(suma/(size-1));
+        for (int i=0;i<size;i++)
+        {
+            suma = suma + pow(gsl_vector_get(invector,i)-*mean,2.0);
+        }
+        *sigma = sqrt(suma/(size-1));
 	}
 	else	// To avoid an inf in IO or a NAN in JUPITER
 	{
@@ -307,16 +307,16 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 	double median;
 
 	// Median
-        gsl_vector_memcpy(invectorNew,invector);
-        gsl_sort_vector(invectorNew);
-        if (size%2 == 0)	//Even
-        {
-            median = (gsl_vector_get(invectorNew,(int) (size/2)-1)+gsl_vector_get(invectorNew,(int) (size/2)))/2;
-        }
-        else                    //Odd
-        {
-            median = gsl_vector_get(invectorNew,(int) (size/2));
-        }
+    gsl_vector_memcpy(invectorNew,invector);
+    gsl_sort_vector(invectorNew);
+    if (size%2 == 0)	//Even
+    {
+        median = (gsl_vector_get(invectorNew,(int) (size/2)-1)+gsl_vector_get(invectorNew,(int) (size/2)))/2;
+    }
+    else                    //Odd
+    {
+        median = gsl_vector_get(invectorNew,(int) (size/2));
+    }
 
 	gsl_vector_memcpy(invectorNew,invector);
 
@@ -1974,12 +1974,12 @@ int findTstartCAL
 	
 	// Allocate GSL vectors
 	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
-	if (*tstartgsl)		gsl_vector_free(*tstartgsl);	 
+	if (*tstartgsl)		{gsl_vector_free(*tstartgsl); *tstartgsl = 0;}
 	*tstartgsl = gsl_vector_alloc(maxPulsesPerRecord);	
-	if (*flagTruncated)	gsl_vector_free(*flagTruncated);	
+	if (*flagTruncated)	{gsl_vector_free(*flagTruncated); *flagTruncated = 0;}
 	*flagTruncated = gsl_vector_alloc(maxPulsesPerRecord);
 	gsl_vector_set_zero(*flagTruncated);
-	if (*maxDERgsl)	gsl_vector_free(*maxDERgsl);	
+	if (*maxDERgsl)	{gsl_vector_free(*maxDERgsl); *maxDERgsl = 0;}
 	*maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Maximum of the first derivative
 	gsl_vector_set_all(*maxDERgsl,-1E3);
 
@@ -2205,8 +2205,7 @@ int InitialTriggering
 
 
 /***** SECTION 14 ************************************************************
-* FindSecondaries function: This function runs after InitialTriggering to find all the events (except the first one) in the record first derivative 
-*                           of the (low-pass filtered) record by using the Adjusted Derivative detection method
+* FindSecondaries function: This function runs after InitialTriggering to find all the events (except the first one) in the record first derivative of the (low-pass filtered) record by using the Adjusted Derivative detection method
 *
 * - Declare variables
 * - Establishing the criteria of the slope of the derivative depending on the sampling rate
@@ -2281,7 +2280,7 @@ int FindSecondaries
 	gsl_vector **flagTruncated,
 	gsl_vector **maxDERgsl,
 	gsl_vector **samp1DERgsl,
-        gsl_vector **lagsgsl)
+    gsl_vector **lagsgsl)
 {
 	string message = "";
 	char valERROR[256];
@@ -2292,22 +2291,22 @@ int FindSecondaries
 	*numberPulses = 0;
 	gsl_vector_set_all(*maxDERgsl,-1E3);
 	gsl_vector_set_all(*tstartgsl,-1E3);
-        gsl_vector_set_all(*lagsgsl,-1E3);
+    gsl_vector_set_all(*lagsgsl,-1E3);
 	int i = tstartFirstEvent;
 	// It is not necessary to check the allocation because 'reconstruct_init->pulse_length'='PulseLength'(input parameter) has been checked previously
-        int pulse_length_ToConvolve = 25; // Instead of using pulse_length
-        int pulse_length_ToSubtract = 100; // Instead of using pulse_length, because the results are equal
-        gsl_vector *modelToConvolve = gsl_vector_alloc(pulse_length_ToConvolve);
-        gsl_vector *modelToSubtract = gsl_vector_alloc(pulse_length_ToSubtract);
-        double tstartJITTER;
-        int indexMinNew,indexMaxNew;
-        gsl_vector *indexMin;
-        gsl_vector *indexMax;
-        int i_indexMin, i_indexMax;
-        int indexM = 0;
-        double samp1DER_Aux;
-        double m;
-        double prev_samp1DER_Aux, next_samp1DER_Aux;
+    int pulse_length_ToConvolve = 25; // Instead of using pulse_length
+    int pulse_length_ToSubtract = 100; // Instead of using pulse_length, because the results are equal
+    gsl_vector *modelToConvolve = gsl_vector_alloc(pulse_length_ToConvolve);
+    gsl_vector *modelToSubtract = gsl_vector_alloc(pulse_length_ToSubtract);
+    double tstartJITTER;
+    int indexMinNew,indexMaxNew;
+    gsl_vector *indexMin;
+    gsl_vector *indexMax;
+    int i_indexMin, i_indexMax;
+    int indexM = 0;
+    double samp1DER_Aux;
+    double m;
+    double prev_samp1DER_Aux, next_samp1DER_Aux;
 	
 	// To provide the tstarts (or not)
 	//bool findTstarts = true;
@@ -2707,8 +2706,8 @@ int FindSecondaries
                                 
                                 //cout<<"tstartJITTER: "<<tstartJITTER<<endl;
                                 
-                                if (indexMin != NULL) gsl_vector_free(indexMin);
-                                if (indexMax != NULL) gsl_vector_free(indexMax);
+                                if (indexMin != NULL) {gsl_vector_free(indexMin); indexMin = 0;}
+                                if (indexMax != NULL) {gsl_vector_free(indexMax); indexMax = 0;}
                                 
                                 if ((tstartJITTER >= 0) && (tstartJITTER+1 < sizeRecord))
                                 {
@@ -2775,7 +2774,7 @@ int FindSecondaries
                                         /*for (int j=0;j<10;j++)
                                          *                                       cout<<j<<" "<<gsl_vector_get(modelToSubtract_Aux,j)<<" "<<gsl_vector_get(modelToSubtract,j)<<endl;*/
                                         
-                                        gsl_vector_free(modelToSubtract_Aux);
+                                        gsl_vector_free(modelToSubtract_Aux); modelToSubtract_Aux = 0;
                                     }
                                     else
                                         gsl_vector_set_all(modelToSubtract,1e6);
@@ -2898,23 +2897,23 @@ int FindSecondaries
             }
         } while (foundPulse == true);
         
-        gsl_vector_free(lags_vector);
-        gsl_vector_free(convolutionLags);
+        gsl_vector_free(lags_vector); lags_vector = 0;
+        gsl_vector_free(convolutionLags); convolutionLags = 0;
 
 	// Free allocated GSL vectors
 	//gsl_vector_free(model); model = 0;
 	gsl_vector_free(index_maxDERgsl); index_maxDERgsl = 0;
 	
 	gsl_vector_free(modelToSubtract);modelToSubtract = 0;
-        gsl_vector_free(modelToConvolve);modelToConvolve = 0;
+    gsl_vector_free(modelToConvolve);modelToConvolve = 0;
         	
-        gsl_vector_free(sublags_vector); sublags_vector = 0;
-        gsl_vector_free(subconvolutionLags_vector); subconvolutionLags_vector = 0;
-        gsl_vector_free(sublags_vector);
-        gsl_vector_free(subconvolutionLags_vector);
+    gsl_vector_free(sublags_vector); sublags_vector = 0;
+    gsl_vector_free(subconvolutionLags_vector); subconvolutionLags_vector = 0;
+    gsl_vector_free(sublags_vector); sublags_vector = 0;
+    gsl_vector_free(subconvolutionLags_vector); subconvolutionLags_vector = 0;
         
-        gsl_vector_free(ThreePoints_x); ThreePoints_x = 0;
-        gsl_vector_free(ThreePoints_y); ThreePoints_y = 0;
+    gsl_vector_free(ThreePoints_x); ThreePoints_x = 0;
+    gsl_vector_free(ThreePoints_y); ThreePoints_y = 0;
         
     message.clear();
 
@@ -2977,7 +2976,7 @@ int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconst
 				}
 				
 				gsl_vector_free(modelA); modelA = 0;
-                                gsl_vector_free(modelB); modelB = 0;
+                gsl_vector_free(modelB); modelB = 0;
 
 				break;
 			}
@@ -3144,12 +3143,12 @@ int FindSecondariesSTC
 	
 	// Allocate GSL vectors
 	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
-	if (*tstartgsl)		gsl_vector_free(*tstartgsl);	
+	if (*tstartgsl)		{gsl_vector_free(*tstartgsl);	*tstartgsl = 0;}
 	*tstartgsl = gsl_vector_alloc(maxPulsesPerRecord);	
-	if (*flagTruncated)	gsl_vector_free(*flagTruncated);	
+	if (*flagTruncated)	{gsl_vector_free(*flagTruncated); *flagTruncated = 0;}
 	*flagTruncated = gsl_vector_alloc(maxPulsesPerRecord);
 	gsl_vector_set_zero(*flagTruncated);
-	if (*maxDERgsl)	gsl_vector_free(*maxDERgsl);	
+	if (*maxDERgsl)	{gsl_vector_free(*maxDERgsl); *maxDERgsl = 0;}
 	*maxDERgsl = gsl_vector_alloc(maxPulsesPerRecord);	// Maximum of the first derivative
 	gsl_vector_set_all(*maxDERgsl,-1E3);
 

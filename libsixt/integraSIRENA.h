@@ -299,6 +299,10 @@ typedef struct I2RData
   double ADU_BIAS;
   
   double Ifit;
+
+  double V0;
+  double RL;
+  double L;
   
 #ifdef __cplusplus
   I2RData();
@@ -317,8 +321,8 @@ typedef struct PulseDetected
 	/** Length of filter used during reconstruction (samples)*/
 	int grade1;
       
-	/** Distance to previous pulse in record (samples)*/
-	/** tstart(i)-tstart(i-1)*/
+    /** Distance to previous pulse (samples)*/
+    /** tstart(i)-tstart(i-1)*/
 	int grade2;
 
     int grade2_1;
@@ -683,6 +687,11 @@ void freeOptimalFilterSIRENA(OptimalFilterSIRENA* PulsesColl);
 extern "C"
 #endif
 void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+void IntegrafreeTesEventListSIRENA(TesEventList* event_list);
 
 LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, gsl_vector *pBi, gsl_vector *posti, int* const status);
 

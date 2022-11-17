@@ -288,15 +288,6 @@ void freeTDMTab(TDMTab* tab, int gr){
 
 void freeCrosstalk(AdvDet* det, int gr){
 
-	if (NULL!=det->channel_file){
-		free(det->channel_file);
-		det->channel_file=NULL;
-	}
-	if (NULL!=det->channel_resfreq_file){
-		free(det->channel_resfreq_file);
-		det->channel_resfreq_file=NULL;
-	}
-
 	freeReadoutChannels(det->readout_channels);
 	//Freeing tables for every grade
 	if(gr!=0){
@@ -424,12 +415,14 @@ void destroyAdvDet(AdvDet **det){
 	if(NULL!=(*det)){
 		int gr=0;
 		if(NULL!=(*det)->pix){
-			gr =(*det)->pix[0].ngrades;
+			//gr =(*det)->pix[0].ngrades;
+			if ((*det)->npix != 0) gr =(*det)->pix[0].ngrades; // SIRENA
 			for(int i=0;i<(*det)->npix;i++){
 				freeAdvPix(&(*det)->pix[i]);
 			}
 			free((*det)->pix);
 		}
+
 		//int grRecons=0;
 		if(NULL!=(*det)->recons){             //SIRENA
 			//grRecons =(*det)->recons[0].ngrades;
@@ -438,6 +431,7 @@ void destroyAdvDet(AdvDet **det){
 			}
 			free((*det)->recons);
 		}
+
 		if(NULL!=(*det)->filename){
 			free((*det)->filename);
 		}
@@ -450,7 +444,18 @@ void destroyAdvDet(AdvDet **det){
 		freeRMFLibrary((*det)->rmf_library);
 		freeARFLibrary((*det)->arf_library);
 
-		freeCrosstalk(*(det), gr);
+		if(NULL!=(*det)->TDM_prop_file){
+			free((*det)->TDM_prop_file);
+		}
+		if(NULL!=(*det)->TDM_der_file){
+			free((*det)->TDM_der_file);
+		}
+
+		//freeCrosstalk(*(det), gr);
+		if (gr != 0)					// SIRENA
+		{
+			freeCrosstalk(*(det), gr);
+		}
 		free(*(det));
 	}
 }

@@ -95,25 +95,13 @@ void freeTesEventList(TesEventList* event_list){
 }
 
 void freeTesEventListSIRENA(TesEventList* event_list){
-	if (NULL!=event_list){
-		free(event_list->event_indexes);
-		free(event_list->pulse_heights);
-		free(event_list->energies);
-        free(event_list->avgs_4samplesDerivative); 
-        free(event_list->Es_lowres); 
-		free(event_list->grading); 
-		free(event_list->phis); 
-		free(event_list->lagsShifts); 
-		free(event_list->bsln); 
-		free(event_list->rmsbsln); 
-		free(event_list->grades1);
-		free(event_list->grades2);
-		free(event_list->ph_ids);
-        free(event_list->ph_ids2);
-        free(event_list->ph_ids3);
-        free(event_list->pix_ids);
-		free(event_list->risetimes);
-		free(event_list->falltimes);
+
+	if (NULL!=event_list->event_indexes) free(event_list->event_indexes);
+	if (NULL!=event_list->grades1) free(event_list->grades1);
+	if (NULL!=event_list->pulse_heights) free(event_list->pulse_heights);
+
+	if (NULL!=event_list)
+	{
 		free(event_list);
 		event_list=NULL;
 	}

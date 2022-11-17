@@ -231,5 +231,6 @@ int getpar(struct Parameters* const par);
 
 void MyAssert(int expr, char* msg);
 
+int checkXmls(struct Parameters* const par);
 
 #endif /* TESRECONSTRUCTION_H */

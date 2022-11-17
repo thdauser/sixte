@@ -50,6 +50,7 @@
   * - 8. freeOptimalFilterSIRENA
   * - 9. getLibraryCollection
   * - 10. getNoiseSpec
+  * - 11. IntegrafreeTesEventListSIRENA
   * 
   *******************************************************************************/ 
  
@@ -153,7 +154,7 @@
      //gsl_set_error_handler_off();
      /*string message = "";
       *	char valERROR[256];*/
-     
+
      string message = "";
      
      // Load LibraryCollection structure if library file exists
@@ -244,7 +245,7 @@
      }
      
      // Load NoiseSpec structure
-     reconstruct_init->noise_spectrum = NULL;
+     //reconstruct_init->noise_spectrum = NULL;
      bool baselineReadFromLibrary = true;
      if ((((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(filter_method,"B0") == 0)) )|| (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1))
      {
@@ -424,7 +425,7 @@
      else		        reconstruct_init->clobber = 0;
      reconstruct_init->maxPulsesPerRecord = maxPulsesPerRecord;
  }
- 
+
  /*xxxx end of SECTION 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
  
  
@@ -460,7 +461,7 @@
      PulsesCollection* pulsesInRecord = new PulsesCollection;
      
      PulsesCollection* pulsesAllAux = new PulsesCollection;
-     
+
      // Check consistency of some input parameters
      if (record->trigger_size <= 0)
      {
@@ -502,8 +503,12 @@
          reconstruct_init->i2rdata->ADU_CNV = -999;
          reconstruct_init->i2rdata->I_BIAS = -999;
          reconstruct_init->i2rdata->ADU_BIAS = -999;
+         reconstruct_init->i2rdata->V0 = -999;
+         reconstruct_init->i2rdata->RL = -999;
+         reconstruct_init->i2rdata->L = -999;
          reconstruct_init->i2rdata->Ifit = reconstruct_init->Ifit;
-         if (strcmp(reconstruct_init->EnergyMethod,"OPTFILT") != 0)  
+         //if (strcmp(reconstruct_init->EnergyMethod,"OPTFILT") != 0)
+         if ((strcmp(reconstruct_init->EnergyMethod,"I2R") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RFITTED") == 0))
          {
              char extname[20];
              char keyname[10];
@@ -534,7 +539,11 @@
                      *status = 0;
                  }
              }
-             if (adu_cnv_exists == 1)
+             if (adu_cnv_exists == 0)
+             {
+                 EP_EXIT_ERROR("ADU_CNV keyword (to be used in resistance space) is not in the input FITS file",EPFAIL);
+             }
+             else if (adu_cnv_exists == 1)
              {
                  double I_BIAS;
                  
@@ -556,7 +565,7 @@
                  }
                  if (i_bias_exists == 0)
                  {
-                     EP_EXIT_ERROR("I_BIAS keyword is not in the input FITS file",EPFAIL);
+                     EP_EXIT_ERROR("I_BIAS keyword (to be used in resistance space) is not in the input FITS file",EPFAIL);
                  }
                  double ADU_BIAS;
                  
@@ -578,7 +587,7 @@
                  }
                  if (adu_bias_exists == 0)
                  {
-                     EP_EXIT_ERROR("ADU_BIAS keyword is not in the input FITS file",EPFAIL);
+                     EP_EXIT_ERROR("ADU_BIAS keyword (to be used in resistance space) is not in the input FITS file",EPFAIL);
                  }
              }
              
@@ -598,13 +607,13 @@
                      strcpy(extname,"ADCPARAM");
                      if (fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,extname, 0, status))
                      {
-                         EP_EXIT_ERROR("Cannot move to HDU ",EPFAIL);
+                         EP_EXIT_ERROR("ADU_CNV or I_BIAS or ADU_BIAS not in the input FITS file (to be used in resistance space). Cannot move to ADCPARAM HDU to alternatively look for IMIN and IMAX (old files with RECORDS HDU)",EPFAIL);
                      }
                      strcpy(keyname,"IMIN");
                      fits_read_key(reconstruct_init->record_file_fptr,TDOUBLE,keyname, &IMIN,NULL,status);
                      if (*status != 0)
                      {
-                         EP_EXIT_ERROR("Cannot read IMIN keyword to be used in convertI2R",EPFAIL);
+                         EP_EXIT_ERROR("ADU_CNV or I_BIAS or ADU_BIAS not in the input FITS file (to be used in resistance space). Cannot alternatively read IMIN keyword (ADCPARAM HDU) to be used in resistance space",EPFAIL);
                      }
                      reconstruct_init->i2rdata->IMIN = IMIN;
                      strcpy(keyname,"IMAX");
@@ -612,13 +621,13 @@
                      reconstruct_init->i2rdata->IMAX = IMAX;
                      if (*status != 0)
                      {
-                         EP_EXIT_ERROR("Cannot read IMAX keyword to be used in convertI2R",EPFAIL);
+                         EP_EXIT_ERROR("ADU_CNV or I_BIAS or ADU_BIAS not in the input FITS file (to be used in resistance space). Cannot alternatively read IMAX keyword (ADCPARAM HDU) to be used in resistance space",EPFAIL);
                      }
                      
                      strcpy(extname,"TESPARAM");
                      if (fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,extname, 0, status))
                      {
-                         EP_EXIT_ERROR("Cannot move to HDU ",EPFAIL);
+                         EP_EXIT_ERROR("Cannot move to TESPARAM HDU ",EPFAIL);
                      }
                      IOData obj;
                      obj.inObject = reconstruct_init->record_file_fptr;
@@ -640,10 +649,10 @@
                      
                      if (fits_movabs_hdu(reconstruct_init->record_file_fptr, hdunum, &hdutype, status))
                      {
-                         EP_EXIT_ERROR("Cannot move to HDU ",EPFAIL);
+                         EP_EXIT_ERROR("Cannot move to RECORDS or TESRECORDS HDU ",EPFAIL);
                      }
                      
-                     gsl_vector_free(vector);
+                     gsl_vector_free(vector); vector = 0;
                      delete [] obj.nameTable;
                      delete [] obj.nameCol;
                      delete [] obj.unit;
@@ -657,17 +666,104 @@
                      
                      strcpy(keyname,"I0_START");
                      if (fits_read_key(reconstruct_init->record_file_fptr,TDOUBLE,keyname, &I0_START,NULL,status))
-                        EP_EXIT_ERROR("Cannot read I0_START keyword to be used in convertI2R",EPFAIL);
+                        EP_EXIT_ERROR("ADU_CNV or I_BIAS or ADU_BIAS not in the input FITS file (to be used in resistance space). Cannot alternatively read I0_START keyword (TESRECORDS HDU)",EPFAIL);
                      reconstruct_init->i2rdata->I0_START = I0_START;
                      strcpy(keyname,"IMIN");
                      if (fits_read_key(reconstruct_init->record_file_fptr,TDOUBLE,keyname, &IMIN,NULL,status))
-                        EP_EXIT_ERROR("Cannot read IMIN keyword to be used in convertI2R",EPFAIL);
+                        EP_EXIT_ERROR("ADU_CNV or I_BIAS or ADU_BIAS not in the input FITS file (to be used in resistance space). Cannot alternatively read IMIN keyword (TESRECORDS HDU)",EPFAIL);
                      reconstruct_init->i2rdata->IMIN = IMIN;
                      strcpy(keyname,"IMAX");
                      if (fits_read_key(reconstruct_init->record_file_fptr,TDOUBLE,keyname, &IMAX,NULL,status))
-                        EP_EXIT_ERROR("Cannot read IMAX keyword to be used in convertI2R",EPFAIL);
+                        EP_EXIT_ERROR("ADU_CNV or I_BIAS or ADU_BIAS not in the input FITS file (to be used in resistance space). Cannot alternatively read IMAX keyword (TESRECORDS HDU)",EPFAIL);
                      reconstruct_init->i2rdata->IMAX = IMAX;
                  }
+             }
+         }
+         if (strcmp(reconstruct_init->EnergyMethod,"I2RDER") == 0)
+         {
+             *status = 0;
+
+             char keyname[10];
+
+             int currentHdu_num; // Number of the current HDU (RECORDS or TESRECORDS)
+             int currentHdu_type;
+             fits_get_hdu_num(reconstruct_init->record_file_fptr, &currentHdu_num);
+             fits_get_hdu_type(reconstruct_init->record_file_fptr, &currentHdu_type, status);
+
+             int hdunum; // How many HDU's are in the file
+             fits_get_num_hdus(reconstruct_init->record_file_fptr, &hdunum,status);
+             int keyword_exists = 0;
+             double keywordValue;
+             strcpy(keyname,"V0");
+             for (int i=0;i<hdunum;i++)
+             {
+                 fits_movabs_hdu(reconstruct_init->record_file_fptr, i+1, NULL, status);
+                 fits_read_key(reconstruct_init->record_file_fptr,TDOUBLE,keyname, &keywordValue,NULL,status);
+                 if (*status == 0)
+                 {
+                     keyword_exists = 1;
+                     reconstruct_init->i2rdata->V0 = keywordValue;
+                     break;
+
+                 }
+                 else if ((*status != 0) && (i <= hdunum-1))
+                 {
+                    *status = 0;
+                 }
+             }
+             if (keyword_exists == 0)
+             {
+                EP_EXIT_ERROR("Cannot read V0 keyword to be used in convertI2R",EPFAIL);
+             }
+             keyword_exists = 0;
+
+             strcpy(keyname,"RL");
+             for (int i=0;i<hdunum;i++)
+             {
+                fits_movabs_hdu(reconstruct_init->record_file_fptr, i+1, NULL, status);
+                fits_read_key(reconstruct_init->record_file_fptr,TDOUBLE,keyname, &keywordValue,NULL,status);
+                if (*status == 0)
+                {
+                    keyword_exists = 1;
+                    reconstruct_init->i2rdata->RL = keywordValue;
+                    break;
+                }
+                else if ((*status != 0) && (i <= hdunum-1))
+                {
+                    *status = 0;
+                }
+             }
+             if (keyword_exists == 0)
+             {
+                EP_EXIT_ERROR("Cannot read RL keyword to be used in convertI2R",EPFAIL);
+             }
+             keyword_exists = 0;
+
+             strcpy(keyname,"L");
+             for (int i=0;i<hdunum;i++)
+             {
+                fits_movabs_hdu(reconstruct_init->record_file_fptr, i+1, NULL, status);
+                fits_read_key(reconstruct_init->record_file_fptr,TDOUBLE,keyname, &keywordValue,NULL,status);
+                if (*status == 0)
+                {
+                    keyword_exists = 1;
+                    reconstruct_init->i2rdata->L = keywordValue;
+
+                    break;
+                }
+                else if ((*status != 0) && (i <= hdunum-1))
+                {
+                    *status = 0;
+                }
+             }
+             if (keyword_exists == 0)
+             {
+                EP_EXIT_ERROR("Cannot read L keyword to be used in convertI2R",EPFAIL);
+             }
+
+             if (fits_movabs_hdu(reconstruct_init->record_file_fptr, currentHdu_num, &currentHdu_type, status))
+             {
+                EP_EXIT_ERROR("Cannot move to RECORDS or TESRECORDS HDU ",EPFAIL);
              }
          }
      }
@@ -706,6 +802,7 @@
          scheduler::get()->push_detection(record, trig_reclength, nRecord, lastRecord, 
                                           *pulsesAll, &rec, &pulsesInRecord,
                                           optimalFilter, event_list);
+         freeReconstructInitSIRENA(rec);
          log_trace("reconstructRecordSIRENA:  Threading mode...2");
          return;  // The rest of 'reconstructRecordSIRENA' is not going to run: 'runDetect', 'runEnergy'...
      }
@@ -714,19 +811,16 @@
      log_trace("Before runDetect");
      if (!scheduler::get()->is_threading())
          trig_reclength = record->trigger_size;
-     runDetect(record, trig_reclength,lastRecord, nRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
+     runDetect(record, trig_reclength, lastRecord, nRecord, *pulsesAll, &reconstruct_init, &pulsesInRecord);
      log_trace("After runDetect");
      
-     if(pulsesInRecord->ndetpulses == 0) // No pulses found in record
-     {
-         delete pulsesAllAux; pulsesAllAux = 0;
-         return;
-     }
+     //cout<<"pulsesInRecord->ndetpulses: "<<pulsesInRecord->ndetpulses<<endl;
+     //cout<<"(*pulsesAll)->ndetpulses: "<<(*pulsesAll)->ndetpulses<<endl;
      
      if ((reconstruct_init->opmode == 1) && (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0))
      {
          // Filter and calculates energy
-         runEnergy(record, nRecord, trig_reclength, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
+         runEnergy(record, lastRecord, nRecord, trig_reclength, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
      }
      log_trace("After runEnergy");
          
@@ -755,27 +849,27 @@
      }
      else
      {
-         if (event_list->energies != NULL) 	delete [] event_list->energies;
-         if (event_list->avgs_4samplesDerivative != NULL) 	delete [] event_list->avgs_4samplesDerivative;
-         if (event_list->Es_lowres != NULL) 	delete [] event_list->Es_lowres;
-         if (event_list->phis != NULL) 	        delete [] event_list->phis;
-         if (event_list->lagsShifts != NULL) 	delete [] event_list->lagsShifts;
-         if (event_list->bsln != NULL) 	        delete [] event_list->bsln;
-         if (event_list->rmsbsln != NULL) 	delete [] event_list->rmsbsln;
-         if (event_list->grading != NULL) 	delete [] event_list->grading;
-         if (event_list->grades1 != NULL) 	delete [] event_list->grades1;
-         if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
-         if (event_list->pulse_heights != NULL) 	delete [] event_list->pulse_heights;
-         if (event_list->ph_ids != NULL) 	delete [] event_list->ph_ids;
-         if (event_list->ph_ids2 != NULL) 	delete [] event_list->ph_ids2;
-         if (event_list->ph_ids3 != NULL) 	delete [] event_list->ph_ids3;
-         if (event_list->pix_ids != NULL) 	delete [] event_list->pix_ids;
-         if (event_list->tstarts != NULL) 	delete [] event_list->tstarts;
-         if (event_list->tends != NULL) 	        delete [] event_list->tends;
-         if (event_list->risetimes != NULL)       delete [] event_list->risetimes;
-         if (event_list->falltimes != NULL)       delete [] event_list->falltimes;
+         ////if (event_list->energies != NULL) 	delete [] event_list->energies;
+         ////if (event_list->avgs_4samplesDerivative != NULL) 	delete [] event_list->avgs_4samplesDerivative;
+         ////if (event_list->Es_lowres != NULL) 	delete [] event_list->Es_lowres;
+         ////if (event_list->phis != NULL) 	        delete [] event_list->phis;
+         ////if (event_list->lagsShifts != NULL) 	delete [] event_list->lagsShifts;
+         ////if (event_list->bsln != NULL) 	        delete [] event_list->bsln;
+         ////if (event_list->rmsbsln != NULL) 	delete [] event_list->rmsbsln;
+         ////if (event_list->grading != NULL) 	delete [] event_list->grading;
+         //if (event_list->grades1 != NULL) 	delete [] event_list->grades1;
+         ////if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
+         //if (event_list->pulse_heights != NULL) 	delete [] event_list->pulse_heights;
+         ////if (event_list->ph_ids != NULL) 	delete [] event_list->ph_ids;
+         ////if (event_list->ph_ids2 != NULL) 	delete [] event_list->ph_ids2;
+         ////if (event_list->ph_ids3 != NULL) 	delete [] event_list->ph_ids3;
+         ////if (event_list->pix_ids != NULL) 	delete [] event_list->pix_ids;
+         ////if (event_list->tstarts != NULL) 	delete [] event_list->tstarts;
+         ////if (event_list->tends != NULL) 	        delete [] event_list->tends;
+         ////if (event_list->risetimes != NULL)       delete [] event_list->risetimes;
+         //if (event_list->falltimes != NULL)       delete [] event_list->falltimes;
          
-         if (event_list->event_indexes != NULL) 	delete [] event_list->event_indexes;    //!!!!!!!!!!!!!!!
+         //if (event_list->event_indexes != NULL) 	delete [] event_list->event_indexes;    //!!!!!!!!!!!!!!!
          
          pulsesAllAux->ndetpulses = (*pulsesAll)->ndetpulses;
          
@@ -826,20 +920,20 @@
      event_list->lagsShifts = new int[event_list->index];
      event_list->bsln = new double[event_list->index];
      event_list->rmsbsln = new double[event_list->index];
-     event_list->grading  = new int[event_list->index];
-     event_list->grades1  = new int[event_list->index];
-     event_list->grades2  = new int[event_list->index];
-     event_list->pulse_heights  = new double[event_list->index];
-     event_list->ph_ids   = new long[event_list->index];
-     event_list->ph_ids2   = new long[event_list->index];
-     event_list->ph_ids3   = new long[event_list->index];
-     event_list->pix_ids   = new long[event_list->index];
-     event_list->tends   = new double[event_list->index];
-     event_list->tstarts   = new double[event_list->index];
-     event_list->risetimes   = new double[event_list->index];
-     event_list->falltimes   = new double[event_list->index];
+     event_list->grading = new int[event_list->index];
+     //event_list->grades1 = new int[event_list->index];
+     event_list->grades2 = new int[event_list->index];
+    // event_list->pulse_heights = new double[event_list->index];
+     event_list->ph_ids = new long[event_list->index];
+     event_list->ph_ids2 = new long[event_list->index];
+     event_list->ph_ids3 = new long[event_list->index];
+     event_list->pix_ids = new long[event_list->index];
+     event_list->tends = new double[event_list->index];
+     event_list->tstarts = new double[event_list->index];
+     event_list->risetimes = new double[event_list->index];
+     event_list->falltimes = new double[event_list->index];
      
-     event_list->event_indexes   = new double[event_list->index];   //!!!!!!!!!!!!
+     //event_list->event_indexes = new double[event_list->index];   //!!!!!!!!!!!!
      
      if (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0)     // Different from PCA
      {
@@ -855,7 +949,7 @@
              {
                  event_list->energies[ip] = 999.;
              }
-             
+
              event_list->avgs_4samplesDerivative[ip] = pulsesInRecord->pulses_detected[ip].avg_4samplesDerivative;
              event_list->Es_lowres[ip] = pulsesInRecord->pulses_detected[ip].E_lowres;
              event_list->phis[ip] = pulsesInRecord->pulses_detected[ip].phi;
@@ -881,7 +975,9 @@
              double numLagsUsed_mean;
              double numLagsUsed_sigma;
              gsl_vector *numLagsUsed_vector = gsl_vector_alloc((*pulsesAll)->ndetpulses);
-             
+             //gsl_vector_set_all(numLagsUsed_vector,-999); // Debugger complains about an initialized variable in a conditional jump
+                                                          // (in findMeanSigma 6 lines forward)
+
              for (int ip=0; ip<(*pulsesAll)->ndetpulses; ip++)
              {
                  gsl_vector_set(numLagsUsed_vector,ip,(*pulsesAll)->pulses_detected[ip].numLagsUsed);
@@ -890,9 +986,8 @@
              {
                  EP_EXIT_ERROR("Cannot run findMeanSigma routine for calculating numLagsUsed statistics",EPFAIL);
              }
-             
-             gsl_vector_free(numLagsUsed_vector);
-         }           
+             if (numLagsUsed_vector != NULL) {gsl_vector_free(numLagsUsed_vector); numLagsUsed_vector = 0;}
+         }
      }
      else
      {
@@ -900,7 +995,7 @@
          {
              // Free & Fill TesEventList structure
              event_list->index = (*pulsesAll)->ndetpulses;
-             event_list->event_indexes = new double[event_list->index];
+             //event_list->event_indexes = new double[event_list->index];
              event_list->energies = new double[event_list->index];
              event_list->avgs_4samplesDerivative = new double[event_list->index];
              event_list->Es_lowres = new double[event_list->index];
@@ -909,9 +1004,9 @@
              event_list->bsln = new double[event_list->index];
              event_list->rmsbsln = new double[event_list->index];
              event_list->grading  = new int[event_list->index];
-             event_list->grades1  = new int[event_list->index];
+             //event_list->grades1  = new int[event_list->index];
              event_list->grades2  = new int[event_list->index];
-             event_list->pulse_heights  = new double[event_list->index];
+             //event_list->pulse_heights  = new double[event_list->index];
              event_list->ph_ids   = new long[event_list->index];
              event_list->pix_ids   = new long[event_list->index];
              event_list->risetimes   = new double[event_list->index];
@@ -955,7 +1050,7 @@
      return;
  }
  /*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
- 
+
  
  /***** SECTION 3 ************************************************************
   * ReconstructInitSIRENA: Constructor. It returns a pointer to an empty ReconstructInitSIRENA data structure.
@@ -968,6 +1063,7 @@
  extern "C" ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status)
  {	
      ReconstructInitSIRENA* reconstruct_init = new ReconstructInitSIRENA;
+     reconstruct_init->noise_spectrum = NULL;
      
      return(reconstruct_init);
  }
@@ -982,6 +1078,8 @@
   ******************************************************************************/
  extern "C" void freeReconstructInitSIRENA(ReconstructInitSIRENA* reconstruct_init)
  {
+     free(reconstruct_init->i2rdata); reconstruct_init->i2rdata = NULL;
+
      delete(reconstruct_init); reconstruct_init = 0;
  }
  /*xxxx end of SECTION 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
@@ -1011,6 +1109,9 @@
      // Initialize values for SIRENA
      PulsesColl->ndetpulses=0;
      PulsesColl->size = POOL_SIZE;
+
+     PulsesColl->pulses_detected->Tstart = -999;
+
      #endif
      
      return(PulsesColl);
@@ -1766,33 +1867,33 @@
      }
      
      // Free allocated GSL vectors and matrices
-     gsl_matrix_free(matrixAux_PULSE);
-     gsl_matrix_free(matrixAux_PULSEMaxLengthFixedFilter);
-     gsl_matrix_free(matrixAux_PULSEB0);
-     if (matrixAux_MF != NULL) gsl_matrix_free(matrixAux_MF);
-     if (matrixAux_MFB0 != NULL) gsl_matrix_free(matrixAux_MFB0);
-     if (matrixAux_V != NULL) gsl_matrix_free(matrixAux_V);
-     if (vectorAux_V != NULL) gsl_vector_free(vectorAux_V);
-     if (matrixAux_W != NULL) gsl_matrix_free(matrixAux_W);
-     if (vectorAux_W != NULL) gsl_vector_free(vectorAux_W);
-     if (matrixAux_WAB != NULL) gsl_matrix_free(matrixAux_WAB);
-     if (vectorAux_WAB != NULL) gsl_vector_free(vectorAux_WAB);
-     if (matrixAux_T != NULL) gsl_matrix_free(matrixAux_T);
-     if (vectorAux_T != NULL) gsl_vector_free(vectorAux_T);
-     if (vectorAux_t != NULL) gsl_vector_free(vectorAux_t);
-     if (matrixAux_X != NULL) gsl_matrix_free(matrixAux_X);
-     if (vectorAux_X != NULL) gsl_vector_free(vectorAux_X);
-     if (matrixAux_Y != NULL) gsl_matrix_free(matrixAux_Y);
-     if (vectorAux_Y != NULL) gsl_vector_free(vectorAux_Y);
-     if (matrixAux_Z != NULL) gsl_matrix_free(matrixAux_Z);
-     if (vectorAux_Z != NULL) gsl_vector_free(vectorAux_Z);
-     if (vectorAux_r != NULL) gsl_vector_free(vectorAux_r);
-     if (matrixAux_PAB != NULL) gsl_matrix_free(matrixAux_PAB);
-     if (vectorAux_PAB != NULL) gsl_vector_free(vectorAux_PAB);
-     if (matrixAux_PABMaxLengthFixedFilter != NULL) gsl_matrix_free(matrixAux_PABMaxLengthFixedFilter);
-     if (vectorAux_PABMaxLengthFixedFilter != NULL) gsl_vector_free(vectorAux_PABMaxLengthFixedFilter);
-     if (matrixAux_DAB != NULL) gsl_matrix_free(matrixAux_DAB);
-     if (vectorAux_DAB != NULL) gsl_vector_free(vectorAux_DAB);
+     gsl_matrix_free(matrixAux_PULSE); matrixAux_PULSE = 0;
+     gsl_matrix_free(matrixAux_PULSEMaxLengthFixedFilter); matrixAux_PULSEMaxLengthFixedFilter = 0;
+     gsl_matrix_free(matrixAux_PULSEB0); matrixAux_PULSEB0 = 0;
+     if (matrixAux_MF != NULL) {gsl_matrix_free(matrixAux_MF); matrixAux_MF = 0;}
+     if (matrixAux_MFB0 != NULL) {gsl_matrix_free(matrixAux_MFB0); matrixAux_MFB0 = 0;}
+     if (matrixAux_V != NULL) {gsl_matrix_free(matrixAux_V); matrixAux_V = 0;}
+     if (vectorAux_V != NULL) {gsl_vector_free(vectorAux_V); vectorAux_V = 0;}
+     if (matrixAux_W != NULL) {gsl_matrix_free(matrixAux_W); matrixAux_W = 0;}
+     if (vectorAux_W != NULL) {gsl_vector_free(vectorAux_W); vectorAux_W = 0;}
+     if (matrixAux_WAB != NULL) {gsl_matrix_free(matrixAux_WAB); matrixAux_WAB = 0;}
+     if (vectorAux_WAB != NULL) {gsl_vector_free(vectorAux_WAB); vectorAux_WAB = 0;}
+     if (matrixAux_T != NULL) {gsl_matrix_free(matrixAux_T); matrixAux_T = 0;}
+     if (vectorAux_T != NULL) {gsl_vector_free(vectorAux_T); vectorAux_T = 0;}
+     if (vectorAux_t != NULL) {gsl_vector_free(vectorAux_t); vectorAux_t = 0;}
+     if (matrixAux_X != NULL) {gsl_matrix_free(matrixAux_X); matrixAux_X = 0;}
+     if (vectorAux_X != NULL) {gsl_vector_free(vectorAux_X); vectorAux_X = 0;}
+     if (matrixAux_Y != NULL) {gsl_matrix_free(matrixAux_Y); matrixAux_Y = 0;}
+     if (vectorAux_Y != NULL) {gsl_vector_free(vectorAux_Y); vectorAux_Y = 0;}
+     if (matrixAux_Z != NULL) {gsl_matrix_free(matrixAux_Z); matrixAux_Z = 0;}
+     if (vectorAux_Z != NULL) {gsl_vector_free(vectorAux_Z); vectorAux_Z = 0;}
+     if (vectorAux_r != NULL) {gsl_vector_free(vectorAux_r); vectorAux_r = 0;}
+     if (matrixAux_PAB != NULL) {gsl_matrix_free(matrixAux_PAB); matrixAux_PAB = 0;}
+     if (vectorAux_PAB != NULL) {gsl_vector_free(vectorAux_PAB); vectorAux_PAB = 0;}
+     if (matrixAux_PABMaxLengthFixedFilter != NULL) {gsl_matrix_free(matrixAux_PABMaxLengthFixedFilter); matrixAux_PABMaxLengthFixedFilter = 0;}
+     if (vectorAux_PABMaxLengthFixedFilter != NULL) {gsl_vector_free(vectorAux_PABMaxLengthFixedFilter); vectorAux_PABMaxLengthFixedFilter = 0;}
+     if (matrixAux_DAB != NULL) {gsl_matrix_free(matrixAux_DAB); matrixAux_DAB = 0;}
+     if (vectorAux_DAB != NULL) {gsl_vector_free(vectorAux_DAB); vectorAux_DAB = 0;}
      
      // Added new code to handle the new HDUs FIXFILTF, FIXFILTT, PRECALWN and PRCLOFWM
      //if (opmode == 0)
@@ -1932,8 +2033,8 @@
              }
              else	index = index + pow(2,floor(log2(pulse_length))-i)*2;
              
-             gsl_matrix_free(matrixAux_OFFx);
-             gsl_matrix_free(matrixAuxab_OFFx);
+             gsl_matrix_free(matrixAux_OFFx); matrixAux_OFFx = 0;
+             gsl_matrix_free(matrixAuxab_OFFx); matrixAuxab_OFFx = 0;
          }
          
          // FIXFILTT HDU
@@ -2012,8 +2113,8 @@
              }
              else 	index = index + pow(2,floor(log2(pulse_length))-i);
              
-             gsl_matrix_free(matrixAux_OFTx);
-             gsl_matrix_free(matrixAuxab_OFTx);
+             gsl_matrix_free(matrixAux_OFTx); matrixAux_OFTx = 0;
+             gsl_matrix_free(matrixAuxab_OFTx); matrixAuxab_OFTx = 0;
          }
          for (int it=0;it<ntemplates;it++)
          {
@@ -2095,7 +2196,7 @@
                  
                  index = index + pow(2,floor(log2(pulse_length))-i)*2;
                  
-                 gsl_matrix_free(matrixAux_PRCLWNx);
+                 gsl_matrix_free(matrixAux_PRCLWNx); matrixAux_PRCLWNx = 0;
              }
              
              gsl_vector *vectorAux_PRCLWNx = gsl_vector_alloc(lengthALL_PRCLWN);
@@ -2108,14 +2209,14 @@
                      gsl_matrix_set_row(library_collection->PRECALWN,it,vectorAux_PRCLWNx);
                  }
              }
-             gsl_vector_free(vectorAux_PRCLWNx);
+             gsl_vector_free(vectorAux_PRCLWNx); vectorAux_PRCLWNx = 0;
          }
          
-         gsl_matrix_free(matrixALL_OFFx);
-         gsl_matrix_free(matrixALL_OFTx);
-         gsl_matrix_free(matrixALLab_OFFx);
-         gsl_matrix_free(matrixALLab_OFTx);
-         gsl_matrix_free(matrixALL_PRCLWNx);
+         gsl_matrix_free(matrixALL_OFFx); matrixALL_OFFx = 0;
+         gsl_matrix_free(matrixALL_OFTx); matrixALL_OFTx = 0;
+         gsl_matrix_free(matrixALLab_OFFx); matrixALLab_OFFx = 0;
+         gsl_matrix_free(matrixALLab_OFTx); matrixALLab_OFTx = 0;
+         gsl_matrix_free(matrixALL_PRCLWNx); matrixALL_PRCLWNx = 0;
          
          // PRCLOFWM HDU
          strcpy(HDUname,"PRCLOFWM");
@@ -2189,7 +2290,7 @@
                  }
                  else 	index = index + pow(2,floor(log2(pulse_length))-i)*2;
                  
-                 gsl_matrix_free(matrixAux_PRCLOFWMx);
+                 gsl_matrix_free(matrixAux_PRCLOFWMx); matrixAux_PRCLOFWMx = 0;
              }
              
              gsl_vector *vectorAux_PRCLOFWMx = gsl_vector_alloc(lengthALL_PRCLOFWM);
@@ -2199,9 +2300,9 @@
                  gsl_matrix_get_row(vectorAux_PRCLOFWMx,matrixALL_PRCLOFWMx,it);
                  gsl_matrix_set_row(library_collection->PRCLOFWM,it,vectorAux_PRCLOFWMx);
              }
-             gsl_vector_free(vectorAux_PRCLOFWMx);
+             gsl_vector_free(vectorAux_PRCLOFWMx); vectorAux_PRCLOFWMx = 0;
          }
-         gsl_matrix_free(matrixALL_PRCLOFWMx);
+         gsl_matrix_free(matrixALL_PRCLOFWMx); matrixALL_PRCLOFWMx = 0;
      }
      else if ((opmode == 0) && (preBuffer == 1))
      {
@@ -2265,8 +2366,8 @@
                  return(library_collection);
              }
              
-             gsl_matrix_free(matrixAux_OFFx);
-             gsl_matrix_free(matrixAuxab_OFFx);
+             gsl_matrix_free(matrixAux_OFFx); matrixAux_OFFx = 0;
+             gsl_matrix_free(matrixAuxab_OFFx); matrixAuxab_OFFx = 0;
          }
          
          // FIXFILTT HDU
@@ -2308,8 +2409,8 @@
              
              index = index + gsl_vector_get(posti,i);
              
-             gsl_matrix_free(matrixAux_OFTx);
-             gsl_matrix_free(matrixAuxab_OFTx);
+             gsl_matrix_free(matrixAux_OFTx); matrixAux_OFTx = 0;
+             gsl_matrix_free(matrixAuxab_OFTx); matrixAux_OFTx = 0;
          }
          for (int it=0;it<ntemplates;it++)
          {
@@ -2341,13 +2442,13 @@
              }
          }
          
-         gsl_matrix_free(matrixALL_OFFx);
-         gsl_matrix_free(matrixALL_OFTx);
-         gsl_matrix_free(matrixALLab_OFFx);
-         gsl_matrix_free(matrixALLab_OFTx);
+         gsl_matrix_free(matrixALL_OFFx); matrixALL_OFFx = 0;
+         gsl_matrix_free(matrixALL_OFTx); matrixALL_OFTx = 0;
+         gsl_matrix_free(matrixALLab_OFFx); matrixALLab_OFFx = 0;
+         gsl_matrix_free(matrixALLab_OFTx); matrixALLab_OFTx = 0;
      }
      
-     if ((opmode == 1) && (oflib == 1))
+     if (opmode == 1)
      { 
          char str_length[125];
          obj.iniRow = 1;
@@ -2476,7 +2577,7 @@
                         }
                         else    index = index + pow(2,floor(log2(template_duration))-i)*2;
                         
-                        gsl_matrix_free(matrixAux_OFFx);
+                        gsl_matrix_free(matrixAux_OFFx); matrixAux_OFFx = 0;
                     }
                  }
                  else // preBuffer=1
@@ -2502,7 +2603,7 @@
                         
                         index = index + gsl_vector_get(posti,i)*2;
                         
-                        gsl_matrix_free(matrixAux_OFFx);
+                        gsl_matrix_free(matrixAux_OFFx); matrixAux_OFFx = 0;
                     }
                  }
                  
@@ -2515,7 +2616,7 @@
                      gsl_matrix_get_row(library_collection->optimal_filters[it].ofilter,matrixALL_OFFx,it);
                  }
                  
-                 gsl_matrix_free(matrixALL_OFFx);
+                 gsl_matrix_free(matrixALL_OFFx); matrixALL_OFFx = 0;
              }
              else if (strcmp(*ofinterp,"DAB") == 0)
              {
@@ -2565,7 +2666,7 @@
                         }
                         else    index = index + pow(2,floor(log2(template_duration))-i)*2;
                         
-                        gsl_matrix_free(matrixAuxab_OFFx);
+                        gsl_matrix_free(matrixAuxab_OFFx); matrixAuxab_OFFx = 0;
                     }
                  }
                  else //preBuffer = 1
@@ -2591,7 +2692,7 @@
                          
                          index = index + gsl_vector_get(posti,i)*2;
                          
-                         gsl_matrix_free(matrixAuxab_OFFx);
+                         gsl_matrix_free(matrixAuxab_OFFx); matrixAuxab_OFFx = 0;
                      }
                  }
                  
@@ -2604,7 +2705,7 @@
                      gsl_matrix_get_row(library_collection->optimal_filters[it].ofilter,matrixALLab_OFFx,it);
                  }
                  
-                 gsl_matrix_free(matrixALLab_OFFx);
+                 gsl_matrix_free(matrixALLab_OFFx); matrixALLab_OFFx = 0;
              }
          }
          else if (strcmp(filter_domain,"T") == 0)
@@ -2729,7 +2830,7 @@
                         }
                         else    index = index + pow(2,floor(log2(template_duration))-i);
                         
-                        gsl_matrix_free(matrixAux_OFTx);
+                        gsl_matrix_free(matrixAux_OFTx); matrixAux_OFTx = 0;
                     }
                  }
                  else // preBuffer =1
@@ -2756,7 +2857,7 @@
                         
                         index = index + gsl_vector_get(posti,i);
                         
-                        gsl_matrix_free(matrixAux_OFTx);
+                        gsl_matrix_free(matrixAux_OFTx); matrixAux_OFTx = 0;
                     }
                  }
                  
@@ -2769,7 +2870,7 @@
                      gsl_matrix_get_row(library_collection->optimal_filters[it].ofilter,matrixALL_OFTx,it);
                  }
                  
-                 gsl_matrix_free(matrixALL_OFTx);
+                 gsl_matrix_free(matrixALL_OFTx); matrixALL_OFTx = 0;
              }
              else if (strcmp(*ofinterp,"DAB") == 0)
              {
@@ -2819,7 +2920,7 @@
                         }
                         else    index = index + pow(2,floor(log2(template_duration))-i);
                         
-                        gsl_matrix_free(matrixAuxab_OFTx);
+                        gsl_matrix_free(matrixAuxab_OFTx); matrixAuxab_OFTx = 0;
                     }
                  }
                  else // preBuffer = 1
@@ -2845,7 +2946,7 @@
                         
                         index = index + gsl_vector_get(posti,i);
                         
-                        gsl_matrix_free(matrixAuxab_OFTx);
+                        gsl_matrix_free(matrixAuxab_OFTx); matrixAuxab_OFTx = 0;
                     }
                  }
                  
@@ -2858,7 +2959,7 @@
                      gsl_matrix_get_row(library_collection->optimal_filters[it].ofilter,matrixALLab_OFTx,it);
                  }
                  
-                 gsl_matrix_free(matrixALLab_OFTx);
+                 gsl_matrix_free(matrixALLab_OFTx); matrixALLab_OFTx = 0;
              }	
          }  
      }
@@ -2977,12 +3078,12 @@
                  index = index + gsl_vector_get(posti,i)*2;
              }
              
-             gsl_matrix_free(matrixAux_PRCLOFWMx);
+             gsl_matrix_free(matrixAux_PRCLOFWMx); matrixAux_PRCLOFWMx = 0;
          }
          
          library_collection->PRCLOFWM = gsl_matrix_alloc(ntemplates, lengthALL_PRCLOFWM);
          gsl_matrix_memcpy(library_collection->PRCLOFWM,matrixALL_PRCLOFWMx);
-         gsl_matrix_free(matrixALL_PRCLOFWMx);
+         gsl_matrix_free(matrixALL_PRCLOFWMx); matrixALL_PRCLOFWMx = 0;
      }
      
      if ((opmode == 1) && (strcmp(energy_method,"WEIGHTN") == 0) && (ntemplates > 1))
@@ -3046,12 +3147,12 @@
              
              index = index + pow(2,floor(log2(template_duration))-i)*2;
              
-             gsl_matrix_free(matrixAux_PRCLWNx);
+             gsl_matrix_free(matrixAux_PRCLWNx); matrixAux_PRCLWNx = 0;
          }
          
          library_collection->PRECALWN = gsl_matrix_alloc(ntemplates, lengthALL_PRCLWN);
          gsl_matrix_memcpy(library_collection->PRECALWN,matrixALL_PRCLWNx);
-         gsl_matrix_free(matrixALL_PRCLWNx);
+         gsl_matrix_free(matrixALL_PRCLWNx); matrixALL_PRCLWNx = 0;
      }
      
      delete [] obj.nameTable;
@@ -3251,7 +3352,7 @@
                      gsl_vector *vectoraux = gsl_vector_alloc(weightMatrixi->size2);
                      gsl_matrix_get_row(vectoraux,weightMatrixi,0);
                      gsl_matrix_set_row(noise_spectrum->weightMatrixes,0,vectoraux);
-                     gsl_vector_free(vectoraux);
+                     gsl_vector_free(vectoraux); vectoraux = 0;
                  }
                  else
                  {
@@ -3261,7 +3362,7 @@
                      }
                  }
                  
-                 gsl_matrix_free(weightMatrixi);
+                 gsl_matrix_free(weightMatrixi); weightMatrixi = 0;
              }
          }
          
@@ -3281,6 +3382,33 @@
      return(noise_spectrum);
  }
  /*xxxx end of SECTION 10 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+ /***** SECTION 11 ************************************************************
+  * IntegrafreeTesEventListSIRENA: This function frees the structure in the input parameter.
+  *
+  ******************************************************************************/
+ extern "C" void IntegrafreeTesEventListSIRENA(TesEventList* event_list)
+ {
+    if (event_list->energies != NULL) 	delete [] event_list->energies;
+    if (event_list->avgs_4samplesDerivative != NULL) 	delete [] event_list->avgs_4samplesDerivative;
+    if (event_list->Es_lowres != NULL) 	delete [] event_list->Es_lowres;
+    if (event_list->phis != NULL) 	        delete [] event_list->phis;
+    if (event_list->lagsShifts != NULL) 	delete [] event_list->lagsShifts;
+    if (event_list->bsln != NULL) 	        delete [] event_list->bsln;
+    if (event_list->rmsbsln != NULL) 	delete [] event_list->rmsbsln;
+    if (event_list->grading != NULL) 	delete [] event_list->grading;
+    if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
+    if (event_list->ph_ids != NULL) 	delete [] event_list->ph_ids;
+    if (event_list->ph_ids2 != NULL) 	delete [] event_list->ph_ids2;
+    if (event_list->ph_ids3 != NULL) 	delete [] event_list->ph_ids3;
+    if (event_list->pix_ids != NULL) 	delete [] event_list->pix_ids;
+    if (event_list->tstarts != NULL) 	delete [] event_list->tstarts;
+    if (event_list->tends != NULL) 	        delete [] event_list->tends;
+    if (event_list->risetimes != NULL)       delete [] event_list->risetimes;
+    if (event_list->falltimes != NULL)       delete [] event_list->falltimes;
+}
+/*xxxx end of SECTION 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
  
  // It waits until all threads finish and it builds the 'event_list' by using the results
  void th_end(ReconstructInitSIRENA* reconstruct_init,
@@ -3577,7 +3705,16 @@
          delete noise_spectrum; noise_spectrum = 0;
      }
      if(grading) {
-         delete grading; grading = 0;
+         //delete grading; grading = 0;
+
+         //gsl_vector_free(grading->value); grading->value = 0; //Error
+         //gsl_matrix_free(grading->gradeData); grading->gradeData = 0;
+
+         //delete [] grading; // Aumentan en 2 los errores en valgrind
+
+          //delete [] grading->value; grading->value = 0; // Aumentan en 2 los errores en valgrind
+          //delete [] grading->gradeData; grading->gradeData = 0;
+          //delete grading; grading = 0;
      }
      if(i2rdata) {
          delete i2rdata; i2rdata = 0;
@@ -4884,4 +5021,3 @@
          return;
      }
  }
- 

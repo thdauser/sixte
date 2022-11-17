@@ -39,7 +39,6 @@ typedef struct {
 	int index;
 
 	/** Index arrival time of the photons inside a record */
-
 	//int * event_indexes;	
 	double * event_indexes;	//SIRENA
 

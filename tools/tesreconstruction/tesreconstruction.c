@@ -84,15 +84,15 @@
 * - NoiseFile: Noise FITS file with noise spectrum
 * - FilterDomain: Filtering Domain: Time (T) or Frequency (F)
 * - FilterMethod: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
-* - EnergyMethod: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED or PCA
-* - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RALL, I2RNOL and I2RFITTED)
+* - EnergyMethod: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED, I2RDER or PCA
+* - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RFITTED and I2RDER)
 * - Ifit: Constant to apply the I2RFITTED conversion
 * - OFNoise: Noise to use with Optimal Filtering: NSD or WEIGHTM
 * - LagsOrNot: Lags or no lags (1/0)
 * - nLags: Number of lags (positive odd number)
 * - Fitting35: Number of lags to analytically calculate a parabola (3) or to fit a parabola (5)
 * - OFIter: Iterate or not iterate (1/0) 
-* - OFLib: Work or not with a library with optimal filters (1/0)
+* - OFLib: Work or not with a library (1/0)
 * - OFStrategy: Optimal Filter length Strategy: FREE, BYGRADE or FIXED
 * - OFLength: Optimal Filter length (taken into account if OFStrategy=FIXED)
 * - preBuffer: Some samples added before the starting time of a pulse (number of samples added read from the xml file)
@@ -158,6 +158,10 @@ int tesreconstruction_main() {
   
   // Containing all programm parameters read by PIL.
   struct Parameters par;
+  par.hduPRCLOFWM = 0;  // Debugger complains about an initialized variable (only the boolean type)
+  par.hduPRECALWN = 0;  // Debugger complains about an initialized variable (only the boolean type)
+  par.preBuffer = 0;    // Debugger complains about an initialized variable (only the boolean type)
+  par.OFLib = 1;        // Debugger complains about an initialized variable (only the boolean type)
   
   // Error status.
   int status=EXIT_SUCCESS;
@@ -169,7 +173,7 @@ int tesreconstruction_main() {
   do { // Beginning of the ERROR handling loop (will at
        // most be run once).
     headas_chat(3, "initialize ...\n");
-    
+
     // Get program parameters.
     status=getpar(&par);
     CHECK_STATUS_BREAK(status);
@@ -180,7 +184,7 @@ int tesreconstruction_main() {
         return(EXIT_FAILURE);
     }
         
-    double sf = -999.; 
+    double sf = -999.;
     double sampling_rate = -999.0;
     AdvDet *det = newAdvDet(&status);
     CHECK_STATUS_BREAK(status);
@@ -202,20 +206,20 @@ int tesreconstruction_main() {
     
     int trig_reclength = -999;
     
-    char* firstchar = strndup(par.RecordFile, 1);
-    char firstchar2[2];
-    strcpy(firstchar2,firstchar);
-        
+    char firstchar = par.RecordFile[0];
+    char firstchar2[2] = {firstchar , '\0'};
+
     // Check if input file header is complete to work with xifusim/tessim simulated files
     // -------------------------------------------------------------------------------
     fitsfile* fptr = NULL;
+    //fitsfile* libptr = NULL;
     int numfits;
     int hdunum; // Number of HDUs (RECORDS-file or TESRECORDS-file)
     int tessimOrxifusim = -999;     // 0: tessim, 1: xifusim
     int numberkeywords;
-    char *headerPrimary;
-    char * sample_rate_pointer;
-    char * trig_reclength_pointer;
+    char *headerPrimary = NULL;
+    char *sample_rate_pointer = NULL;
+    char *trig_reclength_pointer = NULL;
     char each_character_after_srate[125];
     char each_character_after_treclength[125];
     char characters_after_srate[125];
@@ -225,7 +229,6 @@ int tesreconstruction_main() {
     
     if (strcmp(firstchar2,"@") == 0)
     {
-            //printf("%s %s %s","File: ",strndup(par.RecordFile+1, strlen(par.RecordFile)-1),"\n");
             FILE *filetxt = fopen(strndup(par.RecordFile+1, strlen(par.RecordFile)-1), "r");
             if (filetxt == NULL)    
             {
@@ -399,14 +402,22 @@ int tesreconstruction_main() {
                 SIXT_ERROR("Neither the 'RECORDS' nor 'TESRECORDS' HDUs are in the input FITS file");
                 return(EXIT_FAILURE);
             }
-            
+
+            if (par.opmode == 1)
+            {
+                status = checkXmls(&par);
+            }
+
             // Get the sampling rate from the HISTORY keyword from the input FITS file
             // Move to "Primary" HDU
             fits_movabs_hdu(fptr, 1, NULL, &status); 
             CHECK_STATUS_BREAK(status);
             // and read full Primary HDU and store it in 'headerPrimary'
-            fits_hdr2str(fptr, 0, NULL, 0,&headerPrimary, &numberkeywords, &status); 
-            CHECK_STATUS_BREAK(status);
+            if (fits_hdr2str(fptr, 0, NULL, 0,&headerPrimary, &numberkeywords, &status))
+            {
+                free(headerPrimary);
+                CHECK_STATUS_BREAK(status);
+            }
             
             // Pointer to where the text "sample_rate=" is in HISTORY block          
             sample_rate_pointer = strstr (headerPrimary,"sample_rate=");    
@@ -417,7 +428,7 @@ int tesreconstruction_main() {
             }
             else
             {
-                // Pointer to the next character to "sample_rate=" (12 characters)   
+                // Pointer to the next character to "sample_rate=" (12 characters)
                 sample_rate_pointer = sample_rate_pointer + 12; 
                 snprintf(each_character_after_srate,125,"%c",*sample_rate_pointer);
                 snprintf(characters_after_srate,125,"%c",*sample_rate_pointer);
@@ -449,7 +460,7 @@ int tesreconstruction_main() {
             
                 // Pointer to where the text "trig_reclength=" is in HISTORY block
                 trig_reclength = -999.0;
-                trig_reclength_pointer = strstr (headerPrimary,"trig_reclength=");   
+                trig_reclength_pointer = strstr (headerPrimary,"trig_reclength=");
                 if(!trig_reclength_pointer)
                 {
                     //SIXT_ERROR("'trig_reclength' is not in the input FITS file (necessary if SIRENA is going tu run in THREADING mode)");
@@ -476,6 +487,21 @@ int tesreconstruction_main() {
             }
             fits_close_file(fptr,&status);
             CHECK_STATUS_BREAK(status);
+    }
+
+    if (sample_rate_pointer != NULL)
+    {
+        sample_rate_pointer = NULL;
+        free(sample_rate_pointer);
+    }
+    if (trig_reclength_pointer != NULL)
+    {
+        trig_reclength_pointer = NULL;
+        free(trig_reclength_pointer);
+    }
+    if (headerPrimary != NULL)
+    {
+        free(headerPrimary);
     }
     
     // Sixt standard keywords structure
@@ -532,9 +558,23 @@ int tesreconstruction_main() {
             reconstruct_init_sirena->grading->gradeData = gsl_matrix_alloc(det->pix->ngrades,3);
             for (int i=0;i<det->pix->ngrades;i++)
             {
+                if ((int) (det->pix->grades[i].gradelim_post) != 8)
+                {
+                    if ((int) (det->pix->grades[i].grade_preBuffer) >= (int) (det->pix->grades[i].gradelim_post))
+                    {
+                        printf("%s %d %s %d %s","preBuffer=",(int) (det->pix->grades[i].grade_preBuffer)," for filter length ",(int) (det->pix->grades[i].gradelim_post),"\n");
+                        SIXT_ERROR("preBuffer values provided in the XML file should be lower than corresponding filter lengths");
+                        return(EXIT_FAILURE);
+                    }
+                }
                 gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,(int) (det->pix->grades[i].gradelim_pre));
                 gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,(int) (det->pix->grades[i].gradelim_post));
                 gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,(int) (det->pix->grades[i].grade_preBuffer));
+                if (((int) (det->pix->grades[i].gradelim_post) == 8) && ((int) (det->pix->grades[i].grade_preBuffer) != 0))
+                {
+                    printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
+                    gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
+                }
             }
         }
         else if(((det->nrecons != 0) && (det->npix == 0)) || ((det->nrecons == 1) && (det->npix == 1)))
@@ -548,9 +588,23 @@ int tesreconstruction_main() {
             reconstruct_init_sirena->grading->gradeData = gsl_matrix_alloc(det->recons->ngrades,3);
             for (int i=0;i<det->recons->ngrades;i++)
             {
+                if ((int) (det->recons->grades[i].gradelim_post) != 8)
+                {
+                    if ((int) (det->recons->grades[i].grade_preBuffer) >= (int) (det->recons->grades[i].gradelim_post))
+                    {
+                        printf("%s %d %s %d %s","preBuffer=",(int) (det->recons->grades[i].grade_preBuffer)," for filter length ",(int) (det->recons->grades[i].gradelim_post),"\n");
+                        SIXT_ERROR("preBuffer values provided in the XML file should be lower than corresponding filter lengths");
+                        return(EXIT_FAILURE);
+                    }
+                }
                 gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,0,(int) (det->recons->grades[i].gradelim_pre));
                 gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,1,(int) (det->recons->grades[i].gradelim_post));
                 gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,(int) (det->recons->grades[i].grade_preBuffer));
+                if (((int) (det->recons->grades[i].gradelim_post) == 8) && ((int) (det->recons->grades[i].grade_preBuffer) != 0))
+                {
+                    printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
+                    gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
+                }
             }
         }
         
@@ -578,6 +632,7 @@ int tesreconstruction_main() {
     // SIRENA method
     TesEventList* event_list = newTesEventListSIRENA(&status);
     allocateTesEventListTrigger(event_list,par.EventListSize,&status);
+    //allocateWholeTesEventListTrigger(event_list,par.EventListSize,&status);
     CHECK_STATUS_BREAK(status);
     // PP method
     TesEventList* event_listPP = newTesEventList(&status);
@@ -651,8 +706,8 @@ int tesreconstruction_main() {
                                     nrecord_filei = nrecord_filei + 1;
                                     if ((nrecord_filei == record_file->nrows) && (j == numfits-1)) lastRecord=1;  // lastRecord of all the FITS files
                                    
-                                    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) 
-                                        || (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
+                                    if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0)
+                                        || (strcmp(par.EnergyMethod,"I2RDER") == 0))
                                     {
                                             strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
                                     }
@@ -798,8 +853,8 @@ int tesreconstruction_main() {
                             	status=1;
                                 CHECK_STATUS_BREAK(status);
                             }*/
-                            if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RALL") == 0) 
-                                || (strcmp(par.EnergyMethod,"I2RNOL") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0))
+                            if ((strcmp(par.EnergyMethod,"I2R") == 0) || (strcmp(par.EnergyMethod,"I2RFITTED") == 0)
+                                || (strcmp(par.EnergyMethod,"I2RDER") == 0))
                             {
                                 strcpy(reconstruct_init_sirena->EnergyMethod,par.EnergyMethod);
                             }
@@ -820,6 +875,11 @@ int tesreconstruction_main() {
                                     //Reinitialize event list
                                     event_list->index=0;
                             }
+
+                            IntegrafreeTesEventListSIRENA(event_list);
+                            //if (NULL!=event_list->event_indexes) free(event_list->event_indexes);
+                            //if (NULL!=event_list->grades1) free(event_list->grades1);
+                            //if (NULL!=event_list->pulse_heights) free(event_list->pulse_heights);
                     }
             }
             
@@ -835,6 +895,10 @@ int tesreconstruction_main() {
                             CHECK_STATUS_BREAK(status);
                             ++i;
                     }
+                    IntegrafreeTesEventListSIRENA(event_list);
+                    //if (NULL!=event_list->event_indexes) free(event_list->event_indexes);
+                    //if (NULL!=event_list->grades1) free(event_list->grades1);
+                    //if (NULL!=event_list->pulse_heights) free(event_list->pulse_heights);
             }
             
             if ((!strcmp(par.Rcmethod,"SIRENA")) && (pulsesAll->ndetpulses == 0)) 
@@ -881,11 +945,18 @@ int tesreconstruction_main() {
     
     //Free memory
     freeReconstructInit(reconstruct_init);
+    if (reconstruct_init_sirena->grading != NULL)
+    {
+        gsl_vector_free(reconstruct_init_sirena->grading->value); reconstruct_init_sirena->grading->value = 0;
+        gsl_matrix_free(reconstruct_init_sirena->grading->gradeData); reconstruct_init_sirena->grading->gradeData = 0;
+    }
+    free(reconstruct_init_sirena->grading);
+    reconstruct_init_sirena->grading = 0;
     freeReconstructInitSIRENA(reconstruct_init_sirena);
     freePulsesCollection(pulsesAll);
     freeOptimalFilterSIRENA(optimalFilter);
     freeTesEventFile(outfile,&status);
-    freeTesEventList(event_list);
+    freeTesEventListSIRENA(event_list);
     freeTesEventList(event_listPP);
     freeTesRecord(&record);
     freeSixtStdKeywords(keywords);
@@ -1035,6 +1106,10 @@ int getpar(struct Parameters* const par)
       status=ape_trad_query_int("samplesDown", &par->samplesDown);
       
       status=ape_trad_query_double("nSgms", &par->nSgms);
+
+      status=ape_trad_query_string("detectionMode", &sbuffer);
+      strcpy(par->detectionMode, sbuffer);
+      free(sbuffer);
       
       status=ape_trad_query_int("detectSP", &par->detectSP);
       
@@ -1098,13 +1173,20 @@ int getpar(struct Parameters* const par)
       status=ape_trad_query_string("OFStrategy", &sbuffer);
       strcpy(par->OFStrategy, sbuffer);
       free(sbuffer);
-      
+
+      if ((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"I2R") == 0) || (strcmp(par->EnergyMethod,"I2RFITTED") == 0) || (strcmp(par->EnergyMethod,"I2RDER") == 0))
+      {
+        if (strcmp(par->OFStrategy,"FREE") == 0)  par->OFLib = 0;
+        else if (strcmp(par->OFStrategy,"FIXED") == 0)    par->OFLib = 1;
+        else if (strcmp(par->OFStrategy,"BYGRADE") == 0)  par->OFLib = 1;
+      }
+
       status=ape_trad_query_int("OFLength", &par->OFLength);
       
       status=ape_trad_query_bool("preBuffer", &par->preBuffer);
       
       status=ape_trad_query_int("errorT", &par->errorT);
-      
+
       status=ape_trad_query_int("Sum0Filt", &par->Sum0Filt);
       
       //status=ape_trad_query_int("tstartPulse1", &par->tstartPulse1);
@@ -1159,8 +1241,8 @@ int getpar(struct Parameters* const par)
       MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0),"FilterMethod must be F0 or B0");
       
       MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
-      (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) 
-      || (strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA");
+      (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) ||	(strcmp(par->EnergyMethod,"I2RDER") == 0)
+      || (strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED, I2RDER or PCA");
       
       MyAssert((strcmp(par->OFNoise,"NSD") == 0) || (strcmp(par->OFNoise,"WEIGHTM") == 0), "OFNoise must be NSD or WEIGHTM");
       
@@ -1230,8 +1312,6 @@ int getpar(struct Parameters* const par)
       
       MyAssert(par->OFLength > 0, "OFLength must be greater than 0");
       
-      //MyAssert(par->preBuffer >= 0, "preBuffer must be 0 or greater than 0");
-      
       MyAssert(par->energyPCA1 > 0, "energyPCA1 must be greater than 0");
       MyAssert(par->energyPCA2 > 0, "energyPCA2 must be greater than 0");
       
@@ -1262,3 +1342,98 @@ void MyAssert(int expr, char* msg)
     }
 }
 /*xxxx end of SECTION 3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 4 ************************************************************
+* checkxmls function: Check if the XML file used to build the library is the same to be used to recconstruct
+*
+* Parameters:
+* - par: Structure containing the input parameters
+******************************************************************************/
+int checkXmls(struct Parameters* const par)
+{
+    // Error status.
+    int status=EXIT_SUCCESS;
+
+    fitsfile* libptr = NULL;
+    int numberkeywords;
+    char *libheaderPrimary = NULL;
+    char *endxml_pointer = NULL;
+    char *startxml_pointer = NULL;
+    char *slash_pointer = NULL;
+    char libXMLfile[125] = "lib.xml";
+    char reconsXMLfile[125] = "recons.xml";
+    int lengthxml = 0;
+
+    // Move to "Primary" HDU of the library file
+    fits_open_file(&libptr, par->LibraryFile, READONLY, &status);
+    if (status != 0)
+    {
+        SIXT_ERROR("File given in LibraryFile does not exist");
+        return(EXIT_FAILURE);
+    }
+
+    if (fits_movabs_hdu(libptr, 1, NULL, &status))
+    {
+        return(EXIT_FAILURE);
+    }
+    // and read full Primary HDU and store it in 'libheaderPrimary'
+    if (fits_hdr2str(libptr, 0, NULL, 0,&libheaderPrimary, &numberkeywords, &status))
+    {
+        free(libheaderPrimary);
+        return(EXIT_FAILURE);
+    }
+
+    endxml_pointer = strstr(libheaderPrimary,".xml");
+    if(!endxml_pointer)
+    {
+        SIXT_ERROR("XML file info not included in Primary HDU in library file");
+        return(EXIT_FAILURE);
+    }
+    else
+    {
+        startxml_pointer = endxml_pointer - 1;
+        while ((*startxml_pointer != '/') && (*startxml_pointer != ' ') && (*startxml_pointer != '='))
+        {
+            startxml_pointer = startxml_pointer - 1;
+            lengthxml = lengthxml +1;
+        }
+        startxml_pointer = startxml_pointer + 1;
+        strncpy(libXMLfile,startxml_pointer,lengthxml+4);
+    }
+
+    slash_pointer = strstr(par->XMLFile,"/");
+    if (slash_pointer)
+    {
+        endxml_pointer = strstr(par->XMLFile,".xml");
+        startxml_pointer = endxml_pointer - 1;
+        lengthxml = 0;
+        while ((*startxml_pointer != '/') && (*startxml_pointer != ' ') && (*startxml_pointer != '='))
+        {
+            startxml_pointer = startxml_pointer - 1;
+            lengthxml = lengthxml +1;
+        }
+        startxml_pointer = startxml_pointer + 1;
+        strncpy(reconsXMLfile,startxml_pointer,lengthxml+4);
+    }
+    else strcpy(reconsXMLfile,par->XMLFile);
+
+    if (libheaderPrimary != NULL)
+    {
+        free(libheaderPrimary);
+    }
+
+    fits_close_file(libptr,&status);
+
+    if (strcmp(libXMLfile, reconsXMLfile) == 0) status = 0;
+    else status = 1;
+
+    if (status != 0)
+    {
+        SIXT_ERROR("XML file from library FITS file and from input parameter do not match");
+        return(EXIT_FAILURE);
+    }
+
+    return(status);
+}
+/*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
