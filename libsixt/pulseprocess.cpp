@@ -1562,7 +1562,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
 	gsl_vector_memcpy(*modelFound,&temp.vector);
 
-	gsl_vector_free(modelFound_aux); modelFound_aux = 0;
+	if (modelFound_aux != 0) {gsl_vector_free(modelFound_aux); modelFound_aux = 0;}
     
     message.clear();
 

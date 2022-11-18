@@ -283,7 +283,7 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
     log_trace("After detecting...");
     
     // From this point forward, I2R and I2RFITTED are completely equivalent to OPTFILT
-    if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0))
+    if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0) ||  (strcmp((*reconstruct_init)->EnergyMethod,"I2RDER") == 0))
     {
         strcpy((*reconstruct_init)->EnergyMethod,"OPTFILT"); // From this point forward, I2R and I2RFITTED are completely equivalent to OPTFILT
     }
@@ -992,7 +992,7 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nre
     gsl_vector_free(invectorOriginal); invectorOriginal = 0;
     gsl_vector_free(phid); phid = 0;
     
-    if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0))
+    if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RDER") == 0))
     {
         strcpy((*reconstruct_init)->EnergyMethod,"OPTFILT"); 
         // From this point forward, I2R or I2RFITTED are completely equivalent to OPTFILT
@@ -2500,7 +2500,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
     {
         if ((*reconstruct_init)->opmode == 1)    gsl_vector_set(tstartgsl,i,gsl_vector_get(tstartgsl,i) + (*reconstruct_init)->errorT);
         
-        if (((strcmp((*reconstruct_init)->EnergyMethod,"OPTFILT") == 0) && (strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) && (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0)) && ((*reconstruct_init)->pulse_length < (*reconstruct_init)->OFLength) && (strcmp((*reconstruct_init)->OFStrategy,"BYGRADE") == 0) && ((*reconstruct_init)->opmode == 1))
+        if (((strcmp((*reconstruct_init)->EnergyMethod,"OPTFILT") == 0) && (strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) && (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0) && (strcmp((*reconstruct_init)->EnergyMethod,"OPTFILT") == 0)) && ((*reconstruct_init)->pulse_length < (*reconstruct_init)->OFLength) && (strcmp((*reconstruct_init)->OFStrategy,"BYGRADE") == 0) && ((*reconstruct_init)->opmode == 1))
         {
             gsl_vector_set(tendgsl,i,(recordDERIVATIVE->size)-1);
         }
@@ -9163,7 +9163,7 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
                 message = "Cannot run find_model_energies routine for pulse i=" + boost::lexical_cast<std::string>(i);
                 EP_EXIT_ERROR(message,EPFAIL);
             }
-            
+
             tstartJITTER = ((*pulsesInRecord)->pulses_detected[i].Tstart-record->time)/record->delta_t;
             shift = tstartJITTER - tstartSamplesRecord;
             // In order to subtract the pulse model, it has to be located in the tstart with jitter and know its values in the digitized samples

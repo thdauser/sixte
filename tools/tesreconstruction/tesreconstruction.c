@@ -1427,6 +1427,8 @@ int checkXmls(struct Parameters* const par)
 
     if (strcmp(libXMLfile, reconsXMLfile) == 0) status = 0;
     else status = 1;
+    //printf("%s %s",libXMLfile,"\n");
+    //printf("%s %s",reconsXMLfile,"\n");
 
     if (status != 0)
     {

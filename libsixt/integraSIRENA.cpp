@@ -198,7 +198,7 @@
                  pulse_length = oflength;
                  EP_PRINT_ERROR("Pulse length not provided => Fixed as OFLength (provide a different PulseLength value if 0-padding)",-999); // Only a warning
              }*/
-             if ((pulse_length < oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
+             if ((pulse_length < oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)|| (strcmp(energy_method,"I2RDER") == 0)))
              {
                  EP_PRINT_ERROR("0-padding is going to be used",-999); // Only a warning
                  /*if (preBuffer > pulse_length)
@@ -206,7 +206,7 @@
                     EP_EXIT_ERROR("It has no sense preBuffer>PulseLength",EPFAIL);
                  }*/
              }
-             else if ((pulse_length > oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
+             else if ((pulse_length > oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)))
              {
                  pulse_length = oflength;
              }
@@ -223,7 +223,7 @@
          if ((opmode == 1) && (pulse_length > reconstruct_init->library_collection->pulse_templates[0].template_duration))
          {
              if ((oflib == 0)
-                 && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
+                 && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)))
              {
                  EP_EXIT_ERROR("It is not possible PulseLength>PULSE_column_length and OFLib=no",EPFAIL);
              }
@@ -247,17 +247,17 @@
      // Load NoiseSpec structure
      //reconstruct_init->noise_spectrum = NULL;
      bool baselineReadFromLibrary = true;
-     if ((((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(filter_method,"B0") == 0)) )|| (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1))
+     if ((((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(filter_method,"B0") == 0)) )|| (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1))
      {
          if (reconstruct_init->library_collection->baseline == -999.0)  baselineReadFromLibrary = false;
      }
      
      if ((opmode == 0) || 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (opmode == 1) && (oflib == 0))
+         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (opmode == 1) && (oflib == 0))
          || ((opmode == 1) && (strcmp(energy_method,"WEIGHT") == 0) && (oflib == 0))
          || ((opmode == 1) && (strcmp(energy_method,"WEIGHTN") == 0) && (oflib == 0))
          // If BASELINE is not in the library file, it is necessary to read its value from the noise file 
-         || ((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)  && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false))) 
+         || ((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)  && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false)))
      {
          exists=0;
          if(fits_file_exists(noise_file, &exists, status))
@@ -277,7 +277,7 @@
          {
              EP_EXIT_ERROR((char*)"Error in getNoiseSpec",EPFAIL);
          }
-         if ((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false))
+         if ((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0) && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false))
          {
              reconstruct_init->library_collection->baseline = reconstruct_init->noise_spectrum->baseline;
          }
@@ -508,7 +508,7 @@
          reconstruct_init->i2rdata->L = -999;
          reconstruct_init->i2rdata->Ifit = reconstruct_init->Ifit;
          //if (strcmp(reconstruct_init->EnergyMethod,"OPTFILT") != 0)
-         if ((strcmp(reconstruct_init->EnergyMethod,"I2R") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RFITTED") == 0))
+         if ((strcmp(reconstruct_init->EnergyMethod,"I2R") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RFITTED") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2R") == 0))
          {
              char extname[20];
              char keyname[10];
@@ -1248,7 +1248,7 @@
      }
      
      if ((opmode == 1) && 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0))))
+         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0))))
      {
          if (ntemplates == 1)
          {	
@@ -1303,7 +1303,7 @@
      }
      
      if ((opmode == 0) || 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1))) 
+         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
      {
          strcpy(column_name,"MF");
          if (fits_get_colnum(fptr, CASEINSEN,column_name, &mfilter_colnum, status))
@@ -1425,7 +1425,7 @@
      // Get matched filter duration
      int mfilter_duration;
      if ((opmode == 0) || 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
+         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)|| (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
      {
          if (fits_read_tdim(fptr, mfilter_colnum, 1, &naxis, &naxes, status))
          {
@@ -1528,7 +1528,7 @@
      gsl_matrix *matrixAux_MF = NULL;
      gsl_matrix *matrixAux_MFB0 = NULL;
      if ((opmode == 0) || 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
+         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
      {
          if ((opmode == 0) || (strcmp(filter_method,"F0") == 0))
          {
@@ -1691,7 +1691,7 @@
          }
      }
      
-     if (((opmode == 1) && ((strcmp(energy_method,"WEIGHTN") == 0) || (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (strcmp(ofnoise,"NSD") == 0))))
+     if (((opmode == 1) && ((strcmp(energy_method,"WEIGHTN") == 0) || (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (strcmp(ofnoise,"NSD") == 0))))
          || ((opmode == 0) && (ntemplates >1)))  
      {
          if (ntemplates == 1)
@@ -1761,7 +1761,7 @@
          library_collection->matched_filters_B0[it].energy 	= gsl_vector_get(library_collection->energies,it);
          
          if (((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19)) && ((opmode == 0) 
-             || ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))))	
+             || ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)))))
          {
              library_collection->pulse_templatesMaxLengthFixedFilter[it].ptemplate    = gsl_vector_alloc(template_durationPLSMXLFF);
              gsl_matrix_get_row(library_collection->pulse_templatesMaxLengthFixedFilter[it].ptemplate,matrixAux_PULSEMaxLengthFixedFilter,it);
@@ -1772,7 +1772,7 @@
          gsl_matrix_get_row(library_collection->pulse_templates_B0[it].ptemplate,matrixAux_PULSEB0,it);
          
          if ((opmode == 0) || 
-             (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
+             (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
          {
              if ((opmode == 0) || (strcmp(filter_method,"F0") == 0)) 
              {
@@ -1784,7 +1784,7 @@
              }
          }
          
-         if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"DAB") == 0))
+         if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"DAB") == 0))
          {
              if ((opmode == 1)  && (it < ntemplates-1))
              {
@@ -1793,7 +1793,7 @@
              }
          }
          
-         if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (opmode == 1))
+         if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (opmode == 1))
          {
              if ((opmode == 1)  && (it < ntemplates-1))
              {
@@ -2488,7 +2488,6 @@
              {
                  if (ntemplates == 1)   nOFs = nOFs-1;		// -1 because the ENERGYcolumn
                  else                   nOFs = (nOFs-1)/2;	// /2 because the AB column             
-                 
              }
              
              if (nOFs == 0)	
@@ -2964,7 +2963,7 @@
          }  
      }
      
-     if ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(ofnoise,"WEIGHTM") == 0) && (oflib == 1))
+     if ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(ofnoise,"WEIGHTM") == 0) && (oflib == 1))
      {
          char str_length[125];
          obj.iniRow = 1;
@@ -3222,7 +3221,7 @@
      }
      
      if ((opmode == 0) ||
-         ((opmode == 1) && (strcmp(filter_method,"B0") == 0) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)))
+         ((opmode == 1) && (strcmp(filter_method,"B0") == 0) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)|| (strcmp(energy_method,"I2RDER") == 0)))
          || ((opmode == 1) && (strcmp(energy_method,"WEIGHT") == 0)))
      {
          strcpy(keyname,"BASELINE");
@@ -3308,7 +3307,7 @@
          }
          
          if (((opmode == 0) && (hduPRCLOFWM == 1))
-             || ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)) && (strcmp(ofnoise,"WEIGHTM") == 0)))
+             || ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(ofnoise,"WEIGHTM") == 0)))
          {
              // Move to the WEIGHTMS hdu
              strcpy(HDUname,"WEIGHTMS");
