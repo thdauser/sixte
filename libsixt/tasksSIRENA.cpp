@@ -10757,6 +10757,7 @@ int find_matchedfilter(int runF0orB0val, double maxDER, gsl_vector *maxDERs, int
     else
     {
         nummodels = 1;
+        margin = 0.0;
         maxDERs_LIB1row = gsl_vector_alloc(1);
         for (int i=0;i<maxDERs->size;i++)
         {
@@ -11066,6 +11067,7 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
     else
     {
         nummodels = 1;
+        margin = 0.0;
         maxDERs_LIB1row = gsl_vector_alloc(1);
         for (int i=0;i<maxDERs->size;i++)
         {
@@ -11138,7 +11140,7 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
                 break;
             }
             //else if ((maxDER > gsl_vector_get(maxDERs,i)) && (maxDER < gsl_vector_get(maxDERs,i+1)))
-            else if ((maxDER > (gsl_vector_get(maxDERs_LIB1row,i)-gsl_vector_get(maxDERs_LIB1row,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs_LIB1row,i+1)-gsl_vector_get(maxDERs_LIB1row,i+1)*margin/100.0)))
+            else if ((maxDER > (gsl_vector_get(maxDERs,i)-gsl_vector_get(maxDERs,i)*margin/100.0)) && (maxDER < (gsl_vector_get(maxDERs,i+1)-gsl_vector_get(maxDERs,i+1)*margin/100.0)))
             {
                 *Ealpha = gsl_vector_get(reconstruct_init->library_collection->energies,i);
                 *Ebeta = gsl_vector_get(reconstruct_init->library_collection->energies,i+1);
@@ -11163,7 +11165,7 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
                 
                 gsl_vector_memcpy(optimalfilterFound_Aux,optimalfilter_Aux2);
                 
-                gsl_vector_free(optimalfilter_Aux2); optimalfilter_Aux2 = 0;
+                if (optimalfilter_Aux2 != NULL) {gsl_vector_free(optimalfilter_Aux2); optimalfilter_Aux2 = 0;}
                 
                 break;
             }
@@ -11218,11 +11220,11 @@ int find_optimalfilter(double maxDER, gsl_vector *maxDERs, ReconstructInitSIRENA
         else if (strcmp(reconstruct_init->FilterDomain,"T") == 0)       index = index + gsl_vector_get(fixedlengths,i);
     }
     
-    gsl_vector_free(optimalfilterFound_Aux); optimalfilterFound_Aux = 0;
+    if (optimalfilterFound_Aux != NULL) {gsl_vector_free(optimalfilterFound_Aux); optimalfilterFound_Aux = 0;}
     
-    gsl_vector_free(maxDERs_LIB1row); maxDERs_LIB1row = 0;
+    if (maxDERs_LIB1row != NULL) {gsl_vector_free(maxDERs_LIB1row); maxDERs_LIB1row = 0;}
 
-    gsl_vector_free(fixedlengths); fixedlengths;
+    if (fixedlengths != NULL) {gsl_vector_free(fixedlengths); fixedlengths = 0;}
     
     message.clear();
     
@@ -11417,9 +11419,9 @@ int find_optimalfilterDAB(double maxDER, gsl_vector *maxDERs, ReconstructInitSIR
         else if (strcmp(reconstruct_init->FilterDomain,"T") == 0) 	index = index + gsl_vector_get(fixedlengths,i);
     }
     
-    gsl_vector_free(optimalfilterFound_Aux); optimalfilterFound_Aux = 0;
-    gsl_vector_free(PabFound_Aux); PabFound_Aux = 0;
-    gsl_vector_free(fixedlengths); fixedlengths = 0;
+    if (optimalfilterFound_Aux != NULL) {gsl_vector_free(optimalfilterFound_Aux); optimalfilterFound_Aux = 0;}
+    if (PabFound_Aux != NULL) {gsl_vector_free(PabFound_Aux); PabFound_Aux = 0;}
+    if (fixedlengths != NULL) {gsl_vector_free(fixedlengths); fixedlengths = 0;}
     
     message.clear();
     
