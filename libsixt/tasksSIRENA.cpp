@@ -7903,6 +7903,9 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
         // It is not necessary to check the allocation beacuse 'invector' size must be > 0
         gsl_vector_memcpy(I,*invector);
 
+        /*cout<<"ADU_CNV: "<<ADU_CNV<<endl;
+        cout<<"ADU_BIAS: "<<ADU_BIAS<<endl;
+        cout<<"I_BIAS: "<<I_BIAS<<endl;*/
         if (ADU_CNV == -999)
         {
             // I = ADC*aducnv+IMIN

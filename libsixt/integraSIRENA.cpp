@@ -508,7 +508,7 @@
          reconstruct_init->i2rdata->L = -999;
          reconstruct_init->i2rdata->Ifit = reconstruct_init->Ifit;
          //if (strcmp(reconstruct_init->EnergyMethod,"OPTFILT") != 0)
-         if ((strcmp(reconstruct_init->EnergyMethod,"I2R") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RFITTED") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2R") == 0))
+         if ((strcmp(reconstruct_init->EnergyMethod,"I2R") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RFITTED") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RDER") == 0))
          {
              char extname[20];
              char keyname[10];
