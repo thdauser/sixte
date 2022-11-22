@@ -242,7 +242,13 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
         message = "Weird oscillations in record " + string(str_nrecord);
         EP_PRINT_ERROR(message,-999);	// Only a warning
     }
-    
+
+    /*cout<<"NOCONVERTED:"<<endl;
+    for (int i=400;i<1400;i++)
+    {
+        cout<<i<<" "<<gsl_vector_get(invector,i)<<endl;
+    }*/
+
     // Convert I into R if 'EnergyMethod' = I2R or I2RFITTED
     if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RDER") == 0))
     {
@@ -263,6 +269,12 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
             EP_EXIT_ERROR(message,EPFAIL);
         }
     }
+
+    /*cout<<"CONVERTED:"<<endl;
+    for (int i=400;i<1400;i++)
+    {
+        cout<<i<<" "<<gsl_vector_get(invector,i)<<endl;
+    }*/
     
     for (int i=0;i<invector->size;i++)	// Because in 'runEnergy' the record (TesRecord) is used => The I2R or I2RFITTED transformed record has to be used
     {
@@ -7773,6 +7785,10 @@ int vector2matrix (gsl_vector *vectorin, gsl_matrix **matrixout)
  * 
  *      - Conversion according to 'EnergyMethod'=I2RFITTED:
  *          R/V0 = -1/(Ifit+ADC) being Ifit an input parameter
+ *
+ * Conversion according to 'EnergyMethod'=I2RFITTED:
+ *
+ *    R = (V0-I·RL-L·dI/dt)/I
  *  
  * Parameters:
  * - Ibias: Initial bias current (I0_START column)
@@ -7781,6 +7797,10 @@ int vector2matrix (gsl_vector *vectorin, gsl_matrix **matrixout)
  * - ADU_CNV: Conversion factor (A/adu) (ADU_CNV keyword)
  * - ADU_BIAS: Bias currente (adu) (ADU_BIAS keyword)
  * - I_BIAS: Bias current (A) (I_BIAS keyword)
+ * - Ifit:
+ * - V0:
+ * - RL:
+ * - L:
  * - samprate: Sampling rate
  * - invector: Input current (ADC) vector & output resistance (I2R or I2RFITTED) vector
  ******************************************************************************/
@@ -7800,10 +7820,15 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
             aducnv = 1;
             //message = "ADU_CNV not found or Imin or Imax not found or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
             //EP_PRINT_ERROR(message,-999);	// Only a warning
+
+            gsl_vector_scale(*invector,aducnv);             	  // invector = I(adu)*aducnv (I(adu) is the ADC column)
         }
         else
         {
             aducnv = (Imax-Imin)/65534;    // Quantification levels = 65534    // If this calculus changes => Change it also in GENNOISESPEC
+
+            gsl_vector_scale(*invector,aducnv);             	  // invector = I(adu)*aducnv (I(adu) is the ADC column)
+            gsl_vector_add_constant(*invector,Imin);		      // invector = I(Amp) = I(adu)*aducnv+IMIN
         }
         
         // I = ADC*aducnv+IMIN
@@ -7812,8 +7837,7 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
         
         // It is not necessary to check the allocation beacuse 'invector' size must be > 0
         gsl_vector *invector_modified = gsl_vector_alloc((*invector)->size);
-        gsl_vector_scale(*invector,aducnv);             	  // invector = I(adu)*aducnv (I(adu) is the ADC column)
-        gsl_vector_add_constant(*invector,Imin);		      // invector = I(Amp) = I(adu)*aducnv+IMIN
+
         gsl_vector_add_constant(*invector,-1*Ibias); 		  // invector = DeltaI = abs(I(Amp)-I0_START)
         for (int i=0;i<(*invector)->size;i++)
         {
@@ -7839,7 +7863,7 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
         gsl_vector_memcpy(deltai,*invector);
         gsl_vector_add_constant(deltai,-1.0*ADU_BIAS);
         gsl_vector_scale(deltai,ADU_CNV);                     // deltai = ADU_CNV * (I(adu) - ADU_BIAS) (I(adu) is the ADC column)
-        gsl_vector_add_constant(deltai,I_BIAS);               // deltai = ADU_CNV * (I(adu) - ADU_BIAS) + I_BIAS
+        //gsl_vector_add_constant(deltai,I_BIAS);               // deltai = ADU_CNV * (I(adu) - ADU_BIAS) + I_BIAS
         
         for (int i=0;i<deltai->size;i++)
         {
@@ -7882,24 +7906,28 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
         if (ADU_CNV == -999)
         {
             // I = ADC*aducnv+IMIN
+            //cout<<"I = ADC*aducnv+IMIN"<<endl;
 
             if (((Imin == -999.0) || (Imax == -999.0)) || ((Imin == 0) || (Imax == 0)))
             {
                 aducnv = 1;
                 //message = "ADU_CNV not found or Imin or Imax not found or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
                 //EP_PRINT_ERROR(message,-999);	// Only a warning
+
+                gsl_vector_scale(I,aducnv);
             }
             else
             {
                 aducnv = (Imax-Imin)/65534;    // Quantification levels = 65534    // If this calculus changes => Change it also in GENNOISESPEC
-            }
 
-            gsl_vector_scale(I,aducnv);             	  // invector = I(adu)*aducnv (I(adu) is the ADC column)
-            gsl_vector_add_constant(I,Imin);		      // invector = I(Amp) = I(adu)*aducnv+IMIN
+                gsl_vector_scale(I,aducnv);             	  // invector = I(adu)*aducnv (I(adu) is the ADC column)
+                gsl_vector_add_constant(I,Imin);		      // invector = I(Amp) = I(adu)*aducnv+IMIN
+            }
         }
         else if (ADU_CNV != -999)
         {
             // I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS
+            //cout<<"I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS"<<endl;
 
             gsl_vector_add_constant(I,-1.0*ADU_BIAS); // ADC - ADU_BIAS
             gsl_vector_scale(I,ADU_CNV);              // ADU_CNV * (ADC - ADU_BIAS)
@@ -8433,7 +8461,8 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
     }
     
     // Check Quality
-    iter = 0;
+    // Do not check the saturated pulses quality because saturated pulses have not been classified in 'procRecord'
+    /*iter = 0;
     for (int i=0; i<(*pulsesInRecord)->ndetpulses;i++)
     {
         if ((*pulsesInRecord)->pulses_detected[i].quality >= 10)  // Saturated pulse
@@ -8445,7 +8474,21 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
     {
         message = "There are no unsaturated pulses in one record";
         EP_PRINT_ERROR(message,-999); // Only a warning
+    }*/
+    iter = 0;
+    for (int i=0; i<(*pulsesInRecord)->ndetpulses;i++)
+    {
+        if ((*pulsesInRecord)->pulses_detected[i].quality != 0)  // quality != 0 => Not reconstructed
+        {
+            iter++;
+        }
     }
+    if (iter == (*pulsesInRecord)->ndetpulses)
+    {
+        message = "There are no valid pulses detected in record " + boost::lexical_cast<std::string>(nrecord);
+        EP_PRINT_ERROR(message,-999); // Only a warning
+    }
+
     
     model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
     

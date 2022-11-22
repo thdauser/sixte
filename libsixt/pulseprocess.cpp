@@ -2181,6 +2181,13 @@ int InitialTriggering
 	}
 	//*threshold = 30; // samprate = 156.250 kHz
 	//*threshold = 55; // samprate/2 = 78.125 kHz
+
+	/*cout<<"threshold: "<<*threshold<<endl;
+    cout<<"DERIVATIVE:"<<endl;
+	for (int i=400;i<1400;i++)
+    {
+        cout<<i<<" "<<gsl_vector_get(derivative,i)<<endl;
+    }*/
 	
 	while (i < sizeRecord-1)
         {
