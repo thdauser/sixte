@@ -7929,6 +7929,7 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
         }
         else if (ADU_CNV != -999)
         {
+            ADU_CNV = abs(ADU_CNV);
             // I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS
             //cout<<"I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS"<<endl;
 
