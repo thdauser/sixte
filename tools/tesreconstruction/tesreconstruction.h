@@ -233,4 +233,6 @@ void MyAssert(int expr, char* msg);
 
 int checkXmls(struct Parameters* const par);
 
+//int diffFiles(FILE * fPtr1, FILE * fPtr2, int * line, int * col);
+
 #endif /* TESRECONSTRUCTION_H */

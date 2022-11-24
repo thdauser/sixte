@@ -175,7 +175,7 @@
          message = "Cannot open file " + string(par.inFile);
          EP_EXIT_ERROR(message,status);
      }
-     int hdunum; // Number of HDUs in the input FITS file
+     //int hdunum; // Number of HDUs in the input FITS file
      fits_get_num_hdus(infileObject, &hdunum,&status);
      
      // Check if input FITS file have been simulated with TESSIM or XIFUSIM
@@ -205,122 +205,123 @@
          EP_EXIT_ERROR(message,status);
      }
      
+
      // To calculate 'aducnv'...
      strcpy(extname,"ADCPARAM");
      fits_movnam_hdu(infileObject, ANY_HDU,extname, extver, &status);
      if (status == 0)
      {
-         strcpy(keyname,"IMIN");
-         if (fits_read_key(infileObject,TDOUBLE,keyname, &Imin,comment,&status))
-         {
-             //message = "Cannot read keyword " + string(keyname) + " in input file (ADCPARAM HDU)";
-             //EP_PRINT_ERROR(message,status); return(EPFAIL);
-             status = 0;
-         }
-         strcpy(keyname,"IMAX");
-         if (fits_read_key(infileObject,TDOUBLE,keyname, &Imax,comment,&status))
-         {
-             //message = "Cannot read keyword " + string(keyname) + " in input file (ADCPARAM HDU)";
-             //EP_PRINT_ERROR(message,status); return(EPFAIL);
-             status = 0;
-         }
-     }
-     else
-     {
-         status = 0;
-         strcpy(extname,"TESRECORDS");
-         fits_movnam_hdu(infileObject,ANY_HDU,extname, 0, &status);
-         if (status == 0)
-         {
-             strcpy(keyname,"IMIN");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &Imin,comment,&status))
-             {
-                 //message = "Cannot read keyword " + string(keyname) + " in input file (TESRECORDS HDU)";
-                 //EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 status = 0;
-             }
-             strcpy(keyname,"IMAX");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &Imax,comment,&status))
-             {
-                 //message = "Cannot read keyword " + string(keyname) + " in input file (TESRECORDS HDU)";
-                 //EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 status = 0;
-             }
-         }
-         else
-         {
-             status = 0;
-             strcpy(extname,"RECORDS");
-             fits_movnam_hdu(infileObject,ANY_HDU,extname, 0, &status);
-             strcpy(keyname,"IMIN");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &Imin,comment,&status))
-             {
-                 //message = "Cannot read keyword " + string(keyname) + " in input file (RECORDS HDU)";
-                 //EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 status = 0;
-             }
-             strcpy(keyname,"IMAX");
-             if (fits_read_key(infileObject,TDOUBLE,keyname, &Imax,comment,&status))
-             {
-                 //message = "Cannot read keyword " + string(keyname) + " in input file (RECORDS HDU)";
-                 //EP_PRINT_ERROR(message,status); return(EPFAIL);
-                 status = 0;
-             }
-         }
-     }
-     
-     //...or read ADU_CNV, I_BIAS and ADU_BIAS
-     // ADU_CNV(A/ADU)
-     //int adu_cnv_exists = 0;
-     int i_bias_exists = 0;
-     int adu_bias_exists = 0;
-     strcpy(keyname,"ADU_CNV");
-     for (int i=0;i<hdunum;i++)
-     {
-         fits_movabs_hdu(infileObject, i+1, NULL, &status); 
-         fits_read_key(infileObject,TDOUBLE,keyname, &adu_cnv,comment,&status);
-         if (status == 0)
-         {
-             adu_cnv_exists = 1;
-             break;
-         }
-         else if ((status != 0) && (i <= hdunum-1))
-         {
-             status = 0;
-         }
-     }
-     // I_BIAS(A)
-     strcpy(keyname,"I_BIAS");
-     for (int i=0;i<hdunum;i++)
-     {
-         fits_movabs_hdu(infileObject, i+1, NULL, &status); 
-         fits_read_key(infileObject,TDOUBLE,keyname, &i_bias,comment,&status);
-         if (status == 0)
-         {
-             i_bias_exists = 1;
-             break;
-         }
-         else if ((status != 0) && (i <= hdunum-1))
-         {
-             status = 0;
-         }
-     }
-     // ADU_BIAS(ADU)
-     strcpy(keyname,"ADU_BIAS");
-     for (int i=0;i<hdunum;i++)
-     {
-         fits_movabs_hdu(infileObject, i+1, NULL, &status); 
-         fits_read_key(infileObject,TDOUBLE,keyname, &adu_bias,comment,&status);
-         if (status == 0)
-         {
-             adu_bias_exists = 1;
-             break;
-         }
-         else if ((status != 0) && (i <= hdunum-1))
-         {
-             status = 0;
-         }
-     }
+        strcpy(keyname,"IMIN");
+        if (fits_read_key(infileObject,TDOUBLE,keyname, &Imin,comment,&status))
+        {
+            //message = "Cannot read keyword " + string(keyname) + " in input file (ADCPARAM HDU)";
+            //EP_PRINT_ERROR(message,status); return(EPFAIL);
+            status = 0;
+        }
+        strcpy(keyname,"IMAX");
+        if (fits_read_key(infileObject,TDOUBLE,keyname, &Imax,comment,&status))
+        {
+            //message = "Cannot read keyword " + string(keyname) + " in input file (ADCPARAM HDU)";
+            //EP_PRINT_ERROR(message,status); return(EPFAIL);
+            status = 0;
+        }
+    }
+    else
+    {
+        status = 0;
+        strcpy(extname,"TESRECORDS");
+        fits_movnam_hdu(infileObject,ANY_HDU,extname, 0, &status);
+        if (status == 0)
+        {
+            strcpy(keyname,"IMIN");
+            if (fits_read_key(infileObject,TDOUBLE,keyname, &Imin,comment,&status))
+            {
+                //message = "Cannot read keyword " + string(keyname) + " in input file (TESRECORDS HDU)";
+                //EP_PRINT_ERROR(message,status); return(EPFAIL);
+                status = 0;
+            }
+            strcpy(keyname,"IMAX");
+            if (fits_read_key(infileObject,TDOUBLE,keyname, &Imax,comment,&status))
+            {
+                //message = "Cannot read keyword " + string(keyname) + " in input file (TESRECORDS HDU)";
+                //EP_PRINT_ERROR(message,status); return(EPFAIL);
+                status = 0;
+            }
+        }
+        else
+        {
+            status = 0;
+            strcpy(extname,"RECORDS");
+            fits_movnam_hdu(infileObject,ANY_HDU,extname, 0, &status);
+            strcpy(keyname,"IMIN");
+            if (fits_read_key(infileObject,TDOUBLE,keyname, &Imin,comment,&status))
+            {
+                //message = "Cannot read keyword " + string(keyname) + " in input file (RECORDS HDU)";
+                //EP_PRINT_ERROR(message,status); return(EPFAIL);
+                status = 0;
+            }
+            strcpy(keyname,"IMAX");
+            if (fits_read_key(infileObject,TDOUBLE,keyname, &Imax,comment,&status))
+            {
+                //message = "Cannot read keyword " + string(keyname) + " in input file (RECORDS HDU)";
+                //EP_PRINT_ERROR(message,status); return(EPFAIL);
+                status = 0;
+            }
+        }
+    }
+
+    //...or read ADU_CNV, I_BIAS and ADU_BIAS
+    // ADU_CNV(A/ADU)
+    //int adu_cnv_exists = 0;
+    int i_bias_exists = 0;
+    int adu_bias_exists = 0;
+    strcpy(keyname,"ADU_CNV");
+    for (int i=0;i<hdunum;i++)
+    {
+        fits_movabs_hdu(infileObject, i+1, NULL, &status);
+        fits_read_key(infileObject,TDOUBLE,keyname, &adu_cnv,comment,&status);
+        if (status == 0)
+        {
+            adu_cnv_exists = 1;
+            break;
+        }
+        else if ((status != 0) && (i <= hdunum-1))
+        {
+            status = 0;
+        }
+    }
+    // I_BIAS(A)
+    strcpy(keyname,"I_BIAS");
+    for (int i=0;i<hdunum;i++)
+    {
+        fits_movabs_hdu(infileObject, i+1, NULL, &status);
+        fits_read_key(infileObject,TDOUBLE,keyname, &i_bias,comment,&status);
+        if (status == 0)
+        {
+            i_bias_exists = 1;
+            break;
+        }
+        else if ((status != 0) && (i <= hdunum-1))
+        {
+            status = 0;
+        }
+    }
+    // ADU_BIAS(ADU)
+    strcpy(keyname,"ADU_BIAS");
+    for (int i=0;i<hdunum;i++)
+    {
+        fits_movabs_hdu(infileObject, i+1, NULL, &status);
+        fits_read_key(infileObject,TDOUBLE,keyname, &adu_bias,comment,&status);
+        if (status == 0)
+        {
+            adu_bias_exists = 1;
+            break;
+        }
+        else if ((status != 0) && (i <= hdunum-1))
+        {
+            status = 0;
+        }
+    }
 
      if (strcmp(par.EnergyMethod,"I2RDER") == 0)
      {
@@ -1030,12 +1031,12 @@
          gsl_matrix *noiseIntervals_weightPoints;
          gsl_matrix *weightMatrix;
 
-	 cout<<"NumMeanSamples: "<<NumMeanSamples<<endl;
-	 cout<<"NumMeanSamples_afterRm: "<<NumMeanSamples_afterRm<<endl;
-         cout<<"par.nintervals: "<<par.nintervals<<endl;
+	 //cout<<"NumMeanSamples: "<<NumMeanSamples<<endl;
+	 //cout<<"NumMeanSamples_afterRm: "<<NumMeanSamples_afterRm<<endl;
+         //cout<<"par.nintervals: "<<par.nintervals<<endl;
          if (NumMeanSamples >= par.nintervals)
          {
-	     cout<<"If1"<<endl;
+	     //cout<<"If1"<<endl;
              for (int i=0;i<weightpoints->size;i++)
              {	
 	         weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
@@ -1045,7 +1046,7 @@
                  gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
                  
                  if (par.matrixSize == 0){ //do all sizes
-		                    cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
+		   //                 cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -1058,7 +1059,7 @@
                      gsl_matrix_free(weightMatrix);
                      
                  }else if (gsl_vector_get(weightpoints,i) == par.matrixSize){ // do only input param size
-		                    cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
+		                    //cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -1075,7 +1076,7 @@
          }
          else
          {
-	   	     cout<<"If2"<<endl;
+	   	     //cout<<"If2"<<endl;
              for (int i=0;i<weightpoints->size;i++)
              {	
                  weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
@@ -1341,15 +1342,19 @@
          // Convert to the resistance space if necessary
          if (strcmp(par.EnergyMethod,"OPTFILT") != 0)
          {
-             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,par.Ifit,V0,RL,L,samprate,&ioutgsl))
+             if ((tessimOrxifusim = 1) && (hdunum == 2))
+             {
+                 real_data = 1;
+             }
+             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,par.Ifit,V0,RL,L,samprate,&ioutgsl,real_data))
              {
                  message = "Cannot run routine convertI2R";
                  EP_EXIT_ERROR(message,EPFAIL);
              }
-             //gsl_vector_scale(ioutgsl,100000);
          }
          else
          {
+
             gsl_vector_scale(ioutgsl,aducnv);
          }
          

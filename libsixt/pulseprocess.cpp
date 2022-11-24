@@ -1855,6 +1855,13 @@ int findPulsesCAL
 	}
 	*threshold = thresholdmediankappa;
     //cout<<*threshold<<endl;
+
+    /*cout<<"threshold: "<<*threshold<<endl;
+    cout<<"DERIVATIVE:"<<endl;
+	for (int i=400;i<1400;i++)
+    {
+        cout<<i<<" "<<gsl_vector_get(vectorinDER,i)<<endl;
+    }*/
         
     // Find pulses
 	if (findTstartCAL (reconstruct_init->maxPulsesPerRecord, vectorinDER, thresholdmediankappa, samplesUp, reconstruct_init, nPulses, tstart, quality, maxDERgsl))

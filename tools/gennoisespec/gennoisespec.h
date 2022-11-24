@@ -169,6 +169,9 @@ struct Parameters {
         
 //AUXILIARY VARIABLES
 
+	int hdunum;
+	int real_data = 0;
+
     string message = " ";
     
 	//To avoid the deprecate conversions

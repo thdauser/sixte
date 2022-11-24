@@ -263,7 +263,16 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
                 }
             }
         }
-        if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS,(*reconstruct_init)->i2rdata->I_BIAS, (*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t,&invector))
+        int real_data = 0;
+        int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
+        fits_get_hdu_num((*reconstruct_init)->record_file_fptr, &hdunum);
+        fits_movnam_hdu((*reconstruct_init)->record_file_fptr, ANY_HDU,"TESRECORDS", 0, &status);
+        if ((status == 0) && (hdunum == 2))   // Input FITS file containing real data
+        {
+             real_data = 1;
+        }
+
+        if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS,(*reconstruct_init)->i2rdata->I_BIAS, (*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t,&invector,real_data))
         {
             message = "Cannot run routine convertI2R";
             EP_EXIT_ERROR(message,EPFAIL);
@@ -928,6 +937,7 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nre
         EP_PRINT_ERROR(message,-999);	// Only a warning
     }
     
+    int real_data = 0;
     if ((strcmp((*reconstruct_init)->EnergyMethod,"I2R") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RFITTED") == 0) || (strcmp((*reconstruct_init)->EnergyMethod,"I2RDER") == 0))
     {
         if (nrecord == 1)
@@ -941,7 +951,15 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nre
                 }
             }
         }
-        if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS,(*reconstruct_init)->i2rdata->I_BIAS,(*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t,&invector))
+
+        int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
+        fits_get_hdu_num((*reconstruct_init)->record_file_fptr, &hdunum);
+        fits_movnam_hdu((*reconstruct_init)->record_file_fptr, ANY_HDU,"TESRECORDS", 0, &status);
+        if ((status == 0) && (hdunum == 2))   // Input FITS file containing real data
+        {
+             real_data = 1;
+        }
+        if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS,(*reconstruct_init)->i2rdata->I_BIAS,(*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t,&invector,real_data))
         {
             message = "Cannot run routine convertI2R";
             EP_EXIT_ERROR(message,EPFAIL);
@@ -962,7 +980,7 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nre
         if (!sc->is_reentrant()){
             std::unique_lock<std::mutex> lk(fits_file_mut);
             
-            if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS, (*reconstruct_init)->i2rdata->I_BIAS, (*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t, &invector))
+            if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS, (*reconstruct_init)->i2rdata->I_BIAS, (*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t, &invector,real_data))
             {
                 lk.unlock();
                 message = "Cannot run routine convertI2R";
@@ -978,7 +996,7 @@ void th_runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nre
         }
         else
         {
-            if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS, (*reconstruct_init)->i2rdata->I_BIAS, (*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t, &invector))
+            if (convertI2R((*reconstruct_init)->EnergyMethod,(*reconstruct_init)->i2rdata->I0_START,(*reconstruct_init)->i2rdata->IMIN,(*reconstruct_init)->i2rdata->IMAX,(*reconstruct_init)->i2rdata->ADU_CNV, (*reconstruct_init)->i2rdata->ADU_BIAS, (*reconstruct_init)->i2rdata->I_BIAS, (*reconstruct_init)->i2rdata->Ifit, (*reconstruct_init)->i2rdata->V0, (*reconstruct_init)->i2rdata->RL, (*reconstruct_init)->i2rdata->L, 1/record->delta_t, &invector,real_data))
             {
                 message = "Cannot run routine convertI2R";
                 EP_EXIT_ERROR(message,EPFAIL);
@@ -7805,7 +7823,7 @@ int vector2matrix (gsl_vector *vectorin, gsl_matrix **matrixout)
  * - invector: Input current (ADC) vector & output resistance (I2R or I2RFITTED) vector
  ******************************************************************************/
 //int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, double ADU_CNV, double ADU_BIAS, double I_BIAS, double Ifit, double samprate, gsl_vector **invector)
-int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, double ADU_CNV, double ADU_BIAS, double I_BIAS, double Ifit, double V0, double RL, double L, double samprate, gsl_vector **invector)
+int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, double ADU_CNV, double ADU_BIAS, double I_BIAS, double Ifit, double V0, double RL, double L, double samprate, gsl_vector **invector, int real_data)
 {
     int status = EPOK;
     string message="";
@@ -7903,45 +7921,50 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
         // It is not necessary to check the allocation beacuse 'invector' size must be > 0
         gsl_vector_memcpy(I,*invector);
 
-        /*cout<<"ADU_CNV: "<<ADU_CNV<<endl;
-        cout<<"ADU_BIAS: "<<ADU_BIAS<<endl;
-        cout<<"I_BIAS: "<<I_BIAS<<endl;*/
-        if (ADU_CNV == -999)
+        if (real_data == 1)
         {
-            // I = ADC*aducnv+IMIN
-            //cout<<"I = ADC*aducnv+IMIN"<<endl;
-
-            if (((Imin == -999.0) || (Imax == -999.0)) || ((Imin == 0) || (Imax == 0)))
-            {
-                aducnv = 1;
-                //message = "ADU_CNV not found or Imin or Imax not found or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
-                //EP_PRINT_ERROR(message,-999);	// Only a warning
-
-                gsl_vector_scale(I,aducnv);
-            }
-            else
-            {
-                aducnv = (Imax-Imin)/65534;    // Quantification levels = 65534    // If this calculus changes => Change it also in GENNOISESPEC
-
-                gsl_vector_scale(I,aducnv);             	  // invector = I(adu)*aducnv (I(adu) is the ADC column)
-                gsl_vector_add_constant(I,Imin);		      // invector = I(Amp) = I(adu)*aducnv+IMIN
-            }
+            gsl_vector_scale(I,0.25/16384/(3.48*4079));
         }
-        else if (ADU_CNV != -999)
+        else
         {
-            ADU_CNV = abs(ADU_CNV);
-            // I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS
-            //cout<<"I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS"<<endl;
+            if (ADU_CNV == -999)
+            {
+                // I = ADC*aducnv+IMIN
+                //cout<<"I = ADC*aducnv+IMIN"<<endl;
 
-            gsl_vector_add_constant(I,-1.0*ADU_BIAS); // ADC - ADU_BIAS
-            gsl_vector_scale(I,ADU_CNV);              // ADU_CNV * (ADC - ADU_BIAS)
-            gsl_vector_add_constant(I,I_BIAS);   // ADU_CNV * (ADC - ADU_BIAS) + I_BIAS
+                if (((Imin == -999.0) || (Imax == -999.0)) || ((Imin == 0) || (Imax == 0)))
+                {
+                    aducnv = 1;
+                    //message = "ADU_CNV not found or Imin or Imax not found or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
+                    //EP_PRINT_ERROR(message,-999);	// Only a warning
+
+                    gsl_vector_scale(I,aducnv);
+                }
+                else
+                {
+                    aducnv = (Imax-Imin)/65534;    // Quantification levels = 65534    // If this calculus changes => Change it also in GENNOISESPEC
+
+                    gsl_vector_scale(I,aducnv);             	  // invector = I(adu)*aducnv (I(adu) is the ADC column)
+                    gsl_vector_add_constant(I,Imin);		      // invector = I(Amp) = I(adu)*aducnv+IMIN
+                }
+            }
+            else if (ADU_CNV != -999)
+            {
+                //ADU_CNV = abs(ADU_CNV);
+                // I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS
+                //cout<<"I = ADU_CNV * (ADC - ADU_BIAS) + I_BIAS"<<endl;
+
+                gsl_vector_add_constant(I,-1.0*ADU_BIAS); // ADC - ADU_BIAS
+                gsl_vector_scale(I,ADU_CNV);              // ADU_CNV * (ADC - ADU_BIAS)
+                gsl_vector_add_constant(I,I_BIAS);   // ADU_CNV * (ADC - ADU_BIAS) + I_BIAS
+            }
         }
 
         // -I愛L
         gsl_vector *factor1 = gsl_vector_alloc((*invector)->size);
         gsl_vector_memcpy(factor1,I);
-        gsl_vector_scale(factor1,-1*RL);
+        //gsl_vector_scale(factor1,-1*RL);
+        gsl_vector_scale(factor1,1*RL);
 
         // -L搞I/dt
         gsl_vector *factor2 = gsl_vector_alloc((*invector)->size);
@@ -7951,10 +7974,12 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
            message = "Cannot run routine differentiate in convertI2R";
            EP_PRINT_ERROR(message,EPFAIL); return(EPFAIL);
         }
-        gsl_vector_scale(factor2,-1*L);
+        //gsl_vector_scale(factor2,-1*L);
+        gsl_vector_scale(factor2,1*L);
 
         gsl_vector_add(factor1,factor2);     // -I愛L-L搞I/dt
-        gsl_vector_add_constant(factor1,V0); // V0-I愛L-L搞I/dt
+        //gsl_vector_add_constant(factor1,V0); // V0-I愛L-L搞I/dt
+        gsl_vector_add_constant(factor1,-V0); // V0-I愛L-L搞I/dt
         gsl_vector_div(factor1,I);           // (V0-I愛L-L搞I/dt)/I
 
         gsl_vector_memcpy(*invector,factor1);
