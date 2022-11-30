@@ -233,6 +233,7 @@ void MyAssert(int expr, char* msg);
 
 int checkXmls(struct Parameters* const par);
 
-//int diffFiles(FILE * fPtr1, FILE * fPtr2, int * line, int * col);
+unsigned checksum(void *buffer, size_t len, unsigned int seed);
+char* subString (const char* input, int offset, int len, char* dest);
 
 #endif /* TESRECONSTRUCTION_H */

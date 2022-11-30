@@ -1345,7 +1345,7 @@ void MyAssert(int expr, char* msg)
 
 
 /***** SECTION 4 ************************************************************
-* checkxmls function: Check if the XML file used to build the library is the same to be used to recconstruct
+* checkxmls function: Check if the XML file used to build the library is the same to be used to recconstruct (by checking the checksums)
 *
 * Parameters:
 * - par: Structure containing the input parameters
@@ -1358,12 +1358,18 @@ int checkXmls(struct Parameters* const par)
     fitsfile* libptr = NULL;
     int numberkeywords;
     char *libheaderPrimary = NULL;
-    char *endxml_pointer = NULL;
-    char *startxml_pointer = NULL;
-    char *slash_pointer = NULL;
-    char libXMLfile[125] = "lib.xml";
-    char reconsXMLfile[125] = "recons.xml";
-    int lengthxml = 0;
+    char *xml_pointer = NULL;
+    char *XMLFile_pointer = NULL;
+    char *HISTORY_pointer = NULL;
+    char *space_pointer = NULL;
+    //char *slash_pointer = NULL;
+    char libXMLfile[1024] = "x";
+    char libXMLfile1[1024] = "x";
+    char libXMLfile2[1024] = "x";
+    char wholelibXMLfile[1024] = "x";
+    char charAux[1024] = "x";
+    char reconsXMLfile[1024] = "x";
+    int lengthstr = 0;
 
     // Move to "Primary" HDU of the library file
     fits_open_file(&libptr, par->LibraryFile, READONLY, &status);
@@ -1384,39 +1390,93 @@ int checkXmls(struct Parameters* const par)
         return(EXIT_FAILURE);
     }
 
-    endxml_pointer = strstr(libheaderPrimary,".xml");
-    if(!endxml_pointer)
+    xml_pointer = strstr(libheaderPrimary,".xml");
+    //printf("%s %s","xml_pointer0: ","\n");
+    //printf(xml_pointer);
+    if(!xml_pointer)
     {
         SIXT_ERROR("XML file info not included in Primary HDU in library file");
         return(EXIT_FAILURE);
     }
+    XMLFile_pointer = strstr(libheaderPrimary,"XMLFile = ");
+    //printf("%s %s","XMLFile_pointer0: ","\n");
+    //printf(XMLFile_pointer);
+    if(!XMLFile_pointer)
+    {
+        SIXT_ERROR("XML file info not included in Primary HDU in library file");
+        return(EXIT_FAILURE);
+    }
+    strncpy(wholelibXMLfile,XMLFile_pointer+10,xml_pointer-XMLFile_pointer-10+4);  // 10 -> "XMLFile = ", 4 -> ".xml"
+    //strcpy(wholelibXMLfile,"GSHISTORY P53 FCHISTORY P133 _rl8192_pB450.xml");
+    //strcpy(wholelibXMLfile,"GSFCHISTORY P133 _rl8192_pB450.xml");
+    //strcpy(wholelibXMLfile,"GSFC_rl8192_pB450.xml");
+    //printf("%s %s","wholelibXMLfile: ","\n");
+    //printf("%s %s",wholelibXMLfile,"\n");
+
+    int HISTORYnum = 0;
+    int k;
+    int lengthTOTAL = (int)strlen(wholelibXMLfile);
+    int spaces[lengthTOTAL];
+    //printf("%s %d %s","lengthTOTAL=: ",lengthTOTAL,"\n");
+    k=0;
+    do
+    {
+        //printf("%s %c %s","wholelibXMLfile(k)",wholelibXMLfile[k],"\n");
+        if(wholelibXMLfile[k]==' ')
+        {
+            if (HISTORYnum % 2 == 0)
+            {  // Par
+                spaces[HISTORYnum] = k-7;
+            }
+            else
+            {
+                spaces[HISTORYnum] = k;
+            }
+
+            HISTORYnum++;
+            //printf("%s %d %s","k_' '=: ",k,"\n");
+        }
+        k++;
+    }while(k<=lengthTOTAL);
+
+    //for (int i=0;i<HISTORYnum;i++)
+    //    printf("%s %d %s","white spaces: ",spaces[i],"\n");
+
+    if (HISTORYnum != 0) HISTORYnum = HISTORYnum/2;
+
+    //printf("%s %d %s","Numero de HISTORY: ",HISTORYnum,"\n");
+
+    if (HISTORYnum == 0)
+    {
+        strcpy(libXMLfile,wholelibXMLfile);
+    }
     else
     {
-        startxml_pointer = endxml_pointer - 1;
-        while ((*startxml_pointer != '/') && (*startxml_pointer != ' ') && (*startxml_pointer != '='))
+        for (int i=0;i<=HISTORYnum;i++)
         {
-            startxml_pointer = startxml_pointer - 1;
-            lengthxml = lengthxml +1;
+            if (i == 0) // First
+            {
+                subString (wholelibXMLfile, 0, spaces[i], libXMLfile);
+            }
+            else
+            {
+                if (i == HISTORYnum) // Last
+                {
+                    subString (wholelibXMLfile, spaces[2*i-1]+1, lengthTOTAL-spaces[2*i-1]-1, libXMLfile2);
+                    strcat(libXMLfile,libXMLfile2);
+                    memset(libXMLfile2,0,1024);
+                }
+                else
+                {
+                    subString (wholelibXMLfile, spaces[2*i-1]+1, spaces[2*i]-spaces[2*i-1]-1, libXMLfile2);
+                    strcat(libXMLfile,libXMLfile2);
+                    memset(libXMLfile2,0,1024);
+                }
+            }
         }
-        startxml_pointer = startxml_pointer + 1;
-        strncpy(libXMLfile,startxml_pointer,lengthxml+4);
     }
 
-    slash_pointer = strstr(par->XMLFile,"/");
-    if (slash_pointer)
-    {
-        endxml_pointer = strstr(par->XMLFile,".xml");
-        startxml_pointer = endxml_pointer - 1;
-        lengthxml = 0;
-        while ((*startxml_pointer != '/') && (*startxml_pointer != ' ') && (*startxml_pointer != '='))
-        {
-            startxml_pointer = startxml_pointer - 1;
-            lengthxml = lengthxml +1;
-        }
-        startxml_pointer = startxml_pointer + 1;
-        strncpy(reconsXMLfile,startxml_pointer,lengthxml+4);
-    }
-    else strcpy(reconsXMLfile,par->XMLFile);
+    strcpy(reconsXMLfile,par->XMLFile);
 
     if (libheaderPrimary != NULL)
     {
@@ -1425,58 +1485,86 @@ int checkXmls(struct Parameters* const par)
 
     fits_close_file(libptr,&status);
 
-    if (strcmp(libXMLfile, reconsXMLfile) == 0) status = 0;
+    FILE *fp_libXMLfile, *fp_reconsXMLfile;
+    size_t len_libXMLfile, len_reconsXMLfile;
+    char buf_libXMLfile[4096], buf_reconsXMLfile[4096];
+    unsigned checksum_libXMLfile, checksum_reconsXMLfile;
+
+    if (NULL == (fp_libXMLfile = fopen(libXMLfile, "rb")))
+    {
+          printf("Unable to open XML from library, %s, for reading it and calculate its checksum.\n", libXMLfile);
+          return -1;
+    }
+    len_libXMLfile = fread(buf_libXMLfile, sizeof(char), sizeof(buf_libXMLfile), fp_libXMLfile);
+    //printf("%d bytes read\n", len_libXMLfile);
+    checksum_libXMLfile = checksum(buf_libXMLfile, len_libXMLfile, 0);
+
+
+    if (NULL == (fp_reconsXMLfile = fopen(reconsXMLfile, "rb")))
+    {
+          printf("Unable to open provided XML, %s, for reading it and calculate its checksum\n", reconsXMLfile);
+          return -1;
+    }
+    len_reconsXMLfile = fread(buf_reconsXMLfile, sizeof(char), sizeof(buf_reconsXMLfile), fp_reconsXMLfile);
+    //printf("%d bytes read\n", len_reconsXMLfile);
+    checksum_reconsXMLfile = checksum(buf_reconsXMLfile, len_reconsXMLfile, 0);
+
+    if (checksum_libXMLfile == checksum_reconsXMLfile) status = 0;
     else status = 1;
-    //printf("%s %s",libXMLfile,"\n");
-    //printf("%s %s",reconsXMLfile,"\n");
 
     if (status != 0)
     {
-        SIXT_ERROR("XML file from library FITS file and from input parameter do not match (at least the file paths)");
+        SIXT_ERROR("XML file from library FITS file and from input parameter do not match (checksum)");
+        printf("The checksum of XML from library, %s, is %#x\n", libXMLfile, checksum_libXMLfile);
+        printf("The checksum of provided XML, %s, is %#x\n", reconsXMLfile, checksum_reconsXMLfile);
         return(EXIT_FAILURE);
     }
 
     return(status);
 }
-/*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 4 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
-/**
- * Function to compare two files.
- * Returns 0 if both files are equivalent, otherwise returns
- * -1 and sets line and col where both file differ.
- */
-/*int diffFiles(FILE * fPtr1, FILE * fPtr2, int * line, int * col)
+
+/***** SECTION 5 ************************************************************
+* checksum: Calculate the checksum
+*
+* Parameters:
+* - buffer:
+* - len:
+* - seed:
+******************************************************************************/
+unsigned checksum(void *buffer, size_t len, unsigned int seed)
 {
-    char ch1, ch2;
+      unsigned char *buf = (unsigned char *)buffer;
+      size_t i;
 
-    *line = 1;
-    *col  = 0;
+      for (i = 0; i < len; ++i)
+            seed += (unsigned int)(*buf++);
+      return seed;
+}
 
-    do
-    {
-        // Input character from both files
-        ch1 = fgetc(fPtr1);
-        ch2 = fgetc(fPtr2);
-
-        // Increment line
-        if (ch1 == '\n')
-        {
-            *line += 1;
-            *col = 0;
-        }
-
-        // If characters are not same then return -1
-        if (ch1 != ch2)
-            return -1;
-
-        *col  += 1;
-
-    } while (ch1 != EOF && ch2 != EOF);
+/*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
 
 
-    // If both files have reached end
-    if (ch1 == EOF && ch2 == EOF)
-        return 0;
-    else
-        return -1;
-}*/
+/***** SECTION 6 ************************************************************
+* subString: Extract some elements from an array of characters
+*
+* Parameters:
+* - input: Array of characters from which extract some elements
+* - offset: Offset
+* - len: Length (number of elements to extract)
+* - dest: Array of characters where write the elements extracted
+******************************************************************************/
+char* subString (const char* input, int offset, int len, char* dest)
+{
+  int input_len = strlen (input);
+
+  if (offset + len > input_len)
+  {
+     return NULL;
+  }
+
+  strncpy (dest, input + offset, len);
+  return dest;
+}
+/*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
