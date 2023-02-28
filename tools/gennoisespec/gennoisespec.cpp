@@ -322,11 +322,13 @@
             status = 0;
         }
     }
+    cout<<"adu_cnv_exists: "<<adu_cnv_exists<<endl;
 
      if (strcmp(par.EnergyMethod,"I2RDER") == 0)
      {
         int keyword_exists = 0;
 
+        cout<<"hdunum: "<<hdunum<<endl;
         // V0(V)
         strcpy(keyname,"V0");
         for (int i=0;i<hdunum;i++)
@@ -335,70 +337,144 @@
             fits_read_key(infileObject,TDOUBLE,keyname, &V0,comment,&status);
             if (status == 0)
             {
+                cout<<i<<" keyword_exists = 1"<<endl;
                 keyword_exists = 1;
                 break;
             }
             else if ((status != 0) && (i <= hdunum-1))
             {
+                cout<<i<<" keyword_exists = 0"<<endl;
                 status = 0;
             }
         }
         if (keyword_exists == 0)
         {
-            message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
-            EP_EXIT_ERROR(message,status);
-        }
-        keyword_exists = 0;
+            strcpy(extname,"RECORDS");
+            fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status);
+            if (status != 0)
+            {
+                status = 0;
+                strcpy(extname,"TESRECORDS");
+                fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status);
+                if (status == 0)
+                {
+                    //V0 = 0;
+                    //R0 = 0;
+                    IOData objI2RDER;
+                    objI2RDER.inObject = infileObject;
+                    objI2RDER.nameTable = new char [255];
+                    strcpy(objI2RDER.nameTable,"TESPARAM");
+                    if (fits_movnam_hdu(infileObject, ANY_HDU,objI2RDER.nameTable, 0, &status))
+                    {
+                        message = "Cannot move to HDU " + string(objI2RDER.nameTable);
+                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                    }
+                    objI2RDER.iniCol = 0;
+                    objI2RDER.nameCol = new char [255];
+                    objI2RDER.unit = new char [255];
+                    objI2RDER.type = TDOUBLE;
+                    objI2RDER.iniRow = 1;
+                    objI2RDER.endRow = 1;
+                    gsl_vector *vectorI2RDER = gsl_vector_alloc(1);
+                    strcpy(objI2RDER.nameCol,"V0");
+                    if (readFitsSimple (objI2RDER,&vectorI2RDER))
+                    {
+                        message = "Cannot read V0 keyword in " + string(par.inFile) + " nor " + string(objI2RDER.nameCol) + " column in " + string(extname) + " HDU in " + string(par.inFile);
+                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                    }
+                    V0 = gsl_vector_get(vectorI2RDER,0);
 
-        // RL(Ohm)
-        strcpy(keyname,"RL");
-        for (int i=0;i<hdunum;i++)
-        {
-            fits_movabs_hdu(infileObject, i+1, NULL, &status);
-            fits_read_key(infileObject,TDOUBLE,keyname, &RL,comment,&status);
-            if (status == 0)
-            {
-                keyword_exists = 1;
-                break;
-            }
-            else if ((status != 0) && (i <= hdunum-1))
-            {
-                status = 0;
-            }
-        }
-        if (keyword_exists == 0)
-        {
-            message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
-            EP_EXIT_ERROR(message,status);
-        }
-        keyword_exists = 0;
 
-        // L(H)
-        strcpy(keyname,"L");
-        for (int i=0;i<hdunum;i++)
-        {
-            fits_movabs_hdu(infileObject, i+1, NULL, &status);
-            fits_read_key(infileObject,TDOUBLE,keyname, &L,comment,&status);
-            if (status == 0)
-            {
-                keyword_exists = 1;
-                break;
-            }
-            else if ((status != 0) && (i <= hdunum-1))
-            {
-                status = 0;
+                    strcpy(objI2RDER.nameCol,"RL");
+                    if (readFitsSimple (objI2RDER,&vectorI2RDER))
+                    {
+                        message = "Cannot read " + string(objI2RDER.nameCol) + " in " + string(extname) + " HDU in " + string(par.inFile);
+                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                    }
+                    RL = gsl_vector_get(vectorI2RDER,0);
+
+                    strcpy(objI2RDER.nameCol,"LIN");
+                    if (readFitsSimple (objI2RDER,&vectorI2RDER))
+                    {
+                        message = "Cannot read " + string(objI2RDER.nameCol) + " in " + string(extname) + " HDU in " + string(par.inFile);
+                        EP_PRINT_ERROR(message,status); return(EPFAIL);
+                    }
+                    L = gsl_vector_get(vectorI2RDER,0);
+
+                    strcpy(extname,"TESRECORDS");
+                    if (fits_movnam_hdu(infileObject, ANY_HDU,extname, 0, &status))
+                    {
+                        message = "Cannot move to HDU " + string(extname) + " in " + string(par.inFile);
+                        EP_EXIT_ERROR(message,status);
+                    }
+
+                    gsl_vector_free(vectorI2RDER); vectorI2RDER = 0;
+                    delete [] objI2RDER.nameTable; objI2RDER.nameTable = 0;
+                    delete [] objI2RDER.nameCol; objI2RDER.nameCol = 0;
+                    delete [] objI2RDER.unit; objI2RDER.unit = 0;
+                }
             }
         }
-        if (keyword_exists == 0)
+
+        /*if (keyword_exists == 0)
         {
             message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
             EP_EXIT_ERROR(message,status);
+        }
+        keyword_exists = 0;*/
+
+        else
+        {
+            // RL(Ohm)
+            strcpy(keyname,"RL");
+            for (int i=0;i<hdunum;i++)
+            {
+                fits_movabs_hdu(infileObject, i+1, NULL, &status);
+                fits_read_key(infileObject,TDOUBLE,keyname, &RL,comment,&status);
+                if (status == 0)
+                {
+                    keyword_exists = 1;
+                    break;
+                }
+                else if ((status != 0) && (i <= hdunum-1))
+                {
+                    status = 0;
+                }
+            }
+            if (keyword_exists == 0)
+            {
+                message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
+                EP_EXIT_ERROR(message,status);
+            }
+            keyword_exists = 0;
+
+            // L(H)
+            strcpy(keyname,"L");
+            for (int i=0;i<hdunum;i++)
+            {
+                fits_movabs_hdu(infileObject, i+1, NULL, &status);
+                fits_read_key(infileObject,TDOUBLE,keyname, &L,comment,&status);
+                if (status == 0)
+                {
+                    keyword_exists = 1;
+                    break;
+                }
+                else if ((status != 0) && (i <= hdunum-1))
+                {
+                    status = 0;
+                }
+            }
+            if (keyword_exists == 0)
+            {
+                message = "Cannot read keyword " + string(keyname) + " in input file (to be used in I2RDER)";
+                EP_EXIT_ERROR(message,status);
+            }
         }
      }
 
-     /*cout<<"adu_cnv: "<<adu_cnv<<endl;
-     cout<<"i_bias: "<<i_bias<<endl;
-     cout<<"adu_bias: "<<adu_bias<<endl;*/
+     cout<<"V0: "<<V0<<endl;
+     cout<<"RL: "<<RL<<endl;
+     cout<<"L: "<<L<<endl;
      
      if (tessimOrxifusim == 0)
      {

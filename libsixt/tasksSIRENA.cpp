@@ -107,7 +107,7 @@
  * - Store the input record in 'invector' ('loadRecord')
  * - Detect weird oscillations in some GSFC records providing a warning (no pulses detected in that record)
  * - Convert I into R if 'EnergyMethod' = I2R or I2RFITTED ('convertI2R')
- * - Process each record ('proceRecord')
+ * - Process each record ('procRecord')
  * 	- (Low-pass filter and) differentiate
  * 	- Find pulses
  * 	- Load the found pulses data in the input/output 'foundPulses' structure
@@ -12012,6 +12012,9 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int tstart, int grade
         for (int i=0;i<reconstruct_init->grading->ngrades;i++)
         {
             //if ((grade1 >= gsl_matrix_get(reconstruct_init->grading->gradeData,i,1)) && (grade2 > gsl_matrix_get(reconstruct_init->grading->gradeData,i,2)) && (tstart > gsl_matrix_get(reconstruct_init->grading->gradeData,i,2)))
+
+
+
             // tstart_(i)-pB+OFLength <= tstart_(i+1)                             grade1 = tstart_(i+1)-tstart_(i)+pBmax
             //                |                                                                   |
             //                |                                                                   |

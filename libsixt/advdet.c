@@ -905,8 +905,18 @@ static void AdvDetXMLElementStart(void* parsedata,
                 }
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].value=getXMLAttributeInt(attr, "NUM");
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
-                xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
-                xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
+				if (getXMLAttributeLong(attr, "FILTLEN") == 0) // XML: pre post pB
+				{
+					//printf("%s","pB in grading\n");
+					xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+					xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
+				}
+				else // XML: pre post filtlen
+				{
+					//printf("%s","0filtlen in grading\n");
+					xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].gradelim_post=getXMLAttributeLong(attr, "FILTLEN");
+					xmlparsedata->det->recons[xmlparsedata->det->nrecons].grades[xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "FILTLEN")-getXMLAttributeLong(attr, "POST");
+				}
 
                 xmlparsedata->det->recons[xmlparsedata->det->nrecons].ngrades++;
             } else {
@@ -920,8 +930,21 @@ static void AdvDetXMLElementStart(void* parsedata,
                     }
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].value=getXMLAttributeInt(attr, "NUM");
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_pre=getXMLAttributeLong(attr, "PRE");
-                    xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
-                    xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
+
+					//xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+					//xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
+					if (getXMLAttributeLong(attr, "FILTLEN") == 0) // XML: pre post pB
+					{
+						//printf("%s","pB in grading\n");
+						xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "POST");
+						xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "PB");
+					}
+					else // XML: pre post filtlen
+					{
+						printf("%s","1filtlen in grading\n");
+						xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "FILTLEN");
+						xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "FILTLEN")-getXMLAttributeLong(attr, "POST");
+					}
                     xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].rmf=NULL;
 
                     xmlparsedata->det->recons[i].ngrades++;

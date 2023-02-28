@@ -50,7 +50,6 @@
 * - SIRENA: If Rcmethod starts with '@' it provides a file text containing several record input FITS files
 * - RecordFile: Record FITS file
 * - TesEventFile: Output event list file
-* - PulseLength: Pulse length
 * - EventListSize: Default size of the event list
 * - clobber:Overwrite or not output files if exist (1/0)
 * - history: write program parameters into output file
@@ -95,7 +94,11 @@
 * - OFLib: Work or not with a library (1/0)
 * - OFStrategy: Optimal Filter length Strategy: FREE, BYGRADE or FIXED
 * - OFLength: Optimal Filter length (taken into account if OFStrategy=FIXED)
+* - OFLengthNotPadded: Filter length not padded with 0s (only necessary when reconstructing with 0-padding)
 * - preBuffer: Some samples added before the starting time of a pulse (number of samples added read from the xml file)
+*              SIRENA's format XML file (grading=>pre,post and pB) or new format XML file (grading=>pre,post and filtlen)
+*                                      pre=494, post=8192, pB=1000                          pre=494, post=7192, filtlen=8192
+*                                                                                             preBuffer=filtlen-post
 * - intermediate: Write or not intermediate files (1/0)
 * - detectFile: Intermediate detections file (if intermediate=1)
 * - errorT: Additional error (in samples) added to the detected time (Logically, it changes the reconstructed energies )
@@ -183,6 +186,9 @@ int tesreconstruction_main() {
         SIXT_ERROR("Ifit value must be provided");
         return(EXIT_FAILURE);
     }
+
+    if (strcmp(par.Rcmethod,"SIRENA") && (par.OFLengthNotPadded < par.OFLength))
+        printf("%s","Running 0-padding: 0 < OFLengthNotPadded < OFLength\n");
         
     double sf = -999.;
     double sampling_rate = -999.0;
@@ -201,7 +207,7 @@ int tesreconstruction_main() {
     
     if ((par.preBuffer == 1) && (par.opmode == 0))
     {
-        printf("%s","Attention: preBuffer used => Parameters of library filters read from XML file (largeFilter & PulseLength values not taken into account)\n");
+        printf("%s","Attention: preBuffer used => Parameters of library filters read from XML file\n");
     }
     
     int trig_reclength = -999;
@@ -575,6 +581,9 @@ int tesreconstruction_main() {
                     printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
                     gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
                 }
+                printf("%s %f %s","0pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
+                printf("%s %f %s","post=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,1),"\n");
+                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");
             }
         }
         else if(((det->nrecons != 0) && (det->npix == 0)) || ((det->nrecons == 1) && (det->npix == 1)))
@@ -605,6 +614,9 @@ int tesreconstruction_main() {
                     printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
                     gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
                 }
+                printf("%s %f %s","1pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
+                printf("%s %f %s","post=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,1),"\n");
+                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");
             }
         }
         
@@ -664,14 +676,14 @@ int tesreconstruction_main() {
                     
                     if(!strcmp(par.Rcmethod,"PP"))
                     {
-                            initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
+                            initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.OFLengthNotPadded,
                                                     par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
                                                     par.DerivateExclusion,par.SaturationValue,&status);
                     }
                     else
                     {
                             initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, 
-                                                    par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
+                                                    par.LibraryFile, par.TesEventFile, par.OFLengthNotPadded, par.scaleFactor, par.samplesUp,
                                                     par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
                                                     par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
                                                     par.filtEev, par.Ifit, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
@@ -798,12 +810,12 @@ int tesreconstruction_main() {
             CHECK_STATUS_BREAK(status);
 
             if(!strcmp(par.Rcmethod,"PP")){
-                initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.PulseLength,
+                initializeReconstruction(reconstruct_init,par.OptimalFilterFile,par.OFLengthNotPadded,
                         par.PulseTemplateFile,par.Threshold,par.Calfac,par.NormalExclusion,
                         par.DerivateExclusion,par.SaturationValue,&status);
             }else{
                 initializeReconstructionSIRENA(reconstruct_init_sirena, par.RecordFile, record_file->fptr, 
-                        par.LibraryFile, par.TesEventFile, par.PulseLength, par.scaleFactor, par.samplesUp, 
+                        par.LibraryFile, par.TesEventFile, par.OFLengthNotPadded, par.scaleFactor, par.samplesUp,
                         par.samplesDown, par.nSgms, par.detectSP, par.opmode, par.detectionMode, par.LrsT, 
                         par.LbT, par.NoiseFile, par.FilterDomain, par.FilterMethod, par.EnergyMethod, 
                         par.filtEev, par.Ifit, par.OFNoise, par.LagsOrNot, par.nLags, par.Fitting35, par.OFIter, 
@@ -1020,13 +1032,6 @@ int getpar(struct Parameters* const par)
   strcpy(par->TesEventFile, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_int("PulseLength", &par->PulseLength);
-  if (EXIT_SUCCESS!=status) {
-	  SIXT_ERROR("failed reading the PulseLength parameter");
-	  return(status);
-  }
-  assert(par->PulseLength > 0);
-
   status=ape_trad_query_int("EventListSize", &par->EventListSize);
   if (EXIT_SUCCESS!=status) {
 	  SIXT_ERROR("failed reading the EventListSize parameter");
@@ -1151,6 +1156,16 @@ int getpar(struct Parameters* const par)
       status=ape_trad_query_string("EnergyMethod", &sbuffer);
       strcpy(par->EnergyMethod, sbuffer);
       free(sbuffer);
+
+      status=ape_trad_query_int("OFLengthNotPadded", &par->OFLengthNotPadded);
+      if (EXIT_SUCCESS!=status) {
+        SIXT_ERROR("failed reading the OFLengthNotPadded parameter");
+        return(status);
+      }
+      assert(par->OFLengthNotPadded > 0);
+      //MyAssert((par->OFLengthNotPadded > 0) && (par->OFLengthNotPadded <= par->OFLength), "0-padding: 0 < OFLengthNotPadded <= OFLength");
+
+      MyAssert((par->opmode == 0) || (par->opmode == 1), "opmode must be 0 or 1");
       
       status=ape_trad_query_double("filtEev", &par->filtEev);
       
@@ -1283,7 +1298,7 @@ int getpar(struct Parameters* const par)
        return(EXIT_FAILURE);
   }*/
       
-      if ((par->PulseLength < par->OFLength) && (strcmp(par->FilterDomain,"F") == 0))
+      if ((par->OFLengthNotPadded < par->OFLength) && (strcmp(par->FilterDomain,"F") == 0))
       {
           SIXT_ERROR("Code is not prepared to run 0-padding in Frequency domain");
           // To run 0-padding in Frequency domain the steps should be:

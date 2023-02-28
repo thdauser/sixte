@@ -71,8 +71,8 @@ struct Parameters {
 	//File containing the pulse template
 	char PulseTemplateFile[MAXFILENAME];
 
-	//Pulse Length
-	int PulseLength;
+	//Filter length not padded with 0s (only necessary when reconstructing with 0-padding)
+	int OFLengthNotPadded;
 
 	//Threshold level
 	double Threshold;
