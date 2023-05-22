@@ -1591,7 +1591,6 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound)
 {
 	string message = "";
-	char valERROR[256];
 
 	long nummodels = reconstruct_init->library_collection->ntemplates;
         
@@ -1674,7 +1673,6 @@ int find_model_maxDERs(double maxDER, ReconstructInitSIRENA *reconstruct_init, g
 int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound)
 {
 	string message = "";
-	char valERROR[256];
 	
 	long nummodels = reconstruct_init->library_collection->ntemplates;
         
@@ -1690,7 +1688,7 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 	{
                 temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate,0,(*modelFound)->size);
                 gsl_vector_memcpy(*modelFound,&temp.vector);
-                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que había un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
+                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que habia un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
 	}
 	else
 	{
@@ -2943,7 +2941,6 @@ int FindSecondaries
 int find_model_samp1DERsNoReSCLD(double samp1DER, ReconstructInitSIRENA *reconstruct_init, gsl_vector **modelFound, int *indexMin, int *indexMax)
 {
 	string message = "";
-	char valERROR[256];
 
 	long nummodels = reconstruct_init->library_collection->ntemplates;
         

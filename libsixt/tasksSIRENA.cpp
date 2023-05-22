@@ -2629,6 +2629,7 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
     foundPulses->ndetpulses = numPulses;
     foundPulses->pulses_detected = new PulseDetected[numPulses];
     int resize_mfvsposti = 0;
+    //cout<<"(*reconstruct_init)->preBuffer_max_value: "<<(*reconstruct_init)->preBuffer_max_value<<endl;
     for (int i=0;i<numPulses;i++)
     {
         if ((*reconstruct_init)->preBuffer == 0)
@@ -2649,7 +2650,8 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
             }
         }
 
-        if (((*reconstruct_init)->preBuffer == 1) && ((*reconstruct_init)->opmode == 1) && (strcmp((*reconstruct_init)->OFStrategy,"FIXED")==0))
+        //if (((*reconstruct_init)->preBuffer == 1) && ((*reconstruct_init)->opmode == 1) && (strcmp((*reconstruct_init)->OFStrategy,"FIXED")==0))
+        if (((*reconstruct_init)->preBuffer == 1) && ((*reconstruct_init)->opmode == 1))
         {
             for (int j=0; j<(*reconstruct_init)->grading->gradeData->size1;j++)
             {
@@ -8603,7 +8605,6 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
                 
                 message = "tstart-preBuffer-numlags/2<0 for pulse i=" + boost::lexical_cast<std::string>(i+1) + " in record " + boost::lexical_cast<std::string>(nrecord);
                 EP_PRINT_ERROR(message,-999);
-                cout<<"(*pulsesInRecord)->pulses_detected[i].quality: "<<(*pulsesInRecord)->pulses_detected[i].quality<<endl;
             }
         }
 

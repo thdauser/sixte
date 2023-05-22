@@ -941,7 +941,7 @@ static void AdvDetXMLElementStart(void* parsedata,
 					}
 					else // XML: pre post filtlen
 					{
-						printf("%s","1filtlen in grading\n");
+						//printf("%s","1filtlen in grading\n");
 						xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].gradelim_post=getXMLAttributeLong(attr, "FILTLEN");
 						xmlparsedata->det->recons[i].grades[xmlparsedata->det->recons[i].ngrades].grade_preBuffer=getXMLAttributeLong(attr, "FILTLEN")-getXMLAttributeLong(attr, "POST");
 					}

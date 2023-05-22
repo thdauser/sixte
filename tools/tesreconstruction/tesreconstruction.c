@@ -581,9 +581,9 @@ int tesreconstruction_main() {
                     printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
                     gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
                 }
-                printf("%s %f %s","0pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
+                /*printf("%s %f %s","0pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
                 printf("%s %f %s","post=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,1),"\n");
-                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");
+                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");*/
             }
         }
         else if(((det->nrecons != 0) && (det->npix == 0)) || ((det->nrecons == 1) && (det->npix == 1)))
@@ -614,9 +614,9 @@ int tesreconstruction_main() {
                     printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
                     gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
                 }
-                printf("%s %f %s","1pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
+                /*printf("%s %f %s","1pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
                 printf("%s %f %s","post=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,1),"\n");
-                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");
+                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");*/
             }
         }
         
