@@ -1541,27 +1541,6 @@ int checkXmls(struct Parameters* const par)
 
 
 /***** SECTION 5 ************************************************************
-* checksum: Calculate the checksum
-*
-* Parameters:
-* - buffer:
-* - len:
-* - seed:
-******************************************************************************/
-unsigned checksum(void *buffer, size_t len, unsigned int seed)
-{
-      unsigned char *buf = (unsigned char *)buffer;
-      size_t i;
-
-      for (i = 0; i < len; ++i)
-            seed += (unsigned int)(*buf++);
-      return seed;
-}
-
-/*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
-
-
-/***** SECTION 6 ************************************************************
 * subString: Extract some elements from an array of characters
 *
 * Parameters:
@@ -1582,4 +1561,4 @@ char* subString (const char* input, int offset, int len, char* dest)
   strncpy (dest, input + offset, len);
   return dest;
 }
-/*xxxx end of SECTION 6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+/*xxxx end of SECTION 5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

@@ -15,11 +15,10 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  PULSEPROCESS has been developed by the INSTITUTO DE FISICA DE 
-   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
-   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish (
-   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
-   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
+   Copyright 2023:  LOG has been developed by the INSTITUTO DE FISICA DE
+   CANTABRIA (CSIC-UC) with funding under different projects:
+   ESP2006-13608-C02-01, AYA2012-39767-C02-01, ESP2013-48637-C2-1-P,
+   ESP2014-53672-C3-1-P, RTI2018-096686-B-C21 and PID2021-122955OB-C41.
 
 ***********************************************************************
 *                      PULSEPROCESS
@@ -1688,7 +1687,7 @@ int find_model_samp1DERs(double samp1DER, ReconstructInitSIRENA *reconstruct_ini
 	{
                 temp = gsl_vector_subvector(reconstruct_init->library_collection->pulse_templates_filder[nummodels-1].ptemplate,0,(*modelFound)->size);
                 gsl_vector_memcpy(*modelFound,&temp.vector);
-                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Creo que habia un error antes escalando con 'gsl_vector_get(modelFound_aux,nummodels-1)'
+                gsl_vector_scale(*modelFound,samp1DER/gsl_vector_get(*modelFound,0));  ///Error when scaling with 'gsl_vector_get(modelFound_aux,nummodels-1)'
 	}
 	else
 	{
@@ -1998,10 +1997,6 @@ int findTstartCAL
 	// To provide the tstarts (or not)
 	bool findTstarts = true;
         if ((isNumber(reconstruct_init->tstartPulse1)) && (atoi(reconstruct_init->tstartPulse1) != 0)) findTstarts = false;
-        
-    /*cout<<"adaptativethreshold: "<<adaptativethreshold<<endl;
-    for (int i=0;i<der->size;i++)
-        cout<<i<<" "<<gsl_vector_get(der,i)<<endl;*/
 	
 	if (findTstarts == true)
 	{
@@ -3191,7 +3186,6 @@ int FindSecondariesSTC
                     if (cntUp == 1)
                     {
                         possibleTstart = i;
-                        //cout<<"cntUp: "<<cntUp<<" "<<i<<endl;
                         possiblemaxDER = gsl_vector_get(der,i);
                         possiblesamp1DER = gsl_vector_get(der,i);
                     }

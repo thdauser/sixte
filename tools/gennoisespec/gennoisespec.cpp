@@ -423,8 +423,9 @@
         }
         keyword_exists = 0;*/
 
-        else
+        else // keyword_exists(V0) = 1
         {
+            keyword_exists = 0;
             // RL(Ohm)
             strcpy(keyname,"RL");
             for (int i=0;i<hdunum;i++)
@@ -830,7 +831,7 @@
      if ((((Imin == -999.0) || (Imax == -999.0)) || ((Imin == 0) || (Imax == 0))) && (adu_cnv == -999.0))
      {
          aducnv = 1.0;
-         message = "ADU_CNV not found or Imin or Imax not found or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
+         message = "ADU_CNV not found, or Imin or Imax not found, or both equal to 0 => Conversion factor ('aducnv' to convert adu into A) is fix to 1";
          EP_PRINT_ERROR(message,-999);	// Only a warning
      }
      else if (adu_cnv != -999.0)

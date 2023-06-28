@@ -1,25 +1,24 @@
 /***********************************************************************
  *   This file is part of SIXTE/SIRENA software.
- * 
+ *
  *   SIXTE is free software: you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by
  *   the Free Software Foundation, either version 3 of the License, or
  *   any later version.
- * 
+ *
  *   SIXTE is distributed in the hope that it will be useful,
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *   GNU General Public License for more details.
- * 
+ *
  *   For a copy of the GNU General Public License see
  *   <http://www.gnu.org/licenses/>.
- * 
- *   Copyright 2014:  INTEGRASIRENA has been developed by the INSTITUTO DE FISICA DE 
- *   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
- *   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
- *   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
- *   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
- * 
+ *
+ *  Copyright 2023:  LOG has been developed by the INSTITUTO DE FISICA DE
+ *  CANTABRIA (CSIC-UC) with funding under different projects:
+ *  ESP2006-13608-C02-01, AYA2012-39767-C02-01, ESP2013-48637-C2-1-P,
+ *  ESP2014-53672-C3-1-P, RTI2018-096686-B-C21 and PID2021-122955OB-C41.
+ *
  ***********************************************************************
  *                      INTEGRASIRENA
  *
@@ -30,7 +29,7 @@
  *              Maite Ceballos
  *              ceballos@ifca.unican.es
  *              IFCA
- *                                                                     
+ *
  ***********************************************************************/
  
  /******************************************************************************
@@ -51,6 +50,7 @@
   * - 9. getLibraryCollection
   * - 10. getNoiseSpec
   * - 11. IntegrafreeTesEventListSIRENA
+  * - 12. checksum
   * 
   *******************************************************************************/ 
  
@@ -129,7 +129,6 @@
   * - clobber: Overwrite or not output files if exist (1/0)
   * - maxPulsesPerRecord: Default size of the event list
   * - SaturationValue: Saturation level of the ADC curves
-  * (- tstartPulse1: Tstart (samples) of the first pulse (different from 0 if the tstartPulsei input parameters are going to be used))
   * - tstartPulse1: If integer number => Sample where the first pulse starts 
   *                  or
   *                  if nameFile => File where is the tstart (in seconds) of every pulse
@@ -150,32 +149,29 @@
                                                 char clobber, int maxPulsesPerRecord, double SaturationValue,
                                                 char* const tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status)
  {  
-     
-     //gsl_set_error_handler_off();
-     /*string message = "";
-      *	char valERROR[256];*/
-
      string message = "";
      
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      // Load LibraryCollection structure if library file exists
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      int exists=0;
      if (fits_file_exists(library_file, &exists, status))
      {
          EP_EXIT_ERROR("Error checking if library file exists",*status);
      }
      
-     //if ((opmode == 0) && (largeFilter == -999)) largeFilter = pulse_length;
-     if (opmode == 0) 
+     if (opmode == 0)	// Calibration
      {
          pulse_length = pow(2,floor(log2(largeFilter)));
-         //EP_PRINT_ERROR("Pulse length not provided => Fixed as the base-2 value equal or lower than largeFilter",-999); // Only a warning
      }
      
      // Loading in the reconstruct_init structure values related to grading and preBuffer values from the XML file 
      if (0 != preBuffer)	reconstruct_init->preBuffer = 1;
      else			        reconstruct_init->preBuffer = 0;
-     gsl_vector *pBi;
-     gsl_vector *posti;
+     gsl_vector *pBi;   // preBuffer values
+     gsl_vector *posti; // Filter length (including preBuffer)
+                        // post in (grading=>pre,post and pB)
+                        // filtlen in (grading=>pre,post and filtlen) 
      if (reconstruct_init->preBuffer == 1)
      {
         pBi = gsl_vector_alloc(reconstruct_init->grading->ngrades);
@@ -192,19 +188,9 @@
      {
          if (opmode == 1)		
          {
-             
-             /*if (pulse_length == -999)  
-             {
-                 pulse_length = oflength;
-                 EP_PRINT_ERROR("Pulse length not provided => Fixed as OFLength (provide a different PulseLength value if 0-padding)",-999); // Only a warning
-             }*/
              if ((pulse_length < oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)|| (strcmp(energy_method,"I2RDER") == 0)))
              {
                  EP_PRINT_ERROR("0-padding is going to be used",-999); // Only a warning
-                 /*if (preBuffer > pulse_length)
-                 {
-                    EP_EXIT_ERROR("It has no sense preBuffer>PulseLength",EPFAIL);
-                 }*/
              }
              else if ((pulse_length > oflength) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)))
              {
@@ -214,7 +200,7 @@
          }
          
          reconstruct_init->library_collection = getLibraryCollection(library_file, opmode, hduPRECALWN, hduPRCLOFWM, largeFilter, filter_domain, pulse_length, energy_method, ofnoise, filter_method, oflib, &ofinterp, filtEev, lagsornot, reconstruct_init->preBuffer, pBi, posti, status);
-         reconstruct_init->library_collection->margin = 0.25; //%
+         reconstruct_init->library_collection->margin = 0.25;	// (%) Margin to be applied when several energies in the library to choose the proper filter
          if (*status)
          {
              EP_EXIT_ERROR((char*)"Error in getLibraryCollection",EPFAIL); 
@@ -244,8 +230,9 @@
         gsl_vector_free(posti); posti = 0;
      }
      
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      // Load NoiseSpec structure
-     //reconstruct_init->noise_spectrum = NULL;
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      bool baselineReadFromLibrary = true;
      if ((((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(filter_method,"B0") == 0)) )|| (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1))
      {
@@ -294,7 +281,9 @@
          }
      }
      
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      // Fill in the matrix tstartPulse1_i because tstartPulse1 = nameFile
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      if (!isNumber(tstartPulse1))
      {
          fitsfile *tstartPulse1FileObject = NULL;
@@ -340,7 +329,7 @@
          obj.endRow = totalpulses;
          if (readFitsSimple (obj,&reconstruct_init->tstartPulse1_i))
          {
-             message = "Cannot run readFitsSimple in integraSIRENA.cpp";
+             message = "Cannot read TIME column in tstartPulse1 file";
              EP_EXIT_ERROR(message,EPFAIL);
          }
          
@@ -355,7 +344,9 @@
          }
      }
      
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      // Fill in reconstruct_init
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      strncpy(reconstruct_init->record_file,record_file,255);
      reconstruct_init->record_file[255]='\0';
      reconstruct_init->record_file_fptr = fptr;
@@ -524,15 +515,8 @@
              strcpy(keyname,"ADU_CNV");
              int hdunum; // Number of the current HDU (RECORDS or TESRECORDS)
              fits_get_hdu_num(reconstruct_init->record_file_fptr, &hdunum);
-             //cout<<"hdunum: "<<hdunum<<endl;
              strcpy(extname,"TESRECORDS");
              fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,extname, 0, status);
-             //cout<<"status: "<<*status<<endl;
-             /*if ((*status == 0) && (hdunum == 2))   // Input FITS file containing real data
-             {
-                reconstruct_init->i2rdata->ADU_CNV = 0.0;
-                //cout<<"reconstruct_init->i2rdata->ADU_CNV = 0.0: "<<reconstruct_init->i2rdata->ADU_CNV<<endl;
-             }*/
              if (((*status != 0) && (hdunum == 2)) || ((*status == 0) && (hdunum > 2)))
              {
                 for (int i=0;i<hdunum;i++)
@@ -656,13 +640,13 @@
                             strcpy(obj.nameCol,"I0_START");
                             if (readFitsSimple (obj,&vector))
                             {
-                                EP_EXIT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",EPFAIL);
+                                EP_EXIT_ERROR("Cannot read I0_START column in records input FITS file (TESPARAM HDU)",EPFAIL);
                             }
                             reconstruct_init->i2rdata->I0_START = gsl_vector_get(vector,0);
 
                             if (fits_movabs_hdu(reconstruct_init->record_file_fptr, hdunum, &hdutype, status))
                             {
-                                EP_EXIT_ERROR("Cannot move to RECORDS or TESRECORDS HDU ",EPFAIL);
+                                EP_EXIT_ERROR("Cannot move to RECORDS or TESRECORDS HDU in records input FITS file",EPFAIL);
                             }
 
                             gsl_vector_free(vector); vector = 0;
@@ -841,7 +825,6 @@
          
      // Fill in the pulsesAll structure
      if ((pulsesInRecord->ndetpulses != 0) && ((*pulsesAll)->ndetpulses == 0))
-         //if (nRecord == 1)
      {
          (*pulsesAll)->ndetpulses = pulsesInRecord->ndetpulses;
          if((*pulsesAll)->pulses_detected != 0 && (*pulsesAll)->size < pulsesInRecord->ndetpulses){
@@ -864,28 +847,6 @@
      }
      else
      {
-         ////if (event_list->energies != NULL) 	delete [] event_list->energies;
-         ////if (event_list->avgs_4samplesDerivative != NULL) 	delete [] event_list->avgs_4samplesDerivative;
-         ////if (event_list->Es_lowres != NULL) 	delete [] event_list->Es_lowres;
-         ////if (event_list->phis != NULL) 	        delete [] event_list->phis;
-         ////if (event_list->lagsShifts != NULL) 	delete [] event_list->lagsShifts;
-         ////if (event_list->bsln != NULL) 	        delete [] event_list->bsln;
-         ////if (event_list->rmsbsln != NULL) 	delete [] event_list->rmsbsln;
-         ////if (event_list->grading != NULL) 	delete [] event_list->grading;
-         //if (event_list->grades1 != NULL) 	delete [] event_list->grades1;
-         ////if (event_list->grades2 != NULL) 	delete [] event_list->grades2;
-         //if (event_list->pulse_heights != NULL) 	delete [] event_list->pulse_heights;
-         ////if (event_list->ph_ids != NULL) 	delete [] event_list->ph_ids;
-         ////if (event_list->ph_ids2 != NULL) 	delete [] event_list->ph_ids2;
-         ////if (event_list->ph_ids3 != NULL) 	delete [] event_list->ph_ids3;
-         ////if (event_list->pix_ids != NULL) 	delete [] event_list->pix_ids;
-         ////if (event_list->tstarts != NULL) 	delete [] event_list->tstarts;
-         ////if (event_list->tends != NULL) 	        delete [] event_list->tends;
-         ////if (event_list->risetimes != NULL)       delete [] event_list->risetimes;
-         //if (event_list->falltimes != NULL)       delete [] event_list->falltimes;
-         
-         //if (event_list->event_indexes != NULL) 	delete [] event_list->event_indexes;    //!!!!!!!!!!!!!!!
-         
          pulsesAllAux->ndetpulses = (*pulsesAll)->ndetpulses;
          
          (*pulsesAll)->ndetpulses = (*pulsesAll)->ndetpulses + pulsesInRecord->ndetpulses;
@@ -936,9 +897,7 @@
      event_list->bsln = new double[event_list->index];
      event_list->rmsbsln = new double[event_list->index];
      event_list->grading = new int[event_list->index];
-     //event_list->grades1 = new int[event_list->index];
      event_list->grades2 = new int[event_list->index];
-    // event_list->pulse_heights = new double[event_list->index];
      event_list->ph_ids = new long[event_list->index];
      event_list->ph_ids2 = new long[event_list->index];
      event_list->ph_ids3 = new long[event_list->index];
@@ -947,8 +906,6 @@
      event_list->tstarts = new double[event_list->index];
      event_list->risetimes = new double[event_list->index];
      event_list->falltimes = new double[event_list->index];
-     
-     //event_list->event_indexes = new double[event_list->index];   //!!!!!!!!!!!!
      
      if (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0)     // Different from PCA
      {
@@ -1093,7 +1050,23 @@
   ******************************************************************************/
  extern "C" void freeReconstructInitSIRENA(ReconstructInitSIRENA* reconstruct_init)
  {
-     free(reconstruct_init->i2rdata); reconstruct_init->i2rdata = NULL;
+     if (reconstruct_init->grading != NULL)
+     {
+         if (reconstruct_init->grading->value != NULL)
+         {
+             gsl_vector_free(reconstruct_init->grading->value); reconstruct_init->grading->value = 0;
+         }
+         if (reconstruct_init->grading->gradeData != NULL)
+         {
+             gsl_matrix_free(reconstruct_init->grading->gradeData); reconstruct_init->grading->gradeData = 0;
+         }
+         free(reconstruct_init->grading);
+         reconstruct_init->grading = 0;
+     }
+     if (reconstruct_init->i2rdata != NULL)
+     {
+         free(reconstruct_init->i2rdata); reconstruct_init->i2rdata = NULL;
+     }
 
      delete(reconstruct_init); reconstruct_init = 0;
  }
@@ -1215,8 +1188,10 @@
   * - posti: Vector with the post values read from the XML file
   * - status: Input/output status
   ******************************************************************************/
-  LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char* filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, gsl_vector *pBi, gsl_vector *posti, int* const status)
- {  	
+ LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char* filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, gsl_vector *pBi, gsl_vector *posti, int* const status)
+ {
+     string message = "";
+
      // Create LibraryCollection structure
      LibraryCollection* library_collection = new LibraryCollection;
      
@@ -1243,9 +1218,8 @@
      {
          if (fits_read_key(fptr,TDOUBLE,"BASELINE", &library_collection->baseline,NULL,status))
          {
-             EP_PRINT_ERROR("Cannot read keyword BASELINE from HDU LIBRARY in library file => Check the noise file",-999);
+             EP_PRINT_ERROR("Cannot read BASELINE keyword from HDU LIBRARY in library file => Check the noise file",-999);
              *status = 0;
-             //return(library_collection);
          }
      }
      
@@ -1266,14 +1240,14 @@
          (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0))))
      {
          if (ntemplates == 1)
-         {	
-             if (strcmp(*ofinterp,"DAB") == 0)	strcpy(*ofinterp,"MF");
+         {
+             if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = "MF";
          }
          else
          {
              if (filtEev != 0)
              {
-                 if (strcmp(*ofinterp,"DAB") == 0)	strcpy(*ofinterp,"MF");
+                 if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = "MF";
                  
                  EP_PRINT_ERROR("The library has several rows, but only the row related to filtEev is going to be used in reconstruction",-999); // Only a warning
              }
@@ -1316,9 +1290,9 @@
          EP_PRINT_ERROR("Cannot get column number for PULSE in library file",*status);
          *status=EPFAIL; return(library_collection);
      }
-     
-     if ((opmode == 0) || 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
+
+     if ((opmode == 0) ||
+     (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
      {
          strcpy(column_name,"MF");
          if (fits_get_colnum(fptr, CASEINSEN,column_name, &mfilter_colnum, status))
@@ -1439,8 +1413,8 @@
      
      // Get matched filter duration
      int mfilter_duration;
-     if ((opmode == 0) || 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)|| (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
+     if ((opmode == 0) ||
+     (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)|| (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
      {
          if (fits_read_tdim(fptr, mfilter_colnum, 1, &naxis, &naxes, status))
          {
@@ -1479,7 +1453,7 @@
      obj.endRow = ntemplates;
      if (readFitsSimple (obj,&library_collection->energies))
      {
-         EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+         EP_PRINT_ERROR("Cannot read ENERGY column in library FITS file",*status);
          *status=EPFAIL; return(library_collection);
      }
      if ((opmode == 1) && (oflib == 1))
@@ -1506,7 +1480,7 @@
      strcpy(obj.nameCol,"PHEIGHT");
      if (readFitsSimple (obj,&library_collection->pulse_heights))
      {
-         EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+         EP_PRINT_ERROR("Cannot read PHEIGHT column in library FITS file",*status);
          *status=EPFAIL; return(library_collection);
      }
      
@@ -1517,7 +1491,7 @@
          strcpy(obj.nameCol,"PLSMXLFF");
          if (readFitsComplex (obj,&matrixAux_PULSEMaxLengthFixedFilter))
          {
-             EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+             EP_PRINT_ERROR("Cannot read PLSMXLFF column in library FITS file",*status);
              *status=EPFAIL; return(library_collection);
          }
      }
@@ -1527,7 +1501,7 @@
      strcpy(obj.nameCol,"PULSE");
      if (readFitsComplex (obj,&matrixAux_PULSE))
      {
-         EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+         EP_PRINT_ERROR("Cannot read PULSE column in library FITS file",*status);
          *status=EPFAIL; return(library_collection);
      }
      
@@ -1536,14 +1510,14 @@
      strcpy(obj.nameCol,"PULSEB0");
      if (readFitsComplex (obj,&matrixAux_PULSEB0))
      {
-         EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+         EP_PRINT_ERROR("Cannot read PULSEB0 column in library FITS file",*status);
          *status=EPFAIL; return(library_collection);
      }
      
      gsl_matrix *matrixAux_MF = NULL;
      gsl_matrix *matrixAux_MFB0 = NULL;
-     if ((opmode == 0) || 
-         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
+     if ((opmode == 0) ||
+     (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
      {
          if ((opmode == 0) || (strcmp(filter_method,"F0") == 0))
          {
@@ -1552,7 +1526,7 @@
              strcpy(obj.nameCol,"MF");
              if (readFitsComplex (obj,&matrixAux_MF))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 EP_PRINT_ERROR("Cannot read MF column in library FITS file",*status);
                  *status=EPFAIL; return(library_collection);
              }
          }
@@ -1563,7 +1537,7 @@
              strcpy(obj.nameCol,"MFB0");
              if (readFitsComplex (obj,&matrixAux_MFB0))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 EP_PRINT_ERROR("Cannot read MFB0 column in library FITS file",*status);
                  *status=EPFAIL; return(library_collection);
              }  
          }  
@@ -1603,7 +1577,7 @@
          strcpy(obj.nameCol,"COVARM");
          if (readFitsComplex (obj,&matrixAux_V))
          {
-             EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+             EP_PRINT_ERROR("Cannot read COVARM column in library FITS file",*status);
              *status=EPFAIL; return(library_collection);
          }
          
@@ -1613,7 +1587,7 @@
          strcpy(obj.nameCol,"WEIGHTM");
          if (readFitsComplex (obj,&matrixAux_W))
          {
-             EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+             EP_PRINT_ERROR("Cannot read WEIGHTM column in library FITS file",*status);
              *status=EPFAIL; return(library_collection);
          }
          
@@ -1638,7 +1612,7 @@
                  strcpy(obj.nameCol,"TV");
                  if (readFitsComplex (obj,&matrixAux_T))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     EP_PRINT_ERROR("Cannot read TV column in library FITS file",*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  
@@ -1647,7 +1621,7 @@
                  strcpy(obj.nameCol,"tE");
                  if (readFitsSimple (obj,&vectorAux_t))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsSimplex in integraSIRENA.cpp",*status);
+                     EP_PRINT_ERROR("Cannot read tE column in library FITS file",*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  
@@ -1657,7 +1631,7 @@
                  strcpy(obj.nameCol,"XM");
                  if (readFitsComplex (obj,&matrixAux_X))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     EP_PRINT_ERROR("Cannot read XM column in library FITS file",*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  
@@ -1667,7 +1641,7 @@
                  strcpy(obj.nameCol,"YV");
                  if (readFitsComplex (obj,&matrixAux_Y))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     EP_PRINT_ERROR("Cannot read YV column in library FITS file",*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  
@@ -1677,7 +1651,7 @@
                  strcpy(obj.nameCol,"ZV");
                  if (readFitsComplex (obj,&matrixAux_Z))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     EP_PRINT_ERROR("Cannot read ZV column in library FITS file",*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  
@@ -1686,7 +1660,7 @@
                  strcpy(obj.nameCol,"rE");
                  if (readFitsSimple (obj,&vectorAux_r))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsSimplex in integraSIRENA.cpp",*status);
+                     EP_PRINT_ERROR("Cannot read rE column in library FITS file",*status);
                      *status=EPFAIL; return(library_collection);
                  }
              }
@@ -1699,15 +1673,14 @@
                  strcpy(obj.nameCol,"WAB");
                  if (readFitsComplex (obj,&matrixAux_WAB))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     EP_PRINT_ERROR("Cannot read WAB column in library FITS file",*status);
                      *status=EPFAIL; return(library_collection);
                  }
              }
          }
      }
      
-     if (((opmode == 1) && ((strcmp(energy_method,"WEIGHTN") == 0) || (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (strcmp(ofnoise,"NSD") == 0))))
-         || ((opmode == 0) && (ntemplates >1)))  
+     if (((opmode == 1) && ((strcmp(energy_method,"WEIGHTN") == 0) || (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (strcmp(ofnoise,"NSD") == 0)))) || ((opmode == 0) && (ntemplates >1)))
      {
          if (ntemplates == 1)
          {
@@ -1725,7 +1698,7 @@
          strcpy(obj.nameCol,"PAB");
          if (readFitsComplex (obj,&matrixAux_PAB))
          {
-             EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+             EP_PRINT_ERROR("Cannot read PAB column in library FITS file",*status);
              *status=EPFAIL; return(library_collection);
          }
          
@@ -1736,7 +1709,7 @@
              strcpy(obj.nameCol,"PABMXLFF");
              if (readFitsComplex (obj,&matrixAux_PABMaxLengthFixedFilter))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 EP_PRINT_ERROR("Cannot read PABMXLFF column in library FITS file",*status);
                  *status=EPFAIL; return(library_collection);
              }
          }
@@ -1747,7 +1720,7 @@
          strcpy(obj.nameCol,"DAB");
          if (readFitsComplex (obj,&matrixAux_DAB))
          {
-             EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+             EP_PRINT_ERROR("Cannot read DAB column in library FITS file",*status);
              *status=EPFAIL; return(library_collection);
          }
      }
@@ -1775,8 +1748,9 @@
          library_collection->matched_filters[it].energy    	= gsl_vector_get(library_collection->energies,it);
          library_collection->matched_filters_B0[it].energy 	= gsl_vector_get(library_collection->energies,it);
          
-         if (((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19)) && ((opmode == 0) 
-             || ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)))))
+         if (((ncols == 7) || (ncols == 9) || (ncols == 10) || (ncols == 19)) && ((opmode == 0) ||
+         ((opmode == 1) && ((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) ||
+         (strcmp(energy_method,"I2RDER") == 0)))))
          {
              library_collection->pulse_templatesMaxLengthFixedFilter[it].ptemplate    = gsl_vector_alloc(template_durationPLSMXLFF);
              gsl_matrix_get_row(library_collection->pulse_templatesMaxLengthFixedFilter[it].ptemplate,matrixAux_PULSEMaxLengthFixedFilter,it);
@@ -1787,7 +1761,7 @@
          gsl_matrix_get_row(library_collection->pulse_templates_B0[it].ptemplate,matrixAux_PULSEB0,it);
          
          if ((opmode == 0) || 
-             (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
+         (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
          {
              if ((opmode == 0) || (strcmp(filter_method,"F0") == 0)) 
              {
@@ -1808,7 +1782,8 @@
              }
          }
          
-         if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(*ofinterp,"DAB") == 0) && (opmode == 1))
+         if (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && 
+         (strcmp(*ofinterp,"DAB") == 0) && (opmode == 1))
          {
              if ((opmode == 1)  && (it < ntemplates-1))
              {
@@ -2007,7 +1982,8 @@
              strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
              if (readFitsComplex (obj,&matrixAux_OFFx))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                 EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
              for (int j=0;j<matrixAux_OFFx->size1;j++)
@@ -2029,7 +2005,8 @@
                  else	matrixAuxab_OFFx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(pulse_length))-i)*2);
                  if (readFitsComplex (obj,&matrixAuxab_OFFx))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                     EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  for (int j=0;j<matrixAuxab_OFFx->size1;j++)
@@ -2087,7 +2064,8 @@
              strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
              if (readFitsComplex (obj,&matrixAux_OFTx))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                 EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
              for (int j=0;j<matrixAux_OFTx->size1;j++)
@@ -2109,7 +2087,8 @@
                  else	matrixAuxab_OFTx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(pulse_length))-i));
                  if (readFitsComplex (obj,&matrixAuxab_OFTx))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                     EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  for (int j=0;j<matrixAuxab_OFTx->size1;j++)
@@ -2198,7 +2177,8 @@
                  matrixAux_PRCLWNx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(pulse_length))-i)*2);
                  if (readFitsComplex (obj,&matrixAux_PRCLWNx))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                     EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  for (int j=0;j<matrixAux_PRCLWNx->size1;j++)
@@ -2286,7 +2266,8 @@
                  strcpy(obj.nameCol,(string("OFW")+string(str_length)).c_str());
                  if (readFitsComplex (obj,&matrixAux_PRCLOFWMx))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                     message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                     EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(library_collection);
                  }
                  
@@ -2362,7 +2343,8 @@
              strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
              if (readFitsComplex (obj,&matrixAux_OFFx))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                 EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
              for (int j=0;j<matrixAux_OFFx->size1;j++)
@@ -2405,7 +2387,8 @@
              strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
              if (readFitsComplex (obj,&matrixAux_OFTx))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                 EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
              for (int j=0;j<matrixAux_OFTx->size1;j++)
@@ -2573,7 +2556,8 @@
                         strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
                         if (readFitsComplex (obj,&matrixAux_OFFx))
                         {
-                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                            EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
                         for (int j=0;j<matrixAux_OFFx->size1;j++)
@@ -2604,7 +2588,8 @@
                         strcpy(obj.nameCol,(string("F")+string(str_length)).c_str());
                         if (readFitsComplex (obj,&matrixAux_OFFx))
                         {
-                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                            EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
                         for (int j=0;j<matrixAux_OFFx->size1;j++)
@@ -2662,7 +2647,8 @@
                         strcpy(obj.nameCol,(string("ABF")+string(str_length)).c_str());
                         if (readFitsComplex (obj,&matrixAuxab_OFFx))
                         {
-                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                            EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
                         for (int j=0;j<matrixAuxab_OFFx->size1;j++)
@@ -2693,7 +2679,8 @@
                          strcpy(obj.nameCol,(string("ABF")+string(str_length)).c_str());
                          if (readFitsComplex (obj,&matrixAuxab_OFFx))
                          {
-                             EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                             message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                             EP_PRINT_ERROR(message,*status);
                              *status=EPFAIL; return(library_collection);
                          }
                          for (int j=0;j<matrixAuxab_OFFx->size1;j++)
@@ -2825,7 +2812,8 @@
                         strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
                         if (readFitsComplex (obj,&matrixAux_OFTx))
                         {
-                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                            EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
                         
@@ -2857,7 +2845,8 @@
                         strcpy(obj.nameCol,(string("T")+string(str_length)).c_str());
                         if (readFitsComplex (obj,&matrixAux_OFTx))
                         {
-                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                            EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
                         
@@ -2877,9 +2866,9 @@
                  
                  for (int it=0;it<ntemplates;it++)
                  {
-                     library_collection->optimal_filters[it].energy			= gsl_vector_get(library_collection->energies,it);
-                     library_collection->optimal_filters[it].ofilter_duration 	= lengthALL_T;
-                     library_collection->optimal_filters[it].ofilter    		= gsl_vector_alloc(lengthALL_T);
+                     library_collection->optimal_filters[it].energy			  = gsl_vector_get(library_collection->energies,it);
+                     library_collection->optimal_filters[it].ofilter_duration = lengthALL_T;
+                     library_collection->optimal_filters[it].ofilter    	  = gsl_vector_alloc(lengthALL_T);
                      
                      gsl_matrix_get_row(library_collection->optimal_filters[it].ofilter,matrixALL_OFTx,it);
                  }
@@ -2916,7 +2905,8 @@
                         strcpy(obj.nameCol,(string("ABT")+string(str_length)).c_str());
                         if (readFitsComplex (obj,&matrixAuxab_OFTx))
                         {
-                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                            EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
                         for (int j=0;j<matrixAuxab_OFTx->size1;j++)
@@ -2947,7 +2937,8 @@
                         strcpy(obj.nameCol,(string("ABT")+string(str_length)).c_str());
                         if (readFitsComplex (obj,&matrixAuxab_OFTx))
                         {
-                            EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                            message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                            EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
                         for (int j=0;j<matrixAuxab_OFTx->size1;j++)
@@ -3066,7 +3057,8 @@
              strcpy(obj.nameCol,(string("OFW")+string(str_length)).c_str());
              if (readFitsComplex (obj,&matrixAux_PRCLOFWMx))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                 EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
              
@@ -3147,7 +3139,8 @@
              matrixAux_PRCLWNx = gsl_matrix_alloc(ntemplates,pow(2,floor(log2(template_duration))-i)*2);
              if (readFitsComplex (obj,&matrixAux_PRCLWNx))
              {
-                 EP_PRINT_ERROR("Cannot run readFitsComplex in integraSIRENA.cpp",*status);
+                 message = "Cannot read " + string(obj.nameCol) + " column in library FITS file";
+                 EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
              
@@ -3207,6 +3200,8 @@
   ******************************************************************************/
  NoiseSpec* getNoiseSpec(const char* const filename, int opmode, int hduPRCLOFWM, char *energy_method, char *ofnoise, char *filter_method, int* const status)
  {
+     string message = "";
+
      // Create NoiseSpec structure
      NoiseSpec* noise_spectrum = new NoiseSpec;
      
@@ -3231,7 +3226,7 @@
      strcpy(keyname,"NOISESTD");
      if (fits_read_key(fptr,TDOUBLE,keyname, &noise_spectrum->noiseStd,NULL,status))
      {
-         EP_PRINT_ERROR("Cannot read keyword NOISESTD",*status);
+         EP_PRINT_ERROR("Cannot read NOISESTD keyword",*status);
          *status=EPFAIL;return(noise_spectrum);
      }
      
@@ -3243,7 +3238,7 @@
          
          if (fits_read_key(fptr,TDOUBLE,keyname, &noise_spectrum->baseline,NULL,status))
          {
-             EP_PRINT_ERROR("Cannot read keyword BASELINE",*status);
+             EP_PRINT_ERROR("Cannot read BASELINE keyword",*status);
              *status=EPFAIL;return(noise_spectrum);
          }
      }
@@ -3309,7 +3304,7 @@
          obj.endRow = noise_duration;
          if (readFitsSimple (obj,&noise_spectrum->noisespec))
          {
-             EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+             EP_PRINT_ERROR("Cannot read CSD colum in noise file",*status);
              *status=EPFAIL; return(noise_spectrum);
          }
          
@@ -3317,7 +3312,7 @@
          strcpy(obj.nameCol,"FREQ");
          if (readFitsSimple (obj,&noise_spectrum->noisefreqs))
          {
-             EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+             EP_PRINT_ERROR("Cannot read FREQ colum in noise file",*status);
              *status=EPFAIL; return(noise_spectrum);
          }
          
@@ -3357,7 +3352,8 @@
                  weightMatrixi = gsl_matrix_alloc(1,gsl_vector_get(weightpoints,i)*gsl_vector_get(weightpoints,i));
                  if (readFitsComplex (obj,&weightMatrixi))
                  {
-                     EP_PRINT_ERROR("Cannot run readFitsSimple in integraSIRENA.cpp",*status);
+                     message = "Cannot read " + string(obj.nameCol) + " column in noise FITS file";
+                     EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(noise_spectrum);
                  }
                  
@@ -3423,6 +3419,28 @@
     if (event_list->falltimes != NULL)       delete [] event_list->falltimes;
 }
 /*xxxx end of SECTION 11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
+
+/***** SECTION 12 ************************************************************
+* checksum: Calculate the checksum
+*
+* Parameters:
+* - buffer:
+* - len:
+* - seed:
+******************************************************************************/
+extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
+{
+      unsigned char *buf = (unsigned char *)buffer;
+      size_t i;
+
+      for (i = 0; i < len; ++i)
+            seed += (unsigned int)(*buf++);
+      return seed;
+}
+
+/*xxxx end of SECTION 12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/
+
  
  // It waits until all threads finish and it builds the 'event_list' by using the results
  void th_end(ReconstructInitSIRENA* reconstruct_init,
@@ -3578,7 +3596,6 @@
      strcpy(FilterDomain, other.FilterDomain);
      strcpy(FilterMethod, other.FilterMethod);
      strcpy(EnergyMethod, other.EnergyMethod);
-     
      
      strcpy(OFNoise, other.OFNoise);  
      

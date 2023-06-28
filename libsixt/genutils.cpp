@@ -14,11 +14,10 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  GENUTILS has been developed by the INSTITUTO DE FISICA DE 
-   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
-   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
-   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
-   ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
+   Copyright 2023:  LOG has been developed by the INSTITUTO DE FISICA DE
+   CANTABRIA (CSIC-UC) with funding under different projects:
+   ESP2006-13608-C02-01, AYA2012-39767-C02-01, ESP2013-48637-C2-1-P,
+   ESP2014-53672-C3-1-P, RTI2018-096686-B-C21 and PID2021-122955OB-C41.
 
 ***********************************************************************
 *                      GENUTILS
@@ -205,13 +204,13 @@ int FFT(gsl_vector *invector,gsl_vector_complex *outvector,double STD)
 	// With this normalization, if the input signal is a sin signal with amplitude A, A·sin(2·pi·fo·t) =>
 	// The amplitude of the 2 tones (fo,-fo) in frequency domain is A/2 
  	gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(1.0/(invector->size),0.0));
-        // PP
-        /*double fs = (invector->size)/STD;
-        gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(sqrt(2.0/((invector->size)*fs)),0.0)); */
+    // PP
+    /*double fs = (invector->size)/STD;
+    gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(sqrt(2.0/((invector->size)*fs)),0.0)); */
        
-        // Old normalization factor
-        //gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(1.0/sqrt(invector->size),0.0)); //Factor 1/sqrt(N), in the FFT expression
-        //gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(sqrt(2*STD),0.0));
+    // Old normalization factor
+    //gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(1.0/sqrt(invector->size),0.0)); //Factor 1/sqrt(N), in the FFT expression
+    //gsl_vector_complex_scaleIFCA(outvector,gsl_complex_rect(sqrt(2*STD),0.0));
 
  	gsl_fft_complex_wavetable_free(wavetable); wavetable = 0;
  	gsl_fft_complex_workspace_free(work); work = 0;
@@ -251,11 +250,11 @@ int FFTinverse(gsl_vector_complex *invector,gsl_vector *outvector,double STD)
 	gsl_vector_scale(outvector,invector->size); 
 	//PP
 	/*double fs = (invector->size)/STD;
-        gsl_vector_scale(outvector,sqrt(((invector->size)*fs)/2)); */
+    gsl_vector_scale(outvector,sqrt(((invector->size)*fs)/2)); */
         
-        // Old normalization factor
-        //gsl_vector_scale(outvector,sqrt(invector->size)); //Factor 1/sqrt(N), in the FFT expression
-        //gsl_vector_scale(outvector,1/sqrt(2*STD));
+    // Old normalization factor
+    //gsl_vector_scale(outvector,sqrt(invector->size)); //Factor 1/sqrt(N), in the FFT expression
+    //gsl_vector_scale(outvector,1/sqrt(2*STD));
 
 	gsl_fft_complex_wavetable_free(wavetable); wavetable = 0;
 	gsl_fft_complex_workspace_free(work); work = 0;

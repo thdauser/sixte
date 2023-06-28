@@ -14,11 +14,10 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-   Copyright 2014:  INOUTUTILS has been developed by the INSTITUTO DE FISICA DE 
-   CANTABRIA (CSIC-UC) with funding from the Spanish Ministry of Science and 
-   Innovation (MICINN) under project  ESP2006-13608-C02-01, and Spanish 
-   Ministry of Economy (MINECO) under projects AYA2012-39767-C02-01, 
-   ESP2013-48637-C2-1-P and ESP2014-53672-C3-1-P.
+   Copyright 2023:  LOG has been developed by the INSTITUTO DE FISICA DE
+   CANTABRIA (CSIC-UC) with funding under different projects:
+   ESP2006-13608-C02-01, AYA2012-39767-C02-01, ESP2013-48637-C2-1-P,
+   ESP2014-53672-C3-1-P, RTI2018-096686-B-C21 and PID2021-122955OB-C41.
 
 /***********************************************************************
 *                      INOUTUTILS
@@ -54,60 +53,6 @@ MAP OF SECTIONS IN THIS FILE:
 
 #include "inoututils.h"
 
-/*IOData::IOData():
-  ofilter_duration(0),
-  ofilter(0), 
-  energy(0.0f)
-{
-
-}
-
-IOData::IOData(const IOData& other):
-  ofilter_duration(other.ofilter_duration),
-  energy(other.energy),
-  ofilter(0)
-{
-  if(other.ofilter){
-    ofilter = gsl_vector_alloc(other.ofilter->size);
-    gsl_vector_memcpy(ofilter, other.ofilter);
-  }
-}
-
-IOData& 
-IOData::operator=(const IOData& other)
-{
-  if(this != &other){
-    ofilter_duration = other.ofilter_duration;
-    energy = other.energy;
-    if (ofilter) {
-      gsl_vector_free(ofilter); ofilter = 0;
-    }
-    if(other.ofilter){
-      ofilter = gsl_vector_alloc(other.ofilter->size);
-      gsl_vector_memcpy(ofilter, other.ofilter);
-    }
-  }
-  return *this;
-}
-
-IOData::~IOData()
-{
-  if(ofilter) {
-    gsl_vector_free(ofilter); ofilter = 0;
-  }
-}
-
-extern "C" IOData* newIOData(int* const status)
-{
-  IOData* xxx = new IOData;
-	return(xxx);
-}
-
-extern "C" void freeIOData(IOData* xxx)
-{
-  delete(xxx); xxx = 0;
-}*/
-
 /***** SECTION 1 ************************************
 * readFitsSimple function: This function reads values of a simple column of a FITS file. 
 *                          After that, the function puts them into a GSL vector for an easier processing.
@@ -119,7 +64,6 @@ extern "C" void freeIOData(IOData* xxx)
 extern "C" int readFitsSimple(IOData obj,gsl_vector **result)
 {
     long nRows = 0L;
-    //int  type, status = EPOK;
     int  type, status = 0;
     double *bufferD = NULL;
     int *bufferJ = NULL;
@@ -129,11 +73,6 @@ extern "C" int readFitsSimple(IOData obj,gsl_vector **result)
     string message="";
     
     fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status);
-    /*if (fits_movnam_hdu(obj.inObject, ANY_HDU,obj.nameTable, extver, &status))
-    {  
-        message = "Cannot move to HDU " + string(obj.nameTable);
-        EP_PRINT_ERROR(message,status);
-    }*/
     
     if (fits_get_colnum(obj.inObject,0,obj.nameCol,&colnum,&status))
     {
@@ -233,11 +172,7 @@ int readFitsComplex(IOData obj, gsl_matrix **result)
 	nelemsInRow = naxes;
 
 	nRows = obj.endRow - obj.iniRow + 1; // Number of rows of the fits to read
-	// binSize = obj.endCol - obj.iniCol + 1; //number of columns of the matrix to read
 	matrixdim = nelemsInRow*nRows;
-
-	//double *bufferD = new double [5];
-	//double bufferD[matrixdim];
 	
    	switch (obj.type)
    	{
@@ -442,7 +377,6 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 	char tform1[20];
 	string strtf1="",strcol="", message="";
 	
-	//dim=matrix->size2;
 	if (matrix->size1 == 1)		dim = matrix->size2;
 	else						dim = matrix->size1*matrix->size2;
 	sprintf(chardim,"%d",dim);
@@ -465,7 +399,7 @@ int writeFitsComplex(IOData obj, gsl_matrix *matrix)
 			break;
 	}
 
-	//??? borrar
+	//??? delete
 	int n1 = (matrix)->size1;
 	int n2 = (matrix)->size2;
 	for (int i=0; i<n1; i++)
