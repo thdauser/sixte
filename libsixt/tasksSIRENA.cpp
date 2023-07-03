@@ -8550,8 +8550,6 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
         EP_PRINT_ERROR(message,-999); // Only a warning
     }
 
-    //model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
-    
     double valaux;
     int newidx;
     
@@ -9363,11 +9361,12 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
             (*pulsesInRecord)->pulses_detected[i].phi = -999.0;
             (*pulsesInRecord)->pulses_detected[i].lagsShift = -999.0;
         }
+
+        gsl_vector_free(model); model = 0;
     } // End for
     log_debug("After FOR");
     
     gsl_vector_free(recordAux); recordAux = 0;
-    gsl_vector_free(model); model = 0;
     
     if (pulse_lowres != NULL) {gsl_vector_free(pulse_lowres); pulse_lowres = 0;}
     if (filtergsl_lowres!= NULL) {gsl_vector_free(filtergsl_lowres); filtergsl_lowres = 0;}
@@ -9607,8 +9606,6 @@ void th_runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_recle
         EP_PRINT_ERROR(message,-999); // Only a warning
     }
     
-    model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
-    
     double valaux;
     int newidx;
     
@@ -9636,6 +9633,7 @@ void th_runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_recle
                 message = "Cannot run routine pulseGrading";
                 EP_EXIT_ERROR(message,EPFAIL);
             }
+            model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
             
             if (preBuffer == 1)
             {
@@ -10389,10 +10387,11 @@ void th_runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_recle
             (*pulsesInRecord)->pulses_detected[i].phi = -999.0;
             (*pulsesInRecord)->pulses_detected[i].lagsShift = -999.0;
         }
+
+        gsl_vector_free(model); model = 0;
     } // End for
     
     gsl_vector_free(recordAux); recordAux = 0;
-    gsl_vector_free(model); model = 0;
     
     gsl_vector_free(pulse_lowres); pulse_lowres = 0;
     gsl_vector_free(filtergsl_lowres); filtergsl_lowres = 0;
