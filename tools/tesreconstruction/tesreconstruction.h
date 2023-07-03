@@ -152,8 +152,8 @@ struct Parameters {
 	//Filtering Domain: Time(T) or Frequency(F)
 	char FilterDomain[2];
 
-	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) **/
-	char FilterMethod[3];
+	//Filtering Method: F0 (deleting the zero frequency bin) or F0 (deleting the baseline) of F0B0 (deleting always the baseline)**/
+	char FilterMethod[5];
 	
 	//Energy Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA **/
 	char EnergyMethod[10];

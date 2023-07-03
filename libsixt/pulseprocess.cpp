@@ -3297,8 +3297,15 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
         gsl_vector *modelToSubtract = gsl_vector_alloc(pulse_length_ToSubtract);
 
 	gsl_vector *tstartPulsei = gsl_vector_alloc(3);
+
 	//gsl_vector_set(tstartPulsei,0,reconstruct_init->tstartPulse1);
-        double tstartPulse1_seconds = gsl_vector_get(reconstruct_init->tstartPulse1_i,num_previousDetectedPulses);
+    double tstartPulse1_seconds;
+        if ((isNumber(reconstruct_init->tstartPulse1) && (atoi(reconstruct_init->tstartPulse1) != 0)))
+            tstartPulse1_seconds = atoi(reconstruct_init->tstartPulse1);
+        else
+            tstartPulse1_seconds = gsl_vector_get(reconstruct_init->tstartPulse1_i,num_previousDetectedPulses);
+    cout<<"tstartPulse1_seconds: "<<tstartPulse1_seconds<<endl;
+        cout<<"Paso3"<<endl;
         //std::cout << "tstartPulse1_seconds:" << std::setprecision(15) << tstartPulse1_seconds << '\n';
         //std::cout << "tstartRecord:" <<std::setprecision(15) << tstartRecord<< '\n';
         int tstartPulse1_samples;
@@ -3312,6 +3319,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
             //tstartPulse1_samples = ceil((tstartPulse1_seconds-tstartRecord)*samprate)-1;
             tstartPulse1_samples = ceil((tstartPulse1_seconds-tstartRecord)*samprate);
         }
+        cout<<"Paso4"<<endl;
         //std::cout << "(tstartPulse1_seconds-tstartRecord)*samprate: " << std::setprecision(15) << (tstartPulse1_seconds-tstartRecord)*samprate<< '\n';
         //std::cout << "tstartPulse1_samples: " << std::setprecision(15) << tstartPulse1_samples<< '\n';
         gsl_vector_set(tstartPulsei,0,tstartPulse1_samples);
@@ -3320,6 +3328,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
         
         gsl_vector_set_zero(*flagTruncated);
 
+        cout<<"Paso5"<<endl;
 	if (reconstruct_init->tstartPulse2 == 0) 	*numberPulses = 1;
 	else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
 	else						*numberPulses = 3;
@@ -3327,6 +3336,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
         for (int i=0;i<*numberPulses;i++)
         {
             gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
+            cout<<"gsl_vector_get(*tstartgsl,i): "<<gsl_vector_get(*tstartgsl,i)<<endl;
             
             if (i != *numberPulses-1) 	
             {
@@ -3359,7 +3369,9 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
             {	
                 
                 gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
+                cout<<"maxDERgsl: "<<gsl_vector_get(*maxDERgsl,i)<<endl;
                 gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(der,gsl_vector_get(tstartPulsei,i)));
+                cout<<"samp1DERgsl: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
                 
                 // Average of the first 4 samples of the derivative
                 sum_samp1DER = 0.0;
@@ -3369,7 +3381,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                     
                 }                                                                                   
                 gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
-                //cout<<"samp1DERgsl/4: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
+                cout<<"samp1DERgsl/4: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
             }
             else
             {

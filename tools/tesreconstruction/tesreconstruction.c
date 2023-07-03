@@ -82,7 +82,7 @@
 * - detectionMode: Adjusted Derivative (AD) or Single Threshold Crossing (STC)
 * - NoiseFile: Noise FITS file with noise spectrum
 * - FilterDomain: Filtering Domain: Time (T) or Frequency (F)
-* - FilterMethod: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
+* - FilterMethod: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)
 * - EnergyMethod: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED, I2RDER or PCA
 * - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RFITTED and I2RDER)
 * - Ifit: Constant to apply the I2RFITTED conversion
@@ -127,7 +127,7 @@
 *       - Get the sampling rate from the HISTORY keyword from the input FITS file
 *       - If it is a xifusim simulated file
 *           - Obtain 'trig_reclength' from the HISTORY block
-*   - If Rcemethod doesn't start with '@' => Single record input FITS file
+*   - If Rcmethod doesn't start with '@' => Single record input FITS file
 *       - Open FITS file
 *       - Check if input FITS file have been simulated with TESSIM or XIFUSIM
 *       - Get the sampling rate from the HISTORY keyword from the input FITS file
@@ -1236,11 +1236,11 @@ int getpar(struct Parameters* const par)
               break;
           }
       }
-      if ((isNumber == 0) && (par->opmode == 0))
+      /*if ((isNumber == 0) && (par->opmode == 0))
       {
           SIXT_ERROR("tstartPulse1 can not be a file if CALIBRATION mode");
           return(EXIT_FAILURE);
-      }
+      }*/
       if ((isNumber == 0) && (strcmp(par->FilterDomain,"F") == 0))    // It is only implemented tstartPulse1 as a file for time domain
       {
           SIXT_ERROR("It is not possible to work in FREQUENCY domain if tstartPulse1 is a file => Change FilterDomain to TIME domain (T) ");
@@ -1253,7 +1253,7 @@ int getpar(struct Parameters* const par)
       
       MyAssert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0), "FilterDomain must be T or F");
       
-      MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0),"FilterMethod must be F0 or B0");
+      MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0) || (strcmp(par->FilterMethod,"F0B0") == 0),"FilterMethod must be F0 or B0 or F0B0");
       
       MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
       (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) ||	(strcmp(par->EnergyMethod,"I2RDER") == 0)

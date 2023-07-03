@@ -103,7 +103,7 @@
   * - LbT: Baseline averaging length for the RS raw energy estimation (seconds)
   * - noise_file: Noise file
   * - filter_domain: Filtering Domain: Time(T) or Frequency(F)
-  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
+  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)
   * - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA
   * - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED)
   * - Ifit: Constant to apply the I2RFITTED conversion
@@ -1177,7 +1177,7 @@
   * - pulse_length: Pulse length
   * - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA
   * - ofnoise: For optimal filtering, NSD or WEIGHTM
-  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
+  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)
   * - oflib: Work or not with a library with optimal filters (1/0)
   * - ofinterp: Optimal Filter by using the Matched Filter or the DAB as matched filter (MF/DAB) 
   * 	      It has been fixed in 'tesreconstruction' as 'DAB' (but it would be possible to work with 'MF')
@@ -1519,7 +1519,7 @@
      if ((opmode == 0) ||
      (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
      {
-         if ((opmode == 0) || (strcmp(filter_method,"F0") == 0))
+         if ((opmode == 0) || (strcmp(filter_method,"F0") == 0) || (strcmp(filter_method,"F0B0") == 0))
          {
              // It is not necessary to check the allocation because 'ntemplates' and 'mfilter_duration' have been checked previously
              matrixAux_MF = gsl_matrix_alloc(ntemplates,mfilter_duration);
@@ -1763,7 +1763,7 @@
          if ((opmode == 0) || 
          (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
          {
-             if ((opmode == 0) || (strcmp(filter_method,"F0") == 0)) 
+             if ((opmode == 0) || (strcmp(filter_method,"F0") == 0) || (strcmp(filter_method,"F0B0") == 0))
              {
                  gsl_matrix_get_row(library_collection->matched_filters[it].mfilter,matrixAux_MF,it);
              }
@@ -3195,7 +3195,7 @@
   * - hduPRCLOFWM: Add or not the PRCLOFWM HDU in the library file (1/0) 
   * - energy_method: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA
   * - ofnoise: Noise to use with Optimal Filtering: NSD or WEIGHTM
-  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
+  * - filter_method: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)
   * - status: Input/output status
   ******************************************************************************/
  NoiseSpec* getNoiseSpec(const char* const filename, int opmode, int hduPRCLOFWM, char *energy_method, char *ofnoise, char *filter_method, int* const status)
