@@ -9352,6 +9352,8 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
                 gsl_matrix_free(PRCLOFWM); PRCLOFWM = 0;
             }
             log_debug("After storing data in (*pulsesInRecord)->pulses_detected[i]");
+
+            if (model != NULL) {gsl_vector_free(model); model = 0;}
         }
         else if  ((*pulsesInRecord)->pulses_detected[i].quality != 0)
         {
@@ -9361,8 +9363,6 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
             (*pulsesInRecord)->pulses_detected[i].phi = -999.0;
             (*pulsesInRecord)->pulses_detected[i].lagsShift = -999.0;
         }
-
-        gsl_vector_free(model); model = 0;
     } // End for
     log_debug("After FOR");
     
