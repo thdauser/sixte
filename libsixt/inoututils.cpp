@@ -19,7 +19,7 @@
    ESP2006-13608-C02-01, AYA2012-39767-C02-01, ESP2013-48637-C2-1-P,
    ESP2014-53672-C3-1-P, RTI2018-096686-B-C21 and PID2021-122955OB-C41.
 
-/***********************************************************************
+***********************************************************************
 *                      INOUTUTILS
 *
 *  File:       inoututils.cpp
@@ -64,7 +64,7 @@ MAP OF SECTIONS IN THIS FILE:
 extern "C" int readFitsSimple(IOData obj,gsl_vector **result)
 {
     long nRows = 0L;
-    int  type, status = 0;
+    int  status = 0;
     double *bufferD = NULL;
     int *bufferJ = NULL;
     short *bufferI = NULL;
@@ -141,8 +141,7 @@ extern "C" int readFitsSimple(IOData obj,gsl_vector **result)
 int readFitsComplex(IOData obj, gsl_matrix **result)
 {   
 	long nRows = 0L;
-	int type,extver=0,colnum=0,anynulls=0;
-	int maxdim=1;
+	int extver=0,colnum=0,anynulls=0;
 	int naxis, status=EPOK;
 	long naxes=0, matrixdim, nelemsInRow;
 	double *bufferD = NULL;
@@ -252,17 +251,17 @@ int writeFitsSimple(IOData obj, gsl_vector *vector)
 	{
 		case TDOUBLE:
 			bufferD = new double [vector->size];
-			for(int i=0; i<vector->size; i++)  bufferD[i] = gsl_vector_get(vector,i);
+			for(int i=0; i<(int)vector->size; i++)  bufferD[i] = gsl_vector_get(vector,i);
 			strcpy(tform1,"1D");
 			break;
 		case TINT:
 			bufferJ = new int [vector->size];
-			for(int i=0; i<vector->size; i++)  bufferJ[i] = gsl_vector_get(vector,i);
+			for(int i=0; i<(int)vector->size; i++)  bufferJ[i] = gsl_vector_get(vector,i);
 			strcpy(tform1,"1J");
 			break;
 		case TSHORT:
 			bufferI = new short [vector->size];
-			for(int i=0; i<vector->size; i++)  bufferI[i] = gsl_vector_get(vector,i);
+			for(int i=0; i<(int)vector->size; i++)  bufferI[i] = gsl_vector_get(vector,i);
 			strcpy(tform1,"1I");
 			break;
 	}

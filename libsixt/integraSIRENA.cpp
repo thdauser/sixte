@@ -67,7 +67,7 @@
  const unsigned int MAX_SIZE  = 3201;
  int _resize_array(int size, int pulses) 
  {
-     int new_size = (size < MAX_SIZE) ? (size * MUL_FAC) : (size + ADDITION);
+     int new_size = (size < (int)MAX_SIZE) ? (size * (int)MUL_FAC) : (size + (int)ADDITION);
      return (new_size < pulses) ? pulses : new_size;
  }
  #if 0
@@ -244,7 +244,7 @@
          || ((opmode == 1) && (strcmp(energy_method,"WEIGHT") == 0) && (oflib == 0))
          || ((opmode == 1) && (strcmp(energy_method,"WEIGHTN") == 0) && (oflib == 0))
          // If BASELINE is not in the library file, it is necessary to read its value from the noise file 
-         || ((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)  && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false)))
+         || (((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0))  && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false)))
      {
          exists=0;
          if(fits_file_exists(noise_file, &exists, status))
@@ -264,7 +264,7 @@
          {
              EP_EXIT_ERROR((char*)"Error in getNoiseSpec",EPFAIL);
          }
-         if ((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0) && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false))
+         if (((((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (strcmp(filter_method,"B0") == 0)) || (strcmp(energy_method,"WEIGHT") == 0)) && (opmode == 1) && (oflib == 1) && (baselineReadFromLibrary == false))
          {
              reconstruct_init->library_collection->baseline = reconstruct_init->noise_spectrum->baseline;
          }
@@ -448,6 +448,9 @@
  extern "C" void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init,  int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status)
  {
      log_trace("reconstructRecordSIRENA: START");
+     
+     char extname[20];
+     
      // Inititalize PulsesCollection structure
      PulsesCollection* pulsesInRecord = new PulsesCollection;
      
@@ -459,7 +462,7 @@
          EP_EXIT_ERROR("Record size is <= 0",EPFAIL);
      }
      
-     if(reconstruct_init->pulse_length > record->trigger_size)
+     if(reconstruct_init->pulse_length > (int)record->trigger_size)
      {
          //EP_EXIT_ERROR("Warning: pulse length is larger than record size. Pulse length set to maximum value (record size)",EPFAIL);
          /*if (reconstruct_init->opmode == 0)
@@ -767,12 +770,14 @@
          }
      }
      int tessimOrxifusim = -999;
+     strcpy(extname,"RECORDS");
      // Check if input FITS file have been simulated with TESSIM or XIFUSIM
-     fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,"RECORDS", 0, status);
+     fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,extname, 0, status);
      if (*status != 0)
      {
          *status = 0;
-         if (fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,"TESRECORDS", 0, status))
+         strcpy(extname,"TESRECORDS");
+         if (fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,extname, 0, status))
          {
              EP_EXIT_ERROR("'TESRECORDS' HDU is not in the input FITS file",EPFAIL);
          }

@@ -2630,7 +2630,8 @@ int procRecord(ReconstructInitSIRENA** reconstruct_init, double tstartRecord, do
             }
         }
 
-        if (((*reconstruct_init)->preBuffer == 1) && ((*reconstruct_init)->opmode == 1) && (strcmp((*reconstruct_init)->OFStrategy,"FIXED")==0))
+        //if (((*reconstruct_init)->preBuffer == 1) && ((*reconstruct_init)->opmode == 1) && (strcmp((*reconstruct_init)->OFStrategy,"FIXED")==0))
+        if (((*reconstruct_init)->preBuffer == 1) && ((*reconstruct_init)->opmode == 1))
         {
             for (int j=0; j<(*reconstruct_init)->grading->gradeData->size1;j++)
             {
@@ -7913,7 +7914,7 @@ int convertI2R (char* EnergyMethod,double Ibias, double Imin, double Imax, doubl
         gsl_vector_memcpy(deltai,*invector);
         gsl_vector_add_constant(deltai,-1.0*ADU_BIAS);
         gsl_vector_scale(deltai,ADU_CNV);                     // deltai = ADU_CNV * (I(adu) - ADU_BIAS) (I(adu) is the ADC column)
-        //gsl_vector_add_constant(deltai,I_BIAS);               // deltai = ADU_CNV * (I(adu) - ADU_BIAS) + I_BIAS
+        gsl_vector_add_constant(deltai,I_BIAS);               // deltai = ADU_CNV * (I(adu) - ADU_BIAS) + I_BIAS
         
         for (int i=0;i<deltai->size;i++)
         {
@@ -12414,7 +12415,8 @@ int calculateEnergy (gsl_vector *pulse, int pulseGrade, gsl_vector *filter, gsl_
                                 {
                                     gsl_vector_set(calculatedEnergy_vector,j,gsl_vector_get(calculatedEnergy_vector,j)+gsl_vector_get(vector,i)*gsl_vector_get(filter,i));
                                     // if (LowRes != 1)
-                                    /*if ((LowRes != 1) && (i<10))
+                                    //if ((LowRes != 1) && (i<10))
+                                    /*if (i<10)
                                     {
                                         cout<<i<<" "<<gsl_vector_get(vector,i)<<" "<<gsl_vector_get(filter,i)<<" "<<gsl_vector_get(calculatedEnergy_vector,j)<<" "<<fabs(gsl_vector_get(calculatedEnergy_vector,j))/filter->size<<endl;
                                     }*/
@@ -13202,7 +13204,7 @@ int calculateEnergy (gsl_vector *pulse, int pulseGrade, gsl_vector *filter, gsl_
                 gsl_vector *Pab_short;
                 gsl_vector_view temp;
                 
-                if (LagsOrNot = 0)
+                if (LagsOrNot == 0)
                 {
                     P_Pab = gsl_vector_alloc(pulse->size);
                     Pab_short = gsl_vector_alloc(pulse->size);

@@ -1,4 +1,3 @@
-
 /***********************************************************************
    This file is part of SIXTE/SIRENA software.
 
@@ -151,7 +150,7 @@ int lpf_boxcar (gsl_vector **invector, int szVct, double scaleFactor, int sample
         str.clear();
 		EP_PRINT_ERROR(message,EPFAIL);
 	}
-	for (int i=0;i<invectorAux->size-boxLength;i++)
+	for (int i=0;i<(int)(invectorAux->size-boxLength);i++)
 	{
 		boxSum = boxSum - gsl_vector_get(invectorAux,i) + gsl_vector_get(invectorAux,i+boxLength);
 		gsl_vector_set(invectorAux1,i+1,boxSum/boxLength);		
@@ -324,7 +323,7 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 	// Iterate until no points out of the maximum excursion (kappa*sigma)
 	do
 	{
-		if ((size-boxLPF-1 < 1) || (size-boxLPF-1 >invectorNew->size))
+		if ((size-boxLPF-1 < 1) || (size-boxLPF-1 >(int)invectorNew->size))
 		{
 			sprintf(valERROR,"%d",__LINE__+5);
 			string str(valERROR);
@@ -341,12 +340,12 @@ int medianKappaClipping (gsl_vector *invector, double kappa, double stopCriteria
 		i = 0;
 		cnt = 0;
 
-		while (i<invectorNew->size)
+		while (i<(int)invectorNew->size)
 		{
 			if ((gsl_vector_get(invectorNew,i) >= mean1 + kappa*sg1) || (gsl_vector_get(invectorNew,i) <= mean1 - kappa*sg1))
 			// HARDPOINT!!!!!!!!!!!!!!!!!!! (kappa)
 			{
-				if ((i < 0) || (i >(invectorNew)->size-1))
+				if ((i < 0) || (i > (int)(invectorNew->size-1)))
 				{
 					sprintf(valERROR,"%d",__LINE__+5);
 					string str(valERROR);
@@ -443,7 +442,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
 
     if (nPulses != 0)
     {
-        if ((nPulses-1 >(tstart)->size-1))
+        if ((nPulses-1 >(int)(tstart->size-1)))
         {
             sprintf(valERROR,"%d",__LINE__+8);
             string str(valERROR);
@@ -460,10 +459,10 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
         for (int i=0;i<nPulses;i++)
         {
             if (i == 0)     // First pulse into a record		
-                //  Current pulse
-                //      //\\          /\     /\       /\
-                // (1) //  \\  (2)   /  \(3)/  \ (4) /  \    (5)
-                // ----      --------    ---    -----    ----------
+                /*  Current pulse
+                      //\\          /\     /\       /\
+                 (1) //  \\  (2)   /  \(3)/  \ (4) /  \    (5)
+                 ----      --------    ---    -----    ----------*/
             {
                 if (gsl_vector_get(tstart,0)>=gsl_vector_get(*lb,0))
                     // tstart>=lb => Sum lb samples
@@ -757,7 +756,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                 message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
                                                 EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                             }
-                                            if (/*(0 < 0) || */(0 >(*lb)->size-1))
+                                            if (0 >(int)((*lb)->size-1))
                                             {
                                                 sprintf(valERROR,"%d",__LINE__+5);
                                                 string str(valERROR);
@@ -854,7 +853,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                                 str.clear();
                                                 EP_PRINT_ERROR(message,EPFAIL);
                                             }
-                                            if (/*(i < 0) || */(0 >(*lb)->size-1))
+                                            if (0 >(int)((*lb)->size-1))
                                             {
                                                 sprintf(valERROR,"%d",__LINE__+5);
                                                 string str(valERROR);
@@ -887,10 +886,10 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                 }
             }// end of the first pulse scope
             else    // Not first pulse into a record
-                //             Current pulse
-                //      /\          //\\     /\       /\
-                // (1) /  \  (2)   //  \\(3)/  \ (4) /  \    (5)
-                // ----    --------      ---    -----    ----------
+                /*             Current pulse
+                      /\          //\\     /\       /\
+                 (1) /  \  (2)   //  \\(3)/  \ (4) /  \    (5)
+                 ----    --------      ---    -----    ----------*/
             {	
                 
                 tendprev = gsl_vector_get(tstart,i-1)+sizepulse-1;
@@ -977,7 +976,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                         message = "Cannot run gsl_vector_Sumsubvector routine when 0<length_(2)<lb";
                         EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                     }
-                    if ((i < 0) || (i >(*lb)->size-1))
+                    if ((i < 0) || (i >(int)((*lb)->size-1)))
                     {
                         sprintf(valERROR,"%d",__LINE__+5);
                         string str(valERROR);
@@ -1087,7 +1086,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                     message = "Cannot run gsl_vector_Sumsubvector routine when no first pulse in row & tstart-tendprev < lb";
                                     EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
                                 }
-                                if ((i < 0) || (i >(*lb)->size-1))
+                                if ((i < 0) || (i >(int)((*lb)->size-1)))
                                 {
                                     sprintf(valERROR,"%d",__LINE__+5);
                                     string str(valERROR);
@@ -1184,7 +1183,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                                     str.clear();
                                     EP_PRINT_ERROR(message,EPFAIL);
                                 }
-                                if ((i < 0) || (i >(*lb)->size-1))
+                                if ((i < 0) || (i >(int)((*lb)->size-1)))
                                 {
                                     sprintf(valERROR,"%d",__LINE__+5);
                                     string str(valERROR);
@@ -1211,7 +1210,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                             }
                             else if ((vectorin->size-tendprev < gsl_vector_get(*lb,i)) && (vectorin->size-tendprev <= 1))
                             {
-                                if ((i < 0) || (i >(*lb)->size-1))
+                                if ((i < 0) || (i >(int)((*lb)->size-1)))
                                 {
                                     sprintf(valERROR,"%d",__LINE__+5);
                                     string str(valERROR);
@@ -1228,7 +1227,7 @@ int getB(gsl_vector *vectorin, gsl_vector *tstart, int nPulses, gsl_vector **lb,
                 }
             }
             
-            if ((i < 0) || (i >(*B)->size-1))
+            if ((i < 0) || (i >(int)((*B)->size-1)))
             {
                 sprintf(valERROR,"%d",__LINE__+5);
                 string str(valERROR);
@@ -1286,7 +1285,7 @@ int getPulseHeight(gsl_vector *vectorin, double tstart, double tstartnext, int l
 	if (lastPulse == 1)
 	{
 		tend = tstart+sizepulse-1;
-		if (tend >= vectorin->size)	// Truncated pulses at the end of the record
+		if (tend >= (int)(vectorin->size))	// Truncated pulses at the end of the record
 		{
 			tend = vectorin->size-1;
 		}
@@ -1375,7 +1374,7 @@ int RS_filter (gsl_vector *vector, double lrs, double lb, double B, double *puls
 	}
 	else
 	{
-		for (int i=0;i<vector->size;i++)
+		for (int i=0;i<(int)(vector->size);i++)
 		{
 			if (i+lrs > vector->size)	break;
 			if (gsl_vector_Sumsubvector(vector,i,lrs,&Rs))
@@ -1418,7 +1417,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	char valERROR[256];
 	
 	gsl_vector *modelFound_aux;
-    if ((*modelFound)->size <= reconstruct_init->library_collection->pulse_templates[0].template_duration)
+    if ((int)((*modelFound)->size) <= reconstruct_init->library_collection->pulse_templates[0].template_duration)
     {
         if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
         {
@@ -1429,7 +1428,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
             EP_PRINT_ERROR(message,EPFAIL);
         }
     }
-    else if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+    else if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
     {
         if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)) == 0)
         {
@@ -1445,7 +1444,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 
 	if (energy < gsl_vector_get(reconstruct_init->library_collection->energies,0))
 	{
-        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
         {
             gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].ptemplate);
             gsl_vector_add_constant(modelFound_aux,-1.0*reconstruct_init->library_collection->baseline);
@@ -1459,7 +1458,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	}
 	else if (energy > gsl_vector_get(reconstruct_init->library_collection->energies,nummodels-1))
 	{
-        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
         {
             gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[nummodels-1].ptemplate);
             gsl_vector_add_constant(modelFound_aux,-1.0*reconstruct_init->library_collection->baseline);
@@ -1473,10 +1472,12 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	}
 	else
 	{
-        gsl_matrix *pulse_templatesMaxLengthFixedFilter_B0;
+        // Allocated and initiallized in order to avoid a compilation warning
+        gsl_matrix *pulse_templatesMaxLengthFixedFilter_B0 = gsl_matrix_alloc(1,1); gsl_matrix_set_all(pulse_templatesMaxLengthFixedFilter_B0,0);
         
-        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
         {
+            gsl_matrix_free(pulse_templatesMaxLengthFixedFilter_B0); pulse_templatesMaxLengthFixedFilter_B0 = 0;
             pulse_templatesMaxLengthFixedFilter_B0 = gsl_matrix_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration, nummodels);
             for (int i=0;i<nummodels-1;i++)
             {
@@ -1489,7 +1490,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 		{
 			if (fabs(energy-gsl_vector_get(reconstruct_init->library_collection->energies,i))<1e-6)
 			{
-                if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+                if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
                 {
                     gsl_vector_memcpy(modelFound_aux,reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[i].ptemplate);
                     gsl_vector_add_constant(modelFound_aux,-1.0*reconstruct_init->library_collection->baseline);
@@ -1507,7 +1508,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 				// Interpolate between the two corresponding rows in "models"
 				// It is not necessary to check the allocation because the same kind of allocation has been checked previously
 				gsl_vector *modelAux;
-				if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+				if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
                 {
                     modelAux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration);
                 }
@@ -1518,7 +1519,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
                 }
 				gsl_vector_set_zero(modelAux);
 
-                if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+                if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
                 {
                     gsl_vector *pulse_templatesMaxLengthFixedFilter_B0row_i = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration);
                     gsl_vector *pulse_templatesMaxLengthFixedFilter_B0row_iplus1 = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration); 
@@ -1552,7 +1553,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 			}
 		}
 
-        if ((*modelFound)->size == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
+        if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
         {
             gsl_matrix_free(pulse_templatesMaxLengthFixedFilter_B0); pulse_templatesMaxLengthFixedFilter_B0 = 0;
         }
@@ -1840,7 +1841,6 @@ int findPulsesCAL
 
 	const double pi = 4.0 * atan(1.0);
 
-	int pulseFound;
 	double thresholdmediankappa;		// Threshold to look for pulses in the first derivative
 
 	gsl_vector_set_zero(*quality);
@@ -1976,8 +1976,6 @@ int findTstartCAL
 	bool foundPulse = false;
 	int i = 0;		// To go through the elements of a vector
 	
-	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
-	
 	// Allocate GSL vectors
 	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
 	if (*tstartgsl)		{gsl_vector_free(*tstartgsl); *tstartgsl = 0;}
@@ -2081,8 +2079,6 @@ int findTstartCAL
 		else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
 		else						*numberPulses = 3;
 
-		double maxPulse;
-		int cnt;
 		for (int i=0;i<*numberPulses;i++)
 		{
 			gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
@@ -2346,9 +2342,7 @@ int FindSecondaries
     gsl_vector_set(ThreePoints_x,2,3);
     gsl_vector *ThreePoints_y = gsl_vector_alloc(3);
     double a3Points,b3Points;
-    double angleStart0 = -999.0, angleStart1 = -999.0;
-        
-    int previouslyFalsePulse = -1;
+    double angleStart1 = -999.0;
         
     // Establishing the criteria of the slope of the derivative depending on the sampling rate
     double criteriaDER_value;
@@ -2361,8 +2355,6 @@ int FindSecondaries
         
     double sum_samp1DER;
     int limitMin, limitMax;
-      
-    gsl_vector_view temp;
         
     numlags = 3;
     lags_vector = gsl_vector_alloc(numlags);
@@ -2386,7 +2378,7 @@ int FindSecondaries
                     //if ((gsl_vector_get(adjustedDerivative,i) > adaptativethreshold) && (i>0))
                 {
                     //if (i == 0) cout<<"gsl_vector_get(adjustedDerivative,0): "<<gsl_vector_get(adjustedDerivative,0)<<" adaptativethreshold: "<<adaptativethreshold<<endl;
-                    if (*numberPulses == (*maxDERgsl)->size)
+                    if (*numberPulses == (int)((*maxDERgsl)->size))
                     {
                         sprintf(valERROR,"%d",__LINE__+5);
                         string str(valERROR);
@@ -2426,7 +2418,7 @@ int FindSecondaries
                     {
                         gsl_vector_set(*maxDERgsl,*numberPulses-1,gsl_vector_get(adjustedDerivative,ider));
                         ider++;
-                        if (ider == adjustedDerivative->size)       break;
+                        if (ider == (int)(adjustedDerivative->size))       break;
 
                     }
                         
@@ -2845,11 +2837,10 @@ int FindSecondaries
                         
                     //cout<<*numberPulses<<" angleS: "<<angleStart1<<endl;
                         
-                    if ((*numberPulses > 1) && ((tstartJITTER<= gsl_vector_get(*tstartgsl,*numberPulses-2)) || (fabs(tstartJITTER*(1/samprate)-gsl_vector_get(*tstartgsl,*numberPulses-2)*(1/samprate)) < 10e-6)) || (tstartJITTER < 0) || (tstartJITTER >= sizeRecord) || (angleStart1<criteriaDER_value))
+                    if (((*numberPulses > 1) && ((tstartJITTER<= gsl_vector_get(*tstartgsl,*numberPulses-2)) || (fabs(tstartJITTER*(1/samprate)-gsl_vector_get(*tstartgsl,*numberPulses-2)*(1/samprate)) < 10e-6))) || (tstartJITTER < 0) || (tstartJITTER >= sizeRecord) || (angleStart1<criteriaDER_value))
                         //(angleStart1<criteriaDER_value) || (gsl_vector_get(convolutionLags,1) < 0))
                     {
                         //cout<<"angleStart1<criteriaDER_value"<<endl;
-                        previouslyFalsePulse = gsl_vector_get(*tstartgsl,*numberPulses-1);
                         *numberPulses = *numberPulses-1;
                         gsl_vector_set(*flagTruncated,*numberPulses,0);
                         foundPulse = false;
@@ -2894,7 +2885,6 @@ int FindSecondaries
                 {
                     if (strcmp(reconstruct_init->EnergyMethod,"I2RALL") != 0)
                     {
-                        previouslyFalsePulse = gsl_vector_get(*tstartgsl,*numberPulses-1);
                         *numberPulses = *numberPulses-1;
                         gsl_vector_set(*flagTruncated,*numberPulses,0);
                         foundPulse = false;
@@ -3041,7 +3031,7 @@ int smoothDerivative (gsl_vector **invector, int N)
                         {
                                 //cout<<"j: "<<j<<endl;
                                 //if ((j>=0) && (j<szVct))
-                                if ((j>=0) && (j<(*invector)->size))
+                                if ((j>=0) && (j<(int)((*invector)->size)))
                                 {
                                         //cout<<i<<" "<<j<<" "<<index<<endl;
                                         gsl_vector_set(conv,i,gsl_vector_get(conv,i)+gsl_vector_get(*invector,j)*gsl_vector_get(window,index));
@@ -3143,8 +3133,6 @@ int FindSecondariesSTC
 	
 	int nSamplesUp = reconstruct_init->samplesUp;
 	int nSamplesDown = reconstruct_init->samplesDown;
-	
-	gsl_vector_view temp;	// In order to handle with gsl_vector_view (subvectors)
 	
 	// Allocate GSL vectors
 	// It is not necessary to check the allocation because 'maxPulsesPerRecord'='EventListSize'(input parameter) must already be > 0
@@ -3297,15 +3285,8 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
         gsl_vector *modelToSubtract = gsl_vector_alloc(pulse_length_ToSubtract);
 
 	gsl_vector *tstartPulsei = gsl_vector_alloc(3);
-
 	//gsl_vector_set(tstartPulsei,0,reconstruct_init->tstartPulse1);
-    double tstartPulse1_seconds;
-        if ((isNumber(reconstruct_init->tstartPulse1) && (atoi(reconstruct_init->tstartPulse1) != 0)))
-            tstartPulse1_seconds = atoi(reconstruct_init->tstartPulse1);
-        else
-            tstartPulse1_seconds = gsl_vector_get(reconstruct_init->tstartPulse1_i,num_previousDetectedPulses);
-    cout<<"tstartPulse1_seconds: "<<tstartPulse1_seconds<<endl;
-        cout<<"Paso3"<<endl;
+        double tstartPulse1_seconds = gsl_vector_get(reconstruct_init->tstartPulse1_i,num_previousDetectedPulses);
         //std::cout << "tstartPulse1_seconds:" << std::setprecision(15) << tstartPulse1_seconds << '\n';
         //std::cout << "tstartRecord:" <<std::setprecision(15) << tstartRecord<< '\n';
         int tstartPulse1_samples;
@@ -3319,7 +3300,6 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
             //tstartPulse1_samples = ceil((tstartPulse1_seconds-tstartRecord)*samprate)-1;
             tstartPulse1_samples = ceil((tstartPulse1_seconds-tstartRecord)*samprate);
         }
-        cout<<"Paso4"<<endl;
         //std::cout << "(tstartPulse1_seconds-tstartRecord)*samprate: " << std::setprecision(15) << (tstartPulse1_seconds-tstartRecord)*samprate<< '\n';
         //std::cout << "tstartPulse1_samples: " << std::setprecision(15) << tstartPulse1_samples<< '\n';
         gsl_vector_set(tstartPulsei,0,tstartPulse1_samples);
@@ -3328,7 +3308,6 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
         
         gsl_vector_set_zero(*flagTruncated);
 
-        cout<<"Paso5"<<endl;
 	if (reconstruct_init->tstartPulse2 == 0) 	*numberPulses = 1;
 	else if (reconstruct_init->tstartPulse3 == 0) 	*numberPulses = 2;
 	else						*numberPulses = 3;
@@ -3336,7 +3315,6 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
         for (int i=0;i<*numberPulses;i++)
         {
             gsl_vector_set(*tstartgsl,i,gsl_vector_get(tstartPulsei,i));
-            cout<<"gsl_vector_get(*tstartgsl,i): "<<gsl_vector_get(*tstartgsl,i)<<endl;
             
             if (i != *numberPulses-1) 	
             {
@@ -3369,9 +3347,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
             {	
                 
                 gsl_vector_set(*maxDERgsl,i,gsl_vector_max(&temp.vector));
-                cout<<"maxDERgsl: "<<gsl_vector_get(*maxDERgsl,i)<<endl;
                 gsl_vector_set(*samp1DERgsl,i,gsl_vector_get(der,gsl_vector_get(tstartPulsei,i)));
-                cout<<"samp1DERgsl: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
                 
                 // Average of the first 4 samples of the derivative
                 sum_samp1DER = 0.0;
@@ -3381,7 +3357,7 @@ int noDetect(gsl_vector *der, ReconstructInitSIRENA *reconstruct_init, int *numb
                     
                 }                                                                                   
                 gsl_vector_set(*samp1DERgsl,i,sum_samp1DER/4.0);
-                cout<<"samp1DERgsl/4: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
+                //cout<<"samp1DERgsl/4: "<<gsl_vector_get(*samp1DERgsl,i)<<endl;
             }
             else
             {
