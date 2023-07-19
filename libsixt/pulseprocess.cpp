@@ -1416,29 +1416,25 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	string message = "";
 	char valERROR[256];
 	
-	gsl_vector *modelFound_aux;
+    int allocation_value = 0;
     if ((int)((*modelFound)->size) <= reconstruct_init->library_collection->pulse_templates[0].template_duration)
     {
-        if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templates[0].template_duration)) == 0)
-        {
-            sprintf(valERROR,"%d",__LINE__-2);
-            string str(valERROR);
-            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-            str.clear();
-            EP_PRINT_ERROR(message,EPFAIL);
-        }
+        allocation_value = reconstruct_init->library_collection->pulse_templates[0].template_duration;
     }
     else if ((int)((*modelFound)->size) == reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)
     {
-        if ((modelFound_aux = gsl_vector_alloc(reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration)) == 0)
-        {
-            sprintf(valERROR,"%d",__LINE__-2);
-            string str(valERROR);
-            message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
-            str.clear();
-            EP_PRINT_ERROR(message,EPFAIL);
-        }
-    } 
+        allocation_value = reconstruct_init->library_collection->pulse_templatesMaxLengthFixedFilter[0].template_duration;
+    }
+    if (allocation_value <= 0)
+    {
+        sprintf(valERROR,"%d",__LINE__+6);
+        string str(valERROR);
+        message = "Allocating with <= 0 size in line " + str + " (" + __FILE__ + ")";
+        str.clear();
+        EP_PRINT_ERROR(message,EPFAIL);
+    }
+    gsl_vector *modelFound_aux = gsl_vector_alloc(allocation_value);
+    gsl_vector_set_all(modelFound_aux,0.0);
 
 	long nummodels = reconstruct_init->library_collection->ntemplates;
 
@@ -1564,7 +1560,7 @@ int find_model_energies(double energy, ReconstructInitSIRENA *reconstruct_init,g
 	temp = gsl_vector_subvector(modelFound_aux,0,(*modelFound)->size);
 	gsl_vector_memcpy(*modelFound,&temp.vector);
 
-	if (modelFound_aux != 0) {gsl_vector_free(modelFound_aux); modelFound_aux = 0;}
+	gsl_vector_free(modelFound_aux); modelFound_aux = 0;
     
     message.clear();
 
@@ -1989,8 +1985,8 @@ int findTstartCAL
 
 	int cntUp = 0;
 	int cntDown = 0;
-	double possibleTstart;
-	double possiblemaxDER;
+	double possibleTstart = -999.0;
+	double possiblemaxDER = -999.0;
         
 	// To provide the tstarts (or not)
 	bool findTstarts = true;
@@ -2307,6 +2303,10 @@ int FindSecondaries
     int indexMinNew,indexMaxNew;
     gsl_vector *indexMin;
     gsl_vector *indexMax;
+    indexMin = gsl_vector_alloc(10);
+    indexMax = gsl_vector_alloc(10);
+    gsl_vector_set_all(indexMin,9999);
+    gsl_vector_set_all(indexMax,9999);
     int i_indexMin, i_indexMax;
     int indexM = 0;
     double samp1DER_Aux;
@@ -2360,7 +2360,7 @@ int FindSecondaries
     lags_vector = gsl_vector_alloc(numlags);
     convolutionLags = gsl_vector_alloc(numlags);
         
-    int tstartWITHOUTLags;
+    int tstartWITHOUTLags = -999;
         
     // It looks for a pulse
     // If a pulse is found (foundPulse==true) => It looks for another pulse
@@ -2400,10 +2400,6 @@ int FindSecondaries
                         EP_PRINT_ERROR("FIRST sample is being above the threshold",-999);
 
                     indexM = 0;
-                    indexMin = gsl_vector_alloc(10);
-                    indexMax = gsl_vector_alloc(10);
-                    gsl_vector_set_all(indexMin,9999);
-                    gsl_vector_set_all(indexMax,9999);
                 }
                 i++;
             }
@@ -3147,9 +3143,9 @@ int FindSecondariesSTC
 
 	int cntUp = 0;
 	int cntDown = 0;
-	double possibleTstart;
-	double possiblemaxDER;
-    double possiblesamp1DER;
+	double possibleTstart = -999.0;
+	double possiblemaxDER = -999.0;
+    double possiblesamp1DER = -999.0;
         
     double sum_samp1DER;
     int limitMin, limitMax;

@@ -131,14 +131,9 @@ class scheduler
                       PulsesCollection *pulsesAll, 
                       ReconstructInitSIRENA** reconstruct_init, 
                       PulsesCollection** pulsesInRecord,
-                      OptimalFilterSIRENA** optimal,
                       TesEventList* event_list);
-  void finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
-                             PulsesCollection** pulsesAll, 
-                             OptimalFilterSIRENA** optimalFilter);
-  void finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init,
-                                PulsesCollection** pulsesAll, 
-                                OptimalFilterSIRENA** optimalFilter);
+  void finish_reconstruction(PulsesCollection** pulsesAll);
+  void finish_reconstruction_v2(PulsesCollection** pulsesAll);
 
   inline bool is_threading() const { return threading; }
   inline bool is_reentrant() const { return fits_is_reentrant(); }

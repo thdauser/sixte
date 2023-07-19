@@ -56,6 +56,7 @@
   *******************************************************************************/
  
  #include <gennoisespec.h>
+ #include "healog.h"
  #include <tasksSIRENA.h>
  
  #include "versionSIRENA.h"
@@ -133,11 +134,18 @@
  int gennoisespec_main ()
  {
      headas_chat(3, "initialize ...\n");
-     
+
+     message="Running GENNOISESPEC task version " + string(SIRENA_VERSION);
+     cout<<message<<endl;
+
+     //////// Setup
+     //healog(1) << "=== Setup ===\n" << endl;
+     message="=== Setup ===";
+     cout<<message<<endl;
+
      time_t t_start = time(NULL);
      
      int status=EPOK, extver=0;
-     //string message = "";
      
      // Reading all programm parameters by using PIL
      status=getpar_noiseSpec(&par);
@@ -165,9 +173,6 @@
          message = "intervalMinSamples' has been redefined as a base-2 system value.";
          EP_PRINT_ERROR(message,-999);	// Only a warning
      }*/
-     
-     message="Into GENNOISESPEC task";
-     cout<<message<<endl;
      
      // Open input FITS file
      if (fits_open_file(&infileObject, par.inFile,0,&status))
@@ -322,13 +327,11 @@
             status = 0;
         }
     }
-    cout<<"adu_cnv_exists: "<<adu_cnv_exists<<endl;
 
      if (strcmp(par.EnergyMethod,"I2RDER") == 0)
      {
         int keyword_exists = 0;
 
-        cout<<"hdunum: "<<hdunum<<endl;
         // V0(V)
         strcpy(keyname,"V0");
         for (int i=0;i<hdunum;i++)
@@ -337,13 +340,11 @@
             fits_read_key(infileObject,TDOUBLE,keyname, &V0,comment,&status);
             if (status == 0)
             {
-                cout<<i<<" keyword_exists = 1"<<endl;
                 keyword_exists = 1;
                 break;
             }
             else if ((status != 0) && (i <= hdunum-1))
             {
-                cout<<i<<" keyword_exists = 0"<<endl;
                 status = 0;
             }
         }
@@ -472,10 +473,6 @@
             }
         }
      }
-
-     cout<<"V0: "<<V0<<endl;
-     cout<<"RL: "<<RL<<endl;
-     cout<<"L: "<<L<<endl;
      
      if (tessimOrxifusim == 0)
      {
@@ -707,13 +704,9 @@
          if ((dec_fac_exists == 1) && (tclock_exists == 1)) 
          {
              //cout<<"tclock: "<<tclock<<endl;
-             //cout<<"dec_fac: "<<dec_fac<<endl;
              samprate = 1/(tclock*dec_fac);
          }
      }
-     /*cout<<"deltat_exists: "<<deltat_exists<<endl;
-     cout<<"tclock_exists: "<<tclock_exists<<endl;
-     cout<<"dec_fac_exists: "<<dec_fac_exists<<endl;*/
      if ((deltat_exists == 0) && ((tclock_exists == 0) || (dec_fac_exists == 0)))
      {
          int numrow;
@@ -748,15 +741,9 @@
          }
          if ((tclock_exists == 1) && (numrow_exists == 1) && (p_row_exists == 1)) 
          {
-             /*cout<<"tclock: "<<tclock<<endl;
-             cout<<"numrow: "<<numrow<<endl;
-             cout<<"p_row: "<<p_row<<endl;*/
              samprate =1/(tclock*numrow*p_row);
          }
      }
-     /*cout<<"numrow_exists: "<<numrow_exists<<endl;
-     cout<<"tclock_exists: "<<tclock_exists<<endl;
-     cout<<"p_row_exists: "<<p_row_exists<<endl;*/
      
      // If necessary...
      //...read the sampling rate from input FITS file (from the HISTORY in the Primary HDU) 
@@ -794,7 +781,6 @@
          
          EP_EXIT_ERROR(message,EPFAIL);
      }
-     //cout<<"samprate: "<<samprate<<endl;
           
      if (tessimOrxifusim == 0)
      {
@@ -858,8 +844,6 @@
          EP_EXIT_ERROR(message,EPFAIL); 
      }
      
-     //cout<<"eventsz: "<<eventsz<<endl;
-     //noiseIntervals = gsl_matrix_alloc(par.nintervals,intervalMinBins);
      // Maximum number of noise intervals in all the records eventcnt*floor(eventsz/par.intervalMinSamples)
      noiseIntervals = gsl_matrix_alloc(eventcnt*floor(eventsz/par.intervalMinSamples),intervalMinBins);
      
@@ -905,7 +889,13 @@
          message = "lpf_boxcar: scaleFactor too small => Cut-off frequency too high => Equivalent to not filter.";
          EP_PRINT_ERROR(message,-999);
      }
-     
+
+     // Initialize the progress bar.
+     //healog(1) << "=== Simulating ===" << endl;
+     message="=== Simulating ===";
+     cout<<message<<endl;
+     p_show_progress.reset( new boost::progress_display(par.nintervals));
+
      // Called iteration function
      if (fits_iterate_data(n_cols,cols,offset,rows_per_loop,inDataIterator,0L,&status))
      {
@@ -921,25 +911,25 @@
      }
      infileObject = 0;
      
-     // Generate CSD representation	
-     /*if (NumMeanSamples == 0)
-      *	{
-      *		message = "0Pulse-free intervals not found";
-      *		EP_EXIT_ERROR(message,EPFAIL);
- }
- else if	(NumMeanSamples < par.nintervals)
- {
- sprintf(str_stat,"%d",NumMeanSamples);
- sprintf(str_stat1,"%d",intervalMinBins);
- message = "0Not enough pulse-free intervals for calculus. CSD and W" + string(str_stat1) + " matrix calculated with " + string(str_stat);
- cout<<message<<endl;
- }
- else if	(NumMeanSamples >= par.nintervals)
- {
- sprintf(str_stat,"%d",par.nintervals);
- message = "0CSD and all Wx matrixes calculated with " + string(str_stat);
- cout<<message<<endl;
- }*/
+     /*// Generate CSD representation
+     if (NumMeanSamples == 0)
+     {
+        message = "0Pulse-free intervals not found";
+        EP_EXIT_ERROR(message,EPFAIL);
+     }
+     else if	(NumMeanSamples < par.nintervals)
+     {
+        sprintf(str_stat,"%d",NumMeanSamples);
+        sprintf(str_stat1,"%d",intervalMinBins);
+        message = "0Not enough pulse-free intervals for calculus. CSD and W" + string(str_stat1) + " matrix calculated with " + string(str_stat);
+        cout<<message<<endl;
+     }
+     else if	(NumMeanSamples >= par.nintervals)
+     {
+        sprintf(str_stat,"%d",par.nintervals);
+        message = "0CSD and all Wx matrixes calculated with " + string(str_stat);
+        cout<<message<<endl;
+     }*/
      
      // Applying medianKappaClipping in order to remove the noise intervals with a high sigma
      gsl_vector *interval = gsl_vector_alloc(noiseIntervals->size2);
@@ -959,7 +949,6 @@
          gsl_vector_set(sigmaInterval,i, sgm);
      }
      
-     //cout<<"sigmaInterval->size: "<<sigmaInterval->size<<endl;
      if ((NumMeanSamples > 1) && (par.rmNoiseIntervals == 1))
      {
         if (medianKappaClipping_noiseSigma (sigmaInterval, kappaMKC, stopCriteriaMKC, par.nSgms, &meanThreshold, &sgmThreshold))
@@ -968,8 +957,6 @@
             EP_PRINT_ERROR(message,EPFAIL);return(EPFAIL);
         }
      }
-     //cout<<"meanThreshold: "<<meanThreshold<<endl;
-     //cout<<"sgmThreshold: "<<sgmThreshold<<endl;
      
      gsl_vector *intervalsgmOK = gsl_vector_alloc(NumMeanSamples);
      gsl_vector_set_all(intervalsgmOK,1);
@@ -979,9 +966,6 @@
      vector_aux1 = gsl_vector_complex_alloc(intervalMinBins);
      double SelectedTimeDuration = SelectedTimeDuration = intervalMinBins/((double)samprate);
      double nSgms_sigmaInterval = 1;
-     //cout<<"nSgms_sigmaInterval: "<<nSgms_sigmaInterval<<endl;
-     //cout<<"meanThreshold-nSgms_sigmaInterval*sgmThreshold: "<<meanThreshold-nSgms_sigmaInterval*sgmThreshold<<endl;
-     //cout<<"meanThreshold+nSgms_sigmaInterval*sgmThreshold: "<<meanThreshold+nSgms_sigmaInterval*sgmThreshold<<endl;
      int NumMeanSamples_afterRm = 0;
      for (int i=0;i<NumMeanSamples;i++)
      {
@@ -992,7 +976,6 @@
              // Interval not to be taken account
              cnt --;
              gsl_vector_set(intervalsgmOK,i,0);
-             //cout<<"cnt: "<<cnt<<endl;
          }
          else
          {
@@ -1027,7 +1010,6 @@
      gsl_vector_free(sigmaInterval); sigmaInterval = 0;
      gsl_vector_free(vector_aux); vector_aux = 0;
      gsl_vector_complex_free(vector_aux1); vector_aux1 = 0;
-     //cout<<"cnt: "<<cnt<<endl;
      
      if (cnt == 0)
      {
@@ -1044,15 +1026,13 @@
      else if	(cnt >= par.nintervals)
      {
          sprintf(str_stat,"%d",par.nintervals);
-         message = "CSD and all Wx matrixes calculated with " + string(str_stat);
+         message = "CSD and all Wx matrixes calculated with " + string(str_stat) + " intervals";
          cout<<message<<endl;
      }
      
      // Current noise spectral density
      // sqrt(sum(FFT^2)/NumMeanSamplesCSD) => sqrt(A^2) = A and sqrt(1/NumMeanSamplesCSD)=1/sqrt(Hz)
      //gsl_vector_scale(EventSamplesFFTMean,(1.0/(double)NumMeanSamples));
-     //cout<<"cnt: "<<cnt<<endl;
-     //cout<<"NumMeanSamples_afterRm: "<<NumMeanSamples_afterRm<<endl;
      //gsl_vector_scale(EventSamplesFFTMean,(1.0/(double)cnt));
      gsl_vector_scale(EventSamplesFFTMean,(1.0/(double)NumMeanSamples_afterRm));
      for (int i=0;i<EventSamplesFFTMean->size;i++)
@@ -1108,12 +1088,8 @@
          gsl_matrix *noiseIntervals_weightPoints;
          gsl_matrix *weightMatrix;
 
-	 //cout<<"NumMeanSamples: "<<NumMeanSamples<<endl;
-	 //cout<<"NumMeanSamples_afterRm: "<<NumMeanSamples_afterRm<<endl;
-         //cout<<"par.nintervals: "<<par.nintervals<<endl;
          if (NumMeanSamples >= par.nintervals)
          {
-	     //cout<<"If1"<<endl;
              for (int i=0;i<weightpoints->size;i++)
              {	
 	         weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
@@ -1122,8 +1098,8 @@
                  tempm = gsl_matrix_submatrix(noiseIntervals,0,0,cnt,gsl_vector_get(weightpoints,i));
                  gsl_matrix_memcpy(noiseIntervals_weightPoints,&tempm.matrix);
                  
-                 if (par.matrixSize == 0){ //do all sizes
-		   //                 cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
+                 if (par.matrixSize == 0)
+                 { //do all sizes
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -1135,8 +1111,9 @@
                      gsl_matrix_free(noiseIntervals_weightPoints);
                      gsl_matrix_free(weightMatrix);
                      
-                 }else if (gsl_vector_get(weightpoints,i) == par.matrixSize){ // do only input param size
-		                    //cout<<"gsl_vector_get(weightpoints,i): "<<gsl_vector_get(weightpoints,i)<<endl;
+                 }
+                 else if (gsl_vector_get(weightpoints,i) == par.matrixSize)
+                 { // do only input param size
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -1153,7 +1130,6 @@
          }
          else
          {
-	   	     //cout<<"If2"<<endl;
              for (int i=0;i<weightpoints->size;i++)
              {	
                  weightMatrix = gsl_matrix_alloc(gsl_vector_get(weightpoints,i),gsl_vector_get(weightpoints,i));
@@ -1164,7 +1140,6 @@
                  
                  if (par.matrixSize == 0){ //do all sizes
                      
-                     //cout<<"par.matrixSize=0"<<endl;
                      weightMatrixNoise(noiseIntervals_weightPoints, &weightMatrix);
                      for (int j=0;j<gsl_vector_get(weightpoints,i);j++)
                      {
@@ -1401,11 +1376,11 @@
      // Processing each record
      for (int i=0; i< nrows; i++)
      {      
-         sprintf(straux,"%d",ntotalrows);
+         /*sprintf(straux,"%d",ntotalrows);
          message = "-------------> Record: " + string(straux);
          sprintf(straux,"%ld",eventcnt);
          message += " of " + string(straux) + " <------------------ ";
-         cout<<message<<endl;
+         cout<<message<<endl;*/
          
          // Information has been read by blocks (with nrows per block)
          // Now, information is going to be used by rows
@@ -1423,7 +1398,7 @@
              {
                  real_data = 1;
              }
-             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,par.Ifit,V0,RL,L,samprate,&ioutgsl,real_data))
+             if (convertI2R(par.EnergyMethod,Ibias,Imin,Imax,adu_cnv,adu_bias,i_bias,par.Ifit,V0,RL,L,&ioutgsl,real_data))
              {
                  message = "Cannot run routine convertI2R";
                  EP_EXIT_ERROR(message,EPFAIL);
@@ -1522,7 +1497,6 @@
          if (nIntervals != 0)
          {
              findMeanSigma (intervalsWithoutPulsesTogether, &baselineIntervalFreeOfPulses, &sigmaIntervalFreeOfPulses);
-             //cout<<"baselineIntervalFreeOfPulses: "<<baselineIntervalFreeOfPulses<<endl;
              gsl_vector_set(baseline,indexBaseline,baselineIntervalFreeOfPulses);
              gsl_vector_set(sigma,indexBaseline,sigmaIntervalFreeOfPulses);
              indexBaseline++;
@@ -1538,9 +1512,14 @@
              gsl_matrix_set_row(noiseIntervals,NumMeanSamples,EventSamples);
                  
              NumMeanSamples = NumMeanSamples + 1;
+             //Update the progressbar
+             ++(*p_show_progress);
          }
          
          ntotalrows++;
+
+         //Update the progressbar
+         //++(*p_show_progress);
      }
      
      // Free allocated GSL vectors
@@ -1713,7 +1692,7 @@
          }
      }
      
-     message = "Create gennoisespec FITS File (_noisespec): " + string(par.outFile);
+     message = "Created gennoisespec FITS File (_noisespec): " + string(par.outFile);
      cout<<message<<endl;
      
      // Create extensions: NOISE
@@ -2109,7 +2088,6 @@
      gsl_vector_Sumsubvector(baseline, 0, indexBaseline, &sumBaseline);
      double keyvaldouble;
      //keyvaldouble = sumBaseline/indexBaseline;
-     //cout<<"sumBaseline/indexBaseline: "<<sumBaseline/indexBaseline<<endl;
      if (strcmp(par.EnergyMethod,"OPTFILT") == 0)
      {
         keyvaldouble = (sumBaseline/indexBaseline)/aducnv;
@@ -2118,7 +2096,6 @@
      {
          keyvaldouble = (sumBaseline/indexBaseline);
      }
-     //cout<<"(sumBaseline/indexBaseline)/aducnv: "<<(sumBaseline/indexBaseline)/aducnv<<endl;
      if (fits_write_key(gnoiseObject,TDOUBLE,keyname,&keyvaldouble,comment,&status))
      {
          message = "Cannot write keyword " + string(keyname) + " in file " + string(par.outFile);
@@ -2845,7 +2822,7 @@
          message = "failed reading the nintervals parameter";
          EP_EXIT_ERROR(message,EPFAIL);
      }
-     if (par->nintervals == 0) MyAssert(par->nintervals > 0, "nintervals must be greater than 0");
+     if (par->nintervals == 0) MyAssert(par->nintervals > 0, (char *)("nintervals must be greater than 0"));
      
      status=ape_trad_query_double("scaleFactor", &par->scaleFactor);
      if (EXIT_SUCCESS!=status) {
@@ -2858,14 +2835,14 @@
          message = "failed reading the samplesUp parameter";
          EP_EXIT_ERROR(message,EPFAIL);
      }
-     if (par->samplesUp == 0) MyAssert(par->samplesUp > 0, "samplesUp must be greater than 0");
+     if (par->samplesUp == 0) MyAssert(par->samplesUp > 0, (char *)("samplesUp must be greater than 0"));
      
      status=ape_trad_query_double("nSgms", &par->nSgms);
      if (EXIT_SUCCESS!=status) {
          message = "failed reading the nSgms parameter";
          EP_EXIT_ERROR(message,EPFAIL);
      }
-     if (par->nSgms == 0) MyAssert(par->nSgms >= 1, "nSgms must be greater than 1");
+     if (par->nSgms == 0) MyAssert(par->nSgms >= 1, (char *)("nSgms must be greater than 1"));
      
      status=ape_trad_query_int("pulse_length", &par->pulse_length);
      if (EXIT_SUCCESS!=status) {
@@ -2897,7 +2874,7 @@
      free(sbuffer);
      
      MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) || (strcmp(par->EnergyMethod,"I2RDER") == 0),
-              "EnergyMethod must be OPTFILT, I2R, I2RFITTED, I2RDER or PCA");
+              (char *)("EnergyMethod must be OPTFILT, I2R, I2RFITTED, I2RDER or PCA"));
      
      status=ape_trad_query_double("Ifit", &par->Ifit);
      if (EXIT_SUCCESS!=status) {

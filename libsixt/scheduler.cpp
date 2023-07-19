@@ -95,10 +95,10 @@ void energy_worker()
     if(energy_queue.wait_and_pop(data)){
       //log_trace("Extracting energy data from queue...");
       //log_debug("Energy data in record %i",data->n_record);
-      th_runEnergy(data->rec, data->last_record, data->n_record, data->trig_reclength,
+      th_runEnergy(data->rec, data->n_record, data->trig_reclength,
                    &(data->rec_init),
                    &(data->record_pulses),
-                   &(data->optimal_filter),data->all_pulses);
+                   data->all_pulses);
       end_queue.push(data);
       std::unique_lock<std::mutex> lk(records_energy_mut);
       ++records_energy;
@@ -121,10 +121,10 @@ void energy_worker_v2()
     if(detected_queue.wait_and_pop(data)){
       //log_trace("Extracting energy data from queue...");
       //log_debug("Energy data in record %i",data->n_record);
-      th_runEnergy(data->rec, data->last_record, data->n_record, data->trig_reclength,
+      th_runEnergy(data->rec, data->n_record, data->trig_reclength,
                    &(data->rec_init),
                    &(data->record_pulses),
-                   &(data->optimal_filter),data->all_pulses);
+                   data->all_pulses);
       end_queue.push(data);
       std::unique_lock<std::mutex> lk(records_energy_mut);
       ++records_energy;
@@ -148,7 +148,6 @@ void scheduler::push_detection(TesRecord* record, int trig_reclength,
                                PulsesCollection *pulsesAll, 
                                ReconstructInitSIRENA** reconstruct_init, 
                                PulsesCollection** pulsesInRecord,
-                               OptimalFilterSIRENA** optimal,
                                TesEventList* event_list)
 {
   //log_trace("pushing detection data into the queue...");
@@ -190,9 +189,7 @@ void scheduler::push_detection(TesRecord* record, int trig_reclength,
   ++num_records;
 }
 
-void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
-                                      PulsesCollection** pulsesAll, 
-                                      OptimalFilterSIRENA** optimalFilter)
+void scheduler::finish_reconstruction(PulsesCollection** pulsesAll)
 {
   
   // Waits until all the records are detected
@@ -276,7 +273,6 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
   //
   //log_trace("Reconstruction of the pulses array...");
   for (unsigned int i = 0; i < this->num_records; ++i){
-    PulsesCollection* all = data_array[i]->all_pulses;
     PulsesCollection* in_record = data_array[i]->record_pulses;
     PulsesCollection aux;
     if ((*pulsesAll)->size < 
@@ -287,11 +283,11 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
       (*pulsesAll)->ndetpulses = aux.ndetpulses;
       (*pulsesAll)->size = (*pulsesAll)->ndetpulses + in_record->ndetpulses;
       (*pulsesAll)->pulses_detected =  new PulseDetected[(*pulsesAll)->size];
-      for (unsigned int i = 0; i < aux.ndetpulses; ++i){
+      for (int i = 0; i < aux.ndetpulses; ++i){
         (*pulsesAll)->pulses_detected[i] = aux.pulses_detected[i];
       }
     }
-    for (unsigned int i = 0; i < in_record->ndetpulses; ++i){
+    for (int i = 0; i < in_record->ndetpulses; ++i){
       (*pulsesAll)->pulses_detected[i+(*pulsesAll)->ndetpulses] = 
         in_record->pulses_detected[i];
     }
@@ -309,7 +305,7 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
       event_list->index = record_pulses->ndetpulses;
 
       for (int ip=0; ip < record_pulses->ndetpulses; ip++) {
-        event_list->event_indexes[ip] = 
+        event_list->event_indexes[ip] =
           (record_pulses->pulses_detected[ip].Tstart - rec->time)/rec->delta_t;
         
         event_list->energies[ip] = data_array[i]->record_pulses->pulses_detected[ip].energy;
@@ -375,9 +371,7 @@ void scheduler::finish_reconstruction(ReconstructInitSIRENA* reconstruct_init,
   }// for event_list
 }
 
-void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init,
-                                         PulsesCollection** pulsesAll, 
-                                         OptimalFilterSIRENA** optimalFilter)
+void scheduler::finish_reconstruction_v2(PulsesCollection** pulsesAll)
 {
   // Waits until all the records are detected
   // this works because this function should only be called
@@ -441,7 +435,6 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
   //
   //log_trace("Reconstruction of the pulses array...");
   for (unsigned int i = 0; i < this->num_records; ++i){
-    PulsesCollection* all = data_array[i]->all_pulses;
     PulsesCollection* in_record = data_array[i]->record_pulses;
     PulsesCollection aux;
     if ((*pulsesAll)->size < 
@@ -453,11 +446,11 @@ void scheduler::finish_reconstruction_v2(ReconstructInitSIRENA* reconstruct_init
       (*pulsesAll)->ndetpulses = aux.ndetpulses;
       (*pulsesAll)->size = (*pulsesAll)->ndetpulses + in_record->ndetpulses;
       (*pulsesAll)->pulses_detected =  new PulseDetected[(*pulsesAll)->size];
-      for (unsigned int i = 0; i < aux.ndetpulses; ++i){
+      for (int i = 0; i < aux.ndetpulses; ++i){
         (*pulsesAll)->pulses_detected[i] = aux.pulses_detected[i];
       }
     }
-    for (unsigned int i = 0; i < in_record->ndetpulses; ++i){
+    for (int i = 0; i < in_record->ndetpulses; ++i){
       (*pulsesAll)->pulses_detected[i+(*pulsesAll)->ndetpulses] = 
         in_record->pulses_detected[i];
     }
@@ -596,14 +589,14 @@ void scheduler::init_v2()
 }
 
 scheduler::scheduler():
-  threading(false),      // true: Activate THREADING, false: No THREADING
   num_cores(0),
   max_detection_workers(0),
   max_energy_workers(0),
   num_records(0),
-  is_running_energy(false),
   current_record(0),
-  data_array(0)
+  data_array(0),
+  is_running_energy(false),
+  threading(false)      // true: Activate THREADING, false: No THREADING
 {
   this->init_v2();
   //this->init();
@@ -641,13 +634,13 @@ phidlist::phidlist(const phidlist& other):
 {
   if (other.phid_array && other.size > 0){
     phid_array = new long[other.size];
-    for (unsigned int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i){
       phid_array[i] = other.phid_array[i];
     }
   }
   if (other.wait_list && other.times && other.size > 0){
     times = new double[other.size];
-    for (unsigned int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i){
       times[i] = other.times[i];
     }
   }
@@ -663,14 +656,14 @@ phidlist::phidlist(PhIDList* other):
 {
   if (other->phid_array && size > 0){
     phid_array = new long[size];
-    for (unsigned int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i){
       phid_array[i] = other->phid_array[i];
     }
   }
   
   if (wait_list && other->times && size > 0){
     times = new double[size];
-    for (unsigned int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i){
       times[i] = other->times[i];
     }
   }
@@ -691,13 +684,13 @@ phidlist& phidlist::operator=(const phidlist& other)
     }
     if (other.phid_array && other.size > 0){
       phid_array = new long[other.size];
-      for (unsigned int i = 0; i < size; ++i){
+      for (int i = 0; i < size; ++i){
         phid_array[i] = other.phid_array[i];
       }
     }
     if (other.wait_list && other.times && other.size > 0){
       times = new double[other.size];
-      for (unsigned int i = 0; i < size; ++i){
+      for (int i = 0; i < size; ++i){
         times[i] = other.times[i];
       }
     }
@@ -724,13 +717,13 @@ PhIDList* phidlist::get_PhIDList() const
   ret->size = size;
   if (phid_array && size > 0){
     ret->phid_array = new long[size];
-    for (unsigned int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i){
       ret->phid_array[i] = phid_array[i];
     }
   }
   if (wait_list && times && size > 0){
     ret->times = new double[size];
-    for (unsigned int i = 0; i < size; ++i){
+    for (int i = 0; i < size; ++i){
       ret->times[i] = times[i];
     }
   }
@@ -792,7 +785,7 @@ tesrecord::tesrecord(const tesrecord& other):
   }
   if(other.adc_double && trigger_size > 0){
     adc_double = new double[trigger_size];
-    for (unsigned int i = 0; i < trigger_size; ++i){
+    for (int i = 0; i < (int)(trigger_size); ++i){
       adc_double[i] = other.adc_double[i];
     }
   }
@@ -823,13 +816,13 @@ tesrecord& tesrecord::operator=(const tesrecord& other)
 
     if(other.adc_array && trigger_size > 0){
       adc_array = new uint16_t[trigger_size];
-      for (unsigned int i = 0; i < trigger_size; ++i){
+      for (int i = 0; i < (int)(trigger_size); ++i){
         adc_array[i] = other.adc_array[i];
       }
     }
     if(other.adc_double && trigger_size > 0){
       adc_double = new double[trigger_size];
-      for (unsigned int i = 0; i < trigger_size; ++i){
+      for (int i = 0; i < (int)(trigger_size); ++i){
         adc_double[i] = other.adc_double[i];
       }
     }
@@ -863,14 +856,14 @@ TesRecord* tesrecord::get_TesRecord() const
 
   if(adc_array && trigger_size > 0){
     ret->adc_array = new uint16_t[trigger_size];
-    for (unsigned int i = 0; i < trigger_size; ++i){
+    for (int i = 0; i < (int)(trigger_size); ++i){
       ret->adc_array[i] = adc_array[i];
     }
   }
 
   if(adc_double && trigger_size > 0){
     ret->adc_double = new double[trigger_size];
-    for (unsigned int i = 0; i < trigger_size; ++i){
+    for (int i = 0; i < (int)(trigger_size); ++i){
         ret->adc_double[i] = adc_double[i];
     }
   }
@@ -890,12 +883,12 @@ data::data():
 }
 
 data::data(const data& other):
+  rec(other.rec),
+  rec_init(other.rec_init),
   n_record(other.n_record),
   last_record(other.last_record),
   all_pulses(0),
-  record_pulses(0),
-  rec(other.rec),
-  rec_init(other.rec_init)
+  record_pulses(0)
 {
   
 }
@@ -904,10 +897,10 @@ data& data::operator=(const data& other)
 {
   //printf("operator = date\n");
   if(this != &other){
-    n_record = other.n_record;
-    last_record = other.last_record;
     rec = other.rec;
     rec_init = other.rec_init;
+    n_record = other.n_record;
+    last_record = other.last_record;
   }
   return *this;
 }

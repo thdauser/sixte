@@ -150,7 +150,7 @@
                                                 char* const tstartPulse1, int tstartPulse2, int tstartPulse3, double energyPCA1, double energyPCA2, char * const XMLFile, int* const status)
  {  
      string message = "";
-     
+
      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
      // Load LibraryCollection structure if library file exists
      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,16 +168,18 @@
      // Loading in the reconstruct_init structure values related to grading and preBuffer values from the XML file 
      if (0 != preBuffer)	reconstruct_init->preBuffer = 1;
      else			        reconstruct_init->preBuffer = 0;
-     gsl_vector *pBi;   // preBuffer values
-     gsl_vector *posti; // Filter length (including preBuffer)
-                        // post in (grading=>pre,post and pB)
-                        // filtlen in (grading=>pre,post and filtlen) 
+     gsl_vector *pBi = gsl_vector_alloc(1);   // preBuffer values
+     gsl_vector *posti = gsl_vector_alloc(1); // Filter length (including preBuffer)
+                                              // post in (grading=>pre,post and pB)
+                                              // filtlen in (grading=>pre,post and filtlen)
      if (reconstruct_init->preBuffer == 1)
      {
+        gsl_vector_free(pBi); pBi=0;
         pBi = gsl_vector_alloc(reconstruct_init->grading->ngrades);
         gsl_matrix_get_col(pBi,reconstruct_init->grading->gradeData,2);
         reconstruct_init->preBuffer_max_value = gsl_vector_max(pBi);
         reconstruct_init->preBuffer_min_value = gsl_vector_min(pBi);
+        gsl_vector_free(posti); posti=0;
         posti = gsl_vector_alloc(reconstruct_init->grading->ngrades);
         gsl_matrix_get_col(posti,reconstruct_init->grading->gradeData,1);
         reconstruct_init->post_max_value = gsl_vector_max(posti);
@@ -226,8 +228,8 @@
      
      if (reconstruct_init->preBuffer == 1)
      {
-        gsl_vector_free(pBi); pBi = 0;
-        gsl_vector_free(posti); posti = 0;
+        if (pBi != NULL) {gsl_vector_free(pBi); pBi = 0;}
+        if (posti != NULL) {gsl_vector_free(posti); posti = 0;}
      }
      
      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -445,12 +447,12 @@
   * - optimalFilter: Optimal filters used in reconstruction
   * - status:Input/output status
   ******************************************************************************/
- extern "C" void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init,  int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status)
+ extern "C" void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init,  int lastRecord, int nRecord, PulsesCollection **pulsesAll, int* const status)
  {
      log_trace("reconstructRecordSIRENA: START");
-     
+
      char extname[20];
-     
+
      // Inititalize PulsesCollection structure
      PulsesCollection* pulsesInRecord = new PulsesCollection;
      
@@ -497,10 +499,10 @@
          reconstruct_init->i2rdata->ADU_CNV = -999;
          reconstruct_init->i2rdata->I_BIAS = -999;
          reconstruct_init->i2rdata->ADU_BIAS = -999;
+         reconstruct_init->i2rdata->Ifit = reconstruct_init->Ifit;
          reconstruct_init->i2rdata->V0 = -999;
          reconstruct_init->i2rdata->RL = -999;
          reconstruct_init->i2rdata->L = -999;
-         reconstruct_init->i2rdata->Ifit = reconstruct_init->Ifit;
          //if (strcmp(reconstruct_init->EnergyMethod,"OPTFILT") != 0)
          if ((strcmp(reconstruct_init->EnergyMethod,"I2R") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RFITTED") == 0) || (strcmp(reconstruct_init->EnergyMethod,"I2RDER") == 0))
          {
@@ -770,8 +772,8 @@
          }
      }
      int tessimOrxifusim = -999;
-     strcpy(extname,"RECORDS");
      // Check if input FITS file have been simulated with TESSIM or XIFUSIM
+     strcpy(extname,"RECORDS");
      fits_movnam_hdu(reconstruct_init->record_file_fptr, ANY_HDU,extname, 0, status);
      if (*status != 0)
      {
@@ -805,7 +807,7 @@
          log_trace("reconstructRecordSIRENA:  Threading mode...1");
          scheduler::get()->push_detection(record, trig_reclength, nRecord, lastRecord, 
                                           *pulsesAll, &rec, &pulsesInRecord,
-                                          optimalFilter, event_list);
+                                          event_list);
          freeReconstructInitSIRENA(rec);
          log_trace("reconstructRecordSIRENA:  Threading mode...2");
          return;  // The rest of 'reconstructRecordSIRENA' is not going to run: 'runDetect', 'runEnergy'...
@@ -824,7 +826,7 @@
      if ((reconstruct_init->opmode == 1) && (strcmp(reconstruct_init->EnergyMethod,"PCA") != 0))
      {
          // Filter and calculates energy
-         runEnergy(record, lastRecord, nRecord, trig_reclength, &reconstruct_init, &pulsesInRecord, optimalFilter,*pulsesAll);
+         runEnergy(record, lastRecord, nRecord, trig_reclength, &reconstruct_init, &pulsesInRecord, *pulsesAll);
      }
      log_trace("After runEnergy");
          
@@ -1037,7 +1039,7 @@
   * Parameters:
   * - status: Input/output status
   ******************************************************************************/
- extern "C" ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status)
+ extern "C" ReconstructInitSIRENA* newReconstructInitSIRENA()
  {	
      ReconstructInitSIRENA* reconstruct_init = new ReconstructInitSIRENA;
      reconstruct_init->noise_spectrum = NULL;
@@ -1084,7 +1086,7 @@
   * Parameters:
   * - status: Input/output status
   ******************************************************************************/
- extern "C" PulsesCollection* newPulsesCollection(int* const status)
+ extern "C" PulsesCollection* newPulsesCollection()
  {
      PulsesCollection* PulsesColl = new PulsesCollection;
      
@@ -1137,7 +1139,7 @@
   * Parameters:
   * - status: Input/output status
   ******************************************************************************/
- extern "C" OptimalFilterSIRENA* newOptimalFilterSIRENA(int* const status)
+ extern "C" OptimalFilterSIRENA* newOptimalFilterSIRENA()
  {
      OptimalFilterSIRENA* OFilterColl = new OptimalFilterSIRENA;
      return(OFilterColl);
@@ -1246,13 +1248,15 @@
      {
          if (ntemplates == 1)
          {
-             if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = "MF";
+             //if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = "MF";
+             if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = (char *)("MF");
          }
          else
          {
              if (filtEev != 0)
              {
-                 if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = "MF";
+                 //if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = "MF";
+                 if (strcmp(*ofinterp,"DAB") == 0)  *ofinterp = (char *)("MF");
                  
                  EP_PRINT_ERROR("The library has several rows, but only the row related to filtEev is going to be used in reconstruction",-999); // Only a warning
              }
@@ -1417,7 +1421,7 @@
      }
      
      // Get matched filter duration
-     int mfilter_duration;
+     int mfilter_duration = -999;
      if ((opmode == 0) ||
      (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0)|| (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
      {
@@ -1442,9 +1446,7 @@
      }
      
      // Read different columns and populate the *LibraryCollection* structure
-     int anynul=0;
-     
-     // Read ENERGY column 
+     // Read ENERGY column
      IOData obj;
      obj.inObject = fptr;
      obj.nameTable = new char [255];
@@ -1524,7 +1526,7 @@
      if ((opmode == 0) ||
      (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0) && (opmode == 1)))
      {
-         if ((opmode == 0) || (strcmp(filter_method,"F0") == 0) || (strcmp(filter_method,"F0B0") == 0))
+         if ((opmode == 0) || ((strcmp(filter_method,"F0") == 0) || (strcmp(filter_method,"F0B0") == 0)))
          {
              // It is not necessary to check the allocation because 'ntemplates' and 'mfilter_duration' have been checked previously
              matrixAux_MF = gsl_matrix_alloc(ntemplates,mfilter_duration);
@@ -1547,8 +1549,6 @@
              }  
          }  
      }
-     
-     int ofilter_duration;
      
      gsl_matrix *matrixAux_WAB = NULL;
      gsl_vector *vectorAux_WAB = NULL;
@@ -1768,7 +1768,7 @@
          if ((opmode == 0) || 
          (((strcmp(energy_method,"OPTFILT") == 0) || (strcmp(energy_method,"I2R") == 0) || (strcmp(energy_method,"I2RFITTED") == 0) || (strcmp(energy_method,"I2RDER") == 0)) && (oflib == 0) && (strcmp(*ofinterp,"MF") == 0)))
          {
-             if ((opmode == 0) || (strcmp(filter_method,"F0") == 0) || (strcmp(filter_method,"F0B0") == 0))
+             if ((opmode == 0) || ((strcmp(filter_method,"F0") == 0) || (strcmp(filter_method,"F0B0") == 0)))
              {
                  gsl_matrix_get_row(library_collection->matched_filters[it].mfilter,matrixAux_MF,it);
              }
@@ -1991,9 +1991,9 @@
                  EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
-             for (int j=0;j<matrixAux_OFFx->size1;j++)
+             for (int j=0;j<(int)(matrixAux_OFFx->size1);j++)
              {
-                 for (int k=0;k<matrixAux_OFFx->size2;k++)
+                 for (int k=0;k<(int)(matrixAux_OFFx->size2);k++)
                  {
                      gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
                  }
@@ -2014,9 +2014,9 @@
                      EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(library_collection);
                  }
-                 for (int j=0;j<matrixAuxab_OFFx->size1;j++)
+                 for (int j=0;j<(int)(matrixAuxab_OFFx->size1);j++)
                  {
-                     for (int k=0;k<matrixAuxab_OFFx->size2;k++)
+                     for (int k=0;k<(int)(matrixAuxab_OFFx->size2);k++)
                      {
                          gsl_matrix_set(matrixALLab_OFFx,j,k+index,gsl_matrix_get(matrixAuxab_OFFx,j,k));
                      }
@@ -2073,9 +2073,9 @@
                  EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
-             for (int j=0;j<matrixAux_OFTx->size1;j++)
+             for (int j=0;j<(int)(matrixAux_OFTx->size1);j++)
              {
-                 for (int k=0;k<matrixAux_OFTx->size2;k++)
+                 for (int k=0;k<(int)(matrixAux_OFTx->size2);k++)
                  {
                      gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
                  }
@@ -2096,9 +2096,9 @@
                      EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(library_collection);
                  }
-                 for (int j=0;j<matrixAuxab_OFTx->size1;j++)
+                 for (int j=0;j<(int)(matrixAuxab_OFTx->size1);j++)
                  {
-                     for (int k=0;k<matrixAuxab_OFTx->size2;k++)
+                     for (int k=0;k<(int)(matrixAuxab_OFTx->size2);k++)
                      {
                          gsl_matrix_set(matrixALLab_OFTx,j,k+index,gsl_matrix_get(matrixAuxab_OFTx,j,k));
                      }
@@ -2186,9 +2186,9 @@
                      EP_PRINT_ERROR(message,*status);
                      *status=EPFAIL; return(library_collection);
                  }
-                 for (int j=0;j<matrixAux_PRCLWNx->size1;j++)
+                 for (int j=0;j<(int)(matrixAux_PRCLWNx->size1);j++)
                  {
-                     for (int k=0;k<matrixAux_PRCLWNx->size2;k++)
+                     for (int k=0;k<(int)(matrixAux_PRCLWNx->size2);k++)
                      {
                          gsl_matrix_set(matrixALL_PRCLWNx,j,k+index,gsl_matrix_get(matrixAux_PRCLWNx,j,k));
                      }
@@ -2276,9 +2276,9 @@
                      *status=EPFAIL; return(library_collection);
                  }
                  
-                 for (int j=0;j<matrixAux_PRCLOFWMx->size1;j++)
+                 for (int j=0;j<(int)(matrixAux_PRCLOFWMx->size1);j++)
                  {
-                     for (int k=0;k<matrixAux_PRCLOFWMx->size2;k++)
+                     for (int k=0;k<(int)(matrixAux_PRCLOFWMx->size2);k++)
                      {
                          gsl_matrix_set(matrixALL_PRCLOFWMx,j,k+index,gsl_matrix_get(matrixAux_PRCLOFWMx,j,k));
                      }
@@ -2320,7 +2320,7 @@
          int lengthALL_F = 0;
          int lengthALL_T = 0;         
 
-         for (int i=0;i<posti->size;i++)
+         for (int i=0;i<(int)(posti->size);i++)
          {
              lengthALL_T = lengthALL_T + gsl_vector_get(posti,i);
          }
@@ -2340,7 +2340,7 @@
          strcpy(obj.nameTable,"FIXFILTF");
          obj.iniRow = 1;
          obj.endRow = ntemplates;
-         for (int i=0;i<posti->size;i++)
+         for (int i=0;i<(int)(posti->size);i++)
          {
              snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));	
              matrixAux_OFFx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i)*2);
@@ -2352,9 +2352,9 @@
                  EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
-             for (int j=0;j<matrixAux_OFFx->size1;j++)
+             for (int j=0;j<(int)(matrixAux_OFFx->size1);j++)
              {
-                 for (int k=0;k<matrixAux_OFFx->size2;k++)
+                 for (int k=0;k<(int)(matrixAux_OFFx->size2);k++)
                  {
                      gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
                  }
@@ -2384,7 +2384,7 @@
          gsl_matrix *matrixAuxab_OFTx = NULL;
          index = 0;
          strcpy(obj.nameTable,"FIXFILTT");
-         for (int i=0;i<posti->size;i++)
+         for (int i=0;i<(int)(posti->size);i++)
          {
              snprintf(str_length,125,"%d",(int) gsl_vector_get(posti,i));
              matrixAux_OFTx = gsl_matrix_alloc(ntemplates,gsl_vector_get(posti,i));
@@ -2396,9 +2396,9 @@
                  EP_PRINT_ERROR(message,*status);
                  *status=EPFAIL; return(library_collection);
              }
-             for (int j=0;j<matrixAux_OFTx->size1;j++)
+             for (int j=0;j<(int)(matrixAux_OFTx->size1);j++)
              {
-                 for (int k=0;k<matrixAux_OFTx->size2;k++)
+                 for (int k=0;k<(int)(matrixAux_OFTx->size2);k++)
                  {
                      gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
                  }
@@ -2516,12 +2516,12 @@
              }
              else  // preBuffer = 1
              {
-                if (nOFs != posti->size)
+                if (nOFs != (int)(posti->size))
                 {
                     EP_PRINT_ERROR("The number of optimal filters in the library does not match the grading info in the XML file",EPFAIL); 
                     *status=EPFAIL; return(library_collection);
                 }
-                for (int i=0;i<posti->size;i++)
+                for (int i=0;i<(int)(posti->size);i++)
                 {
                     lengthALL_T = lengthALL_T + gsl_vector_get(posti,i) + gsl_vector_get(pBi,i);
                 }
@@ -2565,9 +2565,9 @@
                             EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
-                        for (int j=0;j<matrixAux_OFFx->size1;j++)
+                        for (int j=0;j<(int)(matrixAux_OFFx->size1);j++)
                         {
-                            for (int k=0;k<matrixAux_OFFx->size2;k++)
+                            for (int k=0;k<(int)(matrixAux_OFFx->size2);k++)
                             {
                                 gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
                             }
@@ -2597,9 +2597,9 @@
                             EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
-                        for (int j=0;j<matrixAux_OFFx->size1;j++)
+                        for (int j=0;j<(int)(matrixAux_OFFx->size1);j++)
                         {
-                            for (int k=0;k<matrixAux_OFFx->size2;k++)
+                            for (int k=0;k<(int)(matrixAux_OFFx->size2);k++)
                             {
                                 gsl_matrix_set(matrixALL_OFFx,j,k+index,gsl_matrix_get(matrixAux_OFFx,j,k));
                             }
@@ -2656,9 +2656,9 @@
                             EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
-                        for (int j=0;j<matrixAuxab_OFFx->size1;j++)
+                        for (int j=0;j<(int)(matrixAuxab_OFFx->size1);j++)
                         {
-                            for (int k=0;k<matrixAuxab_OFFx->size2;k++)
+                            for (int k=0;k<(int)(matrixAuxab_OFFx->size2);k++)
                             {
                                 gsl_matrix_set(matrixALLab_OFFx,j,k+index,gsl_matrix_get(matrixAuxab_OFFx,j,k));
                             }
@@ -2688,9 +2688,9 @@
                              EP_PRINT_ERROR(message,*status);
                              *status=EPFAIL; return(library_collection);
                          }
-                         for (int j=0;j<matrixAuxab_OFFx->size1;j++)
+                         for (int j=0;j<(int)(matrixAuxab_OFFx->size1);j++)
                          {
-                             for (int k=0;k<matrixAuxab_OFFx->size2;k++)
+                             for (int k=0;k<(int)(matrixAuxab_OFFx->size2);k++)
                              {
                                  gsl_matrix_set(matrixALLab_OFFx,j,k+index,gsl_matrix_get(matrixAuxab_OFFx,j,k));
                              }
@@ -2774,7 +2774,7 @@
              }
              else // preBuffer =1
              {
-                if (nOFs != posti->size)
+                if (nOFs != (int)(posti->size))
                 {
                     EP_PRINT_ERROR("The number of optimal filters in the library does not match the grading info in the XML file",EPFAIL); 
                     *status=EPFAIL; return(library_collection);
@@ -2822,9 +2822,9 @@
                             *status=EPFAIL; return(library_collection);
                         }
                         
-                        for (int j=0;j<matrixAux_OFTx->size1;j++)
+                        for (int j=0;j<(int)(matrixAux_OFTx->size1);j++)
                         {
-                            for (int k=0;k<matrixAux_OFTx->size2;k++)
+                            for (int k=0;k<(int)(matrixAux_OFTx->size2);k++)
                             {
                                 gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
                             }
@@ -2855,9 +2855,9 @@
                             *status=EPFAIL; return(library_collection);
                         }
                         
-                        for (int j=0;j<matrixAux_OFTx->size1;j++)
+                        for (int j=0;j<(int)(matrixAux_OFTx->size1);j++)
                         {
-                            for (int k=0;k<matrixAux_OFTx->size2;k++)
+                            for (int k=0;k<(int)(matrixAux_OFTx->size2);k++)
                             {
                                 gsl_matrix_set(matrixALL_OFTx,j,k+index,gsl_matrix_get(matrixAux_OFTx,j,k));
                             }
@@ -2914,9 +2914,9 @@
                             EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
-                        for (int j=0;j<matrixAuxab_OFTx->size1;j++)
+                        for (int j=0;j<(int)(matrixAuxab_OFTx->size1);j++)
                         {
-                            for (int k=0;k<matrixAuxab_OFTx->size2;k++)
+                            for (int k=0;k<(int)(matrixAuxab_OFTx->size2);k++)
                             {
                                 gsl_matrix_set(matrixALLab_OFTx,j,k+index,gsl_matrix_get(matrixAuxab_OFTx,j,k));
                             }
@@ -2946,9 +2946,9 @@
                             EP_PRINT_ERROR(message,*status);
                             *status=EPFAIL; return(library_collection);
                         }
-                        for (int j=0;j<matrixAuxab_OFTx->size1;j++)
+                        for (int j=0;j<(int)(matrixAuxab_OFTx->size1);j++)
                         {
-                            for (int k=0;k<matrixAuxab_OFTx->size2;k++)
+                            for (int k=0;k<(int)(matrixAuxab_OFTx->size2);k++)
                             {
                                 gsl_matrix_set(matrixALLab_OFTx,j,k+index,gsl_matrix_get(matrixAuxab_OFTx,j,k));
                             }
@@ -3021,7 +3021,7 @@
          }
          else
          {
-            for (int i=0;i<posti->size;i++)
+            for (int i=0;i<(int)(posti->size);i++)
             {
                 lengthALL_PRCLOFWM = lengthALL_PRCLOFWM + gsl_vector_get(posti,i);
             }
@@ -3067,9 +3067,9 @@
                  *status=EPFAIL; return(library_collection);
              }
              
-             for (int j=0;j<matrixAux_PRCLOFWMx->size1;j++)
+             for (int j=0;j<(int)(matrixAux_PRCLOFWMx->size1);j++)
              {
-                 for (int k=0;k<matrixAux_PRCLOFWMx->size2;k++)
+                 for (int k=0;k<(int)(matrixAux_PRCLOFWMx->size2);k++)
                  {
                      gsl_matrix_set(matrixALL_PRCLOFWMx,j,k+index,gsl_matrix_get(matrixAux_PRCLOFWMx,j,k));
                  }
@@ -3149,9 +3149,9 @@
                  *status=EPFAIL; return(library_collection);
              }
              
-             for (int j=0;j<matrixAux_PRCLWNx->size1;j++)
+             for (int j=0;j<(int)(matrixAux_PRCLWNx->size1);j++)
              {
-                 for (int k=0;k<matrixAux_PRCLWNx->size2;k++)
+                 for (int k=0;k<(int)(matrixAux_PRCLWNx->size2);k++)
                  {
                      gsl_matrix_set(matrixALL_PRCLWNx,j,k+index,gsl_matrix_get(matrixAux_PRCLWNx,j,k));
                  }
@@ -3281,7 +3281,6 @@
          char column_name[12];
          int CSD_colnum = 0;
          int FREQ_colnum = 0;
-         int anynul=0;
          strcpy(column_name,"CSD");
          if (fits_get_colnum(fptr, CASEINSEN,column_name, &CSD_colnum, status))
          {
@@ -3342,12 +3341,12 @@
              noise_spectrum->weightMatrixes = gsl_matrix_alloc(noiseW_numcols,pow(2,noiseW_numcols)*pow(2,noiseW_numcols));
              gsl_matrix_set_all(noise_spectrum->weightMatrixes,-999.0);
              gsl_vector *weightpoints = gsl_vector_alloc(noiseW_numcols);
-             for (int i=0;i<weightpoints->size;i++)	gsl_vector_set(weightpoints,i,pow(2,noiseW_numcols-i));
+             for (int i=0;i<(int)(weightpoints->size);i++)	gsl_vector_set(weightpoints,i,pow(2,noiseW_numcols-i));
              
              strcpy(obj.nameTable,"WEIGHTMS");
              gsl_matrix *weightMatrixi;
              char str_length[125];
-             for (int i=0;i<weightpoints->size;i++)
+             for (int i=0;i<(int)(weightpoints->size);i++)
              {
                  snprintf(str_length,125,"%d",(int) gsl_vector_get(weightpoints,i));
                  strcpy(obj.nameCol,(string("W")+string(str_length)).c_str());
@@ -3449,8 +3448,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  
  // It waits until all threads finish and it builds the 'event_list' by using the results
  void th_end(ReconstructInitSIRENA* reconstruct_init,
-             PulsesCollection** pulsesAll, 
-             OptimalFilterSIRENA** optimalFilter)
+             PulsesCollection** pulsesAll)
  {
      //log_trace("Ending the reconstruction...");
      if (!scheduler::get()->is_threading()) { 
@@ -3462,8 +3460,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          scheduler::get()->set_is_running_energy(true);
      }
      
-     scheduler::get()->finish_reconstruction_v2(reconstruct_init, 
-                                                pulsesAll, optimalFilter);
+     scheduler::get()->finish_reconstruction_v2(pulsesAll);
      //scheduler::get()->finish_reconstruction(reconstruct_init, 
      //                                        pulsesAll, optimalFilter);
  }
@@ -3492,139 +3489,143 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  /* structs constructors and destructors */
  ReconstructInitSIRENA::ReconstructInitSIRENA():
  library_collection(0),
- noise_spectrum(0),
- grading(0),
- i2rdata(0),
- record_file_fptr(0),
  threshold(0.0f),
+ record_file_fptr(0),
  pulse_length(0),
  scaleFactor(0.0f),
  samplesUp(0),
  samplesDown(0),
  nSgms(0.0f),
  detectSP(0),
- opmode(0),
  monoenergy(0.0f),
  hduPRECALWN(0),
  hduPRCLOFWM(0),
+ largeFilter(0),
  LrsT(0.0f),
  LbT(0.0f),
+ opmode(0),
+ noise_spectrum(0),
  filtEev(0.0f),
  Ifit(0.0f),
  LagsOrNot(0),
  nLags(0),
  Fitting35(0),
- errorT(0),
- Sum0Filt(0),
  OFIter(0),
  OFLib(0),
  OFLength(0),
  preBuffer(0),
+ intermediate(0),
+ errorT(0),
+ Sum0Filt(0),
  clobber(0),
+ maxPulsesPerRecord(0),
  SaturationValue(0.0f),
  tstartPulse2(0),
  tstartPulse3(0),
  energyPCA1(0.0f),
  energyPCA2(0.0f),
- maxPulsesPerRecord(0),
- intermediate(0),
- largeFilter(0)
+ grading(0),
+ i2rdata(0)
  {
      
  }
  
  ReconstructInitSIRENA::ReconstructInitSIRENA(const ReconstructInitSIRENA& other):
  library_collection(0),
- noise_spectrum(0),
- grading(0),
- i2rdata(0),
- record_file_fptr(0),
  threshold(other.threshold),
+ record_file_fptr(0),
  pulse_length(other.pulse_length),
  scaleFactor(other.scaleFactor),
  samplesUp(other.samplesUp),
  samplesDown(other.samplesDown),
  nSgms(other.nSgms),
  detectSP(other.detectSP),
- opmode(other.opmode),
  monoenergy(other.monoenergy),
  hduPRECALWN(other.hduPRECALWN),
  hduPRCLOFWM(other.hduPRCLOFWM),
+ largeFilter(other.largeFilter),
  LrsT(other.LrsT),
  LbT(other.LbT),
- largeFilter(other.largeFilter),
+ opmode(other.opmode),
+ noise_spectrum(0),
  filtEev(other.filtEev),
  Ifit(other.Ifit),
  LagsOrNot(other.LagsOrNot),
  nLags(other.nLags),
  Fitting35(other.Fitting35),
- errorT(other.errorT),
- Sum0Filt(other.Sum0Filt),
  OFIter(other.OFIter),
  OFLib(other.OFLib),
  OFLength(other.OFLength),
  preBuffer(other.preBuffer),
- intermediate(intermediate),
+ intermediate(other.intermediate),
+ errorT(other.errorT),
+ Sum0Filt(other.Sum0Filt),
  clobber(other.clobber),
+ maxPulsesPerRecord(other.maxPulsesPerRecord),
  SaturationValue(other.SaturationValue),
  tstartPulse2(other.tstartPulse2),
  tstartPulse3(other.tstartPulse3),
  energyPCA1(other.energyPCA1),
  energyPCA2(other.energyPCA2),
- maxPulsesPerRecord(other.maxPulsesPerRecord)
+ grading(0),
+ i2rdata(0)
  {
+     strcpy(sirenaVersion, other.sirenaVersion);
+
      if(other.library_collection){
          library_collection = new LibraryCollection();
          *library_collection = (*other.library_collection);
      }
-     
+
      strcpy(library_file,other.library_file);
      strcpy(record_file,other.record_file);
-     
+
      //record_file_fptr
      // Here we copy the ptr of the fits file, this is NOT thread safe,
      // even allowing reentrant here we should open the file again,
      // and even by doing that the writing through multiple threads
      // won't be safe
      record_file_fptr = other.record_file_fptr;
-     
+
      strcpy(noise_file,other.noise_file);
      strcpy(event_file,other.event_file);
-     
+
      strcpy(detectionMode, other.detectionMode);
-     
+
      if(other.noise_spectrum){
          noise_spectrum = new NoiseSpec();
          *noise_spectrum = (*other.noise_spectrum);
      }
-     
+
      strcpy(FilterDomain, other.FilterDomain);
      strcpy(FilterMethod, other.FilterMethod);
      strcpy(EnergyMethod, other.EnergyMethod);
-     
-     strcpy(OFNoise, other.OFNoise);  
-     
+
+     strcpy(OFNoise, other.OFNoise);
+
      strcpy(OFInterp, other.OFInterp);
      strcpy(OFStrategy, other.OFStrategy);
-     
+
      strcpy(detectFile, other.detectFile);
-     
+
      strcpy(XMLFile, other.XMLFile);
-     
+
      if(other.grading){
          grading = new Grading();
          *grading = (*other.grading);
      }
-     
+
      if(other.i2rdata){
          i2rdata = new I2RData();
          *i2rdata = (*other.i2rdata);
      }
  }
- 
+
  ReconstructInitSIRENA&
  ReconstructInitSIRENA::operator=(const ReconstructInitSIRENA& other)
  {
+     strcpy(sirenaVersion, other.sirenaVersion);
+
      if (this != &other){
          if(library_collection) {
              delete library_collection; library_collection = 0;
@@ -3693,12 +3694,12 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          
          OFLength = other.OFLength;
          preBuffer = other.preBuffer;
+         intermediate = other.intermediate;
+         strcpy(detectFile, other.detectFile);
+
          errorT = other.errorT;
          Sum0Filt = other.Sum0Filt;
-         intermediate = other.intermediate;
-         
-         strcpy(detectFile, other.detectFile);
-         
+
          clobber = other.clobber;
          maxPulsesPerRecord = other.maxPulsesPerRecord;
          SaturationValue = other.SaturationValue;
@@ -3707,9 +3708,9 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          tstartPulse3 = other.tstartPulse3;
          energyPCA1 = other.energyPCA1;
          energyPCA2 = other.energyPCA2;
-         
+
          strcpy(XMLFile, other.XMLFile);
-         
+
          //Grading
          if(grading) {
              delete grading; grading = 0;
@@ -3718,7 +3719,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
              grading = new Grading();
              *grading = (*other.grading);
          }
-         
+
          //I2RData
          if(i2rdata) {
              delete i2rdata; i2rdata = 0;
@@ -3727,7 +3728,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
              i2rdata = new I2RData();
              *i2rdata = (*other.i2rdata);
          }
-         
+
      }
      return *this;
  }
@@ -3823,13 +3824,15 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
      
      ret->OFLength = this->OFLength;
      ret->preBuffer = this->preBuffer;
+     ret->intermediate = this->intermediate;
+     strcpy(ret->detectFile, this->detectFile);
+     //sprintf(ret->detectFile, "%s_%i", ret->detectFile, n_record);
+     strcat(ret->detectFile,"_");
+     strcat(ret->detectFile,to_string(n_record).c_str());
+
      ret->errorT = this->errorT;
      ret->Sum0Filt = this->Sum0Filt;
-     ret->intermediate = this->intermediate;
-     
-     strcpy(ret->detectFile, this->detectFile);
-     sprintf(ret->detectFile, "%s_%i", ret->detectFile, n_record);
-     
+
      ret->clobber = this->clobber;
      ret->maxPulsesPerRecord = this->maxPulsesPerRecord;
      ret->SaturationValue = this->SaturationValue;
@@ -3838,9 +3841,9 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
      ret->tstartPulse3 = this->tstartPulse3;
      ret->energyPCA1 = this->energyPCA1;
      ret->energyPCA2 = this->energyPCA2;
-     
+
      strcpy(ret->XMLFile, this->XMLFile);
-     
+
      //Grading
      if(this->grading){
          ret->grading = new Grading();
@@ -3936,20 +3939,20 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
      }
      if(other.pulse_templatesMaxLengthFixedFilter){
          pulse_templatesMaxLengthFixedFilter = new PulseTemplate[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              pulse_templatesMaxLengthFixedFilter[i] = 
              other.pulse_templatesMaxLengthFixedFilter[i];
          }
      }
      if(pulse_templates){
          pulse_templates = new PulseTemplate[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              pulse_templates[i] = other.pulse_templates[i];
          }
      }
      if (other.pulse_templates_filder){
          pulse_templates_filder = new PulseTemplate[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              pulse_templates_filder[i] = other.pulse_templates_filder[i];
          }
      } 
@@ -3963,37 +3966,37 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
      }
      if(other.pulse_templates_B0){
          pulse_templates_B0 = new PulseTemplate[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              pulse_templates_B0[i] = other.pulse_templates_B0[i];
          }
      }
      if(other.matched_filters){
          matched_filters = new MatchedFilter[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              matched_filters[i] = other.matched_filters[i];
          }
      }
      if(other.matched_filters_B0){
          matched_filters_B0 = new MatchedFilter[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              matched_filters_B0[i] = other.matched_filters_B0[i];
          }
      }
      if(other.optimal_filters){
          optimal_filters = new OptimalFilterSIRENA[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              optimal_filters[i] = other.optimal_filters[i];
          }
      }
      if(other.optimal_filtersFREQ){
          optimal_filtersFREQ = new OptimalFilterSIRENA[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              optimal_filtersFREQ[i] = other.optimal_filtersFREQ[i];
          }
      }
      if (other.optimal_filtersTIME){
          optimal_filtersTIME = new OptimalFilterSIRENA[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              optimal_filtersTIME[i] = other.optimal_filtersTIME[i];
          }
      }
@@ -4069,19 +4072,19 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
      
      if(other.optimal_filtersab){
          optimal_filtersab = new OptimalFilterSIRENA[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              optimal_filtersab[i] = other.optimal_filtersab[i];
          }
      }
      if(other.optimal_filtersabTIME){
          optimal_filtersabTIME = new OptimalFilterSIRENA[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              optimal_filtersabTIME[i] = other.optimal_filtersabTIME[i];
          }
      }
      if(other.optimal_filtersabFREQ){
          optimal_filtersabFREQ = new OptimalFilterSIRENA[ntemplates];
-         for (unsigned int i = 0; i < ntemplates; ++i){
+         for (int i = 0; i < ntemplates; ++i){
              optimal_filtersabFREQ[i] = other.optimal_filtersabFREQ[i];
          }
      }
@@ -4125,7 +4128,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.pulse_templatesMaxLengthFixedFilter){
              pulse_templatesMaxLengthFixedFilter = new PulseTemplate[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  pulse_templatesMaxLengthFixedFilter[i] = 
                  other.pulse_templatesMaxLengthFixedFilter[i];
              }
@@ -4135,7 +4138,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(pulse_templates){
              pulse_templates = new PulseTemplate[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  pulse_templates[i] = other.pulse_templates[i];
              }
          }
@@ -4144,7 +4147,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if (other.pulse_templates_filder){
              pulse_templates_filder = new PulseTemplate[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  pulse_templates_filder[i] = other.pulse_templates_filder[i];
              }
          }
@@ -4169,7 +4172,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.pulse_templates_B0){
              pulse_templates_B0 = new PulseTemplate[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  pulse_templates_B0[i] = other.pulse_templates_B0[i];
              }
          }
@@ -4178,7 +4181,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.matched_filters){
              matched_filters = new MatchedFilter[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  matched_filters[i] = other.matched_filters[i];
              }
          }
@@ -4187,7 +4190,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.matched_filters_B0){
              matched_filters_B0 = new MatchedFilter[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  matched_filters_B0[i] = other.matched_filters_B0[i];
              }
          }
@@ -4196,7 +4199,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.optimal_filters){
              optimal_filters = new OptimalFilterSIRENA[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  optimal_filters[i] = other.optimal_filters[i];
              }
          }
@@ -4205,7 +4208,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.optimal_filtersFREQ){
              optimal_filtersFREQ = new OptimalFilterSIRENA[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  optimal_filtersFREQ[i] = other.optimal_filtersFREQ[i];
              }
          }
@@ -4214,7 +4217,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if (other.optimal_filtersTIME){
              optimal_filtersTIME = new OptimalFilterSIRENA[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  optimal_filtersTIME[i] = other.optimal_filtersTIME[i];
              }
          }
@@ -4330,7 +4333,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.optimal_filtersab){
              optimal_filtersab = new OptimalFilterSIRENA[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  optimal_filtersab[i] = other.optimal_filtersab[i];
              }
          }
@@ -4339,7 +4342,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.optimal_filtersabTIME){
              optimal_filtersabTIME = new OptimalFilterSIRENA[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  optimal_filtersabTIME[i] = other.optimal_filtersabTIME[i];
              }
          }
@@ -4348,7 +4351,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.optimal_filtersabFREQ){
              optimal_filtersabFREQ = new OptimalFilterSIRENA[ntemplates];
-             for (unsigned int i = 0; i < ntemplates; ++i){
+             for (int i = 0; i < ntemplates; ++i){
                  optimal_filtersabFREQ[i] = other.optimal_filtersabFREQ[i];
              }
          }
@@ -4507,14 +4510,14 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  grading(0),
  avg_4samplesDerivative(0.0f),
  E_lowres(0.0f),
- bsln(0.0f),
- rmsbsln(0.0f),
  phi(0.0f),
  lagsShift(0),
  quality(0.0f),
- numLagsUsed(0)
+ numLagsUsed(0),
+ bsln(0.0f),
+ rmsbsln(0.0f)
  {
-     
+
  }
  
  PulseDetected::PulseDetected(const PulseDetected& other):
@@ -4540,12 +4543,12 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  grading(other.grading),
  avg_4samplesDerivative(other.avg_4samplesDerivative),
  E_lowres(other.E_lowres),
- bsln(other.bsln),
- rmsbsln(other.rmsbsln),
  phi(other.phi),
  lagsShift(other.lagsShift),
  quality(other.quality),
- numLagsUsed(other.numLagsUsed)
+ numLagsUsed(other.numLagsUsed),
+ bsln(other.bsln),
+ rmsbsln(other.rmsbsln)
  {
      if(other.pulse_adc){
          pulse_adc = gsl_vector_alloc(other.pulse_adc->size);
@@ -4595,12 +4598,12 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          grading = other.grading;
          avg_4samplesDerivative = other.avg_4samplesDerivative;
          E_lowres = other.E_lowres;
-         bsln = other.bsln;
-         rmsbsln = other.rmsbsln;
          phi = other.phi;
          lagsShift = other.lagsShift;
          quality = other.quality;
          numLagsUsed = other.numLagsUsed;
+         bsln = other.bsln;
+         rmsbsln = other.rmsbsln;
      }
      return *this;
  }
@@ -4668,9 +4671,9 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  
  PulseTemplate::PulseTemplate(const PulseTemplate& other):
  template_duration(other.template_duration),
+ ptemplate(0),
  energy(other.energy),
- pulse_height(other.pulse_height),
- ptemplate(0)
+ pulse_height(other.pulse_height)
  {
      if (other.ptemplate){
          ptemplate = gsl_vector_alloc(other.ptemplate->size);
@@ -4682,8 +4685,6 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  {
      if(this != &other){
          template_duration = other.template_duration;
-         energy = other.energy;
-         pulse_height = other.pulse_height;
          if (ptemplate) {
              gsl_vector_free(ptemplate); ptemplate = 0;
          }
@@ -4691,6 +4692,8 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
              ptemplate = gsl_vector_alloc(other.ptemplate->size);
              gsl_vector_memcpy(ptemplate, other.ptemplate);
          }
+         energy = other.energy;
+         pulse_height = other.pulse_height;
      }
      return *this;
  }
@@ -4713,9 +4716,9 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  
  MatchedFilter::MatchedFilter(const MatchedFilter& other):
  mfilter_duration(other.mfilter_duration),
+ mfilter(0),
  energy(other.energy),
- pulse_height(other.pulse_height),
- mfilter(0)
+ pulse_height(other.pulse_height)
  {
      if(other.mfilter){
          mfilter = gsl_vector_alloc(other.mfilter->size);
@@ -4727,8 +4730,6 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  {
      if(this != &other){
          mfilter_duration = other.mfilter_duration;
-         energy = other.energy;
-         pulse_height = other.pulse_height;
          if (mfilter) {
              gsl_vector_free(mfilter); mfilter = 0;
          }
@@ -4736,6 +4737,8 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
              mfilter = gsl_vector_alloc(other.mfilter->size);
              gsl_vector_memcpy(mfilter, other.mfilter);
          }
+         energy = other.energy;
+         pulse_height = other.pulse_height;
      }
      return *this;
  }
@@ -4757,8 +4760,8 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  
  OptimalFilterSIRENA::OptimalFilterSIRENA(const OptimalFilterSIRENA& other):
  ofilter_duration(other.ofilter_duration),
- energy(other.energy),
- ofilter(0)
+ ofilter(0),
+ energy(other.energy)
  {
      if(other.ofilter){
          ofilter = gsl_vector_alloc(other.ofilter->size);
@@ -4766,12 +4769,11 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
      }
  }
  
- OptimalFilterSIRENA& 
+ OptimalFilterSIRENA&
  OptimalFilterSIRENA::operator=(const OptimalFilterSIRENA& other)
  {
      if(this != &other){
          ofilter_duration = other.ofilter_duration;
-         energy = other.energy;
          if (ofilter) {
              gsl_vector_free(ofilter); ofilter = 0;
          }
@@ -4779,6 +4781,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
              ofilter = gsl_vector_alloc(other.ofilter->size);
              gsl_vector_memcpy(ofilter, other.ofilter);
          }
+         energy = other.energy;
      }
      return *this;
  }
@@ -4956,21 +4959,21 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
  }
  
  PulsesCollection::PulsesCollection():
- ndetpulses(0), 
- pulses_detected(0), 
- size(0)
+ ndetpulses(0),
+ size(0),
+ pulses_detected(0)
  {
-     
+
  }
  
  PulsesCollection::PulsesCollection(const PulsesCollection& other):
- ndetpulses(other.ndetpulses), 
- pulses_detected(0), 
- size(other.size)
+ ndetpulses(other.ndetpulses),
+ size(other.size),
+ pulses_detected(0)
  {
      if(other.pulses_detected){
          pulses_detected = new PulseDetected[size];
-         for (unsigned int i = 0; i < ndetpulses; ++i){
+         for (int i = 0; i < ndetpulses; ++i){
              pulses_detected[i] = other.pulses_detected[i];
          }
      }
@@ -4986,7 +4989,7 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
          }
          if(other.pulses_detected){
              pulses_detected = new PulseDetected[size];
-             for (unsigned int i = 0; i < ndetpulses; ++i){
+             for (int i = 0; i < ndetpulses; ++i){
                  pulses_detected[i] = other.pulses_detected[i];
              }
          }
@@ -5001,59 +5004,3 @@ extern "C" unsigned checksum(void *buffer, size_t len, unsigned int seed)
      }
  }
  
- extern "C" void calculateAverageRecord(TesRecord* record, int lastRecord, int *nrecordOK, gsl_vector **averageRecord, int* const status)
- {
-     gsl_vector *currentRecord = gsl_vector_alloc(record->trigger_size);
-     for (int i=0;i<record->trigger_size;i++)
-     {
-         gsl_vector_set(currentRecord,i,record->adc_double[i]);
-     }
-     int index = 0;
-     do 
-     {
-         index++;
-     } while (gsl_vector_get(currentRecord,index-1) < 2000);
-     if ((index-1<995) || (index-1>1005))
-     {
-         if (lastRecord == 1)    gsl_vector_scale(*averageRecord,1.0/(*nrecordOK));
-         
-         return;
-     }
-     else 
-     {
-         gsl_vector_add(*averageRecord,currentRecord);
-         *nrecordOK = *nrecordOK+1;
-         if (lastRecord == 1)    gsl_vector_scale(*averageRecord,1.0/(*nrecordOK));
-         
-         return;
-     }
- }
- 
- extern "C" void calculateRecordsError(TesRecord* record, int nrecord, gsl_vector *averageRecord, int* const status)
- {
-     gsl_vector *currentRecord = gsl_vector_alloc(record->trigger_size);
-     double sum = 0;
-     double std;
-     for (int i=0;i<record->trigger_size;i++)
-     {
-         gsl_vector_set(currentRecord,i,record->adc_double[i]);
-     }
-     int index = 0;
-     do 
-     {
-         index++;
-     } while (gsl_vector_get(currentRecord,index-1) < 2000);
-     if ((index-1<995) || (index-1>1005))
-         return;
-     else
-     {
-         for (int i=0;i<record->trigger_size;i++)
-         {
-             sum = sum + pow(record->adc_double[i]-gsl_vector_get(averageRecord,i),2.0);
-         }
-         
-         std = sqrt(sum/(record->trigger_size)); 
-         
-         return;
-     }
- }

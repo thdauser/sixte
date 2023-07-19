@@ -604,8 +604,7 @@ typedef struct ReconstructInitSIRENA
 extern "C"
 #endif
 void th_end(ReconstructInitSIRENA* reconstruct_init,
-            PulsesCollection** pulsesAll, 
-            OptimalFilterSIRENA** optimalFilter);
+            PulsesCollection** pulsesAll);
 
 #ifdef __cplusplus
 extern "C"
@@ -625,7 +624,7 @@ void freeReconstructInitSIRENA(ReconstructInitSIRENA* reconstruct_init);
 #ifdef __cplusplus
 extern "C"
 #endif
-ReconstructInitSIRENA* newReconstructInitSIRENA(int* const status);
+ReconstructInitSIRENA* newReconstructInitSIRENA();
 
 #ifdef __cplusplus
 extern "C"
@@ -660,7 +659,7 @@ void initializeReconstructionSIRENA(ReconstructInitSIRENA* reconstruct_init,
 #ifdef __cplusplus
 extern "C"
 #endif
-PulsesCollection* newPulsesCollection(int* const status);
+PulsesCollection* newPulsesCollection();
 
 #ifdef __cplusplus
 extern "C"
@@ -670,7 +669,7 @@ void freePulsesCollection(PulsesCollection* PulsesColl);
 #ifdef __cplusplus
 extern "C"
 #endif
-OptimalFilterSIRENA* newOptimalFilterSIRENA(int* const status);
+OptimalFilterSIRENA* newOptimalFilterSIRENA();
 
 #ifdef __cplusplus
 extern "C"
@@ -680,7 +679,7 @@ void freeOptimalFilterSIRENA(OptimalFilterSIRENA* PulsesColl);
 #ifdef __cplusplus
 extern "C"
 #endif
-void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, OptimalFilterSIRENA **optimalFilter, int* const status);
+void reconstructRecordSIRENA(TesRecord* record, int trig_reclength, TesEventList* event_list, ReconstructInitSIRENA* reconstruct_init, int lastRecord, int nRecord, PulsesCollection **pulsesAll, int* const status);
 
 #ifdef __cplusplus
 extern "C"
@@ -690,16 +689,6 @@ void IntegrafreeTesEventListSIRENA(TesEventList* event_list);
 LibraryCollection* getLibraryCollection(const char* const filename, int opmode, int hduPRECALWN, int hduPRCLOFWM, int largeFilter, char *filter_domain, int pulse_length, char *energy_method, char *ofnoise, char *filter_method, char oflib, char **ofinterp, double filtEev, int lagsornot, int preBuffer, gsl_vector *pBi, gsl_vector *posti, int* const status);
 
 NoiseSpec* getNoiseSpec(const char* const filename,int opmode,int hduPRCLOFWM,char *energy_method,char *ofnoise,char *filter_method,int* const status);
-
-#ifdef __cplusplus
-extern "C"
-#endif
-void calculateAverageRecord(TesRecord* record, int lastRecord, int *nrecordOK, gsl_vector **averageRecord, int* const status);
-
-#ifdef __cplusplus
-extern "C"
-#endif
-void calculateRecordsError(TesRecord* record, int nrecord, gsl_vector *averageRecord, int* const status);
 
 #ifdef __cplusplus
 extern "C"

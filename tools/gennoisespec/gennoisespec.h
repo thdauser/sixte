@@ -46,6 +46,7 @@
         #include "headas_main.c"
 	
 	#include <time.h>
+	#include <boost/progress.hpp>
         
 struct Parameters {
     
@@ -168,6 +169,8 @@ struct Parameters {
 	int weightMS=0;
         
 //AUXILIARY VARIABLES
+
+	unique_ptr<boost::progress_display> p_show_progress;
 
 	int hdunum;
 	int real_data = 0;

@@ -531,11 +531,11 @@ int tesreconstruction_main() {
     
     // Initialize SIRENA data structures needed for pulse filtering
     //-------------------------------------------------------------
-    ReconstructInitSIRENA* reconstruct_init_sirena = newReconstructInitSIRENA(&status);
+    ReconstructInitSIRENA* reconstruct_init_sirena = newReconstructInitSIRENA();
     CHECK_STATUS_BREAK(status);
-    PulsesCollection* pulsesAll = newPulsesCollection(&status);
+    PulsesCollection* pulsesAll = newPulsesCollection();
     CHECK_STATUS_BREAK(status);  
-    OptimalFilterSIRENA* optimalFilter = newOptimalFilterSIRENA(&status);
+    OptimalFilterSIRENA* optimalFilter = newOptimalFilterSIRENA();
     CHECK_STATUS_BREAK(status);// define a second structure for calibration
     
     if ((par.opmode ==1) || ((par.opmode == 0) && (par.preBuffer == 1)))
@@ -581,9 +581,6 @@ int tesreconstruction_main() {
                     printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
                     gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
                 }
-                /*printf("%s %f %s","0pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
-                printf("%s %f %s","post=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,1),"\n");
-                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");*/
             }
         }
         else if(((det->nrecons != 0) && (det->npix == 0)) || ((det->nrecons == 1) && (det->npix == 1)))
@@ -614,9 +611,6 @@ int tesreconstruction_main() {
                     printf("%s","Attention: preBuffer!=0 for low resolution (filter length 8) but preBuffer=0 is going to be used\n");
                     gsl_matrix_set(reconstruct_init_sirena->grading->gradeData,i,2,0);
                 }
-                /*printf("%s %f %s","1pre=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,0),"\n");
-                printf("%s %f %s","post=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,1),"\n");
-                printf("%s %f %s","pB=",gsl_matrix_get(reconstruct_init_sirena->grading->gradeData,i,2),"\n");*/
             }
         }
         
@@ -726,7 +720,7 @@ int tesreconstruction_main() {
                                 
                                     //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
                                     reconstructRecordSIRENA(record,trig_reclength,event_list,reconstruct_init_sirena,
-                                                            lastRecord, startRecordGroup, &pulsesAll, &optimalFilter, &status);
+                                                            lastRecord, startRecordGroup, &pulsesAll, &status);
                             }
                             CHECK_STATUS_BREAK(status);
 
@@ -746,7 +740,8 @@ int tesreconstruction_main() {
                     } // while getNextRecord
                     if(is_threading()) 
                     {
-                            th_end(&reconstruct_init_sirena, &pulsesAll, &optimalFilter);
+                            //th_end(&reconstruct_init_sirena, &pulsesAll);
+                            th_end(reconstruct_init_sirena, &pulsesAll);
                             int i = 1;
                             int aux = 1;
                             while((aux = th_get_event_list(&event_list, &record)) == 1)
@@ -873,7 +868,7 @@ int tesreconstruction_main() {
                         
                             //printf("%s %d %s","**TESRECONSTRUCTION nrecord = ",nrecord,"\n");
                             reconstructRecordSIRENA(record,trig_reclength, event_list,reconstruct_init_sirena,
-                                                    lastRecord, startRecordGroup, &pulsesAll, &optimalFilter, &status);
+                                                    lastRecord, startRecordGroup, &pulsesAll, &status);
                     }
                     CHECK_STATUS_BREAK(status);
 
@@ -898,7 +893,8 @@ int tesreconstruction_main() {
             if(is_threading()) 
             {
                     //printf("%s","**Threading...waiting \n");
-                    th_end(&reconstruct_init_sirena, &pulsesAll, &optimalFilter);
+                    //th_end(&reconstruct_init_sirena, &pulsesAll);
+                    th_end(reconstruct_init_sirena, &pulsesAll);
                     int i = 1;
                     int aux = 1;
                     while((aux = th_get_event_list(&event_list, &record)) == 1)
@@ -1228,7 +1224,7 @@ int getpar(struct Parameters* const par)
       
       MyAssert((par->opmode == 0) || (par->opmode == 1), "opmode must be 0 or 1");
       int isNumber = 1;
-      for (int i = 0; i < strlen(par->tstartPulse1); i++) 
+      for (int i = 0; i < (int)(strlen(par->tstartPulse1)); i++)
       {
           if (isdigit(par->tstartPulse1[i]) == 0)    
           {
@@ -1375,16 +1371,10 @@ int checkXmls(struct Parameters* const par)
     char *libheaderPrimary = NULL;
     char *xml_pointer = NULL;
     char *XMLFile_pointer = NULL;
-    char *HISTORY_pointer = NULL;
-    char *space_pointer = NULL;
-    //char *slash_pointer = NULL;
     char libXMLfile[1024] = "x";
-    char libXMLfile1[1024] = "x";
     char libXMLfile2[1024] = "x";
     char wholelibXMLfile[1024] = "x";
-    char charAux[1024] = "x";
     char reconsXMLfile[1024] = "x";
-    int lengthstr = 0;
 
     // Move to "Primary" HDU of the library file
     fits_open_file(&libptr, par->LibraryFile, READONLY, &status);
@@ -1406,37 +1396,26 @@ int checkXmls(struct Parameters* const par)
     }
 
     xml_pointer = strstr(libheaderPrimary,".xml");
-    //printf("%s %s","xml_pointer0: ","\n");
-    //printf(xml_pointer);
     if(!xml_pointer)
     {
         SIXT_ERROR("XML file info not included in Primary HDU in library file");
         return(EXIT_FAILURE);
     }
     XMLFile_pointer = strstr(libheaderPrimary,"XMLFile = ");
-    //printf("%s %s","XMLFile_pointer0: ","\n");
-    //printf(XMLFile_pointer);
     if(!XMLFile_pointer)
     {
         SIXT_ERROR("XML file info not included in Primary HDU in library file");
         return(EXIT_FAILURE);
     }
     strncpy(wholelibXMLfile,XMLFile_pointer+10,xml_pointer-XMLFile_pointer-10+4);  // 10 -> "XMLFile = ", 4 -> ".xml"
-    //strcpy(wholelibXMLfile,"GSHISTORY P53 FCHISTORY P133 _rl8192_pB450.xml");
-    //strcpy(wholelibXMLfile,"GSFCHISTORY P133 _rl8192_pB450.xml");
-    //strcpy(wholelibXMLfile,"GSFC_rl8192_pB450.xml");
-    //printf("%s %s","wholelibXMLfile: ","\n");
-    //printf("%s %s",wholelibXMLfile,"\n");
 
     int HISTORYnum = 0;
     int k;
     int lengthTOTAL = (int)strlen(wholelibXMLfile);
     int spaces[lengthTOTAL];
-    //printf("%s %d %s","lengthTOTAL=: ",lengthTOTAL,"\n");
     k=0;
     do
     {
-        //printf("%s %c %s","wholelibXMLfile(k)",wholelibXMLfile[k],"\n");
         if(wholelibXMLfile[k]==' ')
         {
             if (HISTORYnum % 2 == 0)
@@ -1449,17 +1428,11 @@ int checkXmls(struct Parameters* const par)
             }
 
             HISTORYnum++;
-            //printf("%s %d %s","k_' '=: ",k,"\n");
         }
         k++;
     }while(k<=lengthTOTAL);
 
-    //for (int i=0;i<HISTORYnum;i++)
-    //    printf("%s %d %s","white spaces: ",spaces[i],"\n");
-
     if (HISTORYnum != 0) HISTORYnum = HISTORYnum/2;
-
-    //printf("%s %d %s","Numero de HISTORY: ",HISTORYnum,"\n");
 
     if (HISTORYnum == 0)
     {
@@ -1511,7 +1484,6 @@ int checkXmls(struct Parameters* const par)
           return -1;
     }
     len_libXMLfile = fread(buf_libXMLfile, sizeof(char), sizeof(buf_libXMLfile), fp_libXMLfile);
-    //printf("%d bytes read\n", len_libXMLfile);
     checksum_libXMLfile = checksum(buf_libXMLfile, len_libXMLfile, 0);
 
 
@@ -1521,7 +1493,6 @@ int checkXmls(struct Parameters* const par)
           return -1;
     }
     len_reconsXMLfile = fread(buf_reconsXMLfile, sizeof(char), sizeof(buf_reconsXMLfile), fp_reconsXMLfile);
-    //printf("%d bytes read\n", len_reconsXMLfile);
     checksum_reconsXMLfile = checksum(buf_reconsXMLfile, len_reconsXMLfile, 0);
 
     if (checksum_libXMLfile == checksum_reconsXMLfile) status = 0;
