@@ -7,8 +7,6 @@ scaleFactor,r,h,0,,,"Scale factor to apply to make possible a varying cut-off fr
 samplesUp,r,h,3,,,"Consecutive samples that the signal must cross over the threshold to trigger a pulse detection"
 nSgms,r,h,3.5,,,"Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm"
 pulse_length,i,h,8192,,,"Pulse length in samples (to establish what part of the record is rejected due to a found pulse)"
-LrsT,r,h,30E-6,,,"Running sum (RS) length for the RS-filtering for raw energy estimation, in seconds"
-LbT,r,h,6.4E-3,,,"Baseline averaging length for the RS-filtering for raw energy estimation, in seconds"
 weightMS,b,h,no,,,"Calculate and write the weight matrixes if weightMS=yes"
 EnergyMethod,s,h,"OPTFILT",,,"Transform to resistance space (I2R or I2RFITTED) or not (OPTFILT)"
 Ifit,r,h,0.0,,,"Constant to apply the I2RFITTED conversion"

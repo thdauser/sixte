@@ -77,12 +77,6 @@ struct Parameters {
     //Pulse length in samples
 	int pulse_length;
         
-    //Running sum (RS) length for the RS-filtering for raw energy estimation, in seconds
-	double LrsT;
-	
-	//Baseline averaging length for the RS-filtering for raw energy estimation, in seconds
-	double LbT;
-        
     //Calculate and write the weight matrixes if weightMS=yes
 	char weightMS;
         
@@ -163,8 +157,6 @@ struct Parameters {
     struct Parameters par;
     
 	int intervalMinBins;		// Minimum length of a pulse-free interval (bins)
-	double Lrs;			// LrsT in samples
-	double Lb;			// LbT in samples
 	
 	int weightMS=0;
         
@@ -242,7 +234,6 @@ struct Parameters {
 		gsl_vector *vectorinDER,
 		gsl_vector **tstart,
 		gsl_vector **quality,
-		gsl_vector **energy,
 
 		int *nPulses,
 		double *threshold,
@@ -253,9 +244,6 @@ struct Parameters {
 
 		int samplesup,
 		double nsgms,
-
-		double lb,
-		double lrs,
 
 		double stopcriteriamkc,
 		double kappamkc);

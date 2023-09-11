@@ -87,8 +87,6 @@
   * - samplesUp: Consecutive samples over the threshold to locate a pulse
   * - nSgms: Number of Sigmas to establish the threshold
   * - pulse_length: Pulse length (samples)
-  * - LrsT: Running sum length in seconds 
-  * - LbT: Baseline averaging length in seconds
   * - weightMS: Calculate and write the weight matrixes if weightMS=yes
   * - EnergyMethod: Transform to resistance space (I2R or I2RFITTED) or not (OPTFILT)
   * - clobber: Re-write output files if clobber=yes
@@ -832,10 +830,6 @@
      asquid = 1.0;
      plspolar = 1.0;
      
-     // Initialize variables and transform from seconds to samples
-     Lrs = par.LrsT * samprate;
-     Lb = par.LbT * samprate;
-     
      // Declare variables
      intervalMinBins = par.intervalMinSamples;
      if (intervalMinBins > eventsz)
@@ -1321,7 +1315,6 @@
      
      gsl_vector *tstartgsl = gsl_vector_alloc(eventsz);
      gsl_vector *qualitygsl = gsl_vector_alloc(eventsz);
-     gsl_vector *energygsl = gsl_vector_alloc(eventsz);
      int nPulses;
      double threshold;
      double cutFreq;
@@ -1444,11 +1437,10 @@
          }
          
          //Finding the pulses: Pulses tstarts are found
-         if (findPulsesNoise (ioutgslNOTFIL, ioutgsl_aux, &tstartgsl, &qualitygsl, &energygsl,
+         if (findPulsesNoise (ioutgslNOTFIL, ioutgsl_aux, &tstartgsl, &qualitygsl, 
              &nPulses, &threshold,
              par.scaleFactor, par.pulse_length, samprate,
              par.samplesUp, par.nSgms,
-             Lb, Lrs,
              stopCriteriaMKC,
              kappaMKC))
          {
@@ -1865,24 +1857,6 @@
          EP_PRINT_ERROR(message,status); return(EPFAIL);
      }
      
-     char str_LrsT[125];			sprintf(str_LrsT,"%f",par.LrsT);
-     strhistory=string("LrsT = ") + string(str_LrsT);
-     strcpy(keyvalstr,strhistory.c_str());
-     if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
-     {
-         message = "Cannot write keyword " + string(keyname) + " in noise file " + string(par.outFile);
-         EP_PRINT_ERROR(message,status); return(EPFAIL);
-     }
-     
-     char str_LbT[125];			sprintf(str_LbT,"%f",par.LbT);
-     strhistory=string("LbT = ") + string(str_LbT);
-     strcpy(keyvalstr,strhistory.c_str());
-     if (fits_write_key(gnoiseObject,TSTRING,keyname,keyvalstr,comment,&status))
-     {
-         message = "Cannot write keyword " + string(keyname) + " in noise file " + string(par.outFile);
-         EP_PRINT_ERROR(message,status); return(EPFAIL);
-     }
-     
      char str_weightMS[125];      sprintf(str_weightMS,"%d",par.weightMS);
      strhistory=string("weightMS = ") + string(str_weightMS);
      strcpy(keyvalstr,strhistory.c_str());
@@ -2250,9 +2224,7 @@
   * 
   * - Declare variables
   * - Establish the threshold (call medianKappaClipping)
-  * - Find pulses (call findTstartNoise)
-  * - If at least a pulse is found
-  * 	- Get the 'pulseheight' of each found pulse 
+  * - Find pulses (call findTstartNoise) 
   * - Free allocated GSL vectors
   *
   * Parameters:
@@ -2267,8 +2239,6 @@
   * - samplingRate: Sampling rate
   * - samplesup: Number of consecutive samples over the threshold to locate a pulse ('samplesUp')
   * - nsgms: Number of Sigmas to establish the threshold
-  * - lb: Vector containing the baseline averaging length used for each pulse
-  * - lrs: Running sum length (equal to the 'Lrs' global_variable)
   * - stopCriteriamkc: Used in medianKappaClipping_noiseSigma (%)
   * - kappamkc: Used in medianKappaClipping_noiseSigma
   * 
@@ -2279,7 +2249,6 @@
   gsl_vector *vectorinDER,
   gsl_vector **tstart,
   gsl_vector **quality,
-  gsl_vector **energy,
   
   int *nPulses,
   double *threshold,
@@ -2291,9 +2260,6 @@
   int samplesup,
   double nsgms,
   
-  double lb,
-  double lrs,
-  
   double stopcriteriamkc,
   double kappamkc)
  {
@@ -2302,25 +2268,11 @@
      const double pi = 4.0 * atan(1.0);
      
      // Declare variables
-     int pulseFound;
      double thresholdmediankappa;	// Threshold to look for pulses in the first derivative
      
      gsl_vector *maxDERgsl = gsl_vector_alloc(vectorinDER->size);
-     gsl_vector *index_maxDERgsl = gsl_vector_alloc(vectorinDER->size);
-     
-     gsl_vector *Lbgsl = gsl_vector_alloc(vectorinDER->size);	// If there is no free-pulses segments longer than Lb=>
-     gsl_vector_set_all(Lbgsl,lb);                                   // segments shorter than Lb will be useed and its length (< Lb)
-     // must be used instead Lb in RS_filter
-     gsl_vector *Bgsl = gsl_vector_alloc(vectorinDER->size);
-     gsl_vector_set_all(Bgsl,-999); 
-     gsl_vector *sigmagsl = gsl_vector_alloc(vectorinDER->size);
-     gsl_vector_set_all(sigmagsl,-999); 
-     
+      
      gsl_vector_set_zero(*quality);
-     gsl_vector_set_zero(*energy);					// Estimated energy of the single pulses
-     // In order to choose the proper pulse template to calculate
-     // the adjusted derivative and to fill in the Energy column
-     // in the output FITS file
      
      // First step to look for single pulses: Establish the threshold (call medianKappaClipping)
      if (medianKappaClipping (vectorinDER, kappamkc, stopcriteriamkc, nsgms, (int)(pi*samplingRate*scalefactor), &thresholdmediankappa))
@@ -2335,43 +2287,9 @@
          message = "Cannot run findTstartNoise with two rows in models";
          EP_PRINT_ERROR(message,EPFAIL);
      }
-     
-     if (*nPulses != 0)
-     {
-         if (getB(vectorin, *tstart, *nPulses, &Lbgsl, sizepulsebins, &Bgsl, &sigmagsl))
-         {
-             message = "Cannot run getB routine with opmode=0 & nPulses != 0";
-             EP_PRINT_ERROR(message,EPFAIL);
-         }
-         double energyaux = gsl_vector_get(*energy,0);
-         for (int i=0;i<*nPulses;i++)
-         {
-             if (i != *nPulses-1)	// Not last pulse in the record
-             {
-                 if (getPulseHeight(vectorin, gsl_vector_get(*tstart,i), gsl_vector_get(*tstart,i+1), 0, lrs, gsl_vector_get(Lbgsl,i), gsl_vector_get(Bgsl,i), sizepulsebins, &energyaux))
-                 {
-                     message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is not the last pulse";
-                     EP_PRINT_ERROR(message,EPFAIL);
-                 }
-             }
-             else
-             {
-                 if (getPulseHeight(vectorin, gsl_vector_get(*tstart,i), gsl_vector_get(*tstart,i+1), 1, lrs, gsl_vector_get(Lbgsl,i), gsl_vector_get(Bgsl,i), sizepulsebins, &energyaux))
-                 {
-                     message = "Cannot run getPulseHeight routine when pulse i=" + boost::lexical_cast<std::string>(i) + " is the last pulse";
-                     EP_PRINT_ERROR(message,EPFAIL);
-                 }
-             }
-             gsl_vector_set(*energy,i,energyaux);
-         }
-     }
-     
+       
      // Free allocated GSL vectors
      if (maxDERgsl != NULL)      {gsl_vector_free(maxDERgsl); maxDERgsl = 0;}
-     if (index_maxDERgsl != NULL)       {gsl_vector_free(index_maxDERgsl); index_maxDERgsl = 0;}
-     if (Lbgsl != NULL)      {gsl_vector_free(Lbgsl); Lbgsl = 0;}
-     if (Bgsl != NULL)       {gsl_vector_free(Bgsl); Bgsl = 0;}
-     if (sigmagsl != NULL)       {gsl_vector_free(sigmagsl); sigmagsl = 0;}
      
      return(EPOK);
  }
@@ -2847,18 +2765,6 @@
      status=ape_trad_query_int("pulse_length", &par->pulse_length);
      if (EXIT_SUCCESS!=status) {
          message = "failed reading the pulse_length parameter";
-         EP_EXIT_ERROR(message,EPFAIL);
-     }
-     
-     status=ape_trad_query_double("LrsT", &par->LrsT);
-     if (EXIT_SUCCESS!=status) {
-         message = "failed reading the LrsT parameter";
-         EP_EXIT_ERROR(message,EPFAIL);
-     }
-     
-     status=ape_trad_query_double("LbT", &par->LbT);
-     if (EXIT_SUCCESS!=status) {
-         message = "failed reading the LbT parameter";
          EP_EXIT_ERROR(message,EPFAIL);
      }
      
