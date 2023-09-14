@@ -98,10 +98,6 @@ struct Parameters {
 	//Boolean to choose to save the run parameters in the output file
 	char history;
 
-	//Reconstruction Method (PP or SIRENA)
-	char Rcmethod[7];
-	
-	//
 	// SIRENA parameters
 	//
 	//File containing the library

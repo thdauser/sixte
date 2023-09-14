@@ -1,4 +1,3 @@
-Rcmethod,s,h,"SIRENA",,,"Reconstruction method (PP or SIRENA)"
 RecordFile,s,lq,"record.fits",,,"Record FITS file"
 TesEventFile,s,lq,"event.fits",,,"Output event list file"
 #PulseLength,i,h,8192,,,"Pulse length (only necessary when reconstructing with 0-padding)"
@@ -6,19 +5,7 @@ OFLengthNotPadded,i,h,8192,,,"Filter length not padded with 0s (only necessary w
 EventListSize,i,h,1000,,,"Default size of the event list"
 clobber,b,h,yes,,,"Overwrite or not output files if exist (yes/no)"
 history,b,h,yes,,,"write program parameters into output file?"
-#
-# PP reconstruction method
-#
-SaturationValue,r,h,65534.,,,"Saturation level of the ADC curves"
-OptimalFilterFile,s,h,"optimal_filters.fits",,,"Optimal filters file"
-PulseTemplateFile,s,h,"pulse.fits",,,"Pulse template file"
-Threshold,r,h,40.,,,"Threshold level"
-Calfac,r,h,1.61403237679,,,"Calibration factor (should be read from the xml file)"
-NormalExclusion,i,h,32,,,"Minimal distance before using OFs after a misreconstruction"
-DerivateExclusion,i,h,8,,,"Minimal distance before reconstructing any event after a misreconstruction"
-#
-# SIRENA reconstruction method
-# 
+
 LibraryFile,s,h,"library.fits",,,"File with calibration library"
 scaleFactor,r,h,0,,,"Detection scale factor for initial filtering"
 samplesUp,i,h,3,,,"Number of consecutive samples up for threshold trespassing (only used in calibration run, and in production run with STC detection mode)"
