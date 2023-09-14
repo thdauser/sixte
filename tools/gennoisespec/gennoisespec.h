@@ -46,6 +46,7 @@
         #include "headas_main.c"
 	
 	#include <time.h>
+    #include <memory>
 	#include <boost/progress.hpp>
         
 struct Parameters {
