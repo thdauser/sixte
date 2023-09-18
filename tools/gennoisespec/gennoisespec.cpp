@@ -56,7 +56,6 @@
   *******************************************************************************/
  
  #include <gennoisespec.h>
- #include "healog.h"
  #include <tasksSIRENA.h>
  
  #include "versionSIRENA.h"
