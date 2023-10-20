@@ -22,33 +22,32 @@
    ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
 
 ***********************************************************************
-*                      TESRECONSTRUCTION
+*                      TESRECONS
 *
-*  File:       tesreconstruction.h
+*  File:       tesrecons.h
 *  Developers: Beatriz Cobo
 * 	           cobo@ifca.unican.es
 *              IFCA
 *              Maite Ceballos
 *              ceballos@ifca.unican.es
 *              IFCA
-*              Philippe Peille, IRAP
 *                                                                     
 ***********************************************************************/
 
-#ifndef TESRECONSTRUCTION_H
-#define TESRECONSTRUCTION_H 1
+#ifndef TESRECONS_H
+#define TELIB_H 1
 
 #include "initSIRENA.h"
 
 #include "gti.h"
 
-#define TOOLSUB tesreconstruction_main
+#define TOOLSUB tesrecons_main
 #include "headas_main.c"
 
 #include "versionSIRENA.h"
 
 #include <time.h>
 
-int getpar(struct Parameters* const par);
+int getpar_tesrecons(struct Parameters* const par);
 
-#endif /* TESRECONSTRUCTION_H */
+#endif /* TESRECONS_H */

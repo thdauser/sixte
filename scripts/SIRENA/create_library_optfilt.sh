@@ -49,15 +49,19 @@ tempeV=6000. # (energy of optimal filter (eV)
 noise_spec="mynoise.spec"
 temp_sim="myTemp.fits"
 libfile="myLib.fits"
+xmlfile="${XIFUSIM}/share/xifusim/instruments/1pix_lpa2.5a_fll_SIRENAintegration.xml"
 
 # Use noise spectrum and pulses for template and create a library of optimal filters
-tesreconstruction Recordfile=${temp_sim} \
+#echo "teslib Recordfile=${temp_sim} TesEventFile=myLibEvents.fits monoenergy=${tempeV} LibraryFile=${libfile} largeFilter=${largeFilter} NoiseFile=${noise_spec} XMLFile=${xmlfile}"
+teslib Recordfile=${temp_sim} \
                                     TesEventFile=myLibEvents.fits\
                                     monoenergy=${tempeV} \
                                     LibraryFile=${libfile} \
                                     largeFilter=${largeFilter} \
-                                    opmode=0 \
-                                    NoiseFile=${noise_spec}
+                                    NoiseFile=${noise_spec} \
+                                    XMLFile=${xmlfile} \
+                                    preBuffer=n
+ 
                             
                                 
                             

@@ -1,0 +1,51 @@
+###########################################################################################
+#Parameters used to build the library:
+###########################################################################################
+RecordFile,s,lq,"record.fits",,,"Record FITS file"
+TesEventFile,s,lq,"event.fits",,,"Output event list file"
+LibraryFile,s,h,"library.fits",,,"File with calibration library"
+XMLFile,s,h,"xifu_pipeline.xml",,,"XML input FITS file with instrument definition"
+preBuffer,b,h,no,,,"Some samples added or not before the starting time of a pulse (number of added samples read from the xml file)"
+EventListSize,i,h,1000,,,"Default size of the event list"
+clobber,b,h,yes,,,"Overwrite or not output files if exist (yes/no)"
+history,b,h,yes,,,"write program parameters into output file?"
+
+scaleFactor,r,h,0,,,"Detection scale factor for initial filtering"
+samplesUp,i,h,3,,,"Number of consecutive samples up for threshold trespassing (only used with STC detection mode)"
+samplesDown,i,h,4,,,"Number of consecutive samples below the threshold to look for other pulse (only used with STC detection mode)"
+nSgms,r,h,3.5,,,"Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm"
+detectionMode,s,h,"STC",,,"Adjusted Derivative (AD) or Single Threshold Crossing (STC)"
+detectSP,i,h,1,,,"Detect secondary pulses (1) or not (0)"
+
+LbT,r,h,6.4E-3,,,"Baseline averaging length (seconds)"
+
+intermediate,i,h,0,,,"Write or not intermediate files (1/0)"
+detectFile,s,h,"detections.fits",,,"Intermediate detections file name (if intermediate=1)"
+
+FilterDomain,s,h,"T",,,"Filtering Domain: Time (T) or Frequency (F)"
+#FilterMethod,s,h,"F0",,,"Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)"
+FilterMethod,s,h,"F0",,,"Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)"
+EnergyMethod,s,h,"OPTFILT",,,"Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA"
+filtEeV,r,h,6000,,,"Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R and I2RFITTED)"
+Ifit,r,h,0.0,,,"Constant to apply the I2RFITTED conversion"
+
+OFNoise,s,h,"NSD",,,"Noise to use with Optimal Filtering: NSD or WEIGHTM"
+
+LagsOrNot,i,h,1,,,"Lags or no lags (1/0)"
+nLags,i,h,9,,,"Number of lags (positive odd number)"
+
+Fitting35,i,h,3,,,"Number of lags to analytically calculate a parabola (3) or to fit a parabola (5)"
+OFIter,i,h,0,,,"Iterate or not iterate (1/0)"
+
+OFLib,b,h,yes,,,"Work or not with a library (yes/no)"
+OFStrategy,s,h,"BYGRADE",,,"Optimal Filter length Strategy: FREE, BYGRADE or FIXED"
+OFLength,i,h,8192,,,"Optimal Filter length (taken into account if OFStrategy=FIXED)"
+OFLengthNotPadded,i,h,8192,,,"Filter length not padded with 0s (only necessary when reconstructing with 0-padding)"
+
+errorT,i,h,0,,,"Additional error (in samples) added to the detected time"  # Logically, it changes the reconstructed energies
+Sum0Filt,i,h,0,,,"0-padding: Subtract the sum of the filter (1) or not (0)"
+tstartPulse1,s,h,"0",,,"Integer number: Sample where the first pulse starts or nameFile: File where the tstart (in seconds) of every pulse is"
+tstartPulse2,i,h,0,,,"Tstart (samples) of the second pulse"
+tstartPulse3,i,h,0,,,"Tstart (samples) of the third pulse (if 0 => PAIRS, if not 0 => TRIOS)"
+energyPCA1,r,h,500,,,"First energy (only for PCA)"
+energyPCA2,r,h,1000,,,"Second energy (only for PCA)"

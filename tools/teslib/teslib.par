@@ -1,0 +1,38 @@
+###########################################################################################
+#Parameters used to build the library:
+###########################################################################################
+RecordFile,s,lq,"record.fits",,,"Record FITS file"
+TesEventFile,s,lq,"event.fits",,,"Output event list file"
+LibraryFile,s,h,"library.fits",,,"File with calibration library"
+NoiseFile,s,h,"noise.fits",,,"Noise FITS file with noise spectrum"
+XMLFile,s,h,"xifu_pipeline.xml",,,"XML input FITS file with instrument definition"
+preBuffer,b,h,no,,,"Some samples added or not before the starting time of a pulse (number of added samples read from the xml file)"
+EventListSize,i,h,1000,,,"Default size of the event list"
+clobber,b,h,yes,,,"Overwrite or not output files if exist (yes/no)"
+history,b,h,yes,,,"write program parameters into output file?"
+
+scaleFactor,r,h,0,,,"Detection scale factor for initial filtering"
+samplesUp,i,h,3,,,"Number of consecutive samples up for threshold trespassing (only used in calibration run, and in production run with STC detection mode)"
+nSgms,r,h,3.5,,,"Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm"
+
+LrsT,r,h,30E-6,,,"Running sum length for the RS raw energy estimation (seconds)"
+LbT,r,h,6.4E-3,,,"Baseline averaging length (seconds)"
+
+monoenergy,r,h,6000.,,,"Monochromatic energy of the pulses in the input FITS file in eV (only for library creation)"
+
+hduPRECALWN,b,h,no,,,"Add or not the PRECALWN HDU in the library file (yes/no) (only for library creation)"
+hduPRCLOFWM,b,h,no,,,"Add or not the PRCLOFWM HDU in the library file (yes/no) (only for library creation)"
+largeFilter,i,h,8192,,,"Length of the longest fixed filter (only for library creation)"
+
+FilterDomain,s,h,"T",,,"Filtering Domain: Time (T) or Frequency (F)"
+#FilterMethod,s,h,"F0",,,"Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)"
+FilterMethod,s,h,"F0",,,"Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)"
+EnergyMethod,s,h,"OPTFILT",,,"Energy calculation Method: OPTFILT, I2R or I2RFITTED"
+Ifit,r,h,0.0,,,"Constant to apply the I2RFITTED conversion"
+
+intermediate,i,h,0,,,"Write or not intermediate files (1/0)"
+detectFile,s,h,"detections.fits",,,"Intermediate detections file name (if intermediate=1)"
+
+tstartPulse1,s,h,"0",,,"Integer number: Sample where the first pulse starts or nameFile: File where the tstart (in seconds) of every pulse is"
+tstartPulse2,i,h,0,,,"Tstart (samples) of the second pulse"
+tstartPulse3,i,h,0,,,"Tstart (samples) of the third pulse (if 0 => PAIRS, if not 0 => TRIOS)"

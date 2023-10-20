@@ -1853,7 +1853,7 @@ int findPulsesCAL
 
     /*cout<<"threshold: "<<*threshold<<endl;
     cout<<"DERIVATIVE:"<<endl;
-	for (int i=400;i<1400;i++)
+	for (int i=990;i<1010;i++)
     {
         cout<<i<<" "<<gsl_vector_get(vectorinDER,i)<<endl;
     }*/

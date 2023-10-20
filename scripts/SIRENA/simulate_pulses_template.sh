@@ -78,6 +78,15 @@ tesconstpileup PixImpList=${temp_imp} \
 #----------------------------------------------------------------------------
 # (if data have been simulated with TESSIM)
 pixfile='file:${SIXTE}/share/sixte/instruments/athena-xifu/newpix_LPA75um.fits'
+pixfile='file:mypixel_configuration.fits'
+######################################################################################################################
+# From SIXTE manual: Input parameters of the model are the heat capacity of the sensor, the properties of the thermal
+# link, the operating point resistance and temperature, and depending on whether the TES is AC- or DC-biased, the ﬁlter
+# inductance and parasitic resistance, or the shunt resistance and the eﬀective inductance of the readout circuit. These
+# input parameters can either be given on the command line using the Parameter Interface Library (PIL) syntax, or can
+# be read from a FITS ﬁle ('mypixel_configuration.fits') with a TESDATASTREAM extension whose header contains the
+# parameters. Such a ﬁle can be obtained by running tessim with the propertiesonly=yes option.
+######################################################################################################################
 triggerType='diff:3:100:${pulse_length}'
 tessim PixID=1 \
                 PixImpList=${temp_imp} \
@@ -104,7 +113,8 @@ xifusim PixImpList=${temp_imp} \
                                 trig_n_pre=${preBuffer} \
                                 trig_n_suppress=${pulse_length} \
                                 simnoise=y \
-                                clobber=yes
+                                clobber=yes \
+                                writeEP=0
                                 
                                 
                                 

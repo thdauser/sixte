@@ -24,13 +24,13 @@ Example of a SIRENA call to reconstruct your previously simulated data.
 
 SIRENA reconstruction requires a table with GRADING parameters to qualify the reconstructed pulses as Very High, High, Intermediate, Medium, Limited or Low resolution. This information was not provided by the xifusim XML files readable by xifusim versions lower than 0.7.0. For this reason 'tessim' or 'xifusim (version <= 0.7.0)' simulated files need and additional XML file to be reconstructed by SIRENA. This file is usually ${SIXTE}/share/sixte/instruments/athena-xifu/xifu_detector_lpa_75um_AR0.5_pixoffset_mux40_pitch275um.xml
 
-For xifusim versions higher than 0.7.0, it is possible to use a single XML file for xifusim simulations and SIRENA reconstructions. In this case, the structure of the XML file should have a root node called 'xifuconfig'   with the 'detector' node being a child thereof. There is also an  optional 'reconstruction' node, on the same level as 'detector'.
+For xifusim versions higher than 0.7.0, it is possible to use a single XML file for xifusim simulations and SIRENA reconstructions. In this case, the structure of the XML file should have a root node called 'xifuconfig' with the 'detector' node being a child thereof. There is also an optional 'reconstruction' node, on the same level as 'detector'.
 
-The 'reconstruction' node may contain keys for ADU to current  conversion. If they are present, they are added by xifusim to the Trigger  output header (useful for the reconstruction in the quasi-resistance space).
+The 'reconstruction' node may contain keys for ADU to current  conversion. If they are present, they are added by xifusim to the Trigger output header (useful for the reconstruction in the quasi-resistance space).
 The old structure with the 'detector' node at root is still supported by xifusim.
 
 Example of 8pix_nobbfb.xml XML file (common for xifusim>0.7.0 and SIRENA):
-==================================================
+==========================================================================
 
 <?xml version="1.0"?>
 
@@ -66,3 +66,49 @@ Example of 8pix_nobbfb.xml XML file (common for xifusim>0.7.0 and SIRENA):
   </reconstruction>
 
 </xifuconfig>
+
+Exampls of an XML file for most recent SIRENA versions:
+=======================================================
+
+<?xml version="1.0"?>
+
+<xifuconfig>
+
+  <detector model="NOMUX" filename="pars_8.fits" hduname="Lin1">
+
+    <TesArray>
+      <TES model="LinTES" filename="pars_lpa2.5a.fits" hduname="LPA2.5a"/>
+    </TesArray>
+
+    <SQUID>
+      <AMPSQUID model="SineSquid" filename="pars_lpa2.5a.fits" hduname="Sine_Both_LPA2.5a"/>
+    </SQUID>
+
+    <WFEE model="LinLNA" filename="pars_lpa2.5a.fits" hduname="LinLNA_LPA2.5a"/>
+
+    <ADC model="LinADC" filename="pars_lpa2.5a.fits" hduname="ADC_12_LPA2.5a"/>
+
+    <DRE model="FLL_DRE" filename="pars_lpa2.5a.fits"  hduname="FLL_LPA2.5a"/>
+
+    <Trigger model="TriggerDiff" filename="pars_lpa2.5a.fits" hduname="TrigLPA2.5a"/>
+
+    <Cables>
+      <Cable loc="SQ1_FB" filt_type="Pass" order="1" fcut="10e6"/>
+      <Cable loc="SSA_FB" filt_type="Pass" order="1" fcut="10e6"/>
+    </Cables>
+
+  </detector>
+
+  <reconstruction>
+    <ADU_to_I I_BIAS="3.989768e-5" ADU_BIAS="7086.5268" ADU_CNV="-8.345369e-9"/>
+
+    <grading num="1" name="vhigh" pre="494" post="7192" filtlen="8192"/>
+    <grading num="2" name="high" pre="494" post="3096" filtlen="4096"/>
+    <grading num="3" name="inter" pre="494" post="1548" filtlen="2048"/>
+    <grading num="4" name="mid" pre="494" post="412" filtlen="512"/>
+    <grading num="5" name="lim" pre="494" post="206" filtlen="256"/>
+    <grading num="6" name="low" pre="494" post="8" filtlen="8"/>
+  </reconstruction>
+
+</xifuconfig>
+

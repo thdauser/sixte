@@ -55,9 +55,10 @@ noise_spec="mynoise.spec"
 
 # 1.2) Create piximpact list to simulate noise streams (both tesconstpileup or tesgenimpacts)
 #----------------------------------------------------------------------------------------
+#echo "tesgenimpacts PixImpList = ${noise_imp} opmode = const tstart = 0 tstop = ${time} EConst = 0. dtau = 1"
 tesgenimpacts \
         PixImpList = ${noise_imp} \
-        mode = const \
+        opmode = const \
         tstart = 0 \
         tstop = ${time} \
         EConst = 0. \
@@ -66,7 +67,17 @@ tesgenimpacts \
 # 1.3) Simulate noise stream (same conditions as those used to simulate data)
 #-----------------------------------------------------------------------
 # 1.3.1) (if your data have been simulated with TESSIM)
-pixfile='file:${SIXTE}/share/sixte/instruments/athena-xifu/newpix_LPA75um.fits'
+#pixfile='file:${SIXTE}/share/sixte/instruments/athena-xifu/newpix_LPA75um.fits'
+pixfile='file:mypixel_configuration.fits'
+######################################################################################################################
+# From SIXTE manual: Input parameters of the model are the heat capacity of the sensor, the properties of the thermal
+# link, the operating point resistance and temperature, and depending on whether the TES is AC- or DC-biased, the ﬁlter
+# inductance and parasitic resistance, or the shunt resistance and the eﬀective inductance of the readout circuit. These
+# input parameters can either be given on the command line using the Parameter Interface Library (PIL) syntax, or can
+# be read from a FITS ﬁle ('mypixel_configuration.fits') with a TESDATASTREAM extension whose header contains the
+# parameters. Such a ﬁle can be obtained by running tessim with the propertiesonly=yes option.
+######################################################################################################################
+#echo "tessim PixID=1 PixImpList=${noise_imp} Streamfile=${noise_sim} tstart=0. tstop=${time} triggertype=noise triggersize=${rlength} prebuffer=0 PixType=${pixfile} acbias=yes"
 tessim PixID=1 \
                 PixImpList=${noise_imp} \
                 Streamfile=${noise_sim} \
@@ -91,6 +102,8 @@ if [ ! -e ${xmlfilenoise} ]; then
     sed -i '/TriggerDiff/c\<Trigger model="TriggerNoise" filename="pars_8.fits" hduname="TrigNoise"/>' ${xmlfilenoise}
 fi
 
+
+#echo "xifusim PixImpList=${noise_imp} Streamfile=${noise_sim} tstop=${time} acbias=no XMLfilename=${xmlfilenoise} trig_reclength=${rlength} trig_n_pre=0 trig_thresh=0. simnoise=y"
 xifusim PixImpList=${noise_imp}\
                                 Streamfile=${noise_sim}\
                                 tstop=${time}\
@@ -99,7 +112,8 @@ xifusim PixImpList=${noise_imp}\
                                 trig_reclength=${rlength}\
                                 trig_n_pre=0 \
                                 trig_thresh=0.\
-                                simnoise=y
+                                simnoise=y \
+                                writeEP=0	# EP is not going to run in XIFUSIM
                                 
 # 1.4) Build noise spectrum
 #--------------------------

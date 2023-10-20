@@ -22,9 +22,9 @@
    ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
 
 ***********************************************************************
-*                      TESRECONSTRUCTION
+*                      TESRECONS
 *
-*  File:       tesreconstruction.c
+*  File:       tesLIB.c
 *  Developers: Beatriz Cobo
 * 	           cobo@ifca.unican.es
 *              IFCA
@@ -35,11 +35,10 @@
 *                                                                     
 ***********************************************************************/
 
-#include "tesreconstruction.h"
-#include <stdlib.h>
+#include "tesrecons.h"
 
 /***** SECTION 1 ************************************
-* MAIN function: This function is mainly a wrapper to pass a data file to the SIRENA tasks in order to reconstruct the energy of the incoming X-ray photons after their detection.
+* MAIN function: This function is mainly a wrapper to pass a data file to the SIRENA tasks in order to reconstruct the energies.
 *
 * The user must supply the following input parameters (.par file).
 * 
@@ -48,53 +47,30 @@
 * - RecordFile: Record FITS file
 *   - If RecordFile starts with '@' it provides a file text containing several record input FITS files
 * - TesEventFile: Output event list file
-* - EventListSize: Default size of the event list
-* - clobber:Overwrite or not output files if exist (1/0)
-* - history: write program parameters into output file
-* 
-* - LibraryFile: File with calibration library
-* - scaleFactor: Detection scale factor for initial filtering
-* - samplesUp: Number of consecutive samples up for threshold trespassing (only used in calibration run, and in production run with STC detection mode)
-* - samplesDown: Number of consecutive samples below the threshold to look for other pulse (only used in production run with STC detection mode)
-* - nSgms: Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm
-* - detectSP: Detect secondary pulses (1) or not (0)
-* - LrsT: Running sum length for the RS raw energy estimation (seconds) (only for library creation)
-* - LbT: Baseline averaging length (seconds)
-* - monoenergy: Monochromatic energy of the pulses in the input FITS file in eV (only for library creation)
-* - hduPRECALWN: Add or not the PRECALWN HDU in the library file (1/0) (only for library creation)
-* - hduPRCLOFWM: Add or not the PRCLOFWM HDU in the library file (1/0) (only for library creation)
-* - largeFilter: Length of the longest fixed filter (only for library creation)
-* - opmode: Calibration run (0) or energy reconstruction run (1)
-* - detectionMode: Adjusted Derivative (AD) or Single Threshold Crossing (STC)
-* - NoiseFile: Noise FITS file with noise spectrum
-* - FilterDomain: Filtering Domain: Time (T) or Frequency (F)
-* - FilterMethod: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)
-* - EnergyMethod: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED, I2RDER or PCA
-* - filtEeV: Energy of the filters of the library to be used to calculate energy (only for OPTFILT, I2R, I2RFITTED and I2RDER)
-* - Ifit: Constant to apply the I2RFITTED conversion
-* - OFNoise: Noise to use with Optimal Filtering: NSD or WEIGHTM
-* - LagsOrNot: Lags or no lags (1/0)
-* - nLags: Number of lags (positive odd number)
-* - Fitting35: Number of lags to analytically calculate a parabola (3) or to fit a parabola (5)
-* - OFIter: Iterate or not iterate (1/0) 
-* - OFLib: Work or not with a library (1/0)
-* - OFStrategy: Optimal Filter length Strategy: FREE, BYGRADE or FIXED
-* - OFLength: Optimal Filter length (taken into account if OFStrategy=FIXED)
-* - OFLengthNotPadded: Filter length not padded with 0s (only necessary when reconstructing with 0-padding)
-* - preBuffer: Some samples added before the starting time of a pulse (number of samples added read from the xml file)
+* - LibraryFile: Library FITS file to be created
+* - XMLFile: XML input FITS file with instrument definition
+* - preBuffer: Some samples added before the starting time of a pulse (number of samples added read from the XML file)
 *              SIRENA's format XML file (grading=>pre,post and pB) or new format XML file (grading=>pre,post and filtlen)
 *                                      pre=494, post=8192, pB=1000                          pre=494, post=7192, filtlen=8192
 *                                                                                             preBuffer=filtlen-post
+* - EventListSize: Default size of the event list
+* - clobber:Overwrite or not output files if exist (1/0)
+* - history: write program parameters into output file
+* - scaleFactor: Detection scale factor for initial filtering
+* - samplesUp: Number of consecutive samples up for threshold trespassing (only used with STC detection mode)
+* - samplesDown: Number of consecutive samples below the threshold to look for other pulse (only used with STC detection mode)
+* - nSgms: Number of quiescent-signal standard deviations to establish the threshold through the kappa-clipping algorithm
+* - LbT: Baseline averaging length (seconds)
+
+
+* - FilterDomain: Filtering Domain: Time (T) or Frequency (F)
+******* - FilterMethod: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline) or F0B0 (deleting always the baseline)
+* - FilterMethod: Filtering Method: F0 (deleting the zero frequency bin) or B0 (deleting the baseline)
+* - EnergyMethod: Energy calculation Method: OPTFILT, WEIGHT, WEIGHTN, I2R, I2RALL, I2RNOL, I2RFITTED, I2RDER or PCA
+* - Ifit: Constant to apply the I2RFITTED conversion
+
 * - intermediate: Write or not intermediate files (1/0)
 * - detectFile: Intermediate detections file (if intermediate=1)
-* - errorT: Additional error (in samples) added to the detected time (Logically, it changes the reconstructed energies )
-* - Sum0Filt: 0-padding: Subtract the sum of the filter (1) or not (0)
-* - tstartPulse1: Integer number: Sample where the first pulse starts or nameFile: File where the tstart (in seconds) of every pulse is
-* - tstartPulse2: Tstart (samples) of the second pulse
-* - tstartPulse3: Tstart (samples) of the third pulse (if 0 => PAIRS, if not 0 => TRIOS)
-* - energyPCA1: First energy (only for PCA)
-* - energyPCA2: Second energy (only for PCA)
-* - XMLFile: XML input FITS file with instrument definition
 * 
 * Steps:
 * 
@@ -106,13 +82,13 @@
 * - Open output FITS file
 * - Initialize data structures needed for pulse filtering
 * - Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
-* - Build up TesEventList to recover the results of the reconstruction
-* - Call SIRENA to build the library or reconstruct the energies
+* - Build up TesEventList
+* - Call SIRENA to build reconstruct the energies
 * - Save GTI extension to event file
 * - Free memory
 *****************************************************/
-int tesreconstruction_main() {
-  printf("Running TESRECONSTRUCTION\n");
+int tesrecons_main() {
+  printf("Running TESRECONS\n");
   time_t ttstart = time(0);
   
   // Containing all programm parameters read by PIL.
@@ -126,48 +102,38 @@ int tesreconstruction_main() {
   int status=EXIT_SUCCESS;
 
   // Register HEATOOL:
-  set_toolname("tesreconstruction");
-  set_toolversion("0.05");
+  set_toolname("tesrecons");
+  //set_toolversion("0.05");
   
   do { // Beginning of the ERROR handling loop (will at
        // most be run once).
     headas_chat(3, "initialize ...\n");
 
     // Get program parameters
-    status=getpar(&par);
+    status=getpar_tesrecons(&par);
     //CHECK_STATUS_BREAK(status);
     if (status != EXIT_SUCCESS)
     {
-    	//printf("getpar error\n");
+    	//printf("getpar_tesrecons error\n");
     	return(status);
     }
+    par.opmode = 1; // Reconstructing the energies
 
     if ((strcmp(par.EnergyMethod,"I2RFITTED") == 0) && (par.Ifit == 0.0))
     {
         SIXT_ERROR("Ifit value must be provided");
         return(EXIT_FAILURE);
     }
-
-    if (par.OFLengthNotPadded < par.OFLength)
-        printf("%s","Running 0-padding: 0 < OFLengthNotPadded < OFLength\n");
         
     AdvDet *det = newAdvDet(&status);
     CHECK_STATUS_BREAK(status);
     double sampling_rate_XML = -999.; // Sampling rate from XML
-    if ((par.opmode ==1) || ((par.opmode == 0) && (par.preBuffer == 1)))
-    {
-        // Read XML info
-        det = loadAdvDet(par.XMLFile, &status);
-        CHECK_STATUS_BREAK(status);
-        
-        sampling_rate_XML = det->SampleFreq;
-    }
-    
-    if ((par.preBuffer == 1) && (par.opmode == 0))
-    {
-        printf("%s","Attention: preBuffer used => Parameters of library filters read from XML file\n");
-    }
-    
+    // Read XML info
+    det = loadAdvDet(par.XMLFile, &status);
+    CHECK_STATUS_BREAK(status);
+    sampling_rate_XML = det->SampleFreq;
+    if (par.preBuffer == 1)    printf("%s","Attention: preBuffer used => Parameters of library filters read from XML file\n");
+
     // Obtain the 'trig_reclength' and the sampling rate
     double sampling_rate = -999.0;
     int trig_reclength = -999;
@@ -192,7 +158,7 @@ int tesreconstruction_main() {
                                                  &status);
     CHECK_STATUS_BREAK(status);
     
-    // Initialize data structures needed for pulse filtering
+    // Initialize data structures needed
     ReconstructInitSIRENA* reconstruct_init_sirena = newReconstructInitSIRENA();
     CHECK_STATUS_BREAK(status);
     PulsesCollection* pulsesAll = newPulsesCollection();
@@ -200,20 +166,16 @@ int tesreconstruction_main() {
     OptimalFilterSIRENA* optimalFilter = newOptimalFilterSIRENA();
     CHECK_STATUS_BREAK(status);// define a second structure for calibration
     
-    if ((par.opmode ==1) || ((par.opmode == 0) && (par.preBuffer == 1)))
-    {
-        // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
-        status = fillReconstructInitSIRENAGrading (par, det, &reconstruct_init_sirena);
-    }
+    // Read the grading data from the XML file and store it in 'reconstruct_init_sirena->grading'
+    status = fillReconstructInitSIRENAGrading (par, det, &reconstruct_init_sirena);
     destroyAdvDet(&det);
 
-    // Build up TesEventList to recover the results of the reconstruction
+    // Build up TesEventList
     TesEventList* event_list = newTesEventListSIRENA(&status);
     allocateTesEventListTrigger(event_list,par.EventListSize,&status);
-    //allocateWholeTesEventListTrigger(event_list,par.EventListSize,&status);
     CHECK_STATUS_BREAK(status);
             
-    // Call SIRENA to build the library or reconstruct the energies
+    // Call SIRENA to reconstruct
     status = callSIRENA(par.RecordFile, keywords, reconstruct_init_sirena, par, sampling_rate, &trig_reclength, pulsesAll, outfile);
 
     // Save GTI extension to event file
@@ -234,7 +196,6 @@ int tesreconstruction_main() {
     freeOptimalFilterSIRENA(optimalFilter);
     freeTesEventFile(outfile,&status);
     freeTesEventListSIRENA(event_list);
-    //freeTesRecord(&record);
     freeSixtStdKeywords(keywords);
     CHECK_STATUS_BREAK(status);
  
@@ -258,13 +219,12 @@ int tesreconstruction_main() {
 
 
 /***** SECTION 2 ************************************************************
-* getpar function: This function gets the input parameter from the command line or their default values from the tesreconstruction .par file
+* getpar_tesrecons function: This function gets the input parameter from the command line or their default values from the tesrecons.par file
 *
 * Parameters:
 * - par: Structure containing the input parameters
 ******************************************************************************/
-int getpar(struct Parameters* const par)
-
+int getpar_tesrecons(struct Parameters* const par)
 {
   // String input buffer.
   char* sbuffer=NULL;
@@ -288,6 +248,20 @@ int getpar(struct Parameters* const par)
   strcpy(par->TesEventFile, sbuffer);
   free(sbuffer);
 
+  status=ape_trad_query_string("LibraryFile", &sbuffer);
+  strcpy(par->LibraryFile, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_string("XMLFile", &sbuffer);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the name of the XML file");
+    return(status);
+  }
+  strcpy(par->XMLFile, sbuffer);
+  free(sbuffer);
+
+  status=ape_trad_query_bool("preBuffer", &par->preBuffer);
+
   status=ape_trad_query_int("EventListSize", &par->EventListSize);
   if (EXIT_SUCCESS!=status) {
 	  SIXT_ERROR("failed reading the EventListSize parameter");
@@ -302,99 +276,59 @@ int getpar(struct Parameters* const par)
 
   status=ape_trad_query_bool("history", &par->history);
   if (EXIT_SUCCESS!=status) {
-    printf("%s","GETPAR tesreconstruction....\n");
-    //SIXT_ERROR("failed reading the history parameter");
-    printf("failed reading the history parameter\n");
-    //printf("%s %d %s","GETPAR status=",status,"\n");
+    SIXT_ERROR("failed reading the history parameter");
+    //printf("failed reading the history parameter\n");
     return(status);
   }
 
-  // SIRENA parameters
-  status=ape_trad_query_string("LibraryFile", &sbuffer);
-  strcpy(par->LibraryFile, sbuffer);
-  free(sbuffer);
-      
   status=ape_trad_query_double("scaleFactor", &par->scaleFactor);
-      
   status=ape_trad_query_int("samplesUp", &par->samplesUp);
-
   status=ape_trad_query_int("samplesDown", &par->samplesDown);
-      
   status=ape_trad_query_double("nSgms", &par->nSgms);
 
   status=ape_trad_query_string("detectionMode", &sbuffer);
   strcpy(par->detectionMode, sbuffer);
   free(sbuffer);
-      
+
   status=ape_trad_query_int("detectSP", &par->detectSP);
       
-  status=ape_trad_query_int("opmode", &par->opmode);
-      
-  status=ape_trad_query_string("detectionMode", &sbuffer);
-  strcpy(par->detectionMode, sbuffer);
-  free(sbuffer);
-      
-  status=ape_trad_query_double("LrsT", &par->LrsT);
-      
   status=ape_trad_query_double("LbT", &par->LbT);
-      
+
   status=ape_trad_query_int("intermediate", &par->intermediate);
-      
   status=ape_trad_query_string("detectFile", &sbuffer);
   strcpy(par->detectFile, sbuffer);
   free(sbuffer);
-      
-  status=ape_trad_query_double("monoenergy", &par->monoenergy);
-      
-  status=ape_trad_query_bool("hduPRECALWN", &par->hduPRECALWN);
-  status=ape_trad_query_bool("hduPRCLOFWM", &par->hduPRCLOFWM);
-      
-  status=ape_trad_query_int("largeFilter", &par->largeFilter);
-      
-  status=ape_trad_query_string("NoiseFile", &sbuffer);
-  strcpy(par->NoiseFile, sbuffer);
-  free(sbuffer);
-      
+
   status=ape_trad_query_string("FilterDomain", &sbuffer);
   strcpy(par->FilterDomain, sbuffer);
   free(sbuffer);
-      
+
   status=ape_trad_query_string("FilterMethod", &sbuffer);
   strcpy(par->FilterMethod, sbuffer);
   free(sbuffer);
-      
+
   status=ape_trad_query_string("EnergyMethod", &sbuffer);
   strcpy(par->EnergyMethod, sbuffer);
   free(sbuffer);
 
-  status=ape_trad_query_int("OFLengthNotPadded", &par->OFLengthNotPadded);
-  if (EXIT_SUCCESS!=status) {
-    SIXT_ERROR("failed reading the OFLengthNotPadded parameter");
-    return(status);
-  }
-  assert(par->OFLengthNotPadded > 0);
-  //MyAssert((par->OFLengthNotPadded > 0) && (par->OFLengthNotPadded <= par->OFLength), "0-padding: 0 < OFLengthNotPadded <= OFLength");
-
-  MyAssert((par->opmode == 0) || (par->opmode == 1), "opmode must be 0 or 1");
-      
   status=ape_trad_query_double("filtEev", &par->filtEev);
-      
+
   status=ape_trad_query_double("Ifit", &par->Ifit);
-      
+
   status=ape_trad_query_string("OFNoise", &sbuffer);
   strcpy(par->OFNoise, sbuffer);
   free(sbuffer);
-      
+
   status=ape_trad_query_int("LagsOrNot", &par->LagsOrNot);
   status=ape_trad_query_int("nLags", &par->nLags);
+
   status=ape_trad_query_int("Fitting35", &par->Fitting35);
-      
   status=ape_trad_query_int("OFIter", &par->OFIter);
-      
+
   status=ape_trad_query_bool("OFLib", &par->OFLib);
-      
+
   strcpy(par->OFInterp, "DAB");
-      
+
   status=ape_trad_query_string("OFStrategy", &sbuffer);
   strcpy(par->OFStrategy, sbuffer);
   free(sbuffer);
@@ -407,36 +341,19 @@ int getpar(struct Parameters* const par)
   }
 
   status=ape_trad_query_int("OFLength", &par->OFLength);
-      
-  status=ape_trad_query_bool("preBuffer", &par->preBuffer);
-      
-  status=ape_trad_query_int("errorT", &par->errorT);
 
+  status=ape_trad_query_int("OFLengthNotPadded", &par->OFLengthNotPadded);
+  if (EXIT_SUCCESS!=status) {
+    SIXT_ERROR("failed reading the OFLengthNotPadded parameter");
+    return(status);
+  }
+  assert(par->OFLengthNotPadded > 0);
+
+  status=ape_trad_query_int("errorT", &par->errorT);
   status=ape_trad_query_int("Sum0Filt", &par->Sum0Filt);
-      
-  //status=ape_trad_query_int("tstartPulse1", &par->tstartPulse1);
   status=ape_trad_query_string("tstartPulse1", &sbuffer);
   strcpy(par->tstartPulse1, sbuffer);
   free(sbuffer);
-      
-  status=ape_trad_query_int("tstartPulse2", &par->tstartPulse2);
-      
-  status=ape_trad_query_int("tstartPulse3", &par->tstartPulse3);
-      
-  status=ape_trad_query_double("energyPCA1", &par->energyPCA1);
-      
-  status=ape_trad_query_double("energyPCA2", &par->energyPCA2);
-      
-  status=ape_trad_query_string("XMLFile", &sbuffer);
-  strcpy(par->XMLFile, sbuffer);
-  free(sbuffer);
-      
-  if (EXIT_SUCCESS!=status) {
-      SIXT_ERROR("failed reading some SIRENA parameter");
-      return(status);
-  }
-      
-  MyAssert((par->opmode == 0) || (par->opmode == 1), "opmode must be 0 or 1");
   int isNumber = 1;
   for (int i = 0; i < (int)(strlen(par->tstartPulse1)); i++)
   {
@@ -446,33 +363,38 @@ int getpar(struct Parameters* const par)
           break;
       }
   }
-  /*if ((isNumber == 0) && (par->opmode == 0))
-  {
-      SIXT_ERROR("tstartPulse1 can not be a file if CALIBRATION mode");
-      return(EXIT_FAILURE);
-  }*/
+  status=ape_trad_query_int("tstartPulse2", &par->tstartPulse2);
+  status=ape_trad_query_int("tstartPulse3", &par->tstartPulse3);
+  status=ape_trad_query_double("energyPCA1", &par->energyPCA1);
+  status=ape_trad_query_double("energyPCA2", &par->energyPCA2);
+      
+  if (EXIT_SUCCESS!=status) {
+      SIXT_ERROR("failed reading some TESRECONS parameter");
+      return(status);
+  }
+
+  MyAssert(par->LbT > 0, "LbT must be greater than 0");
+
+  MyAssert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0), "FilterDomain must be T or F");
+
+  //MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0) || (strcmp(par->FilterMethod,"F0B0") == 0),"FilterMethod must be F0 or B0 or F0B0");
+  MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0),"FilterMethod must be F0 or B0");
+
+  MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
+  (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) || (strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED or PCA");
+
   if ((isNumber == 0) && (strcmp(par->FilterDomain,"F") == 0))    // It is only implemented tstartPulse1 as a file for time domain
   {
       SIXT_ERROR("It is not possible to work in FREQUENCY domain if tstartPulse1 is a file => Change FilterDomain to TIME domain (T) ");
       return(EXIT_FAILURE);
   }
-      
+
   MyAssert((par->intermediate == 0) || (par->intermediate == 1), "intermediate must be 0 or 1");
 
-  if (par->opmode == 0) MyAssert(par->monoenergy > 0, "monoenergy must be greater than 0");
-      
-  MyAssert((strcmp(par->FilterDomain,"T") == 0) || (strcmp(par->FilterDomain,"F") == 0), "FilterDomain must be T or F");
-      
-  MyAssert((strcmp(par->FilterMethod,"F0") == 0) || (strcmp(par->FilterMethod,"B0") == 0) || (strcmp(par->FilterMethod,"F0B0") == 0),"FilterMethod must be F0 or B0 or F0B0");
-      
-  MyAssert((strcmp(par->EnergyMethod,"OPTFILT") == 0) || (strcmp(par->EnergyMethod,"WEIGHT") == 0) || (strcmp(par->EnergyMethod,"WEIGHTN") == 0) ||
-  (strcmp(par->EnergyMethod,"I2R") == 0) ||	(strcmp(par->EnergyMethod,"I2RFITTED") == 0) ||	(strcmp(par->EnergyMethod,"I2RDER") == 0)
-  || (strcmp(par->EnergyMethod,"PCA") == 0), "EnergyMethod must be OPTFILT, WEIGHT, WEIGHTN, I2R, I2RFITTED, I2RDER or PCA");
-      
   MyAssert((strcmp(par->OFNoise,"NSD") == 0) || (strcmp(par->OFNoise,"WEIGHTM") == 0), "OFNoise must be NSD or WEIGHTM");
-      
+
   MyAssert((strcmp(par->detectionMode,"AD") == 0) || (strcmp(par->detectionMode,"STC") == 0), "detectionMode must be AD or STC");
-      
+
   MyAssert((par->LagsOrNot ==0) || (par->LagsOrNot ==1), "LagsOrNot must me 0 or 1");
   if ((par->nLags)%2 == 0)
   {
@@ -490,24 +412,24 @@ int getpar(struct Parameters* const par)
       SIXT_ERROR("parameter error: nLags must be at least 5");
       return(EXIT_FAILURE);
   }
-      
+
   MyAssert((par->Sum0Filt ==0) || (par->Sum0Filt ==1), "Sum0Filt must be 0 or 1");
-      
+
   if ((strcmp(par->EnergyMethod,"WEIGHT") == 0) && (par->LagsOrNot == 1))
   {
       SIXT_ERROR("parameter error: EnergyMethod=WEIGHT and Lags not implemented yet");
       return(EXIT_FAILURE);
   }
-      
+
   MyAssert((par->OFIter ==0) || (par->OFIter ==1), "OFIter must be 0 or 1");
-      
+
   // It was in order to not ask for the noise file if OFLib=1
   /*if ((par->OFLib == 1) && (strcmp(par->FilterMethod,"F0") != 0))
   {                                                       *
    SIXT_ERROR("parameter error: If OFLib=yes => FilterMethod must be F0");
    return(EXIT_FAILURE);
   }*/
-      
+
   if ((par->OFLengthNotPadded < par->OFLength) && (strcmp(par->FilterDomain,"F") == 0))
   {
       SIXT_ERROR("Code is not prepared to run 0-padding in Frequency domain");
@@ -519,29 +441,27 @@ int getpar(struct Parameters* const par)
       //5. Scalar product in Frequency domain
       return(EXIT_FAILURE);
   }
-      
+
   if ((strcmp(par->EnergyMethod,"WEIGHT") == 0) && (par->OFLib == 1))
   {
       SIXT_ERROR("parameter error: EnergyMethod=WEIGHT => OFLib should be 'no'");
       return(EXIT_FAILURE);
   }
-      
+
   if ((strcmp(par->EnergyMethod,"OPTFILT") == 0) && (strcmp(par->OFNoise,"WEIGHTM") == 0) && (par->OFLib == 0))
   {
       SIXT_ERROR("parameter error: EnergyMethod=OPTFILT && OFNoise=WEIGHTM => OFLib should be 'yes'");
       return(EXIT_FAILURE);
   }
-      
+
   MyAssert((strcmp(par->OFStrategy,"FREE") == 0) || (strcmp(par->OFStrategy,"BYGRADE") == 0) || (strcmp(par->OFStrategy,"FIXED") == 0),
            "OFStrategy must be FREE, BYGRADE or FIXED");
-      
+
   MyAssert(par->OFLength > 0, "OFLength must be greater than 0");
-      
+
   MyAssert(par->energyPCA1 > 0, "energyPCA1 must be greater than 0");
   MyAssert(par->energyPCA2 > 0, "energyPCA2 must be greater than 0");
-      
-  MyAssert(par->LbT > 0, "LbT must be greater than 0");
-	
+
   return(status);
 }
 /*xxxx end of SECTION 2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*/

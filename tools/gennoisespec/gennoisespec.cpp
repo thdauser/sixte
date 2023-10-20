@@ -136,7 +136,6 @@
      cout<<message<<endl;
 
      //////// Setup
-     //healog(1) << "=== Setup ===\n" << endl;
      message="=== Setup ===";
      cout<<message<<endl;
 
@@ -884,7 +883,6 @@
      }
 
      // Initialize the progress bar.
-     //healog(1) << "=== Simulating ===" << endl;
      message="=== Simulating ===";
      cout<<message<<endl;
      p_show_progress.reset( new boost::progress_display(par.nintervals));

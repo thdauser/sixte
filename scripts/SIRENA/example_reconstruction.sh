@@ -41,7 +41,7 @@
 
 # SIXTE XML files *** see note in README file ***
 xmldirSX=${XIFUSIM}/share/xifusim/instruments/
-xmlfileSX=${xmldirSX}/1pix_lpa2.5a_fll.xml # any file with grading information (pixel info is not relevant here)
+xmlfileSX=${xmldirSX}/1pix_lpa2.5a_fll_SIRENAintegration.xml # any file with grading information (pixel info is not relevant here)
 
 tempeV=6000. # (energy of optimal filter (eV)
 
@@ -49,15 +49,11 @@ data_sim="myData.fits"
 evt_recons="myEvents.fits"
 libfile="myLib.fits"
 
-
 # Reconstruct data using optimal filter (for different reconstruction methods have a look to SIRENA documentation)
 # https://sirena.readthedocs.io/
-tesreconstruction Recordfile=${data_sim} \
-                                    TesEventFile=${evt_recons} \
-                                    monoenergy=${tempeV} \
-                                    LibraryFile=${libfile} \
-                                    opmode=1 \
-                                    XMLFile=${xmlfileSX}
+echo "tesrecons Recordfile=${data_sim} TesEventFile=${evt_recons} filtEeV=${tempeV} LibraryFile=${libfile} XMLFile=${xmlfileSX}"
+tesrecons Recordfile=${data_sim} TesEventFile=${evt_recons} filtEeV=${tempeV} LibraryFile=${libfile} XMLFile=${xmlfileSX}
+
 
                             
                                 

@@ -22,33 +22,32 @@
    ESP2013-48637-C2-1-P, ESP2014-53672-C3-1-P and RTI2018-096686-B-C21.
 
 ***********************************************************************
-*                      TESRECONSTRUCTION
+*                      TESLIB
 *
-*  File:       tesreconstruction.h
+*  File:       teslib.h
 *  Developers: Beatriz Cobo
 * 	           cobo@ifca.unican.es
 *              IFCA
 *              Maite Ceballos
 *              ceballos@ifca.unican.es
 *              IFCA
-*              Philippe Peille, IRAP
 *                                                                     
 ***********************************************************************/
 
-#ifndef TESRECONSTRUCTION_H
-#define TESRECONSTRUCTION_H 1
+#ifndef TESLIB_H
+#define TELIB_H 1
 
 #include "initSIRENA.h"
 
 #include "gti.h"
 
-#define TOOLSUB tesreconstruction_main
+#define TOOLSUB teslib_main
 #include "headas_main.c"
 
 #include "versionSIRENA.h"
 
 #include <time.h>
 
-int getpar(struct Parameters* const par);
+int getpar_teslib(struct Parameters* const par);
 
-#endif /* TESRECONSTRUCTION_H */
+#endif /* TESLIB_H */

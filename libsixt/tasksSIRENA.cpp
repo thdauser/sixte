@@ -375,7 +375,7 @@ void runDetect(TesRecord* record, int trig_reclength, int lastRecord, int nrecor
         log_trace("Writing the library...");
         if (writeLibrary(reconstruct_init, 1/record->delta_t, pulseheighttemplate, pulsetemplate, pulsetemplate_B0, covariance, weight, appendToLibrary, &inLibObject, pulsetemplateMaxLengthFixedFilter, pulsetemplateMaxLengthFixedFilter_B0))
         {
-            message = "Cannot run routine writeLibrary in CALIBRATION mode";
+            message = "Cannot run routine writeLibrary";
             EP_EXIT_ERROR(message,EPFAIL);
         }
         
@@ -1563,7 +1563,7 @@ int createLibrary(ReconstructInitSIRENA* reconstruct_init, bool *appendToLibrary
         }
     }
     else	// If the library does not exist yet => Create it
-    {
+    {   
         *appendToLibrary = false;
         if (fits_create_file(inLibObject, inLibName, &status))
         {
@@ -4547,8 +4547,9 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
         unsigned checksum_XMLfile;
         if (NULL == (fp_XMLfile = fopen((*reconstruct_init)->XMLFile, "rb")))
         {
+            remove((*reconstruct_init)->library_file);
             message = "Unable to open XML file " + string((*reconstruct_init)->XMLFile) + " for reading it and calculate its checksum";
-            EP_PRINT_ERROR(message,status); return(EPFAIL);
+            EP_PRINT_ERROR(message,1); return(EPFAIL);
         }
         len_XMLfile = fread(buf_XMLfile, sizeof(char), sizeof(buf_XMLfile), fp_XMLfile);
         checksum_XMLfile = checksum(buf_XMLfile, len_XMLfile, 0);
@@ -4556,7 +4557,7 @@ int writeLibrary(ReconstructInitSIRENA **reconstruct_init, double samprate, doub
         strcpy(keyvalstr,str_checksum_XMLfile.c_str());
         if (fits_write_key(*inLibObject,TSTRING,"XMLCKSM",keyvalstr,NULL,&status))
         {
-            message = "Cannot write keyword XMLCHCKSM";
+            message = "Cannot write keyword XMLCKSM";
             EP_PRINT_ERROR(message,status); return(EPFAIL);
         }
         
@@ -4883,27 +4884,6 @@ int addFirstRow(ReconstructInitSIRENA *reconstruct_init, fitsfile **inLibObject,
     {
         message = "Cannot move to HDU  " + string(extname) + " in library";
         EP_PRINT_ERROR(message,status);return(EPFAIL);
-    }
-
-    // Calculate XML file checksum and write it as XMLCHCKSM
-    FILE *fp_XMLfile;
-    size_t len_XMLfile;
-    char buf_XMLfile[4096];
-    unsigned checksum_XMLfile;
-    if (NULL == (fp_XMLfile = fopen(reconstruct_init->XMLFile, "rb")))
-    {
-        message = "Unable to open XML file " + string(reconstruct_init->XMLFile) + " for reading it and calculate its checksum";
-        EP_PRINT_ERROR(message,status); return(EPFAIL);
-    }
-    len_XMLfile = fread(buf_XMLfile, sizeof(char), sizeof(buf_XMLfile), fp_XMLfile);
-    checksum_XMLfile = checksum(buf_XMLfile, len_XMLfile, 0);
-    string str_checksum_XMLfile = to_string(checksum_XMLfile);
-    char keyvalstr[1000];
-    strcpy(keyvalstr,str_checksum_XMLfile.c_str());
-    if (fits_write_key(*inLibObject,TSTRING,"XMLCKSM",keyvalstr,NULL,&status))
-    {
-        message = "Cannot write keyword XMLCHCKSM";
-        EP_PRINT_ERROR(message,status); return(EPFAIL);
     }
     
     // Creating ENERGY Column
