@@ -91,7 +91,7 @@
 int teslib_main() {
   printf("Running TESLIB\n");
   time_t ttstart = time(0);
-  
+
   // Containing all programm parameters read by PIL.
   struct Parameters par;
   par.hduPRCLOFWM = 0;  // Debugger complains about an initialized variable (only the boolean type)

@@ -8364,6 +8364,7 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
     int resize_mfvsposti = 0;
     
     int extraSizeDueToLags = 0;
+    model = gsl_vector_alloc((*reconstruct_init)->pulse_length);
     for (int i=0; i<(*pulsesInRecord)->ndetpulses ;i++)
     {      
         log_debug("Pulse................................................ %d",i+1);
@@ -8381,7 +8382,6 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
                 message = "Cannot run routine pulseGrading";
                 EP_EXIT_ERROR(message,EPFAIL);
             }
-            model = gsl_vector_alloc((*reconstruct_init)->pulse_length);
 
             if (preBuffer == 1)
             {
@@ -9167,8 +9167,8 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
     } // End for
     log_debug("After FOR");
     
-    gsl_vector_free(recordAux); recordAux = 0;
-    gsl_vector_free(model); model = 0;
+    if (recordAux != NULL) {gsl_vector_free(recordAux); recordAux = 0;}
+    if (model != NULL) {gsl_vector_free(model); model = 0;}
     
     if (pulse_lowres != NULL) {gsl_vector_free(pulse_lowres); pulse_lowres = 0;}
     if (filtergsl_lowres!= NULL) {gsl_vector_free(filtergsl_lowres); filtergsl_lowres = 0;}
@@ -9213,7 +9213,7 @@ void runEnergy(TesRecord* record, int lastRecord, int nrecord, int trig_reclengt
 
 
 /***** SECTION BB ************************************************************
- * th_runEenergy: Run energy calculation only in multithread mode
+ * th_runEnergy: Run energy calculation only in multithread mode
  *****************************************************************************/
 void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                   ReconstructInitSIRENA** reconstruct_init, 
@@ -9415,6 +9415,7 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
     int resize_mfvsposti = 0;
     
     int extraSizeDueToLags = 0;
+    model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
     for (int i=0; i<(*pulsesInRecord)->ndetpulses ;i++)
     {
         tstartSamplesRecord = (*pulsesInRecord)->pulses_detected[i].TstartSamples;
@@ -9431,7 +9432,6 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
                 message = "Cannot run routine pulseGrading";
                 EP_EXIT_ERROR(message,EPFAIL);
             }
-            model =gsl_vector_alloc((*reconstruct_init)->pulse_length);
             
             if (preBuffer == 1)
             {
@@ -10206,11 +10206,10 @@ void th_runEnergy(TesRecord* record, int nrecord, int trig_reclength,
             (*pulsesInRecord)->pulses_detected[i].phi = -999.0;
             (*pulsesInRecord)->pulses_detected[i].lagsShift = -999.0;
         }
-
-        gsl_vector_free(model); model = 0;
     } // End for
     
-    gsl_vector_free(recordAux); recordAux = 0;
+    if (recordAux != NULL) {gsl_vector_free(recordAux); recordAux = 0;}
+    if (model != NULL) {gsl_vector_free(model); model = 0;}
     
     gsl_vector_free(pulse_lowres); pulse_lowres = 0;
     gsl_vector_free(filtergsl_lowres); filtergsl_lowres = 0;
@@ -11822,6 +11821,7 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int tstart, int grade
                 break;
             }
         }
+
         if (reconstruct_init->preBuffer == 1)
         {
             if (tstart < gsl_matrix_get(reconstruct_init->grading->gradeData,*pulseGrade-1,2))
@@ -11954,8 +11954,8 @@ int pulseGrading (ReconstructInitSIRENA *reconstruct_init, int tstart, int grade
     //if (((grade2 < gradelim_pre) || (grade1 == -1)) && (OFlength_strategy != 2))    *pulseGrade = -1;
     if (grade2 < gradelim_pre) *pulseGrade = -1;
 
-    log_debug("*pulseGrade %d", *pulseGrade);
-    log_debug("*OFLength %d", *OFlength);
+    log_debug("pulseGrading *pulseGrade %d", *pulseGrade);
+    log_debug("pulseGrading *OFLength %d", *OFlength);
     
     message.clear();
     
@@ -12093,6 +12093,7 @@ int calculateEnergy (gsl_vector *pulse, gsl_vector *filter, gsl_vector_complex *
         log_debug("pulse->size: %i",pulse->size);
         log_debug("productSize: %i",productSize);
     }
+    //if (LowRes!=1){for (int i=0;i<10;i++) cout<<i<<" "<<gsl_vector_get(filter,i)<<endl;}
 
     gsl_vector *vector;
     
