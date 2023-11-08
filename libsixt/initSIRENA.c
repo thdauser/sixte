@@ -405,7 +405,6 @@ int getSamplingrate_trigreclength (char* inputFile, struct Parameters par, doubl
 {
     // Error status.
     int status=EXIT_SUCCESS;
-
     char firstcharAux = inputFile[0];
     char firstchar[2] = {firstcharAux , '\0'};
 
@@ -621,44 +620,27 @@ int callSIRENA_Filei(char* inputFile, SixtStdKeywords* keywords, ReconstructInit
     allocateTesRecord(record,*trig_reclength,record_file->delta_t,0,&status);
     if (status != EXIT_SUCCESS) return(EXIT_FAILURE);
 
-    // Iterate of records and run SIRENA
-    /*fitsfile *fptr;
-    //if (fits_open_file(&fptr, inputFile, READONLY, &status)) {
-    //    fits_report_error(stderr, status);
-    //   return status;
-    //}
-    fits_open_file(&fptr, inputFile, READONLY, &status);
+    // Iteration of records and running SIRENA
+    // Read numrecords (NAXIS2) to simulate a progress bar
+    fitsfile *fptr;
+    if (fits_open_file(&fptr, inputFile, READONLY, &status)) {
+        SIXT_ERROR("Cannot open the input FITS file to read the number of records (NAXIS2)(in 'callSIRENA_Filei' function).");
+        return status;
+    }
     fits_movnam_hdu(fptr, ANY_HDU,"TESRECORDS", 0, &status);
-    //if (status != EXIT_SUCCESS) return(EXIT_FAILURE);
+    if (status != EXIT_SUCCESS)
+    {
+        status = EXIT_SUCCESS;
+        fits_movnam_hdu(fptr, ANY_HDU,"RECORDS", 0, &status);
+        if (status != EXIT_SUCCESS)
+        {
+            SIXT_ERROR("Cannot find the TESRECORDS (or RECORDS) HDU in the input FITS file to read the number of records (NAXIS2)(in 'callSIRENA_Filei' function).");
+            return status;
+        }
+    }
     int numrecords;
     fits_read_key(fptr, TINT, "NAXIS2", &numrecords, NULL, &status);
     fits_close_file(fptr, &status);
-    //printf("%s","Paso5\n");
-    //printf("%s %d %s","NAXIS2=",numrecords,"\n");
-    //printf("%s","Paso6\n");
-
-    //int i;
-    //int total=numrecords;
-    //    for (i = 0; i <= total; i++) {
-    //    float progress = (float)i / total;
-    //    int bar_width = 50;
-
-    //    printf("Simulating |");
-    //    int pos = bar_width * progress;
-    //    for (int j = 0; j < bar_width; j++) {
-    //        if (j < pos)
-    //            printf("=");
-    //        else if (j == pos)
-    //            printf(">");
-    //        else
-    //            printf(" ");
-    //    }
-    //    printf("| %.2f%%\r", progress * 100);
-
-    //    fflush(stdout);
-    //    usleep(100000); // Sleep for a short time to simulate progress
-    //}
-    //printf("\n");*/
 
     fits_movnam_hdu(outfile->fptr, ANY_HDU,"EVENTS", 0, &status);
     if (status != EXIT_SUCCESS) return(EXIT_FAILURE);
@@ -670,11 +652,11 @@ int callSIRENA_Filei(char* inputFile, SixtStdKeywords* keywords, ReconstructInit
     if (status != EXIT_SUCCESS) return(EXIT_FAILURE);
     while(getNextRecord(record_file,record,&lastRecord,&startRecordGroup,&status))
     {
-        /*float progress = (float)nrecord / numrecords;
+        // Progress bar
+        float progress = (float)nrecord / (numrecords-1);
         int bar_width = 50;
-
-        printf("Simulating |");
         int pos = bar_width * progress;
+        printf("Simulating |");
         for (int j = 0; j < bar_width; j++) {
             if (j < pos)
                 printf("=");
@@ -683,15 +665,13 @@ int callSIRENA_Filei(char* inputFile, SixtStdKeywords* keywords, ReconstructInit
             else
                 printf(" ");
         }
-
+        printf("| %.2f%%\r", progress * 100);
+        fflush(stdout);
+        usleep(100000); // Sleep for a short time to simulate progress
         if (nrecord == numrecords-1)
         {
-            printf("| %.2f%%\r", progress * 100);
-
-            fflush(stdout);
-            usleep(100000); // Sleep for a short time to simulate progress
-            printf("\n");
-        }*/
+            printf("\n"); // New line after ending "Simulating...."
+        }
 
         nrecord = nrecord + 1;
         /*if(nrecord < 5887)
